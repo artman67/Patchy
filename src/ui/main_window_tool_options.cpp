@@ -2550,6 +2550,7 @@ void MainWindow::refresh_options_bar() {
   // Runs on every passive transform-box change (each Move-tool press), so it
   // reports under PATCHY_UI_PROFILE=1 like the other per-interaction refreshes.
   const UiProfileScope profile_scope("refresh_options_bar");
+  sync_view_rotation_controls();
   const bool has_document = has_active_document();
   const bool edit_allowed = has_document && !preview_dialog_edit_locked();
   const auto transform_state =

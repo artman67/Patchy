@@ -3251,6 +3251,36 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   connect(text_apply_button_, &QPushButton::clicked, this, [this] { commit_active_text_editor(); });
   connect(text_cancel_button_, &QPushButton::clicked, this, [this] { cancel_active_text_editor(); });
 
+  // Rotate View: Photoshop's Rotation Angle field and Reset View button. The
+  // angle belongs to the active canvas (per document, never saved);
+  // sync_view_rotation_controls mirrors it back after drags and tab switches.
+  add_option_label(QT_TR_NOOP("Rotation Angle:"), {CanvasTool::RotateView});
+  rotate_view_angle_spin_ = new UnitSpinBox(SpinUnit::Degrees, toolbar);
+  rotate_view_angle_spin_->setObjectName(QStringLiteral("rotateViewAngleSpin"));
+  rotate_view_angle_spin_->setRange(-180.0, 180.0);
+  rotate_view_angle_spin_->setDecimals(0);
+  rotate_view_angle_spin_->setWrapping(true);
+  rotate_view_angle_spin_->setKeyboardTracking(false);
+  bind_tooltip(rotate_view_angle_spin_, QT_TR_NOOP("View rotation angle"));
+  configure_toolbar_spinbox(rotate_view_angle_spin_, 64);
+  add_option_widget(rotate_view_angle_spin_, {CanvasTool::RotateView});
+  connect(rotate_view_angle_spin_, &QDoubleSpinBox::valueChanged, this, [this](double degrees) {
+    if (canvas_ != nullptr) {
+      canvas_->set_view_rotation(degrees);
+    }
+  });
+  register_retranslation([this] {
+    if (rotate_view_angle_spin_ != nullptr) {
+      rotate_view_angle_spin_->refresh_suffix();
+    }
+  });
+  rotate_view_reset_button_ = new QPushButton(tr("Reset View"), toolbar);
+  rotate_view_reset_button_->setObjectName(QStringLiteral("rotateViewResetButton"));
+  bind_widget_text(rotate_view_reset_button_, QT_TR_NOOP("Reset View"));
+  bind_tooltip(rotate_view_reset_button_, QT_TR_NOOP("Turn the view back to 0 degrees"));
+  add_option_widget(rotate_view_reset_button_, {CanvasTool::RotateView});
+  connect(rotate_view_reset_button_, &QPushButton::clicked, this, [this] { reset_view_rotation(); });
+
   // Every "Label:" before a numeric field is that field's scrub handle
   // (GitHub issue 46; install_scrub_labels_in pairs them by layout order, nested
   // groups such as Feather included, so a new label+field pair opts in by itself).

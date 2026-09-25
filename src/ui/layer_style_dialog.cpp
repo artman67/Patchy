@@ -136,23 +136,13 @@ protected:
     }
     if (event->type() == QEvent::MouseMove && dragging_) {
       const auto *mouse = static_cast<QMouseEvent *>(event);
-      const auto delta = mouse->position() - last_position_;
+      // The drag in document pixels, so zoom and Rotate View both map through
+      // the canvas's own widget-to-document conversion.
+      const auto delta = canvas_->document_point_for_widget_position(mouse->position()) -
+                         canvas_->document_point_for_widget_position(last_position_);
       last_position_ = mouse->position();
-      const auto origin = canvas_->widget_position_for_document_point(
-          QPoint(layer_bounds_.x, layer_bounds_.y));
-      const auto opposite = canvas_->widget_position_for_document_point(
-          QPoint(layer_bounds_.x + std::max(1, layer_bounds_.width),
-                 layer_bounds_.y + std::max(1, layer_bounds_.height)));
-      const auto pixels_per_document_x = std::max(
-          0.0001, std::abs(opposite.x() - origin.x()) /
-                      static_cast<double>(std::max(1, layer_bounds_.width)));
-      const auto pixels_per_document_y = std::max(
-          0.0001, std::abs(opposite.y() - origin.y()) /
-                      static_cast<double>(std::max(1, layer_bounds_.height)));
-      moved_(static_cast<float>(delta.x() / pixels_per_document_x * 100.0 /
-                                std::max(1, layer_bounds_.width)),
-             static_cast<float>(delta.y() / pixels_per_document_y * 100.0 /
-                                std::max(1, layer_bounds_.height)));
+      moved_(static_cast<float>(delta.x() * 100.0 / std::max(1, layer_bounds_.width)),
+             static_cast<float>(delta.y() * 100.0 / std::max(1, layer_bounds_.height)));
       return true;
     }
     if (event->type() == QEvent::MouseButtonRelease && dragging_) {

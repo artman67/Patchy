@@ -284,6 +284,14 @@ bool CanvasWidget::event(QEvent* event) {
       }
     }
   }
+  // Rotate View: pointer input reaches the handlers in the unrotated view
+  // space every other canvas routine works in (docs/rotate-view.md).
+  if (view_rotated()) {
+    bool result = false;
+    if (dispatch_view_mapped_event(event, result)) {
+      return result;
+    }
+  }
   if (event->type() == QEvent::NativeGesture) {
     const auto* gesture = static_cast<QNativeGestureEvent*>(event);
     if (wheel_trace_enabled()) {
@@ -377,11 +385,11 @@ void CanvasWidget::wheelEvent(QWheelEvent* event) {
       return;
     }
     if ((event->modifiers() & Qt::AltModifier) != 0) {
-      zoom_at_widget_point(event->position(), wheel_zoom_factor(*event));
+      zoom_at_view_point(event->position(), wheel_zoom_factor(*event));
       return;
     }
     const auto old_pan = pan_;
-    pan_ += delta;
+    pan_by_widget_delta(delta);
     constrain_pan();
     if (pan_ != old_pan) {
       update();
@@ -403,7 +411,7 @@ void CanvasWidget::wheelEvent(QWheelEvent* event) {
 
   // Alt+wheel always zooms, in either mode.
   if ((event->modifiers() & Qt::AltModifier) != 0) {
-    zoom_at_widget_point(event->position(), wheel_zoom_factor(*event));
+    zoom_at_view_point(event->position(), wheel_zoom_factor(*event));
     event->accept();
     return;
   }
@@ -414,7 +422,7 @@ void CanvasWidget::wheelEvent(QWheelEvent* event) {
   if (wheel_delta.y() == 0) {
     constexpr double kSidewaysPanScale = 0.5;
     const auto old_pan = pan_;
-    pan_.rx() += static_cast<double>(primary_delta) * kSidewaysPanScale;
+    pan_by_widget_delta(QPointF(static_cast<double>(primary_delta) * kSidewaysPanScale, 0.0));
     constrain_pan();
     event->accept();
     if (pan_ != old_pan) {
@@ -431,7 +439,7 @@ void CanvasWidget::wheelEvent(QWheelEvent* event) {
   if (wheel_zooms_) {
     const auto modifiers = event->modifiers();
     if ((modifiers & Qt::ControlModifier) == 0 && (modifiers & Qt::ShiftModifier) == 0) {
-      zoom_at_widget_point(event->position(), primary_delta > 0 ? 1.1 : 0.9);
+      zoom_at_view_point(event->position(), primary_delta > 0 ? 1.1 : 0.9);
       event->accept();
       return;
     }
@@ -444,10 +452,12 @@ void CanvasWidget::wheelEvent(QWheelEvent* event) {
   const bool pan_vertically =
       wheel_zooms_ ? (event->modifiers() & Qt::ShiftModifier) == 0
                    : (event->modifiers() & (Qt::ControlModifier | Qt::ShiftModifier)) == 0;
-  if (pan_vertically) {
-    pan_.ry() += static_cast<double>(primary_delta) * kWheelPanScale;
+  // The wheel scrolls the screen, whatever the view rotation.
+  const auto step = static_cast<double>(primary_delta) * kWheelPanScale;
+  if (!view_rotated()) {
+    (pan_vertically ? pan_.ry() : pan_.rx()) += step;
   } else {
-    pan_.rx() += static_cast<double>(primary_delta) * kWheelPanScale;
+    pan_by_widget_delta(pan_vertically ? QPointF(0.0, step) : QPointF(step, 0.0));
   }
   constrain_pan();
   event->accept();
@@ -459,6 +469,13 @@ void CanvasWidget::wheelEvent(QWheelEvent* event) {
 
 void CanvasWidget::resizeEvent(QResizeEvent* event) {
   QWidget::resizeEvent(event);
+  if (view_rotated() && event->oldSize().isValid()) {
+    // A rotated view turns about the viewport center, which just moved; shift
+    // the pan so the document stays where it was on screen, as it does unrotated.
+    const QPointF center_shift((event->oldSize().width() - width()) / 2.0,
+                               (event->oldSize().height() - height()) / 2.0);
+    pan_ += view_delta_from_widget_delta(center_shift) - center_shift;
+  }
   if (isVisible() && constrain_pan()) {
     update();
     notify_view_changed();
@@ -596,6 +613,16 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
   if (spacebar_panning_ || tool_ == CanvasTool::Pan || (event->buttons() & Qt::MiddleButton) != 0) {
     panning_ = true;
     setCursor(Qt::ClosedHandCursor);
+    return;
+  }
+
+  // Rotate View turns the view, never the document, so it runs even while
+  // editing is locked (like the Hand and Zoom tools).
+  if (tool_ == CanvasTool::RotateView && event->button() == Qt::LeftButton) {
+    if (document_ != nullptr) {
+      begin_rotate_view_drag(widget_point_from_view(event->position()));
+    }
+    event->accept();
     return;
   }
 
@@ -1443,6 +1470,17 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
     event->accept();
     return;
   }
+  if (rotating_view_) {
+    if ((event->buttons() & Qt::LeftButton) == 0) {
+      end_rotate_view_drag();  // the release was lost
+    } else {
+      // The event was mapped with the rotation in force when it arrived, so
+      // mapping back recovers the real pointer position.
+      update_rotate_view_drag(widget_point_from_view(event->position()), event->modifiers());
+    }
+    event->accept();
+    return;
+  }
   if (panning_) {
     clear_move_hover_outline();
     const auto delta = event->pos() - last_mouse_position_;
@@ -1722,7 +1760,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
     // new extents join whichever bounded repaint the branches below choose.
     if (const auto overlay_after = path_overlay_preview_document_rect();
         !overlay_before.isEmpty() || !overlay_after.isEmpty()) {
-      update(widget_rect_for_document_rect(overlay_before.united(overlay_after))
+      update_view_rect(widget_rect_for_document_rect(overlay_before.united(overlay_after))
                  .toAlignedRect()
                  .adjusted(-2, -2, 2, 2));
     }
@@ -1766,7 +1804,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
       move_preview_patches_delta_.reset();
       const auto dirty = move_proxy_dirty_rect(old_delta, move_preview_delta_);
       if (!dirty.isEmpty()) {
-        update(widget_rect_for_document_rect(dirty));
+        update_view_rect(widget_rect_for_document_rect(dirty));
       }
       last_mouse_position_ = event->pos();
       return;
@@ -1776,7 +1814,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
       move_preview_patches_delta_.reset();
       const auto dirty = moving_layers_outline_dirty_rect(old_delta, move_preview_delta_);
       if (!dirty.isEmpty()) {
-        update(widget_rect_for_document_rect(dirty));
+        update_view_rect(widget_rect_for_document_rect(dirty));
       }
       last_mouse_position_ = event->pos();
       return;
@@ -1891,7 +1929,7 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
       for (const auto& rect : update_region) {
         widget_region += widget_rect_for_document_rect(rect);
       }
-      update(widget_region);
+      update_view_region(widget_region);
     }
   } else if (moving_selection_) {
     clear_move_hover_outline();
@@ -2056,7 +2094,7 @@ void CanvasWidget::leaveEvent(QEvent* event) {
     const auto stale = brush_outline_uses_overlay() ? brush_hover_outline_rect() : QRect();
     brush_hover_position_valid_ = false;
     if (!stale.isNull()) {
-      update(stale.adjusted(-2, -2, 2, 2));
+      update_view_rect(stale.adjusted(-2, -2, 2, 2));
     }
   }
   QWidget::leaveEvent(event);
@@ -2124,6 +2162,11 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
   if (panning_) {
     panning_ = false;
     update_tool_cursor();
+    return;
+  }
+  if (rotating_view_ && event->button() == Qt::LeftButton) {
+    end_rotate_view_drag();
+    event->accept();
     return;
   }
 
@@ -2478,7 +2521,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
     // commit repaints below never reach.
     if (const auto outline_dirty = moving_layers_outline_dirty_rect(commit_delta, commit_delta);
         !outline_dirty.isEmpty()) {
-      update(widget_rect_for_document_rect(outline_dirty));
+      update_view_rect(widget_rect_for_document_rect(outline_dirty));
     }
     cancel_move_preview();
     moving_layer_ = false;
@@ -2534,7 +2577,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
           for (const auto& rect : patched_region) {
             widget_region += widget_rect_for_document_rect(rect);
           }
-          update(widget_region);
+          update_view_region(widget_region);
         }
       } else {
         document_changed_effect_bounds(dirty_region);
@@ -2780,7 +2823,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
         // rung to its neighbour, from between rungs to the next one.
         const auto current_view_zoom = view_zoom();
         const auto next_view_zoom = next_zoom_ladder_step(current_view_zoom, !zoom_out);
-        zoom_at_widget_point(zoom_click_anchor(event->position()), next_view_zoom / current_view_zoom);
+        zoom_at_view_point(zoom_click_anchor(event->position()), next_view_zoom / current_view_zoom);
       }
     }
     emit_info_for_widget_position(event->pos());
@@ -3088,7 +3131,8 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
         releaseMouse();
       }
       auto callback = transient_read_callback_;
-      callback(CanvasReadGesture{document_position(last_mouse_position_), mapToGlobal(last_mouse_position_),
+      callback(CanvasReadGesture{document_position(last_mouse_position_),
+                                 global_point_for_view_point(last_mouse_position_),
                                  event->modifiers(), CanvasReadPhase::Cancel});
       event->accept();
       return;
@@ -3096,7 +3140,8 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
     // The canvas and non-modal owner are sibling windows, so an unhandled key
     // cannot bubble back to the dialog after an on-canvas sample takes focus.
     auto callback = transient_read_callback_;
-    callback(CanvasReadGesture{document_position(last_mouse_position_), mapToGlobal(last_mouse_position_),
+    callback(CanvasReadGesture{document_position(last_mouse_position_),
+                               global_point_for_view_point(last_mouse_position_),
                                event->modifiers(), CanvasReadPhase::Dismiss});
     event->accept();
     return;
@@ -3502,6 +3547,15 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
       return;
     }
   }
+  // Rotate View: Esc resets the view angle (Photoshop), ahead of the layer
+  // deselect below, and ends a drag in progress.
+  if (tool_ == CanvasTool::RotateView && event->key() == Qt::Key_Escape && event->modifiers() == Qt::NoModifier &&
+      !event->isAutoRepeat()) {
+    end_rotate_view_drag();
+    set_view_rotation(0.0);
+    event->accept();
+    return;
+  }
   // Lowest-priority Escape: every cancelable session above (gestures, pen
   // and path editing, magnetic lasso, guides, warp, free transform, crop, text
   // rect) returned already, so a plain Escape that reaches here has nothing
@@ -3698,7 +3752,7 @@ void CanvasWidget::cancel_pointer_gestures() {
   if (dragging_guide_) {
     cancel_guide_drag();
   }
-  panning_ = zooming_ = false;
+  panning_ = zooming_ = rotating_view_ = false;
   zoom_scrubbing_ = zoom_scrub_started_ = false;
   spacebar_repositioning_drag_rect_ = spacebar_panning_ = false;
   update();
@@ -3722,7 +3776,8 @@ void CanvasWidget::focusOutEvent(QFocusEvent* event) {
     }
     auto callback = transient_read_callback_;
     if (callback) {
-      callback(CanvasReadGesture{document_position(last_mouse_position_), mapToGlobal(last_mouse_position_),
+      callback(CanvasReadGesture{document_position(last_mouse_position_),
+                                 global_point_for_view_point(last_mouse_position_),
                                  Qt::NoModifier, CanvasReadPhase::Cancel});
     }
   }

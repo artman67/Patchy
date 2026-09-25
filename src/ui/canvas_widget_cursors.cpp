@@ -320,6 +320,10 @@ void CanvasWidget::update_tool_cursor() {
     setCursor(Qt::OpenHandCursor);
     return;
   }
+  if (tool_ == CanvasTool::RotateView) {
+    setCursor(crop_rotate_cursor());
+    return;
+  }
   if (transient_read_callback_) {
     setCursor(transient_read_cursor_);
     return;
@@ -384,7 +388,7 @@ void CanvasWidget::update_tool_cursor() {
       // Too big for an OS cursor: the circle follows the pointer as a canvas overlay.
       setCursor(Qt::CrossCursor);
       if (brush_hover_position_valid_) {
-        update(brush_hover_outline_rect().adjusted(-2, -2, 2, 2));
+        update_view_rect(brush_hover_outline_rect().adjusted(-2, -2, 2, 2));
       }
       return;
     }
@@ -422,7 +426,7 @@ void CanvasWidget::update_tool_cursor() {
     // Too big for an OS cursor: the outline follows the pointer as a canvas overlay instead.
     setCursor(Qt::CrossCursor);
     if (brush_hover_position_valid_) {
-      update(brush_hover_outline_rect().adjusted(-2, -2, 2, 2));
+      update_view_rect(brush_hover_outline_rect().adjusted(-2, -2, 2, 2));
     }
     return;
   }
@@ -437,21 +441,29 @@ void CanvasWidget::update_tool_cursor() {
           brush_cursor_cache_->brush_size == brush_size_ &&
           brush_cursor_cache_->brush_softness == brush_softness_ &&
           brush_cursor_cache_->diameter == diameter && brush_cursor_cache_->extent == extent &&
-          brush_cursor_cache_->one_pixel == one_pixel) {
+          brush_cursor_cache_->one_pixel == one_pixel &&
+          brush_cursor_cache_->view_rotation == shown_view_rotation()) {
         setCursor(brush_cursor_cache_->cursor);
         return true;
       }
       return false;
     };
     const auto cache_brush_cursor = [&](bool one_pixel, int diameter, int extent, QCursor cursor) {
-      brush_cursor_cache_ =
-          BrushCursorCache{tool_, brush_size_, brush_softness_, diameter, extent, one_pixel, std::move(cursor)};
+      brush_cursor_cache_ = BrushCursorCache{tool_,  brush_size_, brush_softness_,      diameter,
+                                             extent, one_pixel,   shown_view_rotation(), std::move(cursor)};
       setCursor(brush_cursor_cache_->cursor);
     };
 
+    // A square turned off the axes needs its diagonal inside the pixmap.
+    const auto footprint_span = [](int side, bool square, double angle_degrees) {
+      return square && std::fmod(angle_degrees, 90.0) != 0.0
+                 ? static_cast<int>(std::ceil(static_cast<double>(side) * std::sqrt(2.0)))
+                 : side;
+    };
     if (brush_size_ == 1) {
       const auto pixel_extent = std::max(3, static_cast<int>(std::round(zoom_)));
-      const auto extent = std::clamp(pixel_extent + 7, 17, kMaxBrushCursorExtent);
+      const auto extent =
+          std::clamp(footprint_span(pixel_extent, true, shown_view_rotation()) + 7, 17, kMaxBrushCursorExtent);
       if (use_cached_brush_cursor(true, pixel_extent, extent)) {
         return;
       }
@@ -463,10 +475,21 @@ void CanvasWidget::update_tool_cursor() {
       const QRect pixel_rect(center.x() - pixel_extent / 2, center.y() - pixel_extent / 2,
                              pixel_extent, pixel_extent);
       painter.setBrush(Qt::NoBrush);
+      if (view_rotated()) {
+        // The document pixel turns with the view (docs/rotate-view.md).
+        painter.save();
+        painter.setRenderHint(QPainter::Antialiasing, true);
+        painter.translate(QPointF(center));
+        painter.rotate(shown_view_rotation());
+        painter.translate(-QPointF(center));
+      }
       painter.setPen(QPen(tool_ == CanvasTool::Eraser ? QColor(255, 255, 255) : QColor(25, 25, 25), 1));
       painter.drawRect(pixel_rect);
       painter.setPen(QPen(tool_ == CanvasTool::Eraser ? QColor(25, 25, 25) : QColor(255, 255, 255), 1));
       painter.drawRect(pixel_rect.adjusted(1, 1, -1, -1));
+      if (view_rotated()) {
+        painter.restore();
+      }
       painter.drawLine(center + QPoint(-3, 0), center + QPoint(3, 0));
       painter.drawLine(center + QPoint(0, -3), center + QPoint(0, 3));
       painter.end();
@@ -474,7 +497,9 @@ void CanvasWidget::update_tool_cursor() {
       return;
     }
     const auto diameter = std::max(3, static_cast<int>(std::round(static_cast<double>(brush_size_) * zoom_)));
-    const auto extent = std::clamp(diameter + 5, 17, kMaxBrushCursorExtent);
+    const bool square = brush_shape_ == patchy::BrushShape::Square && tool_paints_with_brush_tip(tool_);
+    const auto span = footprint_span(diameter, square, brush_base_angle_degrees_ + shown_view_rotation());
+    const auto extent = std::clamp(span + 5, 17, kMaxBrushCursorExtent);
     if (use_cached_brush_cursor(false, diameter, extent)) {
       return;
     }
@@ -483,13 +508,13 @@ void CanvasWidget::update_tool_cursor() {
     QPainter painter(&pixmap);
     painter.setRenderHint(QPainter::Antialiasing);
     const QPoint center(extent / 2, extent / 2);
-    const auto radius = std::max(2, std::min(diameter, extent - 5) / 2);
-    const bool square = brush_shape_ == patchy::BrushShape::Square && tool_paints_with_brush_tip(tool_);
+    // Clamped by the pixmap: a footprint wider than the cap draws at the cap.
+    const auto radius = std::max(2, std::min(diameter, diameter * (extent - 5) / std::max(1, span)) / 2);
     const auto draw_footprint = [&](int half) {
       if (square) {
         painter.save();
         painter.translate(center);
-        painter.rotate(brush_base_angle_degrees_);
+        painter.rotate(brush_base_angle_degrees_ + shown_view_rotation());
         painter.drawRect(QRectF(-half, -half, 2.0 * half, 2.0 * half));
         painter.restore();
       } else {

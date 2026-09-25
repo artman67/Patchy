@@ -61,8 +61,12 @@ bool CanvasWidget::vector_preview_available_for_view() const noexcept {
 
 VectorPreviewView CanvasWidget::vector_preview_view() const noexcept {
   const double dpr = devicePixelRatioF();
-  return {QSize(static_cast<int>(std::ceil(width() * dpr)), static_cast<int>(std::ceil(height() * dpr))),
-          zoom_ * dpr, pan_ * dpr};
+  // The frame covers the view-space area on screen: the widget itself, or the
+  // bounding box of the counter-rotated viewport under Rotate View, whose
+  // top-left the offset folds in (draw_vector_preview places it back there).
+  const auto area = visible_view_rect();
+  return {QSize(static_cast<int>(std::ceil(area.width() * dpr)), static_cast<int>(std::ceil(area.height() * dpr))),
+          zoom_ * dpr, (pan_ - QPointF(area.topLeft())) * dpr};
 }
 
 bool CanvasWidget::vector_preview_settled() const noexcept {
@@ -175,10 +179,10 @@ bool CanvasWidget::draw_vector_preview(QPainter& painter) {
   const auto origin = pan_ - old.offset * (zoom_ / old.scale);
   const auto size = QSizeF(old.pixels) * (zoom_ / old.scale);
   painter.save();
-  painter.setRenderHint(QPainter::SmoothPixmapTransform, old != vector_preview_view());
+  painter.setRenderHint(QPainter::SmoothPixmapTransform, old != vector_preview_view() || view_rotated());
   const QRectF destination(origin, size);
   draw_checkerboard(painter, QRectF(pan_, QSizeF(document_->width() * zoom_, document_->height() * zoom_)),
-                    destination.toAlignedRect().intersected(rect()));
+                    destination.toAlignedRect().intersected(visible_view_rect()));
   painter.drawImage(destination, vector_preview_image_);
   painter.restore();
   return true;

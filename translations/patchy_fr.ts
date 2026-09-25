@@ -8909,6 +8909,10 @@ RVB : %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapport</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Rotation de l&apos;affichage</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18662,42 @@ Convertis en images : %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Hauteur du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>Réinitialiser l&apos;affichage</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>Angle de rotation :</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>Angle de rotation de l&apos;affichage</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>Ramener l&apos;affichage à 0 degré</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Rotation de l&apos;affichage</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>Faites glisser pour faire pivoter l&apos;affichage. Shift aimante par pas de 15 degrés ; Esc réinitialise.</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>Rotation de l&apos;affichage : faites glisser pour faire pivoter la vue du canevas ; Shift aimante par pas de 15 degrés. Double-cliquez sur l&apos;outil ou appuyez sur Esc pour réinitialiser.</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>Outils d&apos;affichage</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>Alterner les outils d&apos;affichage</translation>
     </message>
 </context>
 <context>

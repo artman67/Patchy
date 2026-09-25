@@ -878,6 +878,9 @@ void MainWindow::stroke_active_path() {
   const auto origin = canvas_->widget_position_for_document_point(QPoint(0, 0));
   const auto zoom = canvas_->zoom();
   const auto widget_point = [&](QPointF document_point) {
+    if (canvas_->view_rotated()) {
+      return canvas_->widget_point_for_document_point(document_point);
+    }
     return QPointF(origin.x() + document_point.x() * zoom,
                    origin.y() + document_point.y() * zoom);
   };

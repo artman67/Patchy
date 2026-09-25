@@ -121,7 +121,9 @@ enum class CanvasTool {
   // They share the Pen's handlers with a fixed edit action each.
   AddAnchor,
   DeleteAnchor,
-  ConvertPoint
+  ConvertPoint,
+  // September 2026 Rotate View (append-only: values ride persisted settings).
+  RotateView
 };
 
 // Which tool produced a committed vector path; MainWindow picks the layer
@@ -437,7 +439,24 @@ public:
   // center tile by design. Per-canvas (per-document) state, default off.
   void set_tiling_preview_enabled(bool enabled);
   [[nodiscard]] bool tiling_preview_enabled() const noexcept;
+  // `widget_position` is a real widget-local point (for callers outside the
+  // canvas); internal callers hold view-space points and use zoom_at_view_point.
   void zoom_at_widget_point(QPointF widget_position, double factor);
+  // Rotate View (docs/rotate-view.md): a per-canvas presentation angle in
+  // degrees, clockwise on screen, kept in (-180, 180]. It turns the whole view
+  // about the viewport center and never touches the document, its history or
+  // any file. Inside CanvasWidget every "widget" position (event positions,
+  // widget_position*, last_mouse_position_, overlay rects) lives in the
+  // unrotated view space; view_to_widget_transform() maps that space onto the
+  // real widget, and event() maps pointer input back into it.
+  [[nodiscard]] double view_rotation() const noexcept;
+  void set_view_rotation(double degrees);
+  [[nodiscard]] bool view_rotated() const noexcept;
+  [[nodiscard]] QTransform view_to_widget_transform() const;
+  // An inline text session edits through an upright QTextEdit child, which
+  // cannot turn with the view, so the host shows the view unrotated while one
+  // is open. The stored angle survives and returns when the session ends.
+  void set_view_rotation_suspended(bool suspended);
   void set_wheel_zooms(bool enabled) noexcept;
   [[nodiscard]] bool wheel_zooms() const noexcept;
   // Wheel input comes in two kinds (docs/view-navigation.md): a continuous two-finger
@@ -1188,17 +1207,20 @@ public:
   [[nodiscard]] bool selection_has_partial_alpha() const noexcept;
   [[nodiscard]] bool has_selection() const noexcept;
   [[nodiscard]] bool selection_contains(QPoint point) const noexcept;
+  // Real widget-local point for a document point, view rotation included: what
+  // callers outside the canvas (synthetic input, child-widget placement) need.
   [[nodiscard]] QPoint widget_position_for_document_point(QPoint document_position) const;
-  // Fractional counterpart: tests use it to land presses on exact document
-  // coordinates whatever the centred pan is.
+  [[nodiscard]] QPointF widget_point_for_document_point(QPointF document_position) const;
+  // View-space counterpart used by the canvas's own painting and hit tests; it
+  // equals the real widget point while the view is unrotated.
   [[nodiscard]] QPointF widget_position_f(QPointF document_position) const;
-  // The document pixel under a widget-local point, for drop handlers outside
-  // the widget (document_position itself stays private).
+  // The document pixel under a real widget-local point, for drop handlers
+  // outside the widget (document_position itself stays private).
   [[nodiscard]] QPoint document_point_for_widget_position(QPoint widget_position) const {
-    return document_position(widget_position);
+    return document_position(view_point_from_widget(QPointF(widget_position)).toPoint());
   }
   [[nodiscard]] QPointF document_point_for_widget_position(QPointF widget_position) const {
-    return document_position_f(widget_position);
+    return document_position_f(view_point_from_widget(widget_position));
   }
   void set_before_edit_callback(std::function<void(QString)> callback);
   // Invoked when a selection-only edit completes and actually changed the
@@ -1359,6 +1381,7 @@ private:
     int diameter{0};
     int extent{0};
     bool one_pixel{false};
+    double view_rotation{0.0};
     QCursor cursor{};
   };
 
@@ -1554,6 +1577,41 @@ private:
   [[nodiscard]] QPoint document_position(const QPoint& widget_position) const;
   [[nodiscard]] QPointF document_position_f(QPointF widget_position) const;
   [[nodiscard]] QPoint widget_position(const QPoint& document_position) const;
+  // Rotate View plumbing (canvas_widget_view.cpp). "View" is the unrotated
+  // space the canvas works in; "widget" is the real, rotated widget. All of
+  // these are identities while the view is unrotated.
+  [[nodiscard]] QPointF view_point_from_widget(QPointF widget_point) const;
+  [[nodiscard]] QPointF widget_point_from_view(QPointF view_point) const;
+  [[nodiscard]] QPoint global_point_for_view_point(QPoint view_point) const;
+  // The angle the view is drawn at: view_rotation_ unless a text session
+  // suspends it.
+  [[nodiscard]] double shown_view_rotation() const noexcept;
+  // Direction-only mapping (pan deltas, drag offsets): rotation without the center.
+  [[nodiscard]] QPointF view_delta_from_widget_delta(QPointF widget_delta) const;
+  // Bounding rects across the two spaces, grown to whole pixels.
+  [[nodiscard]] QRect widget_rect_for_view_rect(const QRectF& view_rect) const;
+  [[nodiscard]] QRect view_rect_for_widget_rect(const QRectF& widget_rect) const;
+  // The part of view space the widget shows: rect() unrotated, the bounding
+  // rect of the counter-rotated viewport otherwise.
+  [[nodiscard]] QRect visible_view_rect() const;
+  // update() for a view-space rect or region.
+  void update_view_rect(const QRect& view_rect);
+  void update_view_region(const QRegion& view_region);
+  // The document's bounding rect on the real widget; drives the pan clamp
+  // and the scroll bars.
+  [[nodiscard]] QRectF document_widget_bounds() const;
+  void pan_by_widget_delta(QPointF widget_delta);
+  void zoom_at_view_point(QPointF view_position, double factor);
+  // Whole-pixel view mapping (pixel-aligned blits, deep-zoom pixel squares,
+  // rounded grid/guide lines). Rotated views draw through the exact mapping.
+  [[nodiscard]] bool pixel_snapped_view() const noexcept;
+  [[nodiscard]] bool deep_zoom_pixel_view() const noexcept;
+  // Maps a pointer event into view space and dispatches it; false when the
+  // event is not a positioned pointer event.
+  bool dispatch_view_mapped_event(QEvent* event, bool& result);
+  void begin_rotate_view_drag(QPointF widget_point);
+  void update_rotate_view_drag(QPointF widget_point, Qt::KeyboardModifiers modifiers);
+  void end_rotate_view_drag();
   [[nodiscard]] QPoint snapped_document_point(QPoint point) const;
   // Layers a pending Free Transform session owns: their pre-session edges are
   // not snap targets for the session's own drags.
@@ -2187,6 +2245,11 @@ private:
   Document* document_{nullptr};
   double zoom_{1.0};
   QPointF pan_{40.0, 40.0};
+  double view_rotation_{0.0};
+  bool view_rotation_suspended_{false};
+  bool rotating_view_{false};
+  double rotate_view_start_rotation_{0.0};
+  double rotate_view_start_pointer_angle_{0.0};
   bool wheel_zooms_{true};
   // Set by a press, cleared by the next ScrollBegin: drops leftover flick momentum.
   bool swallow_scroll_momentum_{false};

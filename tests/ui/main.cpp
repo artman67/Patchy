@@ -281,6 +281,7 @@ int main(int argc, char* argv[]) {
            destructive_filters_gallery_tests,
            pickers_notices_hotkeys_tests,
            canvas_view_tools_tests,
+           rotate_view_tests,
            layer_context_lifecycle_tests,
            brush_pattern_palette_tests,
            layer_panel_organization_tests,

@@ -1,6 +1,6 @@
 # View navigation: the Zoom tool, Scrubby Zoom, and drag zoom
 
-Read this before changing the Zoom tool, the pen ZoomCanvas drag, or wheel zoom. The tool palette and the Zoom button's double-click live in [tools.md](tools.md); the status-bar zoom box is `ZoomPercentEdit` (src/ui/zoom_status_bar.hpp).
+Read this before changing the Zoom tool, the pen ZoomCanvas drag, or wheel zoom. Rotate View and the view/widget mapping every canvas input, overlay and repaint goes through are in [rotate-view.md](rotate-view.md); read it before changing canvas painting, hit testing or event positions. The tool palette and the Zoom button's double-click live in [tools.md](tools.md); the status-bar zoom box is `ZoomPercentEdit` (src/ui/zoom_status_bar.hpp).
 
 ## Zoom model
 
