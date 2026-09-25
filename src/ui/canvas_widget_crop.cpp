@@ -596,7 +596,7 @@ void CanvasWidget::draw_crop_overlay(QPainter& painter) const {
   painter.save();
   painter.setRenderHint(QPainter::Antialiasing, false);
   QPainterPath shield;
-  shield.addRect(QRectF(rect()));
+  shield.addRect(QRectF(visible_view_rect()));
   QPainterPath box_path;
   box_path.addPolygon(corners);
   box_path.closeSubpath();

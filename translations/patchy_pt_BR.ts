@@ -8909,6 +8909,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporção</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Girar visualização</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18662,42 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Altura da caixa de corte</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>Redefinir visualização</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>Ângulo de rotação:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>Ângulo de rotação da visualização</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>Voltar a visualização para 0 graus</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Girar visualização</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>Arraste para girar a visualização. Shift ajusta em passos de 15 graus; Esc redefine.</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>Girar visualização: arraste para girar a visualização da tela; Shift ajusta em passos de 15 graus. Clique duas vezes na ferramenta ou pressione Esc para redefinir.</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>Ferramentas de visualização</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>Alternar ferramentas de visualização</translation>
     </message>
 </context>
 <context>

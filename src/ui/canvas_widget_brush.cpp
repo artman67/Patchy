@@ -567,8 +567,35 @@ QImage CanvasWidget::brush_tip_stamp_image(int size, int softness) const {
   return image;
 }
 
+// The stamp as it lands on screen under Rotate View: turned by the view angle
+// (the tip keeps its document angle, so the screen shows it rotated).
+[[nodiscard]] static QImage stamp_turned_for_view(const QImage& stamp, double view_rotation) {
+  if (view_rotation == 0.0 || stamp.isNull()) {
+    return stamp;
+  }
+  QImage coverage(stamp.size(), QImage::Format_ARGB32_Premultiplied);
+  for (int y = 0; y < stamp.height(); ++y) {
+    const auto* in = stamp.constScanLine(y);
+    auto* out = reinterpret_cast<QRgb*>(coverage.scanLine(y));
+    for (int x = 0; x < stamp.width(); ++x) {
+      out[x] = qRgba(in[x], in[x], in[x], in[x]);
+    }
+  }
+  const auto turned = coverage.transformed(QTransform().rotate(view_rotation), Qt::SmoothTransformation)
+                          .convertToFormat(QImage::Format_ARGB32_Premultiplied);
+  QImage result(turned.size(), QImage::Format_Grayscale8);
+  for (int y = 0; y < turned.height(); ++y) {
+    const auto* in = reinterpret_cast<const QRgb*>(turned.constScanLine(y));
+    auto* out = result.scanLine(y);
+    for (int x = 0; x < turned.width(); ++x) {
+      out[x] = static_cast<uchar>(qAlpha(in[x]));
+    }
+  }
+  return result;
+}
+
 bool CanvasWidget::apply_brush_tip_cursor() {
-  const auto stamp = brush_tip_stamp_image(brush_size_, brush_softness_);
+  const auto stamp = stamp_turned_for_view(brush_tip_stamp_image(brush_size_, brush_softness_), shown_view_rotation());
   if (stamp.isNull()) {
     return false;
   }
@@ -627,7 +654,12 @@ bool CanvasWidget::brush_outline_uses_overlay() const {
 }
 
 QRect CanvasWidget::brush_hover_outline_rect() const {
-  const auto display = brush_outline_display_size();
+  auto display = brush_outline_display_size();
+  if (view_rotated()) {
+    // The outline turns with the view; its diagonal bounds every angle.
+    const auto diagonal = static_cast<int>(std::ceil(std::hypot(display.width(), display.height())));
+    display = QSize(diagonal, diagonal);
+  }
   const auto half_width = display.width() / 2 + 4;
   const auto half_height = display.height() / 2 + 4;
   return QRect(brush_hover_widget_position_.x() - half_width, brush_hover_widget_position_.y() - half_height,
@@ -644,7 +676,7 @@ void CanvasWidget::track_brush_hover_position(QPoint widget_position) {
   brush_hover_widget_position_ = widget_position;
   brush_hover_position_valid_ = true;
   if (brush_outline_uses_overlay()) {
-    update(old_rect.united(brush_hover_outline_rect()).adjusted(-2, -2, 2, 2));
+    update_view_rect(old_rect.united(brush_hover_outline_rect()).adjusted(-2, -2, 2, 2));
   }
 }
 
@@ -659,7 +691,7 @@ void CanvasWidget::invalidate_brush_hover_outline(const QRect& previous_outline)
     region = region.united(brush_hover_outline_rect());
   }
   if (!region.isEmpty()) {
-    update(region.adjusted(-2, -2, 2, 2));
+    update_view_rect(region.adjusted(-2, -2, 2, 2));
   }
 }
 
@@ -669,19 +701,31 @@ void CanvasWidget::draw_brush_hover_outline(QPainter& painter) const {
     return;
   }
   painter.save();
-  const QPoint center = brush_hover_widget_position_;
+  // Drawn upright on the real widget like the OS cursor it stands in for, with
+  // the view angle baked into the footprint (a 1 px outline turned by the
+  // painter would break up).
+  const QPoint center = widget_point_from_view(QPointF(brush_hover_widget_position_)).toPoint();
+  painter.resetTransform();
   if (brush_tip_ != nullptr && tool_paints_with_brush_tip(tool_)) {
     const auto display = brush_outline_display_size();
-    const auto key = QStringLiteral("%1:%2x%3:%4:%5")
+    const auto key = QStringLiteral("%1:%2x%3:%4:%5:%6")
                          .arg(reinterpret_cast<quintptr>(brush_tip_.get()))
                          .arg(display.width())
                          .arg(display.height())
                          .arg(brush_size_)
-                         .arg(brush_softness_);
+                         .arg(brush_softness_)
+                         .arg(shown_view_rotation());
     if (brush_outline_overlay_key_ != key) {
-      const auto stamp = brush_tip_stamp_image(brush_size_, brush_softness_);
+      const auto upright_stamp = brush_tip_stamp_image(brush_size_, brush_softness_);
+      const auto stamp = stamp_turned_for_view(upright_stamp, shown_view_rotation());
+      // A turned stamp is its bounding box; scale it by the same factor as the upright one.
+      const auto upright = upright_stamp.size();
+      const auto scale_x = upright.width() > 0 ? static_cast<double>(display.width()) / upright.width() : 1.0;
+      const auto scale_y = upright.height() > 0 ? static_cast<double>(display.height()) / upright.height() : 1.0;
       brush_outline_overlay_image_ =
-          stamp.isNull() ? QImage() : build_tip_outline_image(stamp, display.width(), display.height());
+          stamp.isNull() ? QImage()
+                         : build_tip_outline_image(stamp, static_cast<int>(std::round(stamp.width() * scale_x)),
+                                                   static_cast<int>(std::round(stamp.height() * scale_y)));
       brush_outline_overlay_key_ = key;
     }
     if (!brush_outline_overlay_image_.isNull()) {
@@ -699,7 +743,7 @@ void CanvasWidget::draw_brush_hover_outline(QPainter& painter) const {
       if (square) {
         painter.save();
         painter.translate(QPointF(center));
-        painter.rotate(brush_base_angle_degrees_);
+        painter.rotate(brush_base_angle_degrees_ + shown_view_rotation());
         painter.drawRect(QRectF(-half, -half, 2.0 * half, 2.0 * half));
         painter.restore();
       } else {
@@ -742,7 +786,10 @@ void CanvasWidget::begin_brush_adjust_drag(QPoint widget_position, bool from_tab
 void CanvasWidget::update_brush_adjust_drag(QPoint widget_position) {
   brush_adjust_current_widget_ = widget_position;
   last_mouse_position_ = widget_position;
-  const auto delta = widget_position - brush_adjust_origin_widget_;
+  // Size and softness follow the screen axes, whatever the view rotation.
+  const auto delta = (widget_point_from_view(QPointF(widget_position)) -
+                      widget_point_from_view(QPointF(brush_adjust_origin_widget_)))
+                         .toPoint();
   // Horizontal drag resizes. For a mouse the disc is anchored at the press
   // point and the diameter grows by twice the dragged distance, so its rim
   // tracks the pointer. A pen-driven disc is centered on the pen instead
@@ -785,7 +832,7 @@ void CanvasWidget::end_brush_adjust_drag(bool commit) {
     // (Photoshop does the same). A pen is absolute — its pointer cannot be
     // moved — so its preview is centered on the pen during the drag and the
     // gesture already ends with the brush under the pen.
-    move_pointer_to_global_position(mapToGlobal(brush_adjust_origin_widget_));
+    move_pointer_to_global_position(global_point_for_view_point(brush_adjust_origin_widget_));
     last_mouse_position_ = brush_adjust_origin_widget_;
   }
   update_tool_cursor();
@@ -863,6 +910,10 @@ void CanvasWidget::draw_brush_adjust_overlay(QPainter& painter) const {
 
 void CanvasWidget::draw_brush_adjust_readout(QPainter& painter, QPointF center, double radius) const {
   const auto readout = tr("Size: %1 px  Soft: %2%").arg(brush_size_).arg(brush_softness_);
+  // Upright on the real widget under Rotate View.
+  center = widget_point_from_view(center);
+  painter.save();
+  painter.resetTransform();
   const auto metrics = painter.fontMetrics();
   const auto text_width = metrics.horizontalAdvance(readout);
   QPointF text_position(center.x() - static_cast<double>(text_width) / 2.0,
@@ -877,6 +928,7 @@ void CanvasWidget::draw_brush_adjust_readout(QPainter& painter, QPointF center, 
   }
   painter.setPen(QColor(245, 248, 252));
   painter.drawText(text_position, readout);
+  painter.restore();
 }
 
 void CanvasWidget::clear_brush_stroke_tracking() noexcept {
@@ -886,7 +938,7 @@ void CanvasWidget::clear_brush_stroke_tracking() noexcept {
   // funnel through here. Erase any leash overlay left on screen with it.
   stabilizer_timer_.stop();
   if (!stroke_leash_overlay_rect_.isEmpty()) {
-    update(stroke_leash_overlay_rect_);
+    update_view_rect(stroke_leash_overlay_rect_);
     stroke_leash_overlay_rect_ = QRect();
   }
   brush_stroke_pixels_.clear();
@@ -1036,7 +1088,7 @@ void CanvasWidget::invalidate_stroke_leash_overlay() {
   const auto region = stroke_leash_overlay_rect_.united(current);
   stroke_leash_overlay_rect_ = current;
   if (!region.isEmpty()) {
-    update(region);
+    update_view_rect(region);
   }
 }
 

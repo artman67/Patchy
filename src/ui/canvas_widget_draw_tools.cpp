@@ -320,7 +320,7 @@ void CanvasWidget::draw_shape_preview(QPainter& painter, QRect exposed_rect) {
        preview_channel->kind() == DocumentChannelKind::Alpha)) {
     const QRectF exact_target_rect(widget_position_f(QPointF(0.0, 0.0)),
                                    widget_position_f(QPointF(document_->width(), document_->height())));
-    const bool pixel_aligned_view = uses_pixel_aligned_view(zoom_);
+    const bool pixel_aligned_view = pixel_snapped_view();
     QRect pixel_aligned_target_rect;
     if (pixel_aligned_view) {
       const auto top_left = widget_position(QPoint(0, 0));
@@ -329,7 +329,7 @@ void CanvasWidget::draw_shape_preview(QPainter& painter, QRect exposed_rect) {
           QRect(top_left, QSize(bottom_right.x() - top_left.x(), bottom_right.y() - top_left.y()));
     }
     const QRectF target_rect = pixel_aligned_view ? QRectF(pixel_aligned_target_rect) : exact_target_rect;
-    const auto preview_rect = target_rect.toAlignedRect().intersected(exposed_rect).intersected(rect());
+    const auto preview_rect = target_rect.toAlignedRect().intersected(exposed_rect).intersected(visible_view_rect());
     if (!preview_rect.isEmpty()) {
       QImage source(preview_rect.size(), QImage::Format_ARGB32_Premultiplied);
       source.fill(Qt::transparent);
@@ -423,7 +423,7 @@ void CanvasWidget::draw_shape_preview(QPainter& painter, QRect exposed_rect) {
             const auto& display_image = zoom_ < 1.0 ? display_image_for_zoom() : render_cache_;
             base_painter.setRenderHint(
                 QPainter::SmoothPixmapTransform,
-                uses_smooth_display_scaling(view_zoom(), uses_deep_zoom_pixel_renderer(view_zoom())));
+                uses_smooth_display_scaling(view_zoom(), deep_zoom_pixel_view()));
             if (pixel_aligned_view) {
               base_painter.drawImage(pixel_aligned_target_rect, display_image, display_image.rect());
             } else {
@@ -731,7 +731,8 @@ void CanvasWidget::draw_drag_size_readout(QPainter& painter) const {
     return;
   }
   const auto readout = tr("%1 x %2 px").arg(rect.width()).arg(rect.height());
-  const auto anchor = widget_position(corner);
+  // A screen readout: upright and clamped to the real widget under Rotate View.
+  const auto anchor = widget_point_from_view(QPointF(widget_position(corner)));
   const auto metrics = painter.fontMetrics();
   const auto text_width = metrics.horizontalAdvance(readout);
   QPointF text_position(static_cast<double>(anchor.x()) + 16.0,
@@ -741,12 +742,15 @@ void CanvasWidget::draw_drag_size_readout(QPainter& painter) const {
                                 std::max(static_cast<double>(metrics.ascent()) + 4.0,
                                          static_cast<double>(height()) - static_cast<double>(metrics.descent()) - 4.0)));
   // Same outlined-text treatment as draw_brush_adjust_readout so it reads on any artwork.
+  painter.save();
+  painter.resetTransform();
   painter.setPen(QColor(20, 23, 28, 220));
   for (const auto& offset : {QPointF(-1.0, 0.0), QPointF(1.0, 0.0), QPointF(0.0, -1.0), QPointF(0.0, 1.0)}) {
     painter.drawText(text_position + offset, readout);
   }
   painter.setPen(QColor(245, 248, 252));
   painter.drawText(text_position, readout);
+  painter.restore();
 }
 
 QRect CanvasWidget::drag_readout_widget_rect() const {
@@ -766,7 +770,8 @@ QRect CanvasWidget::drag_readout_widget_rect() const {
   const QSize size(text_width + 2 * kPadX, line_count * metrics.height() + (line_count - 1) * kLineGap + 2 * kPadY);
   // Photoshop's placement: just below-right of the pointer (the same offset the
   // W x H drag readout uses), kept inside the viewport and clear of the rulers.
-  QRect rect(last_mouse_position_ + QPoint(16, 24), size);
+  // Real widget coordinates: the panel stays upright under Rotate View.
+  QRect rect(widget_point_from_view(QPointF(last_mouse_position_)).toPoint() + QPoint(16, 24), size);
   const int left = rulers_visible_ ? kLeftRulerWidth : 0;
   const int top = rulers_visible_ ? kTopRulerHeight : 0;
   const QRect bounds(left, top, std::max(1, width() - left), std::max(1, height() - top));
@@ -796,6 +801,7 @@ void CanvasWidget::draw_transform_drag_readout(QPainter& painter) const {
   constexpr int kPadY = 5;
   constexpr int kLineGap = 2;
   painter.save();
+  painter.resetTransform();
   painter.setRenderHint(QPainter::Antialiasing, true);
   QPainterPath panel_path;
   panel_path.addRoundedRect(QRectF(rect), 4.0, 4.0);
@@ -882,7 +888,7 @@ QRect CanvasWidget::move_snap_guides_widget_rect() const {
     rect = rect.united(QRectF(x0, y - 1.5, x1 - x0, 3.0).toAlignedRect());
   }
   // A document-edge line at deep zoom is enormous; only the visible part matters.
-  return rect.intersected(this->rect());
+  return rect.intersected(visible_view_rect());
 }
 
 void CanvasWidget::draw_move_snap_guides(QPainter& painter) const {
@@ -895,14 +901,15 @@ void CanvasWidget::draw_move_snap_guides(QPainter& painter) const {
   pen.setCosmetic(true);
   painter.setPen(pen);
   // Crisp 1 px lines on the pixel-aligned view, like the guides overlay.
-  const auto pixel_aligned_coordinate = [](double coordinate, double zoom) {
-    return uses_pixel_aligned_view(zoom) ? std::round(coordinate) : coordinate;
+  const bool pixel_snapped = pixel_snapped_view();
+  const auto pixel_aligned_coordinate = [pixel_snapped](double coordinate) {
+    return pixel_snapped ? std::round(coordinate) : coordinate;
   };
   if (snap_match_draws_line(move_snap_x_)) {
     const auto& match = *move_snap_x_;
     const auto top = std::min(match.source_span.top(), match.target_span.top());
     const auto bottom = std::max(match.source_span.bottom(), match.target_span.bottom());
-    const auto x = pixel_aligned_coordinate(widget_position_f(QPointF(match.position, 0.0)).x(), zoom_);
+    const auto x = pixel_aligned_coordinate(widget_position_f(QPointF(match.position, 0.0)).x());
     const auto y0 = widget_position_f(QPointF(0.0, top)).y() - kSnapGuideOverhangPixels;
     const auto y1 = widget_position_f(QPointF(0.0, bottom)).y() + kSnapGuideOverhangPixels;
     painter.drawLine(QPointF(x, y0), QPointF(x, y1));
@@ -911,7 +918,7 @@ void CanvasWidget::draw_move_snap_guides(QPainter& painter) const {
     const auto& match = *move_snap_y_;
     const auto left = std::min(match.source_span.left(), match.target_span.left());
     const auto right = std::max(match.source_span.right(), match.target_span.right());
-    const auto y = pixel_aligned_coordinate(widget_position_f(QPointF(0.0, match.position)).y(), zoom_);
+    const auto y = pixel_aligned_coordinate(widget_position_f(QPointF(0.0, match.position)).y());
     const auto x0 = widget_position_f(QPointF(left, 0.0)).x() - kSnapGuideOverhangPixels;
     const auto x1 = widget_position_f(QPointF(right, 0.0)).x() + kSnapGuideOverhangPixels;
     painter.drawLine(QPointF(x0, y), QPointF(x1, y));
@@ -924,7 +931,7 @@ void CanvasWidget::update_move_snap_guides_region() {
   const auto dirty = move_snap_guides_dirty_rect_.united(next);
   move_snap_guides_dirty_rect_ = next;
   if (!dirty.isEmpty()) {
-    update(dirty.adjusted(-2, -2, 2, 2));
+    update_view_rect(dirty.adjusted(-2, -2, 2, 2));
   }
 }
 
@@ -934,7 +941,7 @@ void CanvasWidget::clear_move_snap_guides() {
   const auto dirty = move_snap_guides_dirty_rect_;
   move_snap_guides_dirty_rect_ = QRect();
   if (!dirty.isEmpty()) {
-    update(dirty.adjusted(-2, -2, 2, 2));
+    update_view_rect(dirty.adjusted(-2, -2, 2, 2));
   }
 }
 

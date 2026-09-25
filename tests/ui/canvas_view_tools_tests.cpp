@@ -1797,6 +1797,7 @@ void ui_tool_palette_icons_render_sheet() {
       {"toolPickAction", "Pick"},
       {"toolTypeAction", "Type"},
       {"toolHandAction", "Hand"},
+      {"toolRotateViewAction", "Rotate View"},
       {"toolZoomAction", "Zoom"},
   };
 

@@ -886,14 +886,18 @@ int CanvasWidget::guide_at_widget_position(QPoint widget_position) const {
   return -1;
 }
 
-GuideOrientation CanvasWidget::guide_orientation_from_ruler(QPoint widget_position) const noexcept {
+// Both ruler tests take view-space positions like every other hit test; the
+// rulers themselves stay on the real widget edges when the view is rotated.
+GuideOrientation CanvasWidget::guide_orientation_from_ruler(QPoint view_position) const noexcept {
+  const auto widget_position = widget_point_from_view(QPointF(view_position));
   if (widget_position.y() < kTopRulerHeight && widget_position.x() >= kLeftRulerWidth) {
     return GuideOrientation::Horizontal;
   }
   return GuideOrientation::Vertical;
 }
 
-bool CanvasWidget::widget_position_in_ruler(QPoint widget_position) const noexcept {
+bool CanvasWidget::widget_position_in_ruler(QPoint view_position) const noexcept {
+  const auto widget_position = widget_point_from_view(QPointF(view_position));
   return rulers_visible_ &&
          ((widget_position.y() >= 0 && widget_position.y() < kTopRulerHeight &&
            widget_position.x() >= kLeftRulerWidth) ||

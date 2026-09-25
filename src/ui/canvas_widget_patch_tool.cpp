@@ -145,7 +145,7 @@ void CanvasWidget::update_patch_tool_drag(QPoint document_point) {
   const auto dirty_document = bounds.united(bounds.translated(patch_tool_drag_delta_))
                                   .united(bounds.translated(new_delta));
   patch_tool_drag_delta_ = new_delta;
-  update(widget_rect_for_document_rect(QRectF(dirty_document)).toAlignedRect().adjusted(-2, -2, 2, 2));
+  update_view_rect(widget_rect_for_document_rect(QRectF(dirty_document)).toAlignedRect().adjusted(-2, -2, 2, 2));
 }
 
 void CanvasWidget::release_patch_tool_drag(QPoint document_point) {
