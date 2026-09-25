@@ -108,6 +108,21 @@ inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast 
 // therefore defaults to 1 (legacy) so old files keep their render.
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastUseLegacy =
     "patchy.adjustment.brightness_contrast.use_legacy";
+// Gradient Map. The gradient splits across keys so the free-text name needs no
+// escaping; stop locations, midpoints and opacities are stored as the hex bits
+// of their float values, so the metadata round trip is exact.
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapName = "patchy.adjustment.gradient_map.name";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapForm = "patchy.adjustment.gradient_map.form";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapSmoothness =
+    "patchy.adjustment.gradient_map.smoothness";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapColorStops =
+    "patchy.adjustment.gradient_map.color_stops";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapAlphaStops =
+    "patchy.adjustment.gradient_map.alpha_stops";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapNoise = "patchy.adjustment.gradient_map.noise";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapReverse = "patchy.adjustment.gradient_map.reverse";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapDither = "patchy.adjustment.gradient_map.dither";
+inline constexpr const char* kLayerMetadataAdjustmentGradientMapMethod = "patchy.adjustment.gradient_map.method";
 
 enum class AdjustmentKind {
   Levels,
@@ -118,7 +133,8 @@ enum class AdjustmentKind {
   Posterize,
   Threshold,
   BrightnessContrast,
-  Exposure
+  Exposure,
+  GradientMap
 };
 
 enum class LevelsChannel {
@@ -289,6 +305,33 @@ struct BrightnessContrastAdjustment {
 // Clamps both sliders into the active mode's Photoshop range.
 [[nodiscard]] BrightnessContrastAdjustment clamp_brightness_contrast(BrightnessContrastAdjustment settings);
 
+// Photoshop's default Gradient Map runs from the foreground color to the
+// background color; the defaults are Photoshop's default black and white.
+[[nodiscard]] GradientDefinition default_gradient_map_definition(RgbColor foreground = RgbColor{0, 0, 0},
+                                                                 RgbColor background = RgbColor{255, 255, 255});
+
+// Photoshop's Gradient Map: each pixel's luminance picks a color from the
+// gradient (shadows from the left end, highlights from the right). Gradient
+// opacity stops are kept for the file round trip but do not render (see
+// build_gradient_map_lut). Photoshop 2022 and later default new Gradient Maps
+// to the Perceptual method.
+struct GradientMapAdjustment {
+  GradientDefinition gradient{default_gradient_map_definition()};
+  bool reverse{false};
+  bool dither{false};
+  GradientInterpolationMethod method{GradientInterpolationMethod::Perceptual};
+  // Derived 256-entry color table indexed by luminance, undithered and
+  // already reversed. adjustment_settings_from_layer fills it; code that
+  // changes the fields above must call prepare_gradient_map_lut again or
+  // reset it. When empty, lookups evaluate the gradient directly.
+  std::shared_ptr<const std::array<RgbColor, 256>> lut{};
+
+  friend bool operator==(const GradientMapAdjustment& lhs, const GradientMapAdjustment& rhs) {
+    return lhs.gradient == rhs.gradient && lhs.reverse == rhs.reverse && lhs.dither == rhs.dither &&
+           lhs.method == rhs.method;
+  }
+};
+
 struct AdjustmentSettings {
   AdjustmentKind kind{AdjustmentKind::Levels};
   LevelsAdjustment levels{};
@@ -299,6 +342,7 @@ struct AdjustmentSettings {
   ThresholdAdjustment threshold{};
   BrightnessContrastAdjustment brightness_contrast{};
   ExposureAdjustment exposure{};
+  GradientMapAdjustment gradient_map{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.
@@ -353,13 +397,23 @@ void set_curve_points_for_channel(CurvesAdjustment& curves, CurvesChannel channe
 [[nodiscard]] std::uint8_t brightness_contrast_channel_value(std::uint8_t value, int brightness, int contrast,
                                                              bool use_legacy);
 
+// The luminance a Gradient Map looks up, and the table it looks it up in.
+[[nodiscard]] std::uint8_t gradient_map_luminance(RgbColor color) noexcept;
+[[nodiscard]] std::array<RgbColor, 256> build_gradient_map_lut(const GradientMapAdjustment& settings);
+void prepare_gradient_map_lut(GradientMapAdjustment& settings);
+
 [[nodiscard]] bool layer_is_adjustment(const Layer& layer);
 [[nodiscard]] std::string adjustment_kind_key(AdjustmentKind kind);
 [[nodiscard]] std::string adjustment_display_name(AdjustmentKind kind);
 [[nodiscard]] std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key);
 [[nodiscard]] std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& layer);
 void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings);
+// Position-free form: Gradient Map dither is skipped. Compositing paths use
+// the positioned form, whose (x, y) is the document coordinate that seeds the
+// Gradient Map dither, so a dirty-rect repaint matches a full render.
 [[nodiscard]] RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings);
+[[nodiscard]] RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings,
+                                                 std::int32_t x, std::int32_t y);
 void apply_adjustment_to_pixels(PixelBuffer& pixels, const AdjustmentSettings& settings);
 [[nodiscard]] bool adjustment_has_effect(const AdjustmentSettings& settings);
 

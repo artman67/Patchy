@@ -1046,6 +1046,13 @@ private:
   void new_brightness_contrast_adjustment_layer();
   void apply_brightness_contrast_adjustment(const BrightnessContrastSettings& settings,
                                             bool allow_identity = false);
+  void new_gradient_map_adjustment_layer();
+  void gradient_map_dialog();
+  // Opens the Gradient Map dialog with the gradient library and the current
+  // foreground/background colors; `initial` defaults to foreground-to-background.
+  [[nodiscard]] std::optional<GradientMapAdjustment> request_gradient_map(
+      std::function<void(bool, const GradientMapAdjustment&)> preview_changed,
+      std::optional<GradientMapAdjustment> initial = std::nullopt);
   [[nodiscard]] Layer build_adjustment_layer(QString label, const AdjustmentSettings& settings);
   void update_adjustment_layer_preview(QString label, const AdjustmentSettings& settings, bool enabled,
                                        std::optional<LayerId>& preview_id,

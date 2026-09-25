@@ -221,7 +221,7 @@ void compose_layer_pixel(const Layer& layer, std::int32_t x, std::int32_t y, std
       return;
     }
     const auto adjusted =
-        apply_adjustment_to_color(RgbColor{clamp_byte(out[0]), clamp_byte(out[1]), clamp_byte(out[2])}, *settings);
+        apply_adjustment_to_color(RgbColor{clamp_byte(out[0]), clamp_byte(out[1]), clamp_byte(out[2])}, *settings, x, y);
     if ((channel_restriction & kRestrictRed) == 0U) {
       out[0] = static_cast<float>(adjusted.red) * amount + out[0] * (1.0F - amount);
     }

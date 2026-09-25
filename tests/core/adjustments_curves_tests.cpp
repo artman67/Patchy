@@ -95,6 +95,7 @@ using patchy::test::psd_layer_block_payload;
 using patchy::test::psd_layer_extra_data;
 using patchy::test::psd_raw_layer_record_names;
 using patchy::test::rgb_diff_metrics;
+using patchy::test::single_adjustment_layer_psd;
 using patchy::test::solid_rgb;
 using patchy::test::solid_rgba;
 using patchy::test::write_ascii4;
@@ -127,54 +128,6 @@ std::vector<std::uint8_t> test_photoshop_levels_payload(const std::array<patchy:
     writer.write_u16(static_cast<std::uint16_t>(record.white_output));
     writer.write_u16(static_cast<std::uint16_t>(record.gamma_percent));
   }
-  return writer.bytes();
-}
-
-std::vector<std::uint8_t> single_adjustment_layer_psd(
-    const std::vector<std::pair<std::array<char, 4>, std::vector<std::uint8_t>>>& blocks) {
-  patchy::psd::BigEndianWriter layer_extra;
-  layer_extra.write_u32(0);
-  layer_extra.write_u32(0);
-  write_pascal_padded(layer_extra, "Levels", 4);
-  for (const auto& [key, payload] : blocks) {
-    char key_string[5] = {key[0], key[1], key[2], key[3], '\0'};
-    write_test_layer_block(layer_extra, key_string, payload);
-  }
-
-  patchy::psd::BigEndianWriter layer_info;
-  layer_info.write_u16(1);
-  layer_info.write_u32(0);
-  layer_info.write_u32(0);
-  layer_info.write_u32(1);
-  layer_info.write_u32(1);
-  layer_info.write_u16(0);
-  write_ascii4(layer_info, "8BIM");
-  write_ascii4(layer_info, "norm");
-  layer_info.write_u8(255);
-  layer_info.write_u8(0);
-  layer_info.write_u8(0);
-  layer_info.write_u8(0);
-  layer_info.write_u32(static_cast<std::uint32_t>(layer_extra.bytes().size()));
-  layer_info.write_bytes(layer_extra.bytes());
-  if ((layer_info.bytes().size() % 2U) != 0) {
-    layer_info.write_u8(0);
-  }
-
-  patchy::psd::BigEndianWriter layer_mask;
-  layer_mask.write_u32(static_cast<std::uint32_t>(layer_info.bytes().size()));
-  layer_mask.write_bytes(layer_info.bytes());
-  layer_mask.write_u32(0);
-
-  patchy::psd::BigEndianWriter writer;
-  patchy::psd::write_header(writer, patchy::psd::Header{false, 3, 1, 1, 8, 3});
-  writer.write_u32(0);
-  writer.write_u32(0);
-  writer.write_u32(static_cast<std::uint32_t>(layer_mask.bytes().size()));
-  writer.write_bytes(layer_mask.bytes());
-  writer.write_u16(0);
-  writer.write_u8(0);
-  writer.write_u8(200);
-  writer.write_u8(0);
   return writer.bytes();
 }
 

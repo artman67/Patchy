@@ -10,6 +10,7 @@
 
 #include "color/color_management.hpp"
 #include "core/adjustment_layer.hpp"
+#include "core/blend_math.hpp"
 #include "core/layer_metadata.hpp"
 #include "core/pattern_resource.hpp"
 #include "core/smart_object.hpp"
@@ -800,6 +801,337 @@ std::vector<std::uint8_t> photoshop_threshold_payload(const ThresholdAdjustment&
   BigEndianWriter writer;
   writer.write_u16(static_cast<std::uint16_t>(level));
   writer.write_u16(0);
+  return writer.bytes();
+}
+
+// --- Gradient Map ('grdm') ---
+//
+// Layout per the Adobe Photoshop File Formats Specification, "Gradient
+// settings (Photoshop 6.0)": https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
+// Two details the published table does not show come from real files as read
+// by the open-source psd-tools project: version 3 inserts a four-byte method
+// key (Gcls/Perc/Lnr /Smoo) after the reverse and dither bytes, and each color
+// stop carries a trailing u16 color type (0 user, 1 foreground, 2 background),
+// making it 20 bytes instead of the table's 18. The reader accepts both stop
+// sizes. None of this has been checked against Photoshop itself yet; see
+// docs/file-formats.md.
+namespace {
+
+constexpr std::uint16_t kGradientMapExpansionCount = 2;
+constexpr std::uint16_t kGradientMapNoiseLength = 32;
+constexpr std::size_t kGradientMapMaxStops = 4096;
+
+std::array<char, 4> gradient_map_method_key(GradientInterpolationMethod method) {
+  switch (method) {
+    case GradientInterpolationMethod::Perceptual:
+      return {'P', 'e', 'r', 'c'};
+    case GradientInterpolationMethod::Linear:
+      return {'L', 'n', 'r', ' '};
+    case GradientInterpolationMethod::Classic:
+      break;
+  }
+  return {'G', 'c', 'l', 's'};
+}
+
+GradientInterpolationMethod gradient_map_method_from_key(std::string_view key) {
+  // "Smoo" reads as Perceptual, like the descriptor reader in
+  // psd_layer_styles.cpp; other unmodeled methods render as Classic and are
+  // preserved byte-for-byte until the gradient is edited.
+  if (key == "Perc" || key == "Smoo") {
+    return GradientInterpolationMethod::Perceptual;
+  }
+  if (key == "Lnr ") {
+    return GradientInterpolationMethod::Linear;
+  }
+  return GradientInterpolationMethod::Classic;
+}
+
+std::uint8_t unit16_to_byte(std::uint16_t value) {
+  return static_cast<std::uint8_t>((static_cast<std::uint32_t>(value) * 255U + 32767U) / 65535U);
+}
+
+// Photoshop color-space ids as used by swatch files: 0 RGB, 1 HSB, 8 gray
+// (0..10000, read the way Patchy's .aco reader does). CMYK and Lab stops are
+// not modeled; such a payload stays on the preserved-bytes path.
+std::optional<RgbColor> gradient_map_stop_color(std::uint16_t space, const std::array<std::uint16_t, 4>& values) {
+  switch (space) {
+    case 0:
+      return RgbColor{unit16_to_byte(values[0]), unit16_to_byte(values[1]), unit16_to_byte(values[2])};
+    case 1: {
+      const auto hue = static_cast<double>(values[0]) / 65535.0 * 6.0;
+      const auto saturation = static_cast<double>(values[1]) / 65535.0;
+      const auto brightness = static_cast<double>(values[2]) / 65535.0;
+      const auto sector = std::min(static_cast<int>(std::floor(hue)), 5);
+      const auto fraction = hue - static_cast<double>(sector);
+      const auto p = brightness * (1.0 - saturation);
+      const auto q = brightness * (1.0 - saturation * fraction);
+      const auto t = brightness * (1.0 - saturation * (1.0 - fraction));
+      const std::array<std::array<double, 3>, 6> rgb{{{brightness, t, p},
+                                                      {q, brightness, p},
+                                                      {p, brightness, t},
+                                                      {p, q, brightness},
+                                                      {t, p, brightness},
+                                                      {brightness, p, q}}};
+      const auto& channels = rgb[static_cast<std::size_t>(sector)];
+      const auto byte = [](double value) {
+        return static_cast<std::uint8_t>(std::clamp(std::lround(value * 255.0), 0L, 255L));
+      };
+      return RgbColor{byte(channels[0]), byte(channels[1]), byte(channels[2])};
+    }
+    case 8: {
+      const auto gray = static_cast<std::uint8_t>(
+          std::lround(static_cast<double>(std::min<std::uint16_t>(values[0], 10000)) * 255.0 / 10000.0));
+      return RgbColor{gray, gray, gray};
+    }
+    default:
+      return std::nullopt;
+  }
+}
+
+struct ParsedGradientMap {
+  GradientMapAdjustment settings;
+  std::uint16_t version{1};
+};
+
+std::optional<ParsedGradientMap> parse_gradient_map_payload(std::span<const std::uint8_t> payload,
+                                                            bool stops_carry_type) {
+  try {
+    BigEndianReader reader(payload);
+    ParsedGradientMap parsed;
+    parsed.version = reader.read_u16();
+    if (parsed.version != 1 && parsed.version != 3) {
+      return std::nullopt;
+    }
+    auto& settings = parsed.settings;
+    auto& gradient = settings.gradient;
+    settings.reverse = reader.read_u8() != 0;
+    settings.dither = reader.read_u8() != 0;
+    settings.method = GradientInterpolationMethod::Classic;
+    if (parsed.version == 3) {
+      const auto key = reader.read_span(4);
+      settings.method =
+          gradient_map_method_from_key(std::string_view(reinterpret_cast<const char*>(key.data()), key.size()));
+    }
+    const auto name_units = reader.read_u32();
+    if (name_units > reader.remaining() / 2U) {
+      return std::nullopt;
+    }
+    reader.skip(static_cast<std::size_t>(name_units) * 2U);
+    const auto name_bytes = payload.subspan(reader.position() - static_cast<std::size_t>(name_units) * 2U - 4U,
+                                            static_cast<std::size_t>(name_units) * 2U + 4U);
+    gradient.name = read_unicode_string_payload(name_bytes).value_or(std::string{});
+
+    const auto color_count = reader.read_u16();
+    if (color_count > kGradientMapMaxStops) {
+      return std::nullopt;
+    }
+    gradient.color_stops.clear();
+    for (std::uint16_t index = 0; index < color_count; ++index) {
+      GradientColorStop stop;
+      stop.location = std::clamp(static_cast<float>(reader.read_u32()) / 4096.0F, 0.0F, 1.0F);
+      stop.midpoint = std::clamp(static_cast<float>(reader.read_u32()) / 100.0F, 0.0F, 1.0F);
+      const auto space = reader.read_u16();
+      std::array<std::uint16_t, 4> values{};
+      for (auto& value : values) {
+        value = reader.read_u16();
+      }
+      const auto color = gradient_map_stop_color(space, values);
+      if (!color.has_value()) {
+        return std::nullopt;
+      }
+      stop.color = *color;
+      if (stops_carry_type) {
+        const auto type = reader.read_u16();
+        stop.kind = type == 1U   ? GradientColorStop::Kind::Foreground
+                    : type == 2U ? GradientColorStop::Kind::Background
+                                 : GradientColorStop::Kind::User;
+      }
+      gradient.color_stops.push_back(stop);
+    }
+    const auto alpha_count = reader.read_u16();
+    if (alpha_count > kGradientMapMaxStops) {
+      return std::nullopt;
+    }
+    gradient.alpha_stops.clear();
+    for (std::uint16_t index = 0; index < alpha_count; ++index) {
+      GradientAlphaStop stop;
+      stop.location = std::clamp(static_cast<float>(reader.read_u32()) / 4096.0F, 0.0F, 1.0F);
+      stop.midpoint = std::clamp(static_cast<float>(reader.read_u32()) / 100.0F, 0.0F, 1.0F);
+      stop.opacity = std::clamp(static_cast<float>(reader.read_u16()) / 255.0F, 0.0F, 1.0F);
+      gradient.alpha_stops.push_back(stop);
+    }
+    // The expansion count and the noise-block length pin the stop size: a
+    // wrong guess lands these reads on stop bytes.
+    if (reader.read_u16() != kGradientMapExpansionCount) {
+      return std::nullopt;
+    }
+    gradient.smoothness = static_cast<std::uint16_t>(std::min<std::uint16_t>(reader.read_u16(), 4096));
+    if (reader.read_u16() != kGradientMapNoiseLength) {
+      return std::nullopt;
+    }
+    const auto mode = reader.read_u16();
+    auto& noise = gradient.noise;
+    noise.seed = reader.read_u32();
+    noise.add_transparency = reader.read_u16() != 0;
+    noise.restrict_colors = reader.read_u16() != 0;
+    noise.roughness = static_cast<std::uint16_t>(std::min<std::uint32_t>(reader.read_u32(), 4096U));
+    const auto color_model = reader.read_u16();
+    noise.color_model = color_model == 1U                       ? GradientNoiseColorModel::HSB
+                        : color_model == 2U || color_model == 7U ? GradientNoiseColorModel::Lab
+                                                                 : GradientNoiseColorModel::RGB;
+    std::array<std::uint16_t, 8> ranges{};
+    for (auto& value : ranges) {
+      value = reader.read_u16();
+    }
+    // The spec gives no scale for the channel ranges; descriptors use 0..100,
+    // so anything larger is read as a full 16-bit range.
+    const bool sixteen_bit = std::any_of(ranges.begin(), ranges.end(), [](std::uint16_t value) { return value > 100U; });
+    for (std::size_t channel = 0; channel < 4U; ++channel) {
+      const auto scale = [sixteen_bit](std::uint16_t value) {
+        return sixteen_bit ? static_cast<std::uint16_t>((static_cast<std::uint32_t>(value) * 100U + 32767U) / 65535U)
+                           : value;
+      };
+      noise.minimum[channel] = scale(ranges[channel]);
+      noise.maximum[channel] = scale(ranges[4U + channel]);
+    }
+    // The spec does not define the mode values. 1 is taken as Noise (Photoshop
+    // lists the gradient types Solid, Noise), and only for a gradient without
+    // color stops, so a wrong guess cannot turn an ordinary map into noise.
+    gradient.form = mode == 1U && gradient.color_stops.empty() ? GradientDefinitionForm::Noise
+                                                               : GradientDefinitionForm::Solid;
+    return parsed;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
+std::optional<ParsedGradientMap> parse_gradient_map_any_layout(std::span<const std::uint8_t> payload) {
+  if (auto parsed = parse_gradient_map_payload(payload, true); parsed.has_value()) {
+    return parsed;
+  }
+  return parse_gradient_map_payload(payload, false);
+}
+
+void write_gradient_map_ranges(BigEndianWriter& writer, const std::array<std::uint16_t, 4>& values) {
+  for (const auto value : values) {
+    writer.write_u16(std::min<std::uint16_t>(value, 100));
+  }
+}
+
+}  // namespace
+
+std::optional<AdjustmentSettings> parse_photoshop_gradient_map_adjustment(std::span<const std::uint8_t> payload) {
+  auto parsed = parse_gradient_map_any_layout(payload);
+  if (!parsed.has_value()) {
+    return std::nullopt;
+  }
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::GradientMap;
+  settings.gradient_map = std::move(parsed->settings);
+  prepare_gradient_map_lut(settings.gradient_map);
+  return settings;
+}
+
+std::vector<std::uint8_t> photoshop_gradient_map_payload(const GradientMapAdjustment& settings,
+                                                         const UnknownPsdBlock* original) {
+  if (original != nullptr) {
+    if (const auto parsed = parse_gradient_map_any_layout(original->payload);
+        parsed.has_value() && parsed->settings.gradient == settings.gradient) {
+      // Same gradient: keep every imported byte (unmodeled color types, noise
+      // fields, method keys) and patch only the three option fields.
+      auto bytes = original->payload;
+      if (parsed->settings.reverse != settings.reverse) {
+        bytes[2] = settings.reverse ? 1U : 0U;
+      }
+      if (parsed->settings.dither != settings.dither) {
+        bytes[3] = settings.dither ? 1U : 0U;
+      }
+      if (parsed->settings.method != settings.method) {
+        const auto key = gradient_map_method_key(settings.method);
+        if (parsed->version == 3) {
+          std::copy(key.begin(), key.end(), bytes.begin() + 4);
+        } else {
+          bytes[0] = 0U;
+          bytes[1] = 3U;
+          bytes.insert(bytes.begin() + 4, key.begin(), key.end());
+        }
+      }
+      return bytes;
+    }
+  }
+
+  // Fresh or edited: regenerate a version-3 solid gradient. A Noise definition
+  // is written as sampled solid stops, the same flattening the Gradient tool
+  // applies, so Patchy never authors the unverified noise fields.
+  const auto solid = sampled_solid_gradient(settings.gradient);
+  auto color_stops = solid.color_stops;
+  auto alpha_stops = solid.alpha_stops;
+  if (color_stops.empty()) {
+    color_stops = default_gradient_map_definition().color_stops;
+  }
+  if (alpha_stops.empty()) {
+    alpha_stops = default_gradient_map_definition().alpha_stops;
+  }
+  const auto sort_by_location = [](const auto& lhs, const auto& rhs) { return lhs.location < rhs.location; };
+  std::stable_sort(color_stops.begin(), color_stops.end(), sort_by_location);
+  std::stable_sort(alpha_stops.begin(), alpha_stops.end(), sort_by_location);
+  const auto location_units = [](float location) {
+    return static_cast<std::uint32_t>(std::lround(std::clamp(location, 0.0F, 1.0F) * 4096.0F));
+  };
+  const auto midpoint_percent = [](float midpoint) {
+    return static_cast<std::uint32_t>(std::lround(std::clamp(midpoint, 0.0F, 1.0F) * 100.0F));
+  };
+
+  BigEndianWriter writer;
+  writer.write_u16(3U);
+  writer.write_u8(settings.reverse ? 1U : 0U);
+  writer.write_u8(settings.dither ? 1U : 0U);
+  write_signature(writer, gradient_map_method_key(settings.method));
+  const auto name_units = utf8_to_utf16(settings.gradient.name);
+  writer.write_u32(checked_u32(name_units.size() + 1U, "gradient map name length"));
+  for (const auto unit : name_units) {
+    writer.write_u16(unit);
+  }
+  writer.write_u16(0U);
+  writer.write_u16(static_cast<std::uint16_t>(std::min(color_stops.size(), kGradientMapMaxStops)));
+  for (std::size_t index = 0; index < color_stops.size() && index < kGradientMapMaxStops; ++index) {
+    const auto& stop = color_stops[index];
+    writer.write_u32(location_units(stop.location));
+    writer.write_u32(midpoint_percent(stop.midpoint));
+    writer.write_u16(0U);  // RGB
+    writer.write_u16(static_cast<std::uint16_t>(stop.color.red * 257U));
+    writer.write_u16(static_cast<std::uint16_t>(stop.color.green * 257U));
+    writer.write_u16(static_cast<std::uint16_t>(stop.color.blue * 257U));
+    writer.write_u16(0U);
+    writer.write_u16(stop.kind == GradientColorStop::Kind::Foreground   ? 1U
+                     : stop.kind == GradientColorStop::Kind::Background ? 2U
+                                                                        : 0U);
+  }
+  writer.write_u16(static_cast<std::uint16_t>(std::min(alpha_stops.size(), kGradientMapMaxStops)));
+  for (std::size_t index = 0; index < alpha_stops.size() && index < kGradientMapMaxStops; ++index) {
+    const auto& stop = alpha_stops[index];
+    writer.write_u32(location_units(stop.location));
+    writer.write_u32(midpoint_percent(stop.midpoint));
+    writer.write_u16(static_cast<std::uint16_t>(std::lround(std::clamp(stop.opacity, 0.0F, 1.0F) * 255.0F)));
+  }
+  const auto& noise = settings.gradient.noise;
+  writer.write_u16(kGradientMapExpansionCount);
+  writer.write_u16(std::min<std::uint16_t>(settings.gradient.smoothness, 4096));
+  writer.write_u16(kGradientMapNoiseLength);
+  writer.write_u16(0U);  // solid
+  writer.write_u32(noise.seed);
+  writer.write_u16(noise.add_transparency ? 1U : 0U);
+  writer.write_u16(noise.restrict_colors ? 1U : 0U);
+  writer.write_u32(std::min<std::uint16_t>(noise.roughness, 4096));
+  writer.write_u16(noise.color_model == GradientNoiseColorModel::HSB   ? 1U
+                   : noise.color_model == GradientNoiseColorModel::Lab ? 7U
+                                                                       : 0U);
+  write_gradient_map_ranges(writer, noise.minimum);
+  write_gradient_map_ranges(writer, noise.maximum);
+  writer.write_u16(0U);  // dummy
+  while ((writer.bytes().size() % 4U) != 0U) {
+    writer.write_u8(0U);
+  }
   return writer.bytes();
 }
 

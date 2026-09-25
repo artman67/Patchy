@@ -3,11 +3,15 @@
 #include "core/blend_math.hpp"
 
 #include <algorithm>
+#include <array>
+#include <bit>
 #include <charconv>
 #include <cmath>
 #include <cstddef>
+#include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace patchy {
 
@@ -162,6 +166,256 @@ std::optional<HueSaturationBand> parse_hue_saturation_band(std::string_view enco
                            std::clamp(fields[4], -180, 180),
                            std::clamp(fields[5], -100, 100),
                            std::clamp(fields[6], -100, 100)};
+}
+
+// Gradient Map metadata. Floats travel as the hex of their IEEE bits so a
+// configure/read cycle reproduces the model exactly (the PSD writer compares
+// the model against the imported payload to decide whether to re-emit it).
+std::string float_bits_hex(float value) {
+  std::array<char, 8> buffer{};
+  const auto bits = std::bit_cast<std::uint32_t>(value);
+  const auto result = std::to_chars(buffer.data(), buffer.data() + buffer.size(), bits, 16);
+  return std::string(buffer.data(), result.ptr);
+}
+
+std::optional<float> parse_unit_float_bits(std::string_view text) {
+  std::uint32_t bits = 0;
+  const auto result = std::from_chars(text.data(), text.data() + text.size(), bits, 16);
+  if (result.ec != std::errc{} || result.ptr != text.data() + text.size()) {
+    return std::nullopt;
+  }
+  const auto value = std::bit_cast<float>(bits);
+  if (!std::isfinite(value)) {
+    return std::nullopt;
+  }
+  return std::clamp(value, 0.0F, 1.0F);
+}
+
+std::vector<std::string_view> split_fields(std::string_view text, char separator) {
+  std::vector<std::string_view> fields;
+  if (text.empty()) {
+    return fields;
+  }
+  while (true) {
+    const auto found = text.find(separator);
+    fields.push_back(text.substr(0, found));
+    if (found == std::string_view::npos) {
+      return fields;
+    }
+    text = text.substr(found + 1U);
+  }
+}
+
+std::string_view color_stop_kind_key(GradientColorStop::Kind kind) {
+  switch (kind) {
+    case GradientColorStop::Kind::Foreground:
+      return "fg";
+    case GradientColorStop::Kind::Background:
+      return "bg";
+    case GradientColorStop::Kind::User:
+      break;
+  }
+  return "user";
+}
+
+// "location:rrggbb:midpoint:kind;..."
+std::string serialize_gradient_color_stops(const std::vector<GradientColorStop>& stops) {
+  std::string encoded;
+  for (const auto& stop : stops) {
+    if (!encoded.empty()) {
+      encoded.push_back(';');
+    }
+    const auto color = (static_cast<std::uint32_t>(stop.color.red) << 16U) |
+                       (static_cast<std::uint32_t>(stop.color.green) << 8U) | stop.color.blue;
+    std::array<char, 8> hex{};
+    const auto end = std::to_chars(hex.data(), hex.data() + hex.size(), color, 16).ptr;
+    encoded += float_bits_hex(stop.location) + ':' + std::string(hex.data(), end) + ':' +
+               float_bits_hex(stop.midpoint) + ':' + std::string(color_stop_kind_key(stop.kind));
+  }
+  return encoded;
+}
+
+std::optional<std::vector<GradientColorStop>> parse_gradient_color_stops(std::string_view encoded) {
+  std::vector<GradientColorStop> stops;
+  for (const auto token : split_fields(encoded, ';')) {
+    const auto fields = split_fields(token, ':');
+    if (fields.size() != 4U) {
+      return std::nullopt;
+    }
+    std::uint32_t color = 0;
+    const auto parsed_color =
+        std::from_chars(fields[1].data(), fields[1].data() + fields[1].size(), color, 16);
+    const auto location = parse_unit_float_bits(fields[0]);
+    const auto midpoint = parse_unit_float_bits(fields[2]);
+    if (parsed_color.ec != std::errc{} || parsed_color.ptr != fields[1].data() + fields[1].size() ||
+        color > 0xFFFFFFU || !location.has_value() || !midpoint.has_value()) {
+      return std::nullopt;
+    }
+    GradientColorStop stop;
+    stop.location = *location;
+    stop.color = RgbColor{static_cast<std::uint8_t>(color >> 16U), static_cast<std::uint8_t>(color >> 8U),
+                          static_cast<std::uint8_t>(color)};
+    stop.midpoint = *midpoint;
+    stop.kind = fields[3] == "fg"   ? GradientColorStop::Kind::Foreground
+                : fields[3] == "bg" ? GradientColorStop::Kind::Background
+                                    : GradientColorStop::Kind::User;
+    stops.push_back(stop);
+  }
+  return stops;
+}
+
+// "location:opacity:midpoint;..."
+std::string serialize_gradient_alpha_stops(const std::vector<GradientAlphaStop>& stops) {
+  std::string encoded;
+  for (const auto& stop : stops) {
+    if (!encoded.empty()) {
+      encoded.push_back(';');
+    }
+    encoded += float_bits_hex(stop.location) + ':' + float_bits_hex(stop.opacity) + ':' +
+               float_bits_hex(stop.midpoint);
+  }
+  return encoded;
+}
+
+std::optional<std::vector<GradientAlphaStop>> parse_gradient_alpha_stops(std::string_view encoded) {
+  std::vector<GradientAlphaStop> stops;
+  for (const auto token : split_fields(encoded, ';')) {
+    const auto fields = split_fields(token, ':');
+    if (fields.size() != 3U) {
+      return std::nullopt;
+    }
+    const auto location = parse_unit_float_bits(fields[0]);
+    const auto opacity = parse_unit_float_bits(fields[1]);
+    const auto midpoint = parse_unit_float_bits(fields[2]);
+    if (!location.has_value() || !opacity.has_value() || !midpoint.has_value()) {
+      return std::nullopt;
+    }
+    stops.push_back(GradientAlphaStop{*location, *opacity, *midpoint});
+  }
+  return stops;
+}
+
+// "seed;roughness;add_transparency;restrict_colors;model;min0..min3;max0..max3"
+std::string serialize_gradient_noise(const GradientNoiseSettings& noise) {
+  std::string encoded = std::to_string(noise.seed) + ';' + std::to_string(noise.roughness) + ';' +
+                        (noise.add_transparency ? "1" : "0") + ';' + (noise.restrict_colors ? "1" : "0") + ';' +
+                        std::to_string(static_cast<int>(noise.color_model));
+  for (const auto value : noise.minimum) {
+    encoded += ';' + std::to_string(value);
+  }
+  for (const auto value : noise.maximum) {
+    encoded += ';' + std::to_string(value);
+  }
+  return encoded;
+}
+
+std::optional<GradientNoiseSettings> parse_gradient_noise(std::string_view encoded) {
+  const auto fields = split_fields(encoded, ';');
+  if (fields.size() != 13U) {
+    return std::nullopt;
+  }
+  std::uint32_t seed = 0;
+  const auto seed_result = std::from_chars(fields[0].data(), fields[0].data() + fields[0].size(), seed);
+  if (seed_result.ec != std::errc{} || seed_result.ptr != fields[0].data() + fields[0].size()) {
+    return std::nullopt;
+  }
+  std::array<int, 12> values{};
+  for (std::size_t index = 1; index < fields.size(); ++index) {
+    const auto value = parse_int(fields[index]);
+    if (!value.has_value()) {
+      return std::nullopt;
+    }
+    values[index - 1U] = *value;
+  }
+  GradientNoiseSettings noise;
+  noise.seed = seed;
+  noise.roughness = static_cast<std::uint16_t>(std::clamp(values[0], 0, 4096));
+  noise.add_transparency = values[1] != 0;
+  noise.restrict_colors = values[2] != 0;
+  noise.color_model = values[3] == static_cast<int>(GradientNoiseColorModel::HSB)   ? GradientNoiseColorModel::HSB
+                      : values[3] == static_cast<int>(GradientNoiseColorModel::Lab) ? GradientNoiseColorModel::Lab
+                                                                                    : GradientNoiseColorModel::RGB;
+  for (std::size_t channel = 0; channel < 4U; ++channel) {
+    noise.minimum[channel] = static_cast<std::uint16_t>(std::clamp(values[4U + channel], 0, 100));
+    noise.maximum[channel] = static_cast<std::uint16_t>(std::clamp(values[8U + channel], 0, 100));
+  }
+  return noise;
+}
+
+std::string_view gradient_method_key(GradientInterpolationMethod method) {
+  switch (method) {
+    case GradientInterpolationMethod::Classic:
+      return "classic";
+    case GradientInterpolationMethod::Linear:
+      return "linear";
+    case GradientInterpolationMethod::Perceptual:
+      break;
+  }
+  return "perceptual";
+}
+
+GradientMapAdjustment metadata_gradient_map_adjustment(const Layer& layer) {
+  GradientMapAdjustment settings;
+  auto& gradient = settings.gradient;
+  gradient.name = std::string(metadata_string_or(layer, kLayerMetadataAdjustmentGradientMapName, gradient.name));
+  gradient.form = metadata_string_or(layer, kLayerMetadataAdjustmentGradientMapForm, "solid") == "noise"
+                      ? GradientDefinitionForm::Noise
+                      : GradientDefinitionForm::Solid;
+  gradient.smoothness = static_cast<std::uint16_t>(
+      std::clamp(metadata_int_or(layer, kLayerMetadataAdjustmentGradientMapSmoothness, 4096), 0, 4096));
+  // A missing or malformed stop list keeps the default ramp. An empty list is
+  // legitimate (Noise gradients carry none) and must survive the round trip.
+  const auto& metadata = layer.metadata();
+  if (const auto found = metadata.find(kLayerMetadataAdjustmentGradientMapColorStops); found != metadata.end()) {
+    if (auto stops = parse_gradient_color_stops(found->second); stops.has_value()) {
+      gradient.color_stops = std::move(*stops);
+    }
+  }
+  if (const auto found = metadata.find(kLayerMetadataAdjustmentGradientMapAlphaStops); found != metadata.end()) {
+    if (auto stops = parse_gradient_alpha_stops(found->second); stops.has_value()) {
+      gradient.alpha_stops = std::move(*stops);
+    }
+  }
+  if (const auto noise = parse_gradient_noise(metadata_string_or(layer, kLayerMetadataAdjustmentGradientMapNoise, {}));
+      noise.has_value()) {
+    gradient.noise = *noise;
+  }
+  settings.reverse = metadata_int_or(layer, kLayerMetadataAdjustmentGradientMapReverse, 0) != 0;
+  settings.dither = metadata_int_or(layer, kLayerMetadataAdjustmentGradientMapDither, 0) != 0;
+  const auto method = metadata_string_or(layer, kLayerMetadataAdjustmentGradientMapMethod, "perceptual");
+  settings.method = method == "classic"  ? GradientInterpolationMethod::Classic
+                    : method == "linear" ? GradientInterpolationMethod::Linear
+                                         : GradientInterpolationMethod::Perceptual;
+  prepare_gradient_map_lut(settings);
+  return settings;
+}
+
+void set_metadata_gradient_map(Layer& layer, const GradientMapAdjustment& settings) {
+  const auto& gradient = settings.gradient;
+  set_metadata_string(layer, kLayerMetadataAdjustmentGradientMapName, gradient.name);
+  set_metadata_string(layer, kLayerMetadataAdjustmentGradientMapForm,
+                      gradient.form == GradientDefinitionForm::Noise ? "noise" : "solid");
+  set_metadata_int(layer, kLayerMetadataAdjustmentGradientMapSmoothness, std::clamp<int>(gradient.smoothness, 0, 4096));
+  set_metadata_string(layer, kLayerMetadataAdjustmentGradientMapColorStops,
+                      serialize_gradient_color_stops(gradient.color_stops));
+  set_metadata_string(layer, kLayerMetadataAdjustmentGradientMapAlphaStops,
+                      serialize_gradient_alpha_stops(gradient.alpha_stops));
+  set_metadata_string(layer, kLayerMetadataAdjustmentGradientMapNoise, serialize_gradient_noise(gradient.noise));
+  set_metadata_int(layer, kLayerMetadataAdjustmentGradientMapReverse, settings.reverse ? 1 : 0);
+  set_metadata_int(layer, kLayerMetadataAdjustmentGradientMapDither, settings.dither ? 1 : 0);
+  set_metadata_string(layer, kLayerMetadataAdjustmentGradientMapMethod,
+                      std::string(gradient_method_key(settings.method)));
+}
+
+void erase_metadata_gradient_map(Layer& layer) {
+  for (const auto* key :
+       {kLayerMetadataAdjustmentGradientMapName, kLayerMetadataAdjustmentGradientMapForm,
+        kLayerMetadataAdjustmentGradientMapSmoothness, kLayerMetadataAdjustmentGradientMapColorStops,
+        kLayerMetadataAdjustmentGradientMapAlphaStops, kLayerMetadataAdjustmentGradientMapNoise,
+        kLayerMetadataAdjustmentGradientMapReverse, kLayerMetadataAdjustmentGradientMapDither,
+        kLayerMetadataAdjustmentGradientMapMethod}) {
+    layer.metadata().erase(key);
+  }
 }
 
 LevelsRecord metadata_levels_record_or(const Layer& layer, const char* black_input_key, const char* white_input_key,
@@ -1087,6 +1341,66 @@ std::uint8_t brightness_contrast_channel_value(std::uint8_t value, int brightnes
   return static_cast<std::uint8_t>(std::clamp(std::lround(raw) + b, 0L, 255L));
 }
 
+GradientDefinition default_gradient_map_definition(RgbColor foreground, RgbColor background) {
+  GradientDefinition gradient;
+  gradient.name = "Foreground to Background";
+  gradient.color_stops = {GradientColorStop{0.0F, foreground}, GradientColorStop{1.0F, background}};
+  gradient.alpha_stops = {GradientAlphaStop{0.0F, 1.0F}, GradientAlphaStop{1.0F, 1.0F}};
+  return gradient;
+}
+
+std::uint8_t gradient_map_luminance(RgbColor color) noexcept {
+  // NOT calibrated against Photoshop's Gradient Map (no Photoshop was
+  // available when it was added; see docs/adjustments-calibration.md). It
+  // reuses the composite gray Patchy measured for Photoshop's Blend If, the
+  // one RGB-to-gray conversion pinned against PS captures in this codebase:
+  // integer 0.299/0.590/0.111 weights rounded at 1/1000, so every gray pixel
+  // maps to its own value and the result is identical on every toolchain.
+  return blend_if_gray_value(color);
+}
+
+namespace {
+
+RgbColor gradient_map_entry(const GradientMapAdjustment& settings, int index) {
+  LayerStyleGradient gradient;
+  static_cast<GradientDefinition&>(gradient) = settings.gradient;
+  gradient.interpolation = settings.method;
+  auto position = static_cast<float>(std::clamp(index, 0, 255)) / 255.0F;
+  if (settings.reverse) {
+    position = 1.0F - position;
+  }
+  // Opacity stops are deliberately ignored: Photoshop's Gradient Map is
+  // understood to map to opaque colors (unverified; recorded as an open
+  // calibration item). Endpoint smoothing follows the GdFl fill-layer
+  // calibration, the closest measured case of a gradient sampled along a
+  // 0..1 ramp.
+  return gradient_color(gradient, position, true);
+}
+
+RgbColor apply_gradient_map(RgbColor color, const GradientMapAdjustment& settings, std::int32_t x, std::int32_t y,
+                            bool positioned) {
+  const auto index = gradient_map_luminance(color);
+  auto mapped = settings.lut != nullptr ? (*settings.lut)[index] : gradient_map_entry(settings, index);
+  if (settings.dither && positioned) {
+    mapped = dither_gradient_color(mapped, x, y);
+  }
+  return mapped;
+}
+
+}  // namespace
+
+std::array<RgbColor, 256> build_gradient_map_lut(const GradientMapAdjustment& settings) {
+  std::array<RgbColor, 256> lut{};
+  for (int index = 0; index < 256; ++index) {
+    lut[static_cast<std::size_t>(index)] = gradient_map_entry(settings, index);
+  }
+  return lut;
+}
+
+void prepare_gradient_map_lut(GradientMapAdjustment& settings) {
+  settings.lut = std::make_shared<const std::array<RgbColor, 256>>(build_gradient_map_lut(settings));
+}
+
 bool layer_is_adjustment(const Layer& layer) {
   return layer.kind() == LayerKind::Adjustment && adjustment_settings_from_layer(layer).has_value();
 }
@@ -1111,6 +1425,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "brightness_contrast";
     case AdjustmentKind::Exposure:
       return "exposure";
+    case AdjustmentKind::GradientMap:
+      return "gradient_map";
   }
   return "levels";
 }
@@ -1135,6 +1451,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Brightness/Contrast";
     case AdjustmentKind::Exposure:
       return "Exposure";
+    case AdjustmentKind::GradientMap:
+      return "Gradient Map";
   }
   return "Adjustment";
 }
@@ -1166,6 +1484,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "exposure") {
     return AdjustmentKind::Exposure;
+  }
+  if (key == "gradient_map") {
+    return AdjustmentKind::GradientMap;
   }
   return std::nullopt;
 }
@@ -1268,6 +1589,10 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
   settings.brightness_contrast.contrast =
       std::clamp(metadata_int_or(layer, kLayerMetadataAdjustmentBrightnessContrastContrast, 0), contrast_low,
                  contrast_high);
+  // Only Gradient Map layers pay for the gradient parse and its lookup table.
+  if (settings.kind == AdjustmentKind::GradientMap) {
+    settings.gradient_map = metadata_gradient_map_adjustment(layer);
+  }
   return settings;
 }
 
@@ -1375,6 +1700,11 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
                    std::clamp(settings.brightness_contrast.contrast, bc_contrast_low, bc_contrast_high));
   set_metadata_int(layer, kLayerMetadataAdjustmentBrightnessContrastUseLegacy,
                    settings.brightness_contrast.use_legacy ? 1 : 0);
+  if (settings.kind == AdjustmentKind::GradientMap) {
+    set_metadata_gradient_map(layer, settings.gradient_map);
+  } else {
+    erase_metadata_gradient_map(layer);
+  }
 }
 
 namespace {
@@ -1399,7 +1729,7 @@ bool same_ink_adjustment(const AdjustmentSettings& a, const AdjustmentSettings& 
          a.exposure.gamma_hundredths == b.exposure.gamma_hundredths;
 }
 
-RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings);
+RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings, std::int32_t x, std::int32_t y);
 
 void build_ink_adjustment_tables(InkAdjustmentTables& tables, const AdjustmentSettings& settings) {
   tables.settings = settings;
@@ -1412,8 +1742,8 @@ void build_ink_adjustment_tables(InkAdjustmentTables& tables, const AdjustmentSe
   black_settings.curves.red = settings.curves.black_ink;
   for (int value = 0; value < 256; ++value) {
     const auto probe = static_cast<std::uint8_t>(value);
-    const auto adjusted = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, rgb_settings);
-    const auto black = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, black_settings);
+    const auto adjusted = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, rgb_settings, 0, 0);
+    const auto black = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, black_settings, 0, 0);
     tables.ink[0][static_cast<std::size_t>(value)] = adjusted.red;
     tables.ink[1][static_cast<std::size_t>(value)] = adjusted.green;
     tables.ink[2][static_cast<std::size_t>(value)] = adjusted.blue;
@@ -1460,21 +1790,30 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
     // Photoshop's CMYK forms of them are not modeled, so they stay on the RGB math.
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
+    case AdjustmentKind::GradientMap:
       return false;
   }
   return false;
 }
 
 RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings) {
+  if (settings.kind == AdjustmentKind::GradientMap) {
+    return apply_gradient_map(color, settings.gradient_map, 0, 0, false);
+  }
+  return apply_adjustment_to_color(color, settings, 0, 0);
+}
+
+RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings, std::int32_t x,
+                                   std::int32_t y) {
   if (adjustment_runs_in_ink_space(settings)) {
     return apply_adjustment_in_ink_space(color, settings);
   }
-  return apply_adjustment_on_rgb(color, settings);
+  return apply_adjustment_on_rgb(color, settings, x, y);
 }
 
 namespace {
 
-RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings) {
+RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings, std::int32_t x, std::int32_t y) {
   switch (settings.kind) {
     case AdjustmentKind::Levels:
       return apply_levels(color, settings.levels);
@@ -1511,6 +1850,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return RgbColor{exposure_channel_value(color.red, settings.exposure),
                       exposure_channel_value(color.green, settings.exposure),
                       exposure_channel_value(color.blue, settings.exposure)};
+    case AdjustmentKind::GradientMap:
+      return apply_gradient_map(color, settings.gradient_map, x, y, true);
   }
   return color;
 }
@@ -1523,6 +1864,10 @@ void apply_adjustment_to_pixels(PixelBuffer& pixels, const AdjustmentSettings& s
   }
 
   const auto lut = build_adjustment_lut(settings);
+  auto prepared = settings;
+  if (prepared.kind == AdjustmentKind::GradientMap) {
+    prepare_gradient_map_lut(prepared.gradient_map);
+  }
   for (std::int32_t y = 0; y < pixels.height(); ++y) {
     for (std::int32_t x = 0; x < pixels.width(); ++x) {
       auto* px = pixels.pixel(x, y);
@@ -1531,7 +1876,8 @@ void apply_adjustment_to_pixels(PixelBuffer& pixels, const AdjustmentSettings& s
         px[1] = lut->green[px[1]];
         px[2] = lut->blue[px[2]];
       } else {
-        const auto adjusted = apply_adjustment_to_color(RgbColor{px[0], px[1], px[2]}, settings);
+        // Buffer coordinates seed the Gradient Map dither here.
+        const auto adjusted = apply_adjustment_to_color(RgbColor{px[0], px[1], px[2]}, prepared, x, y);
         px[0] = adjusted.red;
         px[1] = adjusted.green;
         px[2] = adjusted.blue;
@@ -1545,10 +1891,11 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
   if (adjustment_runs_in_ink_space(settings)) {
     return std::nullopt;
   }
-  // Hue/Saturation mixes channels through HSL; Threshold compares the mixed
-  // RGB luminance, so a per-channel gray-probe LUT would be wrong for any
-  // colored pixel. Both take the per-pixel path.
-  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold) {
+  // Hue/Saturation mixes channels through HSL; Threshold and Gradient Map read
+  // the mixed RGB luminance, so a per-channel gray-probe LUT would be wrong for
+  // any colored pixel. They take the per-pixel path.
+  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
+      settings.kind == AdjustmentKind::GradientMap) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -1605,6 +1952,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return exposure.exposure_hundredths != 0 || exposure.offset_ten_thousandths != 0 ||
              exposure.gamma_hundredths != 100;
     }
+    case AdjustmentKind::GradientMap:
+      return true;  // recolors by design; no gradient is a reliable identity
   }
   return false;
 }
