@@ -146,6 +146,7 @@ int main(int argc, char** argv) {
            psd_writer_stability_tests,
            pattern_styles_fixtures_tests,
            adjustments_curves_tests,
+           adjustments_gradient_map_tests,
            psd_structure_tests,
            psd_text_tests,
            psd_legacy_text_tests,

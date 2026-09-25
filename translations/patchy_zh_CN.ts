@@ -8879,6 +8879,30 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>渐变映射</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>灰度映射所用的渐变</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>这是杂色渐变。选择一个预设可将其替换为可编辑的色标。</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>结果</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>渐变选项</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>渐变映射：%1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18626,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁剪框高度</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>渐变映射(&amp;G)...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>渐变映射</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>已取消渐变映射</translation>
     </message>
 </context>
 <context>

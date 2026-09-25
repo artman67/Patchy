@@ -135,4 +135,9 @@ std::filesystem::path arrows_fixture_path();
 
 bool layer_has_psd_block(const patchy::Layer& layer, const std::string& key);
 
+// A one-layer 1x1 RGB PSD whose only layer record (named "Levels") carries the
+// given tagged blocks; used to import hand-built adjustment payloads.
+std::vector<std::uint8_t> single_adjustment_layer_psd(
+    const std::vector<std::pair<std::array<char, 4>, std::vector<std::uint8_t>>>& blocks);
+
 }  // namespace patchy::test

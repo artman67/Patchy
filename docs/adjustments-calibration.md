@@ -1,6 +1,6 @@
 # Adjustment calibration vs Photoshop
 
-Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, and Hue/Saturation. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
+Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, Hue/Saturation, and the still-uncalibrated Gradient Map. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
 Conventions: "PS" = Adobe Photoshop 2026/27.8, the installed ground truth; every rule is pinned by PS COM captures unless noted. Fixtures named `photoshop-*` live in `test-fixtures/psd/`; `local-test-fixtures/` is machine-local. The COM workflow lives in [ps-compat.md](ps-compat.md).
 
 ## Brightness/Contrast legacy calibration (July 2026)
@@ -136,3 +136,18 @@ Each of the six band records = four i16 range stops in wheel order + an i16 h/s/
 - Accuracy: plateaus within 2/255; feather RAMPS carry up to 7/255 (the reds ramp-in runs a constant 6 wheel steps behind PS, unexplained; ramp-out within 1). Fixture `photoshop-hue-saturation-bands.psd`/`.bmp`: max 7, mean 0.13, 98% within 2, pinned at those bounds.
 - Round trip: the six band records are written from the model (header plus 84 bytes); only the undocumented 36-byte trailer stays patch-in-place, so an unedited layer resaves byte-identically.
 
+## Gradient Map (NOT calibrated; open item)
+
+Added without Photoshop access (September 2026). Nothing below is pinned by a PS capture; every rule is a documented choice to confirm or replace by COM probes. Model: `GradientMapAdjustment` (core/adjustment_layer); render: `gradient_map_luminance` + `build_gradient_map_lut`.
+
+- Luminance: `blend_if_gray_value`, integer `(299R + 590G + 111B + 500) / 1000`, the one RGB-to-gray conversion already pinned against PS (Blend If composite gray, [layer-effects-render.md](layer-effects-render.md)). Grays map to themselves. Adobe documents only that the map follows the image's grayscale range; the weights and rounding PS uses here are unmeasured.
+- Lookup: a 256-entry table sampled at `index / 255` (reversed as `1 - index / 255`) through the shared `gradient_color`, Classic with the GdFl endpoint smoothing (a 2-stop Classic ramp eases unless smoothness is 0). Perceptual (OKLab) and Linear follow [gradients.md](gradients.md). New maps default to Perceptual, PS's default since 2022 (Adobe community forum reports; unverified here).
+- Opacity stops are kept for the file but ignored: the output is the opaque gradient color, blended by the layer's opacity, mask, Fill, and Blend If like every adjustment. Pixel alpha is untouched.
+- Dither: the gradient effects' `dither_gradient_color` (-1..+2 per channel from a splitmix64 hash of the document coordinate), so tiles and full renders agree. PS's dither pattern is unknown.
+- Probes owed: a gray ramp and the primaries under a black-to-white map in each method and smoothness 0/100 (weights, rounding, Classic easing), a map with opacity stops, and dither on/off statistics.
+
+### `grdm` block
+
+Layout from the [Adobe Photoshop File Formats Specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/) ("Gradient settings"), plus two details the table omits that the open-source psd-tools reader takes from real files: version 3 adds a 4-byte method key (`Gcls`, `Perc`, `Lnr `, `Smoo`) after the reverse and dither bytes, and each color stop ends with a u16 color type (0 user, 1 foreground, 2 background), 20 bytes instead of 18. The reader accepts both stop sizes; the expansion count (2) and noise-block length (32) must land where expected. Unverified reads: location 0..4096, midpoint percent, opacity 0..255; stop colors RGB (u16), HSB, or gray (0..10000) (CMYK/Lab stops fail the parse and keep the pre-model path: a plain layer re-emitting the raw block); `Smoo` reads as Perceptual (matching the descriptor reader), other method keys as Classic; mode 1 with no color stops reads as Noise, everything else as Solid; noise color model 1 HSB, 2 or 7 Lab, else RGB; channel ranges above 100 are read as 16-bit.
+
+Writes: an unedited import re-emits byte-for-byte; a Reverse, Dither, or Method change patches only those bytes (a version-1 block gains the method key and becomes version 3); a gradient change regenerates a version-3 Solid block (name as a NUL-terminated Unicode string, RGB stops at byte*257, color types kept, padded to 4 bytes). Noise definitions are never authored: the writer and the dialog's preset picker flatten them to 65 sampled stops (`sampled_solid_gradient`). Photoshop has not opened a Patchy-written `grdm` yet: warning-free opening is unverified.

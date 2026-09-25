@@ -244,6 +244,54 @@ bool layer_has_psd_block(const patchy::Layer& layer, const std::string& key) {
                      [&key](const patchy::UnknownPsdBlock& block) { return block.key == key; });
 }
 
+std::vector<std::uint8_t> single_adjustment_layer_psd(
+    const std::vector<std::pair<std::array<char, 4>, std::vector<std::uint8_t>>>& blocks) {
+  patchy::psd::BigEndianWriter layer_extra;
+  layer_extra.write_u32(0);
+  layer_extra.write_u32(0);
+  write_pascal_padded(layer_extra, "Levels", 4);
+  for (const auto& [key, payload] : blocks) {
+    char key_string[5] = {key[0], key[1], key[2], key[3], '\0'};
+    write_test_layer_block(layer_extra, key_string, payload);
+  }
+
+  patchy::psd::BigEndianWriter layer_info;
+  layer_info.write_u16(1);
+  layer_info.write_u32(0);
+  layer_info.write_u32(0);
+  layer_info.write_u32(1);
+  layer_info.write_u32(1);
+  layer_info.write_u16(0);
+  write_ascii4(layer_info, "8BIM");
+  write_ascii4(layer_info, "norm");
+  layer_info.write_u8(255);
+  layer_info.write_u8(0);
+  layer_info.write_u8(0);
+  layer_info.write_u8(0);
+  layer_info.write_u32(static_cast<std::uint32_t>(layer_extra.bytes().size()));
+  layer_info.write_bytes(layer_extra.bytes());
+  if ((layer_info.bytes().size() % 2U) != 0) {
+    layer_info.write_u8(0);
+  }
+
+  patchy::psd::BigEndianWriter layer_mask;
+  layer_mask.write_u32(static_cast<std::uint32_t>(layer_info.bytes().size()));
+  layer_mask.write_bytes(layer_info.bytes());
+  layer_mask.write_u32(0);
+
+  patchy::psd::BigEndianWriter writer;
+  patchy::psd::write_header(writer, patchy::psd::Header{false, 3, 1, 1, 8, 3});
+  writer.write_u32(0);
+  writer.write_u32(0);
+  writer.write_u32(static_cast<std::uint32_t>(layer_mask.bytes().size()));
+  writer.write_bytes(layer_mask.bytes());
+  writer.write_u16(0);
+  writer.write_u8(0);
+  writer.write_u8(200);
+  writer.write_u8(0);
+  return writer.bytes();
+}
+
 std::vector<std::uint8_t> single_text_layer_psd(std::span<const std::uint8_t> text_payload,
                                                 const char (&key)[5]) {
   patchy::psd::BigEndianWriter layer_extra;

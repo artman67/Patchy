@@ -324,6 +324,8 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_threshold_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("&Exposure..."), QStringLiteral("ExposureAdjustment"), QStringLiteral("EXP"),
                  [this] { new_exposure_adjustment_layer(); });
+  add_adjustment(QT_TR_NOOP("&Gradient Map..."), QStringLiteral("GradientMapAdjustment"), QStringLiteral("GM"),
+                 [this] { new_gradient_map_adjustment_layer(); });
 }
 
 void MainWindow::new_levels_adjustment_layer() {
@@ -608,6 +610,50 @@ void MainWindow::apply_brightness_contrast_adjustment(const BrightnessContrastSe
     return;
   }
   create_adjustment_layer(tr("Brightness/Contrast"), settings);
+}
+
+std::optional<GradientMapAdjustment> MainWindow::request_gradient_map(
+    std::function<void(bool, const GradientMapAdjustment&)> preview_changed,
+    std::optional<GradientMapAdjustment> initial) {
+  const auto to_rgb = [](const QColor& color) {
+    return RgbColor{static_cast<std::uint8_t>(color.red()), static_cast<std::uint8_t>(color.green()),
+                    static_cast<std::uint8_t>(color.blue())};
+  };
+  const auto foreground = canvas_ != nullptr ? to_rgb(canvas_->primary_color()) : RgbColor{0, 0, 0};
+  const auto background = canvas_ != nullptr ? to_rgb(canvas_->secondary_color()) : RgbColor{255, 255, 255};
+  if (!initial.has_value()) {
+    // Photoshop opens a new Gradient Map on the current foreground-to-
+    // background gradient.
+    initial.emplace();
+    initial->gradient = default_gradient_map_definition(foreground, background);
+  }
+  return request_gradient_map_settings(this, std::move(preview_changed), std::move(*initial), &gradient_library(),
+                                       foreground, background);
+}
+
+void MainWindow::new_gradient_map_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](bool enabled,
+                                                                         const GradientMapAdjustment& gradient_map) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::GradientMap;
+    settings.gradient_map = gradient_map;
+    update_adjustment_layer_preview(tr("Gradient Map"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto gradient_map = request_gradient_map(preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!gradient_map.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Gradient Map"));
+    return;
+  }
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::GradientMap;
+  settings.gradient_map = *gradient_map;
+  create_adjustment_layer(tr("Gradient Map"), settings);
 }
 
 Layer MainWindow::build_adjustment_layer(QString label, const AdjustmentSettings& settings) {
@@ -919,6 +965,24 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->exposure = clamp_exposure(*result);
+      }
+      break;
+    }
+    case AdjustmentKind::GradientMap: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const GradientMapAdjustment& gradient_map) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.gradient_map = gradient_map;
+        apply_settings(settings);
+      };
+      const auto result = request_gradient_map(preview_changed, original_settings->gradient_map);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->gradient_map = *result;
       }
       break;
     }

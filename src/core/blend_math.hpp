@@ -3,6 +3,7 @@
 #include "core/layer.hpp"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 
 namespace patchy {
@@ -79,6 +80,14 @@ gradient_color_dithered(const LayerStyleGradient &gradient, float position,
 // gradient samples (the Shape Burst tent) before dithering.
 [[nodiscard]] RgbColor apply_gradient_dither(const LayerStyleGradient& gradient, RgbColor color,
                                              std::int32_t x, std::int32_t y);
+// The gradient dither itself: a fixed hash of the document coordinate nudges
+// each channel by -1..+2. Shared by gradient effects and the Gradient Map.
+[[nodiscard]] RgbColor dither_gradient_color(RgbColor color, std::int32_t x, std::int32_t y);
+// A Solid copy of `definition` sampled at `samples` evenly spaced color and
+// opacity stops (Noise gradients flatten this way wherever only solid stops
+// can be stored or edited). Solid definitions come back unchanged.
+[[nodiscard]] GradientDefinition sampled_solid_gradient(const GradientDefinition& definition,
+                                                        std::size_t samples = 65);
 // How Linear/Reflected gradients map the bounds onto the ramp. Layer-style
 // overlays span the corner-to-corner projection (w|cos| + h|sin|, calibrated
 // separately); GdFl fill layers span the CENTER CHORD through the bounds

@@ -170,7 +170,7 @@ bool should_skip_layer_block(const EncodedLayer& encoded, const UnknownPsdBlock&
   if (encoded.kind == EncodedLayerKind::Adjustment &&
       (block.key == "levl" || block.key == "curv" || block.key == "hue2" || block.key == "nvrt" ||
        block.key == "post" || block.key == "thrs" || block.key == "brit" || block.key == "blnc" ||
-       block.key == "expA")) {
+       block.key == "expA" || block.key == "grdm")) {
     return true;
   }
   // The Brightness/Contrast emitter owns 'CgEd' (preserved, regenerated, or
@@ -958,6 +958,12 @@ void write_layer_record(BigEndianWriter& writer, const EncodedLayer& encoded, bo
       write_additional_layer_block(
           extra, kPhotoshopColorBalanceBlockKey,
           photoshop_color_balance_payload(settings->color_balance, find_layer_block(*encoded.layer, "blnc")),
+          large_document);
+    }
+    if (settings.has_value() && settings->kind == AdjustmentKind::GradientMap) {
+      write_additional_layer_block(
+          extra, kPhotoshopGradientMapBlockKey,
+          photoshop_gradient_map_payload(settings->gradient_map, find_layer_block(*encoded.layer, "grdm")),
           large_document);
     }
     // Every adjustment kind is native-block only (2026-07). The private plAD

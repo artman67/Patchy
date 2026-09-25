@@ -901,6 +901,10 @@ RgbColor apply_gradient_dither(const LayerStyleGradient& gradient, RgbColor colo
   if (!gradient.dither) {
     return color;
   }
+  return dither_gradient_color(color, x, y);
+}
+
+RgbColor dither_gradient_color(RgbColor color, std::int32_t x, std::int32_t y) {
   const auto hash = splitmix64(
       static_cast<std::uint64_t>(static_cast<std::uint32_t>(x)) |
       (static_cast<std::uint64_t>(static_cast<std::uint32_t>(y)) << 32U));
@@ -913,6 +917,24 @@ RgbColor apply_gradient_dither(const LayerStyleGradient& gradient, RgbColor colo
   color.green = adjust(color.green);
   color.blue = adjust(color.blue);
   return color;
+}
+
+GradientDefinition sampled_solid_gradient(const GradientDefinition& definition, std::size_t samples) {
+  if (definition.form == GradientDefinitionForm::Solid || samples < 2U) {
+    return definition;
+  }
+  LayerStyleGradient gradient;
+  static_cast<GradientDefinition&>(gradient) = definition;
+  GradientDefinition solid = definition;
+  solid.form = GradientDefinitionForm::Solid;
+  solid.color_stops.clear();
+  solid.alpha_stops.clear();
+  for (std::size_t index = 0; index < samples; ++index) {
+    const auto position = static_cast<float>(index) / static_cast<float>(samples - 1U);
+    solid.color_stops.push_back(GradientColorStop{position, gradient_color(gradient, position)});
+    solid.alpha_stops.push_back(GradientAlphaStop{position, gradient_stop_opacity(gradient, position)});
+  }
+  return solid;
 }
 
 RgbColor gradient_color_dithered(const LayerStyleGradient& gradient,

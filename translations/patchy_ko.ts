@@ -8879,6 +8879,30 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>그레이디언트 맵</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>회색 음영 매핑에 사용되는 그레이디언트</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>노이즈 그레이디언트입니다. 사전 설정을 선택하면 편집 가능한 색상 정지점으로 바뀝니다.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>결과</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>그레이디언트 옵션</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>그레이디언트 맵: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18626,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>그레이디언트 맵(&amp;G)...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>그레이디언트 맵</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>취소된 그레이디언트 맵</translation>
     </message>
 </context>
 <context>

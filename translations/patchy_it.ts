@@ -8909,6 +8909,30 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapporto</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Mappa sfumatura</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>Sfumatura usata per la mappatura della scala di grigio</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>Questa è una sfumatura disturbo. Scegli un predefinito per sostituirla con interruzioni di colore modificabili.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Risultato</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>Opzioni sfumatura</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>Mappa sfumatura: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18682,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Altezza del riquadro di ritaglio</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>&amp;Mappa sfumatura...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Mappa sfumatura</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>Annullato: Mappa sfumatura</translation>
     </message>
 </context>
 <context>

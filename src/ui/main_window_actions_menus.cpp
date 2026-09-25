@@ -1363,6 +1363,13 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
                         QStringLiteral("patchy.filters.threshold"));
   add_adjustment_action(QT_TR_NOOP("&Posterize"), QStringLiteral("imageAdjustPosterizeAction"),
                         QStringLiteral("patchy.filters.posterize"));
+  auto* gradient_map_action = adjustments_menu->addAction(tr("&Gradient Map..."));
+  bind_action_text(gradient_map_action, QT_TR_NOOP("&Gradient Map..."));
+  gradient_map_action->setObjectName(QStringLiteral("imageAdjustGradientMapAction"));
+  gradient_map_action->setIcon(simple_icon(QStringLiteral("GM")));
+  register_hotkey(gradient_map_action, "image.gradient_map");
+  connect(gradient_map_action, &QAction::triggered, this, [this] { gradient_map_dialog(); });
+  register_document_action(gradient_map_action);
   image_menu->addSeparator();
 
   auto* image_size_action = image_menu->addAction(tr("&Image Size..."));

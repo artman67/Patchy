@@ -8898,6 +8898,30 @@ RGB: %2, %3, %4</source>
         <source>Ratio</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18607,6 +18631,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

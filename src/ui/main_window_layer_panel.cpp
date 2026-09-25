@@ -630,6 +630,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(250, 225, 120);
     case AdjustmentKind::Exposure:
       return QColor(255, 170, 110);
+    case AdjustmentKind::GradientMap:
+      return QColor(240, 150, 190);
   }
   return QColor(145, 175, 215);
 }
@@ -777,6 +779,9 @@ QString adjustment_settings_summary(const Layer& layer) {
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
           .arg(settings->brightness_contrast.contrast);
+    case AdjustmentKind::GradientMap:
+      // Built-in preset names (Foreground to Background) are catalog entries.
+      return QObject::tr("Gradient Map: %1").arg(translate_data_text(settings->gradient_map.gradient.name));
   }
   return QObject::tr("Adjustment");
 }
@@ -1065,6 +1070,24 @@ void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor&
   painter.drawLine(QPointF(square.center().x(), square.top()), QPointF(square.center().x(), square.bottom()));
 }
 
+void draw_gradient_map_adjustment_thumbnail_symbol(QPainter& painter, const GradientMapAdjustment& settings,
+                                                   const QColor& accent) {
+  // The mapped result itself, dark input on the left, like Photoshop's
+  // gradient swatch. Its colors are the layer's content, not chrome.
+  const QRect square(7, 7, 14, 14);
+  QImage strip(square.width(), 1, QImage::Format_RGB888);
+  for (int x = 0; x < square.width(); ++x) {
+    const auto luminance = static_cast<std::uint8_t>(x * 255 / (square.width() - 1));
+    const auto color = settings.lut != nullptr ? (*settings.lut)[luminance]
+                                               : build_gradient_map_lut(settings)[luminance];
+    strip.setPixelColor(x, 0, QColor(color.red, color.green, color.blue));
+  }
+  painter.drawImage(square, strip);
+  painter.setPen(QPen(accent.lighter(120), 1.5));
+  painter.setBrush(Qt::NoBrush);
+  painter.drawRect(QRectF(square));
+}
+
 void draw_invert_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A square split along the diagonal into a light and a dark half: a negative.
   const QRectF square(7.0, 7.0, 14.0, 14.0);
@@ -1283,6 +1306,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);
+          break;
+        case AdjustmentKind::GradientMap:
+          draw_gradient_map_adjustment_thumbnail_symbol(painter, settings->gradient_map, accent);
           break;
       }
     }

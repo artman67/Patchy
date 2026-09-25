@@ -8939,6 +8939,30 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporcje</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Mapa gradientu</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>Gradient użyty do mapowania skali szarości</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>To jest gradient szumu. Wybierz ustawienie, aby zastąpić go edytowalnymi punktami koloru.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Wynik</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>Opcje gradientu</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>Mapa gradientu: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18738,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Wysokość ramki kadrowania</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>&amp;Mapa gradientu...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Mapa gradientu</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>Anulowano: Mapa gradientu</translation>
     </message>
 </context>
 <context>

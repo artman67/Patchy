@@ -19,6 +19,8 @@ class QWidget;
 
 namespace patchy::ui {
 
+class GradientLibrary;
+
 struct HueSaturationSettings {
   int hue_shift{0};
   int saturation_delta{0};
@@ -75,6 +77,7 @@ using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
+using GradientMapSettings = GradientMapAdjustment;
 
 struct FilterControlSpec {
   // The first six fields retain the legacy aggregate shape used by existing UI
@@ -169,6 +172,13 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
+// Defined in gradient_map_dialog.cpp. `library` feeds the Preset... quick
+// picker (disabled when null); presets resolve their dynamic stops from
+// `foreground` and `background`. The returned settings carry no lookup table.
+[[nodiscard]] std::optional<GradientMapSettings> request_gradient_map_settings(
+    QWidget* parent, std::function<void(bool, const GradientMapSettings&)> preview_changed = {},
+    GradientMapSettings initial = {}, GradientLibrary* library = nullptr, RgbColor foreground = RgbColor{0, 0, 0},
+    RgbColor background = RgbColor{255, 255, 255});
 // When a blur-family filter grows the layer (see build_filter_preview_pixels), the
 // returned buffer is larger than `original` and `result_bounds`, if provided,
 // receives the new document-space bounds (origin shifted, size grown). For other
@@ -202,5 +212,9 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+// The destructive Gradient Map: the adjustment layer's core math, with the
+// dither seeded by document coordinates (bounds gives the buffer's origin).
+void apply_gradient_map_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                  const GradientMapSettings& settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui
