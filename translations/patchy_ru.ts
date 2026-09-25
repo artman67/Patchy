@@ -8939,6 +8939,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Поворот вида</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18718,42 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>Сбросить вид</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>Угол поворота:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>Угол поворота вида</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>Вернуть вид к 0 градусов</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Поворот вида</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>Перетащите, чтобы повернуть вид. Shift привязывает к шагу 15 градусов; Esc сбрасывает.</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>Поворот вида: перетащите, чтобы повернуть вид холста; Shift привязывает к шагу 15 градусов. Дважды щёлкните инструмент или нажмите Esc для сброса.</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>Инструменты просмотра</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>Сменить инструмент просмотра</translation>
     </message>
 </context>
 <context>

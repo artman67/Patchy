@@ -1471,7 +1471,7 @@ void CanvasWidget::update_move_transform_controls_dirty(std::optional<QRectF> ol
     dirty = dirty.united(widget_rect_for_document_rect(*new_rect).toAlignedRect());
   }
   if (!dirty.isEmpty()) {
-    update(dirty.adjusted(-40, -40, 40, 40));
+    update_view_rect(dirty.adjusted(-40, -40, 40, 40));
   } else {
     update();
   }
@@ -2122,7 +2122,7 @@ void CanvasWidget::update_transform_preview_region(QRect previous_document_rect)
     update();
     return;
   }
-  update(dirty.adjusted(-48, -48, 48, 48));
+  update_view_rect(dirty.adjusted(-48, -48, 48, 48));
 }
 
 void CanvasWidget::refresh_free_transform_preview_caches() {

@@ -1557,6 +1557,17 @@ Qt::Alignment paragraph_alignment_from_name(const QString& name) {
   return Qt::AlignLeft;
 }
 
+// Ends the Rotate View suspension a visible text session put on its canvas,
+// once the returned guard leaves scope (after the commit or cancel is done).
+[[nodiscard]] auto resume_view_rotation_after_text_session(QTextEdit* editor) {
+  QPointer<CanvasWidget> owner(editor != nullptr ? qobject_cast<CanvasWidget*>(editor->parentWidget()) : nullptr);
+  return qScopeGuard([owner] {
+    if (owner != nullptr) {
+      owner->set_view_rotation_suspended(false);
+    }
+  });
+}
+
 bool mark_text_editor_finished(QTextEdit* editor) {
   if (editor == nullptr || editor->property(kTextEditorFinishedProperty).toBool()) {
     return false;
@@ -9245,6 +9256,9 @@ void MainWindow::add_text_at(QPoint document_point, QRect requested_text_box, bo
     editor->setTextCursor(QTextCursor(editor->document()));
     return;
   }
+  // The upright editor cannot turn with a rotated view, so the view shows
+  // unrotated until the session ends (docs/rotate-view.md).
+  canvas_->set_view_rotation_suspended(true);
   if (!editing_layer.has_value()) {
     editor->selectAll();
   }
@@ -9403,6 +9417,7 @@ void MainWindow::cancel_text_editor(QTextEdit* editor, std::optional<LayerId> la
   if (!mark_text_editor_finished(editor)) {
     return;
   }
+  const auto resume_view_rotation = resume_view_rotation_after_text_session(editor);
   const auto restore_existing_visibility =
       editor->property("patchy.editingLayerWasVisible").isValid()
           ? editor->property("patchy.editingLayerWasVisible").toBool()
@@ -9445,6 +9460,7 @@ void MainWindow::commit_text_editor(QTextEdit* editor, QPoint document_point, st
   if (!mark_text_editor_finished(editor)) {
     return;
   }
+  const auto resume_view_rotation = resume_view_rotation_after_text_session(editor);
   if (canvas_ == nullptr || !has_active_document()) {
     // A stray commit with no canvas/document to rasterize into (e.g. a focus
     // change while the owning tab is torn down): drop the edit but still
@@ -13053,11 +13069,28 @@ std::optional<LayerId> MainWindow::take_provisional_text_layer(QTextEdit* editor
   return provisional_id;
 }
 
+void MainWindow::reset_view_rotation() {
+  if (canvas_ == nullptr) {
+    return;
+  }
+  canvas_->set_view_rotation(0.0);
+  statusBar()->showMessage(tr("Reset View"));
+}
+
+void MainWindow::sync_view_rotation_controls() {
+  if (rotate_view_angle_spin_ == nullptr) {
+    return;
+  }
+  const QSignalBlocker blocker(rotate_view_angle_spin_);
+  rotate_view_angle_spin_->setValue(canvas_ != nullptr ? canvas_->view_rotation() : 0.0);
+}
+
 void MainWindow::handle_canvas_view_changed(CanvasWidget* canvas) {
   if (canvas == nullptr || canvas != canvas_) {
     return;
   }
   refresh_document_info();
+  sync_view_rotation_controls();
   auto* editor = canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
   if (editor == nullptr || editor->property(kTextEditorFinishedProperty).toBool()) {
     return;
@@ -13634,7 +13667,7 @@ bool MainWindow::document_action_enabled_during_preview_lock(const QAction* acti
   }
   if (action->data().isValid()) {
     const auto tool = static_cast<CanvasTool>(action->data().toInt());
-    return tool == CanvasTool::Pan || tool == CanvasTool::Zoom;
+    return tool == CanvasTool::Pan || tool == CanvasTool::Zoom || tool == CanvasTool::RotateView;
   }
   return false;
 }

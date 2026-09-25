@@ -8898,6 +8898,10 @@ RGB: %2, %3, %4</source>
         <source>Ratio</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18607,6 +18611,42 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

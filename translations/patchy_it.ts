@@ -8909,6 +8909,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapporto</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Ruota vista</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18662,42 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Altezza del riquadro di ritaglio</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>Ripristina vista</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>Angolo di rotazione:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>Angolo di rotazione della vista</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>Riporta la vista a 0 gradi</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Ruota vista</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>Trascina per ruotare la vista. Shift scatta a passi di 15 gradi; Esc ripristina.</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>Ruota vista: trascina per ruotare la vista della tela; Shift scatta a passi di 15 gradi. Fai doppio clic sullo strumento o premi Esc per ripristinare.</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>Strumenti vista</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>Alterna strumenti vista</translation>
     </message>
 </context>
 <context>

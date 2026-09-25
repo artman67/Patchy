@@ -1306,9 +1306,13 @@ void ui_photoshop_shortcuts_are_registered() {
   CHECK(require_action(window, "toolSpotHealingAction")->shortcut().isEmpty());
   CHECK(require_action(window, "toolCycleHealingAction")->shortcut() == QKeySequence(Qt::SHIFT | Qt::Key_J));
   CHECK(require_action(window, "toolPatchAction")->shortcut().isEmpty());
-  CHECK(require_action_by_text(window, QStringLiteral("Smudge"))->shortcut() == QKeySequence(Qt::Key_R));
+  // R belongs to Rotate View (Photoshop's default); Smudge ships unbound and
+  // Shift+R still walks the Detail flyout.
+  CHECK(require_action_by_text(window, QStringLiteral("Smudge"))->shortcut().isEmpty());
+  CHECK(require_action(window, "toolRotateViewAction")->shortcut() == QKeySequence(Qt::Key_R));
   CHECK(require_action(window, "toolBlurAction")->shortcut().isEmpty());
   CHECK(require_action(window, "toolCycleDetailAction")->shortcut() == QKeySequence(Qt::SHIFT | Qt::Key_R));
+  CHECK(require_action(window, "toolCycleViewAction")->shortcut() == QKeySequence(Qt::SHIFT | Qt::Key_H));
   CHECK(require_action(window, "toolSharpenAction")->shortcut().isEmpty());
   CHECK(require_action(window, "toolDodgeAction")->shortcut() == QKeySequence(Qt::Key_O));
   CHECK(require_action(window, "toolBurnAction")->shortcut().isEmpty());
@@ -1341,7 +1345,7 @@ void ui_photoshop_shortcuts_are_registered() {
   };
   tooltip_matches_shortcut(require_action_by_text(window, QStringLiteral("Move")));
   tooltip_matches_shortcut(require_action_by_text(window, QStringLiteral("Brush")));
-  tooltip_matches_shortcut(require_action_by_text(window, QStringLiteral("Smudge")));
+  tooltip_matches_shortcut(require_action(window, "toolRotateViewAction"));
   tooltip_matches_shortcut(require_action(window, "toolCycleDetailAction"));
   tooltip_matches_shortcut(require_action(window, "toolDodgeAction"));
   tooltip_matches_shortcut(require_action(window, "toolCycleToningAction"));
