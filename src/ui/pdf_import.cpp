@@ -157,6 +157,7 @@ QString error_message(QPdfDocument::Error error, const QString& file_name) {
     case QPdfDocument::Error::DataNotYetAvailable:
       return QObject::tr("%1 is still loading.").arg(file_name);
     case QPdfDocument::Error::None:
+    case QPdfDocument::Error::Unknown:
       break;
   }
   return QObject::tr("%1 could not be opened.").arg(file_name);
