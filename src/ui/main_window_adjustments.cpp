@@ -324,6 +324,8 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_threshold_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("&Exposure..."), QStringLiteral("ExposureAdjustment"), QStringLiteral("EXP"),
                  [this] { new_exposure_adjustment_layer(); });
+  add_adjustment(QT_TR_NOOP("&Selective Color..."), QStringLiteral("SelectiveColorAdjustment"), QStringLiteral("SC"),
+                 [this] { new_selective_color_adjustment_layer(); });
 }
 
 void MainWindow::new_levels_adjustment_layer() {
@@ -574,6 +576,39 @@ void MainWindow::apply_exposure_adjustment(const ExposureSettings& exposure, boo
     return;
   }
   create_adjustment_layer(tr("Exposure"), settings);
+}
+
+void MainWindow::new_selective_color_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](
+                                   bool enabled, const SelectiveColorSettings& selective_color) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::SelectiveColor;
+    settings.selective_color = clamp_selective_color(selective_color);
+    update_adjustment_layer_preview(tr("Selective Color"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto settings = request_selective_color_settings(this, preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Selective Color"));
+    return;
+  }
+  apply_selective_color_adjustment(*settings, true);
+}
+
+void MainWindow::apply_selective_color_adjustment(const SelectiveColorSettings& selective_color,
+                                                  bool allow_identity) {
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::SelectiveColor;
+  settings.selective_color = clamp_selective_color(selective_color);
+  if (!allow_identity && !adjustment_has_effect(settings)) {
+    return;
+  }
+  create_adjustment_layer(tr("Selective Color"), settings);
 }
 
 void MainWindow::new_brightness_contrast_adjustment_layer() {
@@ -919,6 +954,25 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->exposure = clamp_exposure(*result);
+      }
+      break;
+    }
+    case AdjustmentKind::SelectiveColor: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const SelectiveColorSettings& selective_color) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.selective_color = clamp_selective_color(selective_color);
+        apply_settings(settings);
+      };
+      const auto result =
+          request_selective_color_settings(this, preview_changed, original_settings->selective_color);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->selective_color = clamp_selective_color(*result);
       }
       break;
     }

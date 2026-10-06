@@ -144,7 +144,7 @@ void append_layer_warnings(const Layer& layer, QStringList& warnings) {
   if (layer.kind() == LayerKind::Adjustment) {
     const auto settings = adjustment_settings_from_layer(layer);
     // Every modeled adjustment kind writes a native Photoshop block (levl /
-    // curv / hue2 / blnc / nvrt / post / thrs / brit); only an adjustment
+    // curv / hue2 / blnc / nvrt / post / thrs / brit / expA / selc); only an adjustment
     // layer whose settings cannot be parsed stays Patchy-opaque.
     if (!settings.has_value()) {
       warnings << QObject::tr("%1 is a Patchy-native adjustment layer; it round-trips in Patchy PSDs but may "

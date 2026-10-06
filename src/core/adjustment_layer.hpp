@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -100,6 +101,13 @@ inline constexpr const char* kLayerMetadataAdjustmentThresholdLevel = "patchy.ad
 inline constexpr const char* kLayerMetadataAdjustmentExposureValue = "patchy.adjustment.exposure.value";
 inline constexpr const char* kLayerMetadataAdjustmentExposureOffset = "patchy.adjustment.exposure.offset";
 inline constexpr const char* kLayerMetadataAdjustmentExposureGamma = "patchy.adjustment.exposure.gamma";
+// Selective Color: "relative" or "absolute", plus one key per color index 0..8
+// (reds, yellows, greens, cyans, blues, magentas, whites, neutrals, blacks)
+// holding "cyan;magenta;yellow;black".
+inline constexpr const char* kLayerMetadataAdjustmentSelectiveColorMethod =
+    "patchy.adjustment.selective_color.method";
+inline constexpr const char* kLayerMetadataAdjustmentSelectiveColorPrefix =
+    "patchy.adjustment.selective_color.color.";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastBrightness =
     "patchy.adjustment.brightness_contrast.brightness";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast =
@@ -118,7 +126,8 @@ enum class AdjustmentKind {
   Posterize,
   Threshold,
   BrightnessContrast,
-  Exposure
+  Exposure,
+  SelectiveColor
 };
 
 enum class LevelsChannel {
@@ -273,6 +282,49 @@ struct ExposureAdjustment {
 // render of psd-tools' exposure_rgb.psd on all four of its setting triples.
 [[nodiscard]] std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment settings);
 
+// Photoshop's Selective Color ('selc'): cyan, magenta, yellow and black corrections
+// (-100..100 percent) for each of nine color families, in Photoshop's Colors-menu order.
+enum class SelectiveColorRange {
+  Reds,
+  Yellows,
+  Greens,
+  Cyans,
+  Blues,
+  Magentas,
+  Whites,
+  Neutrals,
+  Blacks
+};
+inline constexpr std::size_t kSelectiveColorRangeCount = 9;
+struct SelectiveColorCorrection {
+  int cyan{0};
+  int magenta{0};
+  int yellow{0};
+  int black{0};
+
+  [[nodiscard]] bool has_effect() const { return cyan != 0 || magenta != 0 || yellow != 0 || black != 0; }
+  friend bool operator==(const SelectiveColorCorrection&, const SelectiveColorCorrection&) = default;
+};
+// Relative scales the ink a channel already carries (pure white cannot change);
+// Absolute adds the percentage outright. Photoshop's default is Relative.
+struct SelectiveColorAdjustment {
+  std::array<SelectiveColorCorrection, kSelectiveColorRangeCount> corrections{};
+  bool absolute{false};
+
+  [[nodiscard]] bool has_effect() const {
+    return std::any_of(corrections.begin(), corrections.end(), [](const auto& entry) { return entry.has_effect(); });
+  }
+  friend bool operator==(const SelectiveColorAdjustment&, const SelectiveColorAdjustment&) = default;
+};
+[[nodiscard]] SelectiveColorAdjustment clamp_selective_color(SelectiveColorAdjustment settings);
+// How strongly `color` belongs to each family, as fractions that always sum to 1:
+// the six hue families share the chroma (max - mid to the dominant primary, mid -
+// min to the secondary opposite the weakest channel), and Whites, Neutrals and
+// Blacks share the rest by where max and min sit around the midpoint. NOT
+// calibrated against Photoshop; see docs/adjustments-calibration.md.
+[[nodiscard]] std::array<double, kSelectiveColorRangeCount> selective_color_weights(RgbColor color);
+[[nodiscard]] RgbColor apply_selective_color(RgbColor color, const SelectiveColorAdjustment& settings);
+
 // Both Photoshop algorithms are modeled. Modern mode (Photoshop's default,
 // use_legacy false) takes brightness -150..150 and contrast -50..100; legacy
 // mode takes -100..100 for both. Old Patchy documents and 'brit'-only PSDs
@@ -299,6 +351,7 @@ struct AdjustmentSettings {
   ThresholdAdjustment threshold{};
   BrightnessContrastAdjustment brightness_contrast{};
   ExposureAdjustment exposure{};
+  SelectiveColorAdjustment selective_color{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.

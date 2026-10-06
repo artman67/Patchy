@@ -11,6 +11,7 @@
 #include "ui/curves_editor.hpp"
 #include "ui/curves_presets.hpp"
 #include "ui/dialog_utils.hpp"
+#include "ui/measurement_units.hpp"
 #include "ui/qt_paths.hpp"
 #include "ui/filter_workflows_internal.hpp"
 
@@ -36,6 +37,7 @@
 #include <QPixmap>
 #include <QPolygonF>
 #include <QPushButton>
+#include <QRadioButton>
 #include <QRect>
 #include <QSignalBlocker>
 #include <QSlider>
@@ -1459,6 +1461,86 @@ std::optional<ExposureSettings> request_exposure_settings(
         fields->gamma = add_row(QObject::tr("Gamma Correction:"), QStringLiteral("exposureGammaSpin"),
                                 kExposureGammaMin / 100.0, kExposureGammaMax / 100.0, 2, 0.05,
                                 initial.gamma_hundredths / 100.0);
+      });
+}
+
+std::optional<SelectiveColorSettings> request_selective_color_settings(
+    QWidget* parent, std::function<void(bool, const SelectiveColorSettings&)> preview_changed,
+    SelectiveColorSettings initial) {
+  initial = clamp_selective_color(initial);
+  // The four sliders edit the color the Colors combo selects (Photoshop opens on
+  // Reds); the other eight colors wait in the stash so switching round-trips them.
+  auto stash = std::make_shared<SelectiveColorSettings>(initial);
+  auto edit_color = std::make_shared<std::size_t>(0);
+  auto absolute_radio = std::make_shared<QRadioButton*>(nullptr);
+
+  const auto rows_for = [](const SelectiveColorCorrection& correction) {
+    return std::vector<SliderRowSpec>{
+        {QObject::tr("Cyan", "ink"), QStringLiteral("selectiveColorCyan"), -100, 100, correction.cyan,
+         percent_suffix()},
+        {QObject::tr("Magenta", "ink"), QStringLiteral("selectiveColorMagenta"), -100, 100, correction.magenta,
+         percent_suffix()},
+        {QObject::tr("Yellow", "ink"), QStringLiteral("selectiveColorYellow"), -100, 100, correction.yellow,
+         percent_suffix()},
+        {QObject::tr("Black", "ink"), QStringLiteral("selectiveColorBlack"), -100, 100, correction.black,
+         percent_suffix()}};
+  };
+  const auto capture = [](const std::vector<QSpinBox*>& spins) {
+    return SelectiveColorCorrection{spins[0]->value(), spins[1]->value(), spins[2]->value(), spins[3]->value()};
+  };
+
+  const auto build_settings = [stash, edit_color, absolute_radio, capture](const std::vector<QSpinBox*>& spins) {
+    auto settings = *stash;
+    settings.corrections[*edit_color] = capture(spins);
+    settings.absolute = *absolute_radio != nullptr && (*absolute_radio)->isChecked();
+    return clamp_selective_color(settings);
+  };
+
+  return request_adjustment_settings_dialog<SelectiveColorSettings>(
+      parent, QStringLiteral("patchySelectiveColorDialog"), QObject::tr("Selective Color"),
+      QStringLiteral("selectiveColorPreviewCheck"), rows_for(initial.corrections[0]), build_settings,
+      std::move(preview_changed), {},
+      [stash, edit_color, absolute_radio, rows_for, capture](QDialog& dialog, QFormLayout* form,
+                                                            const std::vector<QSpinBox*>& spins,
+                                                            const std::function<void()>& flush_preview) {
+        auto* combo = new QComboBox(&dialog);
+        combo->setObjectName(QStringLiteral("selectiveColorColorsCombo"));
+        combo->addItems({QObject::tr("Reds"), QObject::tr("Yellows"), QObject::tr("Greens"), QObject::tr("Cyans"),
+                         QObject::tr("Blues"), QObject::tr("Magentas"), QObject::tr("Whites"),
+                         QObject::tr("Neutrals"), QObject::tr("Blacks")});
+        form->insertRow(0, QObject::tr("Colors:", "selective color family"), combo);
+
+        auto* relative = new QRadioButton(QObject::tr("Relative"), &dialog);
+        relative->setObjectName(QStringLiteral("selectiveColorRelativeRadio"));
+        auto* absolute = new QRadioButton(QObject::tr("Absolute"), &dialog);
+        absolute->setObjectName(QStringLiteral("selectiveColorAbsoluteRadio"));
+        (stash->absolute ? absolute : relative)->setChecked(true);
+        *absolute_radio = absolute;
+        auto* method_row = new QHBoxLayout();
+        method_row->addWidget(relative);
+        method_row->addWidget(absolute);
+        method_row->addStretch(1);
+        form->addRow(QObject::tr("Method:"), method_row);
+
+        QObject::connect(combo, &QComboBox::currentIndexChanged, &dialog,
+                         [&dialog, stash, edit_color, spins, rows_for, capture, flush_preview](int index) {
+                           stash->corrections[*edit_color] = capture(spins);
+                           *edit_color = static_cast<std::size_t>(
+                               std::clamp(index, 0, static_cast<int>(kSelectiveColorRangeCount) - 1));
+                           const auto rows = rows_for(stash->corrections[*edit_color]);
+                           for (std::size_t row = 0; row < spins.size() && row < rows.size(); ++row) {
+                             auto* slider =
+                                 dialog.findChild<QSlider*>(rows[row].object_prefix + QStringLiteral("Slider"));
+                             if (slider != nullptr) {
+                               const QSignalBlocker block_slider(slider);
+                               slider->setValue(rows[row].value);
+                             }
+                             const QSignalBlocker block_spin(spins[row]);
+                             spins[row]->setValue(rows[row].value);
+                           }
+                           flush_preview();
+                         });
+        QObject::connect(absolute, &QRadioButton::toggled, &dialog, [flush_preview](bool) { flush_preview(); });
       });
 }
 

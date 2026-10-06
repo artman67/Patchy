@@ -1363,6 +1363,13 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
                         QStringLiteral("patchy.filters.threshold"));
   add_adjustment_action(QT_TR_NOOP("&Posterize"), QStringLiteral("imageAdjustPosterizeAction"),
                         QStringLiteral("patchy.filters.posterize"));
+  auto* selective_color_action = adjustments_menu->addAction(tr("&Selective Color..."));
+  bind_action_text(selective_color_action, QT_TR_NOOP("&Selective Color..."));
+  selective_color_action->setObjectName(QStringLiteral("imageAdjustSelectiveColorAction"));
+  selective_color_action->setIcon(simple_icon(QStringLiteral("SC")));
+  register_hotkey(selective_color_action, "image.selective_color");
+  connect(selective_color_action, &QAction::triggered, this, [this] { selective_color_dialog(); });
+  register_document_action(selective_color_action);
   image_menu->addSeparator();
 
   auto* image_size_action = image_menu->addAction(tr("&Image Size..."));

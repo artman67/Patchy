@@ -8909,6 +8909,63 @@ RVB : %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapport</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Correction sélective</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>Blancs</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>Neutres</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>Noirs</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>Relative</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>Absolue</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>Correction sélective : absolue, %1 couleurs sur 9 ajustées</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>Correction sélective : relative, %1 couleurs sur 9 ajustées</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>Cyan</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>Jaune</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>Noir</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>Couleurs :</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18715,18 @@ Convertis en images : %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Hauteur du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>Correction &amp;sélective...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Correction sélective</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>Correction sélective annulée</translation>
     </message>
 </context>
 <context>

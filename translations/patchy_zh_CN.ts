@@ -8879,6 +8879,63 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>可选颜色</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>白色</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>中性色</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>黑色</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>相对</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>绝对</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>可选颜色：绝对，已调整 %1/9 种颜色</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>可选颜色：相对，已调整 %1/9 种颜色</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>青色</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>洋红</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>黄色</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>黑色</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>颜色:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18659,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁剪框高度</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>可选颜色(&amp;S)...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>可选颜色</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>已取消可选颜色</translation>
     </message>
 </context>
 <context>

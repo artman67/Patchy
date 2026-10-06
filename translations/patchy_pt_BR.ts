@@ -8909,6 +8909,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporção</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Cor seletiva</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>Brancos</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>Neutros</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>Pretos</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>Relativo</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>Absoluto</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>Cor seletiva: absoluto, %1 de 9 cores ajustadas</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>Cor seletiva: relativo, %1 de 9 cores ajustadas</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>Ciano</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>Amarelo</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>Preto</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>Cores:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18715,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Altura da caixa de corte</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>Cor &amp;seletiva...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Cor seletiva</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>Cor seletiva cancelada</translation>
     </message>
 </context>
 <context>

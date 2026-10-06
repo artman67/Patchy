@@ -6,6 +6,7 @@
 #include <charconv>
 #include <cmath>
 #include <cstddef>
+#include <cstdlib>
 #include <string_view>
 #include <utility>
 
@@ -162,6 +163,37 @@ std::optional<HueSaturationBand> parse_hue_saturation_band(std::string_view enco
                            std::clamp(fields[4], -180, 180),
                            std::clamp(fields[5], -100, 100),
                            std::clamp(fields[6], -100, 100)};
+}
+
+// "cyan;magenta;yellow;black". A malformed or missing value leaves the color at
+// zero, which renders as no effect.
+std::string serialize_selective_color_correction(const SelectiveColorCorrection& correction) {
+  return std::to_string(correction.cyan) + ';' + std::to_string(correction.magenta) + ';' +
+         std::to_string(correction.yellow) + ';' + std::to_string(correction.black);
+}
+
+std::optional<SelectiveColorCorrection> parse_selective_color_correction(std::string_view encoded) {
+  std::array<int, 4> fields{};
+  for (std::size_t index = 0; index < fields.size(); ++index) {
+    if (encoded.empty()) {
+      return std::nullopt;
+    }
+    const auto separator = encoded.find(';');
+    const auto value = parse_int(encoded.substr(0, separator));
+    if (!value.has_value()) {
+      return std::nullopt;
+    }
+    fields[index] = std::clamp(*value, -100, 100);
+    encoded = separator == std::string_view::npos ? std::string_view{} : encoded.substr(separator + 1U);
+  }
+  if (!encoded.empty()) {
+    return std::nullopt;
+  }
+  return SelectiveColorCorrection{fields[0], fields[1], fields[2], fields[3]};
+}
+
+std::string selective_color_metadata_key(std::size_t index) {
+  return std::string(kLayerMetadataAdjustmentSelectiveColorPrefix) + std::to_string(index);
 }
 
 LevelsRecord metadata_levels_record_or(const Layer& layer, const char* black_input_key, const char* white_input_key,
@@ -944,6 +976,76 @@ std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment setti
   return static_cast<std::uint8_t>(std::clamp(std::lround(encoded * 255.0), 0L, 255L));
 }
 
+SelectiveColorAdjustment clamp_selective_color(SelectiveColorAdjustment settings) {
+  for (auto& correction : settings.corrections) {
+    correction.cyan = std::clamp(correction.cyan, -100, 100);
+    correction.magenta = std::clamp(correction.magenta, -100, 100);
+    correction.yellow = std::clamp(correction.yellow, -100, 100);
+    correction.black = std::clamp(correction.black, -100, 100);
+  }
+  return settings;
+}
+
+std::array<double, kSelectiveColorRangeCount> selective_color_weights(RgbColor color) {
+  const int red = color.red;
+  const int green = color.green;
+  const int blue = color.blue;
+  std::array<double, kSelectiveColorRangeCount> weights{};
+  const auto set = [&weights](SelectiveColorRange range, double weight) {
+    weights[static_cast<std::size_t>(range)] = weight;
+  };
+  // Hue families split the chroma: a primary owns its lead over the next channel, a
+  // secondary owns the lead of its two channels over the one it lacks. Ties score
+  // zero, so pure yellow (255, 255, 0) belongs wholly to Yellows.
+  set(SelectiveColorRange::Reds, std::max(0, red - std::max(green, blue)) / 255.0);
+  set(SelectiveColorRange::Greens, std::max(0, green - std::max(red, blue)) / 255.0);
+  set(SelectiveColorRange::Blues, std::max(0, blue - std::max(red, green)) / 255.0);
+  set(SelectiveColorRange::Cyans, std::max(0, std::min(green, blue) - red) / 255.0);
+  set(SelectiveColorRange::Magentas, std::max(0, std::min(red, blue) - green) / 255.0);
+  set(SelectiveColorRange::Yellows, std::max(0, std::min(red, green) - blue) / 255.0);
+  // Tone families, in doubled units around the 127.5 midpoint: Whites grow as the
+  // darkest channel rises past it, Blacks as the brightest falls below it, and
+  // Neutrals take what is left of the achromatic share.
+  const auto high = 2 * std::max({red, green, blue}) - 255;
+  const auto low = 2 * std::min({red, green, blue}) - 255;
+  set(SelectiveColorRange::Whites, std::max(0, low) / 255.0);
+  set(SelectiveColorRange::Blacks, std::max(0, -high) / 255.0);
+  set(SelectiveColorRange::Neutrals, (510 - std::abs(high) - std::abs(low)) / 510.0);
+  return weights;
+}
+
+RgbColor apply_selective_color(RgbColor color, const SelectiveColorAdjustment& settings) {
+  // NOT calibrated against Photoshop (added without Photoshop access). Built from
+  // Adobe's documented method definitions on the ink each channel implies (cyan =
+  // 1 - red, magenta = 1 - green, yellow = 1 - blue): Relative changes a plate by a
+  // percentage of the ink it already has, Absolute by a percentage of full ink.
+  // Black acts on every plate and compounds with the plate's own correction. The
+  // family weights sum to 1, so equal corrections for all nine colors act globally.
+  const auto weights = selective_color_weights(color);
+  const std::array<double, 3> value{color.red / 255.0, color.green / 255.0, color.blue / 255.0};
+  std::array<double, 3> ink_change{};
+  for (std::size_t range = 0; range < kSelectiveColorRangeCount; ++range) {
+    const auto& correction = settings.corrections[range];
+    if (weights[range] <= 0.0 || !correction.has_effect()) {
+      continue;
+    }
+    const auto black = std::clamp(correction.black, -100, 100) / 100.0;
+    const std::array<double, 3> process{std::clamp(correction.cyan, -100, 100) / 100.0,
+                                        std::clamp(correction.magenta, -100, 100) / 100.0,
+                                        std::clamp(correction.yellow, -100, 100) / 100.0};
+    for (std::size_t channel = 0; channel < 3U; ++channel) {
+      const auto gain = (1.0 + process[channel]) * (1.0 + black) - 1.0;
+      const auto basis = settings.absolute ? 1.0 : 1.0 - value[channel];
+      ink_change[channel] += weights[range] * gain * basis;
+    }
+  }
+  const auto encode = [](double channel) {
+    return static_cast<std::uint8_t>(std::clamp(std::lround(std::clamp(channel, 0.0, 1.0) * 255.0), 0L, 255L));
+  };
+  return RgbColor{encode(value[0] - ink_change[0]), encode(value[1] - ink_change[1]),
+                  encode(value[2] - ink_change[2])};
+}
+
 int threshold_luminance(std::uint8_t red, std::uint8_t green, std::uint8_t blue) {
   return (static_cast<int>(red) * 30 + static_cast<int>(green) * 59 + static_cast<int>(blue) * 11) / 100;
 }
@@ -1111,6 +1213,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "brightness_contrast";
     case AdjustmentKind::Exposure:
       return "exposure";
+    case AdjustmentKind::SelectiveColor:
+      return "selective_color";
   }
   return "levels";
 }
@@ -1135,6 +1239,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Brightness/Contrast";
     case AdjustmentKind::Exposure:
       return "Exposure";
+    case AdjustmentKind::SelectiveColor:
+      return "Selective Color";
   }
   return "Adjustment";
 }
@@ -1166,6 +1272,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "exposure") {
     return AdjustmentKind::Exposure;
+  }
+  if (key == "selective_color") {
+    return AdjustmentKind::SelectiveColor;
   }
   return std::nullopt;
 }
@@ -1252,6 +1361,14 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureValue, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureOffset, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureGamma, 100)});
+  settings.selective_color.absolute =
+      metadata_string_or(layer, kLayerMetadataAdjustmentSelectiveColorMethod, "relative") == "absolute";
+  for (std::size_t index = 0; index < kSelectiveColorRangeCount; ++index) {
+    const auto key = selective_color_metadata_key(index);
+    if (const auto correction = parse_selective_color_correction(metadata_string_or(layer, key.c_str(), {}))) {
+      settings.selective_color.corrections[index] = *correction;
+    }
+  }
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -1362,6 +1479,21 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureValue, exposure.exposure_hundredths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureOffset, exposure.offset_ten_thousandths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureGamma, exposure.gamma_hundredths);
+  // Written only for Selective Color layers: the nine keys would be noise on every other kind.
+  if (settings.kind == AdjustmentKind::SelectiveColor) {
+    const auto selective_color = clamp_selective_color(settings.selective_color);
+    set_metadata_string(layer, kLayerMetadataAdjustmentSelectiveColorMethod,
+                        selective_color.absolute ? "absolute" : "relative");
+    for (std::size_t index = 0; index < kSelectiveColorRangeCount; ++index) {
+      set_metadata_string(layer, selective_color_metadata_key(index).c_str(),
+                          serialize_selective_color_correction(selective_color.corrections[index]));
+    }
+  } else {
+    layer.metadata().erase(kLayerMetadataAdjustmentSelectiveColorMethod);
+    for (std::size_t index = 0; index < kSelectiveColorRangeCount; ++index) {
+      layer.metadata().erase(selective_color_metadata_key(index));
+    }
+  }
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -1458,8 +1590,11 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
       return settings.ink_space->is_gray();
     // Hue/Saturation and Color Balance mix channels (as does Threshold on four inks);
     // Photoshop's CMYK forms of them are not modeled, so they stay on the RGB math.
+    // So does Selective Color: in a CMYK document Photoshop corrects the real four
+    // plates (Black edits the K plate), which is not modeled.
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
+    case AdjustmentKind::SelectiveColor:
       return false;
   }
   return false;
@@ -1511,6 +1646,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return RgbColor{exposure_channel_value(color.red, settings.exposure),
                       exposure_channel_value(color.green, settings.exposure),
                       exposure_channel_value(color.blue, settings.exposure)};
+    case AdjustmentKind::SelectiveColor:
+      return apply_selective_color(color, settings.selective_color);
   }
   return color;
 }
@@ -1546,9 +1683,11 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
     return std::nullopt;
   }
   // Hue/Saturation mixes channels through HSL; Threshold compares the mixed
-  // RGB luminance, so a per-channel gray-probe LUT would be wrong for any
-  // colored pixel. Both take the per-pixel path.
-  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold) {
+  // RGB luminance; Selective Color weighs each pixel by its whole RGB triple.
+  // A per-channel gray-probe LUT would be wrong for any colored pixel, so they
+  // take the per-pixel path.
+  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
+      settings.kind == AdjustmentKind::SelectiveColor) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -1605,6 +1744,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return exposure.exposure_hundredths != 0 || exposure.offset_ten_thousandths != 0 ||
              exposure.gamma_hundredths != 100;
     }
+    case AdjustmentKind::SelectiveColor:
+      return clamp_selective_color(settings.selective_color).has_effect();
   }
   return false;
 }
