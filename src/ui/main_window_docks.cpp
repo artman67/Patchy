@@ -1655,6 +1655,9 @@ void MainWindow::create_docks() {
   bind_widget_text(history_dock, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "History"));
   history_list_ = new QListWidget(history_dock);
   history_list_->setObjectName(QStringLiteral("historyList"));
+  // Explicit, so the History Brush source marker and the blank slot that keeps
+  // the other rows aligned render at one size (refresh_history_panel).
+  history_list_->setIconSize(QSize(20, 20));
   // itemClicked (not currentRowChanged): the rebuild's programmatic
   // setCurrentRow must never trigger a jump, and keyboard focus moves stay
   // visual-only until the next rebuild re-asserts the current state.

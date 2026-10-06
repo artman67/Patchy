@@ -785,6 +785,14 @@ bool CanvasWidget::pattern_stamp_aligned() const noexcept {
   return pattern_stamp_aligned_;
 }
 
+void CanvasWidget::set_history_brush_source(std::shared_ptr<const Document> source) noexcept {
+  history_brush_source_ = std::move(source);
+}
+
+const std::shared_ptr<const Document>& CanvasWidget::history_brush_source() const noexcept {
+  return history_brush_source_;
+}
+
 void CanvasWidget::set_healing_diffusion(int diffusion) noexcept {
   healing_diffusion_ = std::clamp(diffusion, 1, 7);
 }

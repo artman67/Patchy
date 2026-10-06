@@ -31,6 +31,7 @@
 #include "psd/psd_filter_effects.hpp"
 #include "psd/psd_smart_objects.hpp"
 #include "ui/action_icons.hpp"
+#include "ui/icon_theme.hpp"
 #include "ui/app_settings.hpp"
 #include "ui/background_workers.hpp"
 #include "render/compositor.hpp"
@@ -394,6 +395,11 @@ void MainWindow::enforce_history_memory_budget(const DocumentSession& push_targe
     for (const auto& state : target.redo_stack) {
       bytes += accumulate_unique_pixel_bytes(state.document, live, seen);
     }
+    // The History Brush source is never evicted, but its pixels count: once
+    // its state leaves the stacks it is the only thing retaining them.
+    if (target.history_brush_source != nullptr) {
+      bytes += accumulate_unique_pixel_bytes(*target.history_brush_source, live, seen);
+    }
     return bytes;
   };
   std::vector<std::pair<DocumentSession*, std::size_t>> totals;
@@ -674,9 +680,21 @@ void MainWindow::refresh_history_panel() {
   if (history_list_ != nullptr) {
     history_list_->clear();
     if (const auto* active = active_session(); active != nullptr) {
-      const auto add_row = [this](const QString& label, std::int64_t state_id, bool future) {
+      // Photoshop's source column: the History Brush icon marks the source
+      // row, and every other row reserves the same blank slot so labels align.
+      QPixmap blank(history_list_->iconSize());
+      blank.fill(Qt::transparent);
+      const QIcon blank_icon(blank);
+      const auto source_icon = themed_svg_icon(QStringLiteral("tool-history-brush"));
+      const auto source_id = active->history_brush_source_state_id;
+      const auto add_row = [&, this](const QString& label, std::int64_t state_id, bool future) {
         auto* item = new QListWidgetItem(label.isEmpty() ? tr("Edit") : label, history_list_);
         item->setData(Qt::UserRole, QVariant::fromValue<qlonglong>(state_id));
+        const auto is_source = active->history_brush_source != nullptr && state_id == source_id;
+        item->setIcon(is_source ? source_icon : blank_icon);
+        if (is_source) {
+          item->setToolTip(tr("Source for the History Brush"));
+        }
         if (future) {
           item->setForeground(theme().history_future_text);
         }
@@ -770,13 +788,57 @@ void MainWindow::show_history_context_menu(const QPoint& position) {
   if (item == nullptr) {
     return;
   }
+  const auto state_id = item->data(Qt::UserRole).toLongLong();
   QMenu menu(history_list_);
   auto* new_document_action = menu.addAction(tr("New Document From This State"));
+  auto* source_action = menu.addAction(tr("Set History Brush Source"));
+  source_action->setObjectName(QStringLiteral("historySetBrushSourceAction"));
+  source_action->setCheckable(true);
+  const auto* active = active_session();
+  source_action->setChecked(active != nullptr && active->history_brush_source != nullptr &&
+                            active->history_brush_source_state_id == state_id);
   hide_menu_action_icons(&menu);
   auto* chosen = menu.exec(history_list_->viewport()->mapToGlobal(position));
   if (chosen == new_document_action) {
-    open_history_state_as_new_document(item->data(Qt::UserRole).toLongLong());
+    open_history_state_as_new_document(state_id);
+  } else if (chosen == source_action) {
+    set_history_brush_source(state_id);
   }
+}
+
+void MainWindow::set_history_brush_source(std::int64_t state_id) {
+  auto* active = active_session();
+  if (active == nullptr) {
+    return;
+  }
+  const Document* source = nullptr;
+  QString label;
+  if (state_id == active->current_state_id) {
+    source = &active->document;
+    label = active->current_state_label;
+  } else {
+    for (const auto* stack : {&active->undo_stack, &active->redo_stack}) {
+      for (const auto& state : *stack) {
+        if (state.state_id == state_id) {
+          source = &state.document;
+          label = state.label;
+        }
+      }
+    }
+  }
+  if (source == nullptr) {
+    refresh_history_panel();
+    return;
+  }
+  // The value copy shares the state's pixels (copy-on-write), so it is cheap
+  // and survives the state leaving the stacks.
+  active->history_brush_source = std::make_shared<const Document>(*source);
+  active->history_brush_source_state_id = state_id;
+  if (active->canvas != nullptr) {
+    active->canvas->set_history_brush_source(active->history_brush_source);
+  }
+  refresh_history_panel();
+  statusBar()->showMessage(tr("History Brush source: %1").arg(label.isEmpty() ? tr("Edit") : label));
 }
 
 void MainWindow::open_history_state_as_new_document(std::int64_t state_id) {
@@ -834,6 +896,12 @@ void MainWindow::initialize_session_history(DocumentSession& target_session, QSt
   target_session.selection_move_coalescing = false;
   target_session.current_state_label = std::move(initial_label);
   target_session.current_state_id = target_session.next_history_state_id++;
+  // Photoshop's default History Brush source is the document as opened.
+  target_session.history_brush_source = std::make_shared<const Document>(target_session.document);
+  target_session.history_brush_source_state_id = target_session.current_state_id;
+  if (target_session.canvas != nullptr) {
+    target_session.canvas->set_history_brush_source(target_session.history_brush_source);
+  }
   if (&target_session == active_session()) {
     refresh_history_panel();
   }

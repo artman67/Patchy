@@ -8909,6 +8909,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Verhältnis</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Protokoll-Pinsel</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10464,6 +10468,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Zuschneiderahmen auf die Arbeitsfläche zurückgesetzt</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>Der Protokoll-Pinsel ist beim Bearbeiten eines Graustufenkanals nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Legen Sie zuerst im Protokoll-Bedienfeld eine Quelle für den Protokoll-Pinsel fest</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>Der Protokoll-Pinsel konnte nicht verwendet werden, weil der Protokollzustand eine andere Arbeitsflächengröße hat</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>Der Protokoll-Pinsel konnte nicht verwendet werden, weil der Protokollzustand keine entsprechende Ebene enthält</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Protokoll-Pinsel</translation>
     </message>
 </context>
 <context>
@@ -18658,6 +18682,30 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Höhe des Zuschneiderahmens</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Protokoll-Pinsel</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Malt Pixel aus dem Quellzustand des Protokolls zurück. Klicken Sie mit der rechten Maustaste auf eine Zeile im Protokoll-Bedienfeld, um sie zur Quelle zu machen.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Protokoll-Pinsel: Malen Sie, um die aktive Ebene aus dem Quellzustand des Protokolls wiederherzustellen. Quelle ist das Dokument wie geöffnet, außer Sie ändern sie per Rechtsklick auf eine Zeile im Protokoll-Bedienfeld.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Quelle für den Protokoll-Pinsel</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Als Quelle für Protokoll-Pinsel festlegen</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Quelle für Protokoll-Pinsel: %1</translation>
     </message>
 </context>
 <context>

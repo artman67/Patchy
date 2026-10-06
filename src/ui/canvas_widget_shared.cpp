@@ -668,6 +668,7 @@ bool tool_uses_alt_left_for_color_pick(CanvasTool tool) noexcept {
     case CanvasTool::Brush:
     case CanvasTool::MixerBrush:
     case CanvasTool::PatternStamp:
+    case CanvasTool::HistoryBrush:
     case CanvasTool::Smudge:
     case CanvasTool::Eraser:
     case CanvasTool::Gradient:
@@ -691,6 +692,7 @@ bool tool_supports_brush_adjust_drag(CanvasTool tool) noexcept {
     case CanvasTool::Brush:
     case CanvasTool::MixerBrush:
     case CanvasTool::PatternStamp:
+    case CanvasTool::HistoryBrush:
     case CanvasTool::Clone:
     case CanvasTool::Healing:
     case CanvasTool::SpotHealing:
@@ -715,6 +717,7 @@ bool tool_uses_brush_footprint_cursor(CanvasTool tool) noexcept {
     case CanvasTool::Brush:
     case CanvasTool::MixerBrush:
     case CanvasTool::PatternStamp:
+    case CanvasTool::HistoryBrush:
     case CanvasTool::Clone:
     case CanvasTool::Healing:
     case CanvasTool::SpotHealing:
@@ -736,6 +739,7 @@ bool tool_paints_with_brush_tip(CanvasTool tool) noexcept {
     case CanvasTool::Brush:
     case CanvasTool::MixerBrush:
     case CanvasTool::PatternStamp:
+    case CanvasTool::HistoryBrush:
     case CanvasTool::Eraser:
       return true;
     default:

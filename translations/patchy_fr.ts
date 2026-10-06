@@ -8909,6 +8909,10 @@ RVB : %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapport</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Forme d&apos;historique</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10464,6 +10468,26 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Cadre de recadrage réinitialisé sur la zone de travail</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>La Forme d&apos;historique n&apos;est pas disponible pendant la modification d&apos;une couche en niveaux de gris</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Définissez d&apos;abord une source pour la forme d&apos;historique dans le panneau Historique</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>Impossible d&apos;utiliser la forme d&apos;historique, car l&apos;état d&apos;historique a une taille de zone de travail différente</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>Impossible d&apos;utiliser la forme d&apos;historique, car l&apos;état d&apos;historique ne contient pas de calque correspondant</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Forme d&apos;historique</translation>
     </message>
 </context>
 <context>
@@ -18658,6 +18682,30 @@ Convertis en images : %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Hauteur du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Forme d&apos;historique</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Repeint les pixels de l&apos;état source de l&apos;historique. Cliquez avec le bouton droit sur une ligne du panneau Historique pour en faire la source.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Forme d&apos;historique : peignez pour rétablir le calque actif à partir de l&apos;état source de l&apos;historique, le document tel qu&apos;ouvert, sauf si vous cliquez avec le bouton droit sur une ligne du panneau Historique pour le changer.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Source de la Forme d&apos;historique</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Définir la source de la Forme d&apos;historique</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Source de la Forme d&apos;historique : %1</translation>
     </message>
 </context>
 <context>

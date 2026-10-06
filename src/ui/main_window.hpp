@@ -364,6 +364,12 @@ private:
     QString current_state_label;
     std::int64_t current_state_id{0};
     std::int64_t next_history_state_id{1};
+    // History Brush source (Photoshop's "Set the source for the history
+    // brush"): a copy of one history state's document (copy-on-write pixels),
+    // kept by value so it survives that state's eviction from the stacks. The
+    // document as opened by default; the id marks its History panel row.
+    std::shared_ptr<const Document> history_brush_source;
+    std::int64_t history_brush_source_state_id{0};
     static constexpr std::size_t kMaxUndoStates = 40;
     // The history byte budget never evicts a session below this many undo
     // states, even when a single snapshot exceeds the whole budget: a floor of
@@ -1771,6 +1777,9 @@ private:
   // the deep copy (copy-on-write pixels), so edits cannot leak between the
   // documents.
   void open_history_state_as_new_document(std::int64_t state_id);
+  // Makes the state with this id the active session's History Brush source and
+  // hands it to the session's canvas; unknown ids change nothing.
+  void set_history_brush_source(std::int64_t state_id);
   // Centralized undo-stack push: cap eviction, redo clear, coalescing reset,
   // and the label/id handoff from the live state to the stored snapshot.
   void record_history_push(DocumentSession& target_session, DocumentSession::HistoryState state,
