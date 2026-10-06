@@ -5,6 +5,7 @@ Read this file before changing any feature named below or introducing an adjacen
 ## Selection tools
 
 - **Quick Select solves once on mouse release.** Do not add live per-mouse-move classification or a selection preview before November 3, 2029 (Adobe US 8050498). Enhance Edge remains geometric, the solve uses one window per stroke, and input never selects among algorithms automatically. `ui_quick_select_stroke_selects_object_and_is_undoable` enforces the no-mid-drag behavior.
+- **Color Range scores each pixel from its own color and the user's samples only** (claim check 2026-10-06, record in [color-range.md](color-range.md)). One click reads one sample and the score runs after it; no drag or brush sampling with live scoring (US 8050498), no use of the sample's position, neighbour differences, or color clusters (US 8004536), and no skin-tone or face detection. Localized Color Clusters, Skin Tones and Detect Faces stay out without a new review.
 - Magnetic Lasso and brush shape-dynamics patents are expired, so live snap display is allowed. Magnetic Lasso still constructs its selection region once in `finish_magnetic_lasso()`, clearly separate from Quick Select's prohibited live region classification.
 
 ## Filters and Smart Objects

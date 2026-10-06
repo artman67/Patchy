@@ -1,6 +1,7 @@
 #include "color/color_management.hpp"
 #include "core/adjustment_layer.hpp"
 #include "core/blend_math.hpp"
+#include "core/color_range.hpp"
 #include "core/document.hpp"
 #include "core/layer_metadata.hpp"
 #include "core/layer_tree.hpp"
@@ -1276,6 +1277,117 @@ void heal_membrane_interpolates_boundary_offsets() {
   CHECK(solved_again == solved_ramp);
 }
 
+// Select > Color Range scoring (docs/color-range.md). Green-only offsets keep the
+// distance exact: the weighted metric is 2/3 of the green difference.
+void color_range_fuzziness_plateau_then_linear_falloff() {
+  patchy::ColorRangeParams params;
+  params.added = {{100, 150, 200}};
+  params.fuzziness = 40;
+  const auto alpha = [&params](int green) {
+    return static_cast<int>(patchy::color_range_alpha({100, static_cast<std::uint8_t>(green), 200}, params));
+  };
+  CHECK(alpha(150) == 255);
+  CHECK(alpha(165) == 255);  // distance 10: inside the half-fuzziness plateau
+  CHECK(alpha(180) == 255);  // distance 20: the plateau's edge
+  CHECK(alpha(195) == 128);  // distance 30: halfway down the ramp
+  CHECK(alpha(210) == 0);    // distance 40: the fuzziness itself
+  for (int green = 150; green < 230; ++green) {
+    CHECK(alpha(green + 1) <= alpha(green));
+  }
+  params.fuzziness = 0;
+  CHECK(alpha(150) == 255);
+  CHECK(alpha(151) == 0);
+  // No samples selects nothing; Invert flips the score.
+  params.added.clear();
+  CHECK(alpha(150) == 0);
+  params.invert = true;
+  CHECK(alpha(150) == 255);
+}
+
+void color_range_add_and_subtract_samples() {
+  patchy::ColorRangeParams params;
+  params.fuzziness = 40;
+  params.added = {{220, 30, 30}, {30, 40, 210}};
+  const patchy::ColorRangeColor red{220, 30, 30};
+  const patchy::ColorRangeColor near_red{220, 57, 30};
+  const patchy::ColorRangeColor blue{30, 40, 210};
+  const patchy::ColorRangeColor green{30, 200, 30};
+  CHECK(patchy::color_range_alpha(red, params) == 255);
+  CHECK(patchy::color_range_alpha(near_red, params) == 255);
+  CHECK(patchy::color_range_alpha(blue, params) == 255);
+  CHECK(patchy::color_range_alpha(green, params) == 0);
+  params.subtracted = {red};
+  CHECK(patchy::color_range_alpha(red, params) == 0);
+  CHECK(patchy::color_range_alpha(near_red, params) == 0);
+  CHECK(patchy::color_range_alpha(blue, params) == 255);
+}
+
+void color_range_color_families_and_tonal_ranges() {
+  using patchy::ColorRangeSelect;
+  const auto alpha = [](ColorRangeSelect select, patchy::ColorRangeColor color) {
+    patchy::ColorRangeParams params;
+    params.select = select;
+    return static_cast<int>(patchy::color_range_alpha(color, params));
+  };
+  CHECK(alpha(ColorRangeSelect::Reds, {255, 0, 0}) == 255);
+  CHECK(alpha(ColorRangeSelect::Yellows, {255, 0, 0}) == 0);
+  CHECK(alpha(ColorRangeSelect::Magentas, {255, 0, 0}) == 0);
+  CHECK(alpha(ColorRangeSelect::Yellows, {255, 255, 0}) == 255);
+  CHECK(alpha(ColorRangeSelect::Greens, {0, 255, 0}) == 255);
+  CHECK(alpha(ColorRangeSelect::Cyans, {0, 255, 255}) == 255);
+  CHECK(alpha(ColorRangeSelect::Blues, {0, 0, 255}) == 255);
+  CHECK(alpha(ColorRangeSelect::Magentas, {255, 0, 255}) == 255);
+  // Orange (hue 30) sits on the shared shoulder of Reds and Yellows.
+  const auto orange_red = alpha(ColorRangeSelect::Reds, {255, 128, 0});
+  const auto orange_yellow = alpha(ColorRangeSelect::Yellows, {255, 128, 0});
+  CHECK(orange_red > 115 && orange_red < 140);
+  CHECK(orange_yellow > 115 && orange_yellow < 140);
+  // Gray has no hue; a dull red is selected in proportion to its chroma.
+  CHECK(alpha(ColorRangeSelect::Reds, {128, 128, 128}) == 0);
+  const auto dull_red = alpha(ColorRangeSelect::Reds, {160, 100, 100});
+  CHECK(dull_red > 100 && dull_red < 140);
+
+  // Tonal windows in gray levels: Shadows 0-94 fading out by 132, Midtones 132-185
+  // fading over 94-132 and 185-212, Highlights from 198 fading in from 185.
+  CHECK(alpha(ColorRangeSelect::Shadows, {0, 0, 0}) == 255);
+  CHECK(alpha(ColorRangeSelect::Shadows, {94, 94, 94}) == 255);
+  CHECK(alpha(ColorRangeSelect::Shadows, {113, 113, 113}) == 128);
+  CHECK(alpha(ColorRangeSelect::Shadows, {132, 132, 132}) == 0);
+  CHECK(alpha(ColorRangeSelect::Midtones, {160, 160, 160}) == 255);
+  CHECK(alpha(ColorRangeSelect::Midtones, {113, 113, 113}) == 128);
+  CHECK(alpha(ColorRangeSelect::Midtones, {0, 0, 0}) == 0);
+  CHECK(alpha(ColorRangeSelect::Midtones, {255, 255, 255}) == 0);
+  CHECK(alpha(ColorRangeSelect::Highlights, {255, 255, 255}) == 255);
+  CHECK(alpha(ColorRangeSelect::Highlights, {185, 185, 185}) == 0);
+  CHECK(alpha(ColorRangeSelect::Highlights, {0, 0, 0}) == 0);
+}
+
+void color_range_mask_weights_alpha_and_combines_with_selection() {
+  patchy::ColorRangeParams params;
+  params.added = {{0, 200, 0}};
+  params.invert = true;
+  // Opaque, half-transparent and fully transparent red, then opaque green.
+  const std::array<std::uint8_t, 16> rgba{200, 0, 0, 255, 200, 0, 0, 128, 200, 0, 0, 0, 0, 200, 0, 255};
+  const auto mask = patchy::color_range_mask(rgba.data(), 4, 1, 16, params);
+  CHECK((mask == std::vector<std::uint8_t>{255, 128, 0, 0}));
+
+  const std::vector<std::uint8_t> base{255, 100, 0, 200};
+  const std::vector<std::uint8_t> candidate{0, 255, 255, 100};
+  const auto combined = [&](patchy::ColorRangeCombine combine, bool base_is_empty) {
+    auto result = base;
+    patchy::combine_color_range_mask(result, candidate, combine, base_is_empty);
+    return result;
+  };
+  CHECK((combined(patchy::ColorRangeCombine::Add, false) == std::vector<std::uint8_t>{255, 255, 255, 200}));
+  // New works within the existing selection, like Intersect.
+  CHECK((combined(patchy::ColorRangeCombine::Replace, false) == std::vector<std::uint8_t>{0, 100, 0, 100}));
+  CHECK((combined(patchy::ColorRangeCombine::Intersect, false) == std::vector<std::uint8_t>{0, 100, 0, 100}));
+  CHECK((combined(patchy::ColorRangeCombine::Subtract, false) == std::vector<std::uint8_t>{255, 0, 0, 121}));
+  CHECK((combined(patchy::ColorRangeCombine::Replace, true) == candidate));
+  CHECK((combined(patchy::ColorRangeCombine::Intersect, true) == candidate));
+  CHECK((combined(patchy::ColorRangeCombine::Subtract, true) == std::vector<std::uint8_t>{0, 0, 0, 0}));
+}
+
 // main() decides the Qt platform before the QApplication exists, from a raw argv
 // scan; this pins the scan's contract (exact token, "--" ends it) so the
 // QCommandLineParser definition of --headless and the early scan cannot drift.
@@ -1319,6 +1431,11 @@ std::vector<patchy::test::TestCase> infra_selection_tests() {
        magnetic_lasso_prefers_opaque_side_of_alpha_edge},
       {"magnetic_lasso_node_budget_falls_back_to_straight_line",
        magnetic_lasso_node_budget_falls_back_to_straight_line},
+      {"color_range_fuzziness_plateau_then_linear_falloff", color_range_fuzziness_plateau_then_linear_falloff},
+      {"color_range_add_and_subtract_samples", color_range_add_and_subtract_samples},
+      {"color_range_color_families_and_tonal_ranges", color_range_color_families_and_tonal_ranges},
+      {"color_range_mask_weights_alpha_and_combines_with_selection",
+       color_range_mask_weights_alpha_and_combines_with_selection},
       {"spot_heal_source_map_is_coherent_and_outside", spot_heal_source_map_is_coherent_and_outside},
       {"spot_heal_source_map_stays_in_canvas_at_edges", spot_heal_source_map_stays_in_canvas_at_edges},
       {"spot_heal_source_map_attempt_cycles_valid_candidates",

@@ -1,5 +1,6 @@
 #include "ui/canvas_widget.hpp"
 #include "core/adjustment_layer.hpp"
+#include "core/color_range.hpp"
 #include "core/contour_presets.hpp"
 #include "core/gradient_presets.hpp"
 #include "core/layer_metadata.hpp"
@@ -1551,6 +1552,164 @@ void ui_bundled_legacy_plugin_action_applies_filter() {
   save_widget_artifact("ui_legacy_plugin_greyscale", window);
 }
 
+// Select > Color Range (docs/color-range.md). The strip's green channel is 45
+// above the red sample, a weighted distance of 30: half selected at Fuzziness 40.
+patchy::Document color_range_test_document() {
+  patchy::Document document(240, 160, patchy::PixelFormat::rgba8());
+  auto pixels = solid_pixels(240, 160, patchy::PixelFormat::rgba8(), QColor(Qt::white));
+  fill_pixel_rect(pixels, QRect(20, 20, 80, 120), QColor(200, 40, 40));
+  fill_pixel_rect(pixels, QRect(100, 20, 20, 120), QColor(200, 85, 40));
+  fill_pixel_rect(pixels, QRect(140, 20, 80, 120), QColor(40, 60, 200));
+  document.add_pixel_layer("Art", std::move(pixels));
+  return document;
+}
+
+void clear_color_range_settings() {
+  auto settings = patchy::ui::app_settings();
+  for (const char* key : {"tools/colorRangeSelect", "tools/colorRangeFuzziness", "tools/colorRangeInvert",
+                          "tools/colorRangeSelectionPreview"}) {
+    settings.remove(QString::fromLatin1(key));
+  }
+}
+
+void ui_color_range_samples_canvas_and_preview_into_undoable_soft_selection() {
+  clear_color_range_settings();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(color_range_test_document(), QStringLiteral("Color Range"));
+  QApplication::processEvents();
+  auto* canvas = require_canvas(window);
+  canvas->set_tool(patchy::ui::CanvasTool::Brush);
+  const auto click = [](QWidget& widget, QPoint position, Qt::KeyboardModifiers modifiers) {
+    send_mouse(widget, QEvent::MouseButtonPress, position, Qt::LeftButton, Qt::LeftButton, modifiers);
+    send_mouse(widget, QEvent::MouseButtonRelease, position, Qt::LeftButton, Qt::NoButton, modifiers);
+    QApplication::processEvents();
+  };
+
+  bool inspected = false;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyColorRangeDialog"));
+    CHECK(dialog != nullptr);
+    auto* fuzziness = dialog->findChild<QSpinBox*>(QStringLiteral("colorRangeFuzzinessSpin"));
+    auto* preview = dialog->findChild<QWidget*>(QStringLiteral("colorRangePreview"));
+    auto* canvas_preview = dialog->findChild<QComboBox*>(QStringLiteral("colorRangeSelectionPreviewCombo"));
+    CHECK(fuzziness != nullptr && preview != nullptr && canvas_preview != nullptr);
+    CHECK(fuzziness->value() == patchy::kColorRangeDefaultFuzziness);
+    CHECK(canvas->has_transient_read_interaction());
+    CHECK(canvas->edit_locked());
+
+    // The eyedropper samples red, Shift adds blue.
+    click(*canvas, canvas->widget_position_for_document_point(QPoint(50, 80)), Qt::NoModifier);
+    click(*canvas, canvas->widget_position_for_document_point(QPoint(180, 80)), Qt::ShiftModifier);
+    // Alt-click in the dialog preview subtracts blue again. The 240 x 160 document
+    // fills the 240 px preview box at scale 1, centered.
+    const QPoint preview_origin((preview->width() - 240) / 2, (preview->height() - 160) / 2);
+    click(*preview, preview_origin + QPoint(180, 80), Qt::AltModifier);
+
+    // Grayscale Selection Preview paints the pending selection over the canvas.
+    canvas_preview->setCurrentIndex(1);
+    QApplication::processEvents();
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(50, 80)), QColor(255, 255, 255), 4));
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(180, 80)), QColor(0, 0, 0), 4));
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(110, 80)), QColor(128, 128, 128), 6));
+    save_widget_artifact("ui_color_range_dialog", *dialog);
+    save_widget_artifact("ui_color_range_canvas_grayscale_preview", *canvas);
+    canvas_preview->setCurrentIndex(0);
+    QApplication::processEvents();
+    inspected = true;
+    auto* buttons = dialog->findChild<QDialogButtonBox*>();
+    CHECK(buttons != nullptr);
+    buttons->button(QDialogButtonBox::Ok)->click();
+  });
+  require_action(window, "selectColorRangeAction")->trigger();
+  QApplication::processEvents();
+  CHECK(inspected);
+  CHECK(!canvas->has_transient_read_interaction());
+  CHECK(!canvas->edit_locked());
+
+  CHECK(canvas->selection_alpha_at(QPoint(50, 80)) == 255);
+  const auto strip = static_cast<int>(canvas->selection_alpha_at(QPoint(110, 80)));
+  CHECK(strip >= 126 && strip <= 130);
+  CHECK(canvas->selection_alpha_at(QPoint(180, 80)) == 0);
+  CHECK(canvas->selection_alpha_at(QPoint(5, 5)) == 0);
+  CHECK(canvas->selection_has_partial_alpha());
+  save_widget_artifact("ui_color_range_selection", *canvas);
+
+  require_action_by_text(window, QStringLiteral("Undo"))->trigger();
+  QApplication::processEvents();
+  CHECK(!canvas->has_selection());
+  clear_color_range_settings();
+}
+
+void ui_color_range_presets_follow_selection_combine_mode() {
+  clear_color_range_settings();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(color_range_test_document(), QStringLiteral("Color Range Modes"));
+  QApplication::processEvents();
+  auto* canvas = require_canvas(window);
+  // Start from the left half selected.
+  patchy::PixelBuffer left_half(240, 160, patchy::PixelFormat::gray8());
+  left_half.clear(0);
+  for (std::int32_t y = 0; y < 160; ++y) {
+    auto row = left_half.row(y);
+    std::fill(row.begin(), row.begin() + 120, std::uint8_t{255});
+  }
+  canvas->replace_selection_from_grayscale(left_half, QStringLiteral("Setup"));
+  canvas->set_tool(patchy::ui::CanvasTool::Marquee);
+
+  const auto run_color_range = [&](int select_index, bool accept) {
+    bool driven = false;
+    QTimer::singleShot(0, [&] {
+      auto* dialog = find_top_level_dialog(QStringLiteral("patchyColorRangeDialog"));
+      CHECK(dialog != nullptr);
+      auto* select = dialog->findChild<QComboBox*>(QStringLiteral("colorRangeSelectCombo"));
+      auto* fuzziness = dialog->findChild<QSpinBox*>(QStringLiteral("colorRangeFuzzinessSpin"));
+      CHECK(select != nullptr && fuzziness != nullptr);
+      select->setCurrentIndex(select_index);
+      QApplication::processEvents();
+      // Presets have fixed ranges and no eyedroppers, as in Photoshop's classic dialog.
+      CHECK(!fuzziness->isEnabled());
+      CHECK(!canvas->has_transient_read_interaction());
+      driven = true;
+      auto* buttons = dialog->findChild<QDialogButtonBox*>();
+      CHECK(buttons != nullptr);
+      buttons->button(accept ? QDialogButtonBox::Ok : QDialogButtonBox::Cancel)->click();
+    });
+    require_action(window, "selectColorRangeAction")->trigger();
+    QApplication::processEvents();
+    CHECK(driven);
+  };
+  constexpr int kReds = 1;
+  constexpr int kBlues = 5;  // after Sampled Colors, Reds, Yellows, Greens, Cyans
+  // New works within the existing selection, and the blue block lies outside it.
+  canvas->set_selection_mode(patchy::ui::CanvasWidget::SelectionMode::Replace);
+  run_color_range(kBlues, true);
+  CHECK(!canvas->has_selection());
+  require_action_by_text(window, QStringLiteral("Undo"))->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->selection_alpha_at(QPoint(50, 80)) == 255);
+
+  // Add unions the blues with the left half; Cancel changes nothing.
+  canvas->set_selection_mode(patchy::ui::CanvasWidget::SelectionMode::Add);
+  run_color_range(kBlues, false);
+  CHECK(canvas->selection_alpha_at(QPoint(180, 80)) == 0);
+  run_color_range(kBlues, true);
+  CHECK(canvas->selection_alpha_at(QPoint(50, 80)) == 255);
+  CHECK(canvas->selection_alpha_at(QPoint(5, 5)) == 255);
+  CHECK(canvas->selection_alpha_at(QPoint(180, 80)) == 255);
+  CHECK(canvas->selection_alpha_at(QPoint(230, 5)) == 0);
+
+  // Subtract with Reds removes the red block and keeps the rest.
+  canvas->set_selection_mode(patchy::ui::CanvasWidget::SelectionMode::Subtract);
+  run_color_range(kReds, true);
+  CHECK(canvas->selection_alpha_at(QPoint(50, 80)) == 0);
+  CHECK(canvas->selection_alpha_at(QPoint(5, 5)) == 255);
+  CHECK(canvas->selection_alpha_at(QPoint(180, 80)) == 255);
+  canvas->set_selection_mode(patchy::ui::CanvasWidget::SelectionMode::Replace);
+  clear_color_range_settings();
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> selection_engines_tests() {
@@ -1573,6 +1732,9 @@ std::vector<patchy::test::TestCase> selection_engines_tests() {
       {"ui_quick_select_add_and_subtract_strokes", ui_quick_select_add_and_subtract_strokes},
       {"ui_magnetic_lasso_traces_edge_and_commits_selection",
        ui_magnetic_lasso_traces_edge_and_commits_selection},
+      {"ui_color_range_samples_canvas_and_preview_into_undoable_soft_selection",
+       ui_color_range_samples_canvas_and_preview_into_undoable_soft_selection},
+      {"ui_color_range_presets_follow_selection_combine_mode", ui_color_range_presets_follow_selection_combine_mode},
       {"ui_magnetic_lasso_backspace_escape_and_enter", ui_magnetic_lasso_backspace_escape_and_enter},
       {"ui_magnetic_lasso_delete_and_backspace_pop_anchors_not_layer_clear",
        ui_magnetic_lasso_delete_and_backspace_pop_anchors_not_layer_clear},

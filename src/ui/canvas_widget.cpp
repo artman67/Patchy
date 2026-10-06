@@ -299,6 +299,7 @@ void CanvasWidget::set_document_internal(Document* document, bool preserve_frame
   curves_clipping_preview_image_ = QImage();
   curves_clipping_display_mip_cache_.clear();
   curves_clipping_display_mip_source_key_ = 0;
+  selection_preview_overlay_ = QImage();
   const auto old_transform_controls_rect = move_transform_controls_rect();
   const bool render_cache_was_dirty = render_cache_dirty_;
   const bool preserve_frame = preserve_frame_for_same_size && document != nullptr && !render_cache_.isNull() &&
@@ -1088,6 +1089,11 @@ void CanvasWidget::clear_transient_read_interaction() {
 
 bool CanvasWidget::has_transient_read_interaction() const noexcept {
   return static_cast<bool>(transient_read_callback_);
+}
+
+void CanvasWidget::set_selection_preview_overlay(QImage overlay) {
+  selection_preview_overlay_ = std::move(overlay);
+  update();
 }
 
 void CanvasWidget::set_curves_clipping_preview(std::optional<CurvesClippingMode> mode,
