@@ -331,6 +331,8 @@ const char* tool_action_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Delete Anchor");
     case CanvasTool::ConvertPoint:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Convert Point");
+    case CanvasTool::RotateView:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rotate View");
   }
   return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Tool");
 }
@@ -415,6 +417,8 @@ QString tool_hotkey_id(CanvasTool tool) {
       return QStringLiteral("tools.delete_anchor");
     case CanvasTool::ConvertPoint:
       return QStringLiteral("tools.convert_point");
+    case CanvasTool::RotateView:
+      return QStringLiteral("tools.rotate_view");
   }
   return QStringLiteral("tools.unknown");
 }
@@ -441,6 +445,8 @@ const char* tool_tooltip_detail_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to remove it.");
     case CanvasTool::ConvertPoint:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to switch it between corner and smooth.");
+    case CanvasTool::RotateView:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Drag to turn the view. Shift snaps to 15 degrees; Esc resets.");
     default:
       return nullptr;
   }
@@ -481,6 +487,9 @@ const char* tool_activation_hint_source(CanvasTool tool) {
     case CanvasTool::EllipticalMarquee:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Elliptical Marquee: drag to select. Drag a handle to resize the selection, or drag "
              "inside it to move it.");
+    case CanvasTool::RotateView:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. "
+             "Double-click the tool or press Esc to reset.");
     default:
       return nullptr;
   }
@@ -518,8 +527,10 @@ private:
 
 class ToolFlyoutEventFilter final : public QObject {
 public:
-  ToolFlyoutEventFilter(std::function<void()> open_menu, QObject* parent)
-      : QObject(parent), open_menu_(std::move(open_menu)) {}
+  // `double_click` gets the first say on a left double-click (true consumes
+  // it); by default a double-click opens the menu.
+  ToolFlyoutEventFilter(std::function<void()> open_menu, QObject* parent, std::function<bool()> double_click = {})
+      : QObject(parent), open_menu_(std::move(open_menu)), double_click_(std::move(double_click)) {}
 
 protected:
   bool eventFilter(QObject* watched, QEvent* event) override {
@@ -533,7 +544,7 @@ protected:
         return true;
       }
       if (mouse_event->button() == Qt::LeftButton && event->type() == QEvent::MouseButtonDblClick) {
-        if (open_menu_) {
+        if (!(double_click_ && double_click_()) && open_menu_) {
           open_menu_();
         }
         mouse_event->accept();
@@ -545,6 +556,7 @@ protected:
 
 private:
   std::function<void()> open_menu_;
+  std::function<bool()> double_click_;
 };
 
 // Stock QToolBar collapses an expanded overflow bar half a second after the
@@ -796,6 +808,9 @@ QIcon tool_icon(CanvasTool tool) {
     case CanvasTool::ConvertPoint:
       name = "tool-convert-point";
       break;
+    case CanvasTool::RotateView:
+      name = "tool-rotate-view";
+      break;
   }
   return themed_svg_icon(QLatin1String(name));
 }
@@ -853,7 +868,8 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   const auto configure_tool_flyout = [this](QToolBar* palette, QMenu* menu, QToolButton* button,
                                             QAction* default_action, std::initializer_list<QAction*> actions,
                                             const char* cycle_source, const char* cycle_object_name,
-                                            const char* cycle_id, QKeySequence cycle_shortcut) {
+                                            const char* cycle_id, QKeySequence cycle_shortcut,
+                                            std::function<bool()> double_click = {}) {
     button->setProperty("toolFlyout", true);
     button->setToolButtonStyle(Qt::ToolButtonIconOnly);
     button->setPopupMode(QToolButton::DelayedPopup);
@@ -867,7 +883,8 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
     // mousePressEvent and restart the hold timer, so swallow it and open the
     // menu through the same showMenu() path the timer uses. The first click
     // of the pair still selects the default tool, as in Photoshop.
-    button->installEventFilter(new ToolFlyoutEventFilter([button] { button->showMenu(); }, button));
+    button->installEventFilter(
+        new ToolFlyoutEventFilter([button] { button->showMenu(); }, button, std::move(double_click)));
     for (auto* action : actions) {
       QObject::connect(action, &QAction::triggered, button, [button, menu, action] {
         button->setDefaultAction(action);
@@ -991,7 +1008,7 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   detail_menu->setObjectName(QStringLiteral("detailToolMenu"));
   bind_widget_text(detail_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Detail Tools"));
   auto* smudge_action =
-      create_flyout_tool_action(detail_menu, tr("Smudge"), CanvasTool::Smudge, QKeySequence(Qt::Key_R));
+      create_flyout_tool_action(detail_menu, tr("Smudge"), CanvasTool::Smudge, QKeySequence());
   auto* mixer_brush_action = create_flyout_tool_action(
       detail_menu, tr("Mixer Brush"), CanvasTool::MixerBrush, QKeySequence());
   auto* blur_action = create_flyout_tool_action(detail_menu, tr("Blur"), CanvasTool::BlurBrush, QKeySequence());
@@ -1077,7 +1094,29 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   tool_palette->addSeparator();
 
   add_tool_action(tool_palette, tool_group, tr("Pick"), CanvasTool::Eyedropper, QKeySequence(Qt::Key_I));
-  add_tool_action(tool_palette, tool_group, tr("Hand"), CanvasTool::Pan, QKeySequence(Qt::Key_H));
+  // The View Tools flyout pairs the Hand with Rotate View, as in Photoshop.
+  // R belongs to Rotate View (Photoshop's default); Smudge ships unbound and
+  // Shift+H walks the flyout (Shift+R stays on the Detail flyout).
+  auto* view_menu = new QMenu(tr("View Tools"), tool_palette);
+  view_menu->setObjectName(QStringLiteral("viewToolMenu"));
+  bind_widget_text(view_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "View Tools"));
+  auto* hand_action = create_flyout_tool_action(view_menu, tr("Hand"), CanvasTool::Pan, QKeySequence(Qt::Key_H));
+  auto* rotate_view_action =
+      create_flyout_tool_action(view_menu, tr("Rotate View"), CanvasTool::RotateView, QKeySequence(Qt::Key_R));
+  auto* view_tool_button = new QToolButton(tool_palette);
+  view_tool_button->setObjectName(QStringLiteral("viewToolButton"));
+  // Double-clicking the Rotate View tool resets the view angle (Photoshop);
+  // with the Hand showing, the double-click opens the flyout like every other.
+  configure_tool_flyout(tool_palette, view_menu, view_tool_button, hand_action, {hand_action, rotate_view_action},
+                        QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Cycle View Tools"),
+                        "toolCycleViewAction", "tools.cycle.view", QKeySequence(Qt::SHIFT | Qt::Key_H),
+                        [this, view_tool_button, rotate_view_action] {
+                          if (view_tool_button->defaultAction() != rotate_view_action) {
+                            return false;
+                          }
+                          reset_view_rotation();
+                          return true;
+                        });
   auto* zoom_tool_action = add_tool_action(tool_palette, tool_group, tr("Zoom"), CanvasTool::Zoom, QKeySequence(Qt::Key_Z));
   if (auto* zoom_button = qobject_cast<QToolButton*>(tool_palette->widgetForAction(zoom_tool_action));
       zoom_button != nullptr) {

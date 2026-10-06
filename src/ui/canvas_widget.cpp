@@ -461,6 +461,7 @@ void CanvasWidget::set_tool(CanvasTool tool) {
     set_move_transform_controls_layer(std::nullopt);
     clear_move_hover_outline();
     mixer_brush_state_ = {};
+    rotating_view_ = false;
   }
   tool_ = tool;
   // Each selection tool keeps its own combine mode; surface this tool's stored
@@ -1080,7 +1081,8 @@ void CanvasWidget::clear_transient_read_interaction() {
     releaseMouse();
   }
   if (was_dragging && callback) {
-    callback(CanvasReadGesture{document_position(last_mouse_position_), mapToGlobal(last_mouse_position_),
+    callback(CanvasReadGesture{document_position(last_mouse_position_),
+                               global_point_for_view_point(last_mouse_position_),
                                Qt::NoModifier, CanvasReadPhase::Cancel});
   }
   update_tool_cursor();
@@ -1211,7 +1213,7 @@ void CanvasWidget::set_info_callback(std::function<void(CanvasInfoState)> callba
 }
 
 void CanvasWidget::refresh_info_display() const {
-  emit_info_for_widget_position(mapFromGlobal(QCursor::pos()));
+  emit_info_for_widget_position(view_point_from_widget(QPointF(mapFromGlobal(QCursor::pos()))).toPoint());
 }
 
 void CanvasWidget::set_document_changed_callback(std::function<void()> callback) {

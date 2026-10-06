@@ -8909,6 +8909,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Rotar vista</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18662,42 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>Restablecer vista</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>Ángulo de rotación:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>Ángulo de rotación de la vista</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>Devolver la vista a 0 grados</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>Rotar vista</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>Arrastre para girar la vista. Shift ajusta en pasos de 15 grados; Esc la restablece.</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>Rotar vista: arrastre para girar la vista del lienzo; Shift ajusta en pasos de 15 grados. Haga doble clic en la herramienta o pulse Esc para restablecerla.</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>Herramientas de vista</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>Alternar herramientas de vista</translation>
     </message>
 </context>
 <context>

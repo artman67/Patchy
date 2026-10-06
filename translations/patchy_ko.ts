@@ -8879,6 +8879,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>보기 회전</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18606,42 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>보기 초기화</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>회전 각도:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>보기 회전 각도</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>보기를 0도로 되돌립니다</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>보기 회전</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>드래그하여 보기를 회전합니다. Shift를 누르면 15도 단위로 맞춰지고, Esc를 누르면 초기화됩니다.</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>보기 회전: 드래그하여 캔버스 보기를 회전합니다. Shift를 누르면 15도 단위로 맞춰집니다. 초기화하려면 도구를 두 번 클릭하거나 Esc를 누르세요.</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>보기 도구</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>보기 도구 전환</translation>
     </message>
 </context>
 <context>

@@ -162,6 +162,16 @@ CanvasWidget::PenInputSample CanvasWidget::pen_input_sample_from_tablet_event(co
       sample.rotation_available && std::isfinite(event.rotation()) ? static_cast<double>(event.rotation()) : 0.0;
   sample.z_available = capabilities.testFlag(QInputDevice::Capability::ZPosition);
   sample.z = sample.z_available && std::isfinite(event.z()) ? static_cast<float>(event.z()) : 0.0F;
+  if (view_rotated()) {
+    // Tilt direction and barrel rotation arrive in screen terms; a rotated view
+    // turns the document under the pen, so steer the tip in document terms.
+    const auto tilt = view_delta_from_widget_delta(QPointF(sample.x_tilt, sample.y_tilt));
+    sample.x_tilt = static_cast<float>(tilt.x());
+    sample.y_tilt = static_cast<float>(tilt.y());
+    if (sample.rotation_available) {
+      sample.rotation_degrees -= shown_view_rotation();
+    }
+  }
   return sample;
 }
 
@@ -413,7 +423,7 @@ bool CanvasWidget::dispatch_tablet_as_mouse(QTabletEvent* event, const PenInputS
   }
 
   QMouseEvent mouse_event(mouse_type, sample.widget_position,
-                          QPointF(mapToGlobal(sample.widget_position.toPoint())), button, buttons,
+                          QPointF(global_point_for_view_point(sample.widget_position.toPoint())), button, buttons,
                           sample.modifiers);
   handling_tablet_event_ = true;
   switch (mouse_type) {

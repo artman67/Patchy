@@ -1700,6 +1700,10 @@ private:
   void update_text_editor_transform_overlay(QTextEdit* editor);
   void remove_text_editor_transform_overlay(QTextEdit* editor);
   void handle_canvas_view_changed(CanvasWidget* canvas);
+  // Rotate View (docs/rotate-view.md): resets the active canvas's view angle,
+  // and mirrors it into the options-bar Rotation Angle field.
+  void reset_view_rotation();
+  void sync_view_rotation_controls();
   [[nodiscard]] bool is_text_option_widget(QWidget* widget) const;
   void apply_transform_controls_from_ui();
   void sync_transform_controls_from_canvas();
@@ -1981,6 +1985,8 @@ private:
   QPushButton* crop_apply_button_{nullptr};
   QPushButton* patch_remove_object_button_{nullptr};
   QPushButton* crop_cancel_button_{nullptr};
+  UnitSpinBox* rotate_view_angle_spin_{nullptr};
+  QPushButton* rotate_view_reset_button_{nullptr};
   QCheckBox* clone_aligned_check_{nullptr};
   QCheckBox* retouch_sample_all_layers_check_{nullptr};
   QCheckBox* mixer_sample_all_layers_check_{nullptr};

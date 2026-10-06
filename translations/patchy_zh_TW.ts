@@ -8879,6 +8879,10 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>旋轉檢視</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18606,42 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁切框高度</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>重設檢視</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>旋轉角度:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>檢視旋轉角度</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>將檢視轉回 0 度</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>旋轉檢視</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>拖曳可旋轉檢視。按住 Shift 以 15 度為單位貼齊；按 Esc 重設。</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>旋轉檢視：拖曳可旋轉畫布檢視；按住 Shift 以 15 度為單位貼齊。按兩下工具或按 Esc 即可重設。</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>檢視工具</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>循環切換檢視工具</translation>
     </message>
 </context>
 <context>

@@ -455,7 +455,7 @@ bool CanvasWidget::update_move_layer_selection(QMouseEvent* event) {
     gesture.current_document = document_position_f(event->position());
     // Only the rectangle changes while dragging; bounds collection and the
     // panel round-trip happen once, on release.
-    update(old_rect.united(move_layer_selection_widget_rect()));
+    update_view_rect(old_rect.united(move_layer_selection_widget_rect()));
     return true;
   }
 
@@ -576,7 +576,7 @@ void CanvasWidget::cancel_move_layer_selection() {
   const auto dirty = move_layer_selection_widget_rect();
   move_layer_selection_gesture_.reset();
   if (!dirty.isEmpty()) {
-    update(dirty);
+    update_view_rect(dirty);
   }
 }
 
@@ -938,7 +938,7 @@ void CanvasWidget::update_move_hover_outline(QPoint widget_position, Qt::Keyboar
   move_hover_outline_rect_ = next;
 
   if (!dirty.isEmpty()) {
-    update(dirty);
+    update_view_rect(dirty);
   } else {
     update();
   }
@@ -952,7 +952,7 @@ void CanvasWidget::clear_move_hover_outline() {
   const auto dirty = widget_rect_for_document_rect(*move_hover_outline_rect_);
   move_hover_outline_rect_.reset();
   if (!dirty.isEmpty()) {
-    update(dirty);
+    update_view_rect(dirty);
   } else {
     update();
   }

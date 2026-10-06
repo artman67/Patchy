@@ -8879,6 +8879,10 @@ Mixed selection</source>
         <source>Ratio</source>
         <translation>比率</translation>
     </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>回転ビュー</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18606,42 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>Reset View</source>
+        <translation>ビューをリセット</translation>
+    </message>
+    <message>
+        <source>Rotation Angle:</source>
+        <translation>回転角度:</translation>
+    </message>
+    <message>
+        <source>View rotation angle</source>
+        <translation>ビューの回転角度</translation>
+    </message>
+    <message>
+        <source>Turn the view back to 0 degrees</source>
+        <translation>ビューを 0 度に戻します</translation>
+    </message>
+    <message>
+        <source>Rotate View</source>
+        <translation>回転ビュー</translation>
+    </message>
+    <message>
+        <source>Drag to turn the view. Shift snaps to 15 degrees; Esc resets.</source>
+        <translation>ドラッグでビューを回転します。Shift で 15 度単位にスナップ、Esc でリセットします。</translation>
+    </message>
+    <message>
+        <source>Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. Double-click the tool or press Esc to reset.</source>
+        <translation>回転ビュー: ドラッグでカンバスの表示を回転します。Shift で 15 度単位にスナップします。ツールをダブルクリックするか Esc でリセットします。</translation>
+    </message>
+    <message>
+        <source>View Tools</source>
+        <translation>表示ツール</translation>
+    </message>
+    <message>
+        <source>Cycle View Tools</source>
+        <translation>表示ツールを切り替え</translation>
     </message>
 </context>
 <context>

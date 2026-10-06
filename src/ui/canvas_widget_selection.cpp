@@ -1075,7 +1075,7 @@ void CanvasWidget::invalidate_selection_outline() noexcept {
 }
 
 void CanvasWidget::ensure_selection_outline_screen_path() const {
-  const auto viewport = rect();
+  const auto viewport = visible_view_rect();
   if (selection_outline_screen_valid_ && selection_outline_screen_zoom_ == zoom_ &&
       selection_outline_screen_pan_ == pan_ && selection_outline_screen_viewport_ == viewport) {
     return;

@@ -160,8 +160,30 @@ QImage downscaled_to_mip_level(QImage image, int level) {
   return image;
 }
 
-double pixel_aligned_coordinate(double coordinate, double zoom) noexcept {
-  return uses_pixel_aligned_view(zoom) ? std::round(coordinate) : coordinate;
+double pixel_aligned_coordinate(double coordinate, bool pixel_snapped) noexcept {
+  return pixel_snapped ? std::round(coordinate) : coordinate;
+}
+
+// Image sampling for a rotated view. Unrotated views keep the historical
+// rules (smooth below 100%, pixel-aligned blits and the per-pixel renderer
+// above); a rotated view always draws through the exact painter transform, so
+// it filters smoothly until a document pixel spans two screen pixels and
+// samples nearest from there on, which keeps deep-zoom pixels square and crisp.
+constexpr double kRotatedViewNearestZoom = 2.0;
+
+// The transparency checkerboard as one 2x2-square tile, for the rotated view's
+// single pattern fill (the unrotated path fills squares one by one).
+const QImage& checkerboard_tile() {
+  static const QImage tile = [] {
+    constexpr int square = 12;
+    QImage image(square * 2, square * 2, QImage::Format_RGB32);
+    image.fill(QColor(236, 236, 236));
+    QPainter painter(&image);
+    painter.fillRect(0, 0, square, square, QColor(188, 188, 188));
+    painter.fillRect(square, square, square, square, QColor(188, 188, 188));
+    return image;
+  }();
+  return tile;
 }
 
 std::int64_t region_area(QRegion region) noexcept {
@@ -594,7 +616,7 @@ void CanvasWidget::active_edit_target_changed_impl(QRegion document_region, Docu
     for (const auto& rect : document_region) {
       widget_region += widget_rect_for_document_rect(rect);
     }
-    update(widget_region);
+    update_view_region(widget_region);
     return;
   }
   if (layer_edit_target_ == LayerEditTarget::SmartFilterMask) {
@@ -623,7 +645,7 @@ void CanvasWidget::active_edit_target_changed_impl(QRegion document_region, Docu
     for (const auto& rect : document_region) {
       widget_region += widget_rect_for_document_rect(rect);
     }
-    update(widget_region);
+    update_view_region(widget_region);
     return;
   }
   if (!editing_document_channel()) {
@@ -657,7 +679,7 @@ void CanvasWidget::active_edit_target_changed_impl(QRegion document_region, Docu
   for (const auto& rect : document_region) {
     widget_region += widget_rect_for_document_rect(rect);
   }
-  update(widget_region);
+  update_view_region(widget_region);
 }
 
 void CanvasWidget::document_changed_impl(QRegion document_region, bool includes_effect_bounds,
@@ -763,9 +785,9 @@ void CanvasWidget::document_changed_impl(QRegion document_region, bool includes_
     for (const auto& rect : document_region) {
       widget_region += widget_rect_for_document_rect(rect);
     }
-    if (tiling_ghosts_visible(rect())) {
+    if (tiling_ghosts_visible(visible_view_rect())) {
       // Seamless tiling mode: the ghost copies of the dirty region must repaint too.
-      const auto offsets = tiling_direct_offsets(rect());
+      const auto offsets = tiling_direct_offsets(visible_view_rect());
       if (offsets.empty()) {
         // Textured-fill territory (many small tiles): exact replicated rects would miss
         // the rounded grid pitch, so repaint the whole widget.
@@ -779,15 +801,15 @@ void CanvasWidget::document_changed_impl(QRegion document_region, bool includes_
         }
       }
     }
-    update(widget_region);
+    update_view_region(widget_region);
   }
 }
 
 void CanvasWidget::paintEvent(QPaintEvent* event) {
   ZoomTraceScope trace("paint", zoom_);
   QPainter painter(this);
-  const auto exposed_rect = event != nullptr ? event->rect() : rect();
-  painter.fillRect(exposed_rect, backdrop_color());
+  const auto widget_exposed_rect = event != nullptr ? event->rect() : rect();
+  painter.fillRect(widget_exposed_rect, backdrop_color());
 
   if (document_ == nullptr || document_->width() == 0 || document_->height() == 0) {
     painter.setPen(theme().canvas_empty_text);
@@ -795,9 +817,18 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
     return;
   }
 
+  // Rotate View: everything below paints in the unrotated view space through
+  // the painter transform, reusing the same caches as an unrotated frame
+  // (docs/rotate-view.md). Screen-anchored chrome resets the transform.
+  const bool rotated_view = view_rotated();
+  if (rotated_view) {
+    painter.setTransform(view_to_widget_transform());
+  }
+  const auto exposed_rect = rotated_view ? view_rect_for_widget_rect(QRectF(widget_exposed_rect)) : widget_exposed_rect;
+
   const QRectF exact_target_rect(widget_position_f(QPointF(0.0, 0.0)),
                                  widget_position_f(QPointF(document_->width(), document_->height())));
-  const bool pixel_aligned_view = uses_pixel_aligned_view(zoom_);
+  const bool pixel_aligned_view = pixel_snapped_view();
   QRect pixel_aligned_target_rect;
   if (pixel_aligned_view) {
     const auto top_left = widget_position(QPoint(0, 0));
@@ -844,7 +875,7 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
     draw_tiling_preview(painter, target_rect, pixel_aligned_view, exposed_rect);
   }
 
-  const bool deep_pixel_renderer = uses_deep_zoom_pixel_renderer(view_zoom());
+  const bool deep_pixel_renderer = deep_zoom_pixel_view();
   const auto draw_scaled_image = [&painter, &target_rect, pixel_aligned_view,
                                   &pixel_aligned_target_rect, this, exposed_rect](const QImage& image) {
     if (!image.isNull()) {
@@ -860,7 +891,7 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
                                 : (&image == &warp_base_cache_ && zoom_ < 1.0)
                                       ? warp_base_display_image_for_zoom()
                                       : image;
-      if (uses_deep_zoom_pixel_renderer(view_zoom())) {
+      if (deep_zoom_pixel_view()) {
         draw_deep_zoom_image(painter, display_image, exposed_rect);
       } else if (pixel_aligned_view) {
         painter.drawImage(pixel_aligned_target_rect, display_image, display_image.rect());
@@ -898,7 +929,7 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
     if (clear_under_patch) {
       draw_checkerboard(painter, target_rect, patch_exposed);
     }
-    if (uses_deep_zoom_pixel_renderer(view_zoom())) {
+    if (deep_zoom_pixel_view()) {
       painter.save();
       painter.setClipRect(patch_exposed);
       painter.setRenderHint(QPainter::Antialiasing, false);
@@ -972,7 +1003,9 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
 
   painter.save();
   painter.setClipRect(target_rect);
-  painter.setRenderHint(QPainter::SmoothPixmapTransform, uses_smooth_display_scaling(view_zoom(), deep_pixel_renderer));
+  painter.setRenderHint(QPainter::SmoothPixmapTransform,
+                        rotated_view ? view_zoom() < kRotatedViewNearestZoom
+                                     : uses_smooth_display_scaling(view_zoom(), deep_pixel_renderer));
   if (draw_transform_overlay) {
     // Base excludes the transformed layer; the composited-preview patches
     // (when the layer needs one) draw the transformed result over it, so no
@@ -1140,6 +1173,7 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
   draw_stroke_leash_overlay(painter);
   draw_brush_adjust_overlay(painter);
   draw_processing_overlay(painter);
+  painter.resetTransform();
   if (vertical_scroll_bar_ != nullptr && vertical_scroll_bar_->isVisible() &&
       horizontal_scroll_bar_ != nullptr && horizontal_scroll_bar_->isVisible()) {
     // The corner square between the bars reads as scroll chrome, like Photoshop.
@@ -2015,6 +2049,17 @@ void CanvasWidget::draw_checkerboard(QPainter& painter, const QRectF& rect, QRec
   if (visible.isEmpty()) {
     return;
   }
+  if (view_rotated()) {
+    // One pattern fill phase-locked to the same origin, so the squares turn
+    // with the document; filtering keeps their rotated edges clean.
+    painter.save();
+    painter.setClipRect(QRectF(visible).intersected(rect), Qt::IntersectClip);
+    painter.setRenderHint(QPainter::SmoothPixmapTransform, true);
+    painter.setBrushOrigin(aligned.topLeft());
+    painter.fillRect(QRectF(visible).intersected(rect), QBrush(checkerboard_tile()));
+    painter.restore();
+    return;
+  }
   painter.save();
   // Intersect, never replace: the tiling-preview backdrop calls this under a clip that
   // excludes the center tile (all pre-existing callers pass rects already inside any
@@ -2093,7 +2138,8 @@ void CanvasWidget::draw_tiling_preview(QPainter& painter, const QRectF& target_r
   const auto aligned_center = target_rect.toAlignedRect();
   painter.save();
   painter.setRenderHint(QPainter::SmoothPixmapTransform,
-                        uses_smooth_display_scaling(view_zoom(), uses_deep_zoom_pixel_renderer(view_zoom())));
+                        view_rotated() ? view_zoom() < kRotatedViewNearestZoom
+                                       : uses_smooth_display_scaling(view_zoom(), uses_deep_zoom_pixel_renderer(view_zoom())));
   // Keep ghosts strictly outside the center tile (the document draw stays untouched), but
   // let them overlap its outermost pixel: the center draws after us and covers it, and at
   // fractional zooms that overlap fills what would otherwise be a background hairline
@@ -2153,7 +2199,7 @@ void CanvasWidget::draw_tiling_preview(QPainter& painter, const QRectF& target_r
 }
 
 void CanvasWidget::draw_deep_zoom_image(QPainter& painter, const QImage& image, QRect exposed_rect) const {
-  if (document_ == nullptr || image.isNull() || !uses_deep_zoom_pixel_renderer(view_zoom())) {
+  if (document_ == nullptr || image.isNull() || !deep_zoom_pixel_view()) {
     return;
   }
 
@@ -2224,19 +2270,24 @@ void CanvasWidget::draw_grid_overlay(QPainter& painter, const QRectF& target_rec
   const auto subdivisions = std::max(1, grid_subdivisions_);
   const auto minor_x = major_x / static_cast<double>(subdivisions);
   const auto minor_y = major_y / static_cast<double>(subdivisions);
+  // Which document positions carry lines depends on zoom alone; only their
+  // snapping to whole screen pixels is dropped under Rotate View.
   const bool deep_pixel_grid = uses_deep_zoom_pixel_renderer(view_zoom());
+  const bool pixel_snapped = pixel_snapped_view();
   const auto displayed_major_x = deep_pixel_grid ? std::max(1.0, std::round(major_x)) : major_x;
   const auto displayed_major_y = deep_pixel_grid ? std::max(1.0, std::round(major_y)) : major_y;
 
   painter.save();
   painter.setClipRect(QRectF(visible_target).intersected(target_rect));
-  painter.setRenderHint(QPainter::Antialiasing, false);
-  const auto draw_line_at_position = [this, &painter, &visible_target](double position, bool vertical) {
+  // Crisp 1 px lines on the pixel-snapped view; rotated lines antialias.
+  painter.setRenderHint(QPainter::Antialiasing, view_rotated());
+  const auto draw_line_at_position = [this, &painter, &visible_target, pixel_snapped](double position,
+                                                                                     bool vertical) {
     if (vertical) {
-      const auto x = pixel_aligned_coordinate(widget_position_f(QPointF(position, 0.0)).x(), zoom_);
+      const auto x = pixel_aligned_coordinate(widget_position_f(QPointF(position, 0.0)).x(), pixel_snapped);
       painter.drawLine(QPointF(x, visible_target.top()), QPointF(x, visible_target.bottom()));
     } else {
-      const auto y = pixel_aligned_coordinate(widget_position_f(QPointF(0.0, position)).y(), zoom_);
+      const auto y = pixel_aligned_coordinate(widget_position_f(QPointF(0.0, position)).y(), pixel_snapped);
       painter.drawLine(QPointF(visible_target.left(), y), QPointF(visible_target.right(), y));
     }
   };
@@ -2354,13 +2405,17 @@ void CanvasWidget::draw_guides_overlay(QPainter& painter) const {
   }
 
   painter.save();
+  const bool pixel_snapped = pixel_snapped_view();
+  if (view_rotated()) {
+    painter.setRenderHint(QPainter::Antialiasing, true);
+  }
   const auto raw_top_left = widget_position_f(QPointF(0.0, 0.0));
   const auto raw_bottom_right = widget_position_f(QPointF(document_->width(), document_->height()));
-  const QPointF top_left(pixel_aligned_coordinate(raw_top_left.x(), zoom_),
-                         pixel_aligned_coordinate(raw_top_left.y(), zoom_));
-  const QPointF bottom_right(pixel_aligned_coordinate(raw_bottom_right.x(), zoom_),
-                             pixel_aligned_coordinate(raw_bottom_right.y(), zoom_));
-  auto draw_guide = [this, &painter, top_left, bottom_right](GuideOrientation orientation,
+  const QPointF top_left(pixel_aligned_coordinate(raw_top_left.x(), pixel_snapped),
+                         pixel_aligned_coordinate(raw_top_left.y(), pixel_snapped));
+  const QPointF bottom_right(pixel_aligned_coordinate(raw_bottom_right.x(), pixel_snapped),
+                             pixel_aligned_coordinate(raw_bottom_right.y(), pixel_snapped));
+  auto draw_guide = [this, &painter, top_left, bottom_right, pixel_snapped](GuideOrientation orientation,
                                                             std::int32_t position_32, bool selected,
                                                             bool transient, bool remove) {
     auto color = selected ? QColor(255, 235, 105, 230) : guide_color_;
@@ -2372,10 +2427,10 @@ void CanvasWidget::draw_guides_overlay(QPainter& painter) const {
     painter.setPen(pen);
     const auto pixels = static_cast<double>(position_32) / 32.0;
     if (orientation == GuideOrientation::Vertical) {
-      const auto x = pixel_aligned_coordinate(widget_position_f(QPointF(pixels, 0.0)).x(), zoom_);
+      const auto x = pixel_aligned_coordinate(widget_position_f(QPointF(pixels, 0.0)).x(), pixel_snapped);
       painter.drawLine(QPointF(x, top_left.y()), QPointF(x, bottom_right.y()));
     } else {
-      const auto y = pixel_aligned_coordinate(widget_position_f(QPointF(0.0, pixels)).y(), zoom_);
+      const auto y = pixel_aligned_coordinate(widget_position_f(QPointF(0.0, pixels)).y(), pixel_snapped);
       painter.drawLine(QPointF(top_left.x(), y), QPointF(bottom_right.x(), y));
     }
   };
@@ -2396,12 +2451,20 @@ void CanvasWidget::draw_rulers(QPainter& painter) const {
   }
 
   painter.save();
+  painter.resetTransform();  // the rulers stay on the widget edges under Rotate View
   painter.fillRect(QRect(0, 0, width(), kTopRulerHeight), theme().ruler_bar_bg);
   painter.fillRect(QRect(0, 0, kLeftRulerWidth, height()), theme().ruler_bar_bg);
   painter.fillRect(QRect(0, 0, kLeftRulerWidth, kTopRulerHeight), theme().ruler_corner_bg);
   painter.setPen(theme().ruler_edge);
   painter.drawLine(0, kTopRulerHeight - 1, width(), kTopRulerHeight - 1);
   painter.drawLine(kLeftRulerWidth - 1, 0, kLeftRulerWidth - 1, height());
+
+  if (view_rotated()) {
+    // Ruler ticks measure along the document axes, which no longer run along
+    // the widget edges; the bars stay so guides can still be dragged out.
+    painter.restore();
+    return;
+  }
 
   QFont label_font = font();
   label_font.setPointSize(std::max(7, label_font.pointSize() - 2));
@@ -2543,6 +2606,7 @@ void CanvasWidget::draw_processing_overlay(QPainter& painter) const {
                                                              : tr("Processing...");
 
   painter.save();
+  painter.resetTransform();  // screen chrome, upright under Rotate View
   painter.setRenderHint(QPainter::Antialiasing, true);
 
   auto label_font = font();
