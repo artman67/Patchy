@@ -2334,6 +2334,127 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+void adjustment_selective_color_math_metadata_and_psd_round_trip() {
+  CHECK(patchy::adjustment_kind_key(patchy::AdjustmentKind::SelectiveColor) == "selective_color");
+  CHECK(patchy::adjustment_kind_from_key("selective_color") == patchy::AdjustmentKind::SelectiveColor);
+  CHECK(patchy::adjustment_display_name(patchy::AdjustmentKind::SelectiveColor) == "Selective Color");
+
+  using Range = patchy::SelectiveColorRange;
+  const auto weight = [](patchy::RgbColor color, Range range) {
+    return patchy::selective_color_weights(color)[static_cast<std::size_t>(range)];
+  };
+  // The nine family weights are a partition of unity for every color.
+  for (int red = 0; red < 256; red += 17) {
+    for (int green = 0; green < 256; green += 17) {
+      for (int blue = 0; blue < 256; blue += 17) {
+        const auto weights = patchy::selective_color_weights(patchy::RgbColor{
+            static_cast<std::uint8_t>(red), static_cast<std::uint8_t>(green), static_cast<std::uint8_t>(blue)});
+        double sum = 0.0;
+        for (const auto value : weights) {
+          CHECK(value >= 0.0);
+          sum += value;
+        }
+        CHECK(std::abs(sum - 1.0) < 1e-9);
+      }
+    }
+  }
+  CHECK(weight({255, 0, 0}, Range::Reds) == 1.0);
+  CHECK(weight({255, 255, 0}, Range::Yellows) == 1.0);
+  CHECK(weight({255, 255, 0}, Range::Reds) == 0.0);
+  CHECK(weight({255, 255, 255}, Range::Whites) == 1.0);
+  CHECK(weight({0, 0, 0}, Range::Blacks) == 1.0);
+  CHECK(weight({200, 50, 50}, Range::Reds) == 150.0 / 255.0);
+  CHECK(weight({200, 50, 50}, Range::Neutrals) == 210.0 / 510.0);
+
+  patchy::AdjustmentSettings selective;
+  selective.kind = patchy::AdjustmentKind::SelectiveColor;
+  CHECK(!patchy::adjustment_has_effect(selective));
+  CHECK(!patchy::build_adjustment_lut(selective).has_value());
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 50}, selective) == (patchy::RgbColor{200, 50, 50}));
+
+  // Reds +100% cyan. Relative doubles the cyan ink (55/255) at the reds weight
+  // (150/255); Absolute adds full ink at that weight. Green and blue keep theirs.
+  auto& reds = selective.selective_color.corrections[static_cast<std::size_t>(Range::Reds)];
+  reds.cyan = 100;
+  CHECK(patchy::adjustment_has_effect(selective));
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 50}, selective) == (patchy::RgbColor{168, 50, 50}));
+  selective.selective_color.absolute = true;
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 50}, selective) == (patchy::RgbColor{50, 50, 50}));
+  // A color with no red family share is untouched.
+  CHECK(patchy::apply_adjustment_to_color({40, 90, 220}, selective) == (patchy::RgbColor{40, 90, 220}));
+
+  // Relative cannot change pure white (it carries no ink); Absolute can.
+  patchy::SelectiveColorAdjustment whites;
+  whites.corrections[static_cast<std::size_t>(Range::Whites)] = {0, 0, 40, 0};
+  CHECK(patchy::apply_selective_color({255, 255, 255}, whites) == (patchy::RgbColor{255, 255, 255}));
+  whites.absolute = true;
+  CHECK(patchy::apply_selective_color({255, 255, 255}, whites) == (patchy::RgbColor{255, 255, 153}));
+
+  // The same correction on all nine colors acts globally: +100% relative black
+  // doubles every channel's ink, 2v - 255.
+  patchy::SelectiveColorAdjustment global;
+  for (auto& correction : global.corrections) {
+    correction.black = 100;
+  }
+  CHECK(patchy::apply_selective_color({100, 150, 200}, global) == (patchy::RgbColor{0, 45, 145}));
+
+  const auto clamped = patchy::clamp_selective_color(
+      patchy::SelectiveColorAdjustment{{patchy::SelectiveColorCorrection{500, -500, 3, -101}}, false});
+  CHECK(clamped.corrections[0] == (patchy::SelectiveColorCorrection{100, -100, 3, -100}));
+
+  // Metadata and the native 'selc' block (Adobe's published layout: version 1,
+  // method, a reserved zero record, then reds through blacks).
+  selective.selective_color.corrections[static_cast<std::size_t>(Range::Blacks)] = {-5, 6, -7, 8};
+  patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
+  document.add_pixel_layer("Base", solid_rgb(1, 1, 200, 50, 50));
+  patchy::Layer layer(document.allocate_layer_id(), "Selective Color", patchy::LayerKind::Adjustment);
+  layer.set_bounds(patchy::Rect::from_size(document.width(), document.height()));
+  patchy::configure_adjustment_layer(layer, selective);
+  document.add_layer(std::move(layer));
+
+  const auto bytes = patchy::psd::DocumentIo::write_layered_rgb8(document);
+  const auto extra = psd_layer_extra_data(bytes, 1);
+  const auto block = psd_layer_block_payload(extra, "selc");
+  CHECK(block.has_value());
+  CHECK(block->size() == 84U);
+  const std::array<std::uint8_t, 12> head{0x00, 0x01, 0x00, 0x01, 0, 0, 0, 0, 0, 0, 0, 0};
+  CHECK(std::equal(head.begin(), head.end(), block->begin()));
+  const std::array<std::uint8_t, 8> reds_record{0x00, 0x64, 0, 0, 0, 0, 0, 0};
+  CHECK(std::equal(reds_record.begin(), reds_record.end(), block->begin() + 12));
+  const std::array<std::uint8_t, 8> blacks_record{0xFF, 0xFB, 0x00, 0x06, 0xFF, 0xF9, 0x00, 0x08};
+  CHECK(std::equal(blacks_record.begin(), blacks_record.end(), block->end() - 8));
+  CHECK(!psd_layer_block_payload(extra, "plAD").has_value());
+
+  const auto read = patchy::psd::DocumentIo::read(bytes);
+  CHECK(read.layers().size() == 2);
+  const auto restored = patchy::adjustment_settings_from_layer(read.layers()[1]);
+  CHECK(restored.has_value());
+  CHECK(restored->kind == patchy::AdjustmentKind::SelectiveColor);
+  CHECK(restored->selective_color == selective.selective_color);
+  const auto flattened = patchy::Compositor{}.flatten_rgb8(read);
+  CHECK(flattened.pixel(0, 0)[0] == 50);
+
+  // An unedited import re-emits its block byte for byte (here with a nonzero
+  // reserved record); an edit regenerates it with the reserved record zeroed.
+  auto patched = bytes;
+  const std::array<std::uint8_t, 4> key{'s', 'e', 'l', 'c'};
+  const auto found = std::search(patched.begin(), patched.end(), key.begin(), key.end());
+  CHECK(found != patched.end());
+  const auto reserved = static_cast<std::size_t>(found - patched.begin()) + 8U + 5U;
+  patched[reserved] = 0x2A;
+  auto reopened = patchy::psd::DocumentIo::read(patched);
+  const auto resaved = psd_layer_block_payload(
+      psd_layer_extra_data(patchy::psd::DocumentIo::write_layered_rgb8(reopened), 1), "selc");
+  CHECK(resaved.has_value() && resaved->size() == 84U && (*resaved)[5] == 0x2A);
+  auto edited = *patchy::adjustment_settings_from_layer(reopened.layers()[1]);
+  edited.selective_color.absolute = false;
+  patchy::configure_adjustment_layer(reopened.layers()[1], edited);
+  const auto regenerated = psd_layer_block_payload(
+      psd_layer_extra_data(patchy::psd::DocumentIo::write_layered_rgb8(reopened), 1), "selc");
+  CHECK(regenerated.has_value() && regenerated->size() == 84U);
+  CHECK((*regenerated)[3] == 0x00 && (*regenerated)[5] == 0x00);
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3084,6 +3205,8 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"psd_posterize_threshold_write_native_blocks_and_round_trip",
        psd_posterize_threshold_write_native_blocks_and_round_trip},
       {"adjustment_exposure_math_metadata_and_psd_round_trip", adjustment_exposure_math_metadata_and_psd_round_trip},
+      {"adjustment_selective_color_math_metadata_and_psd_round_trip",
+       adjustment_selective_color_math_metadata_and_psd_round_trip},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",

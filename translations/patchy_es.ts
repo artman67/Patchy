@@ -8909,6 +8909,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Corrección selectiva</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>Blancos</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>Neutros</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>Negros</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>Relativo</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>Absoluto</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>Corrección selectiva: absoluto, %1 de 9 colores ajustados</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>Corrección selectiva: relativo, %1 de 9 colores ajustados</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>Cian</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>Amarillo</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>Negro</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>Colores:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18715,18 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>Corrección &amp;selectiva...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Corrección selectiva</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>Se ha cancelado Corrección selectiva</translation>
     </message>
 </context>
 <context>

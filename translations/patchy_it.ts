@@ -8909,6 +8909,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapporto</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Correzione colore selettiva</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>Bianchi</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>Neutri</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>Neri</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>Relativo</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>Assoluto</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>Correzione colore selettiva: assoluto, %1 colori su 9 regolati</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>Correzione colore selettiva: relativo, %1 colori su 9 regolati</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>Cyan</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>Giallo</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>Nero</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>Colori:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18715,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Altezza del riquadro di ritaglio</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>Correzione colore &amp;selettiva...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Correzione colore selettiva</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>Annullato: Correzione colore selettiva</translation>
     </message>
 </context>
 <context>

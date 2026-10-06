@@ -8879,6 +8879,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>선택 색상</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>흰색 계열</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>중간색 계열</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>검정 계열</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>상대치</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>절대치</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>선택 색상: 절대치, 9개 색상 중 %1개 조정됨</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>선택 색상: 상대치, 9개 색상 중 %1개 조정됨</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>청록</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>마젠타</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>노랑</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>검정</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>색상:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18659,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>선택 색상(&amp;S)...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>선택 색상</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>취소된 선택 색상</translation>
     </message>
 </context>
 <context>

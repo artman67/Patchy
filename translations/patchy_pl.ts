@@ -8939,6 +8939,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporcje</translation>
     </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Kolor selektywny</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>Białe</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>Neutralne</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>Czarne</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>Względna</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>Bezwzględna</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>Kolor selektywny: metoda bezwzględna, dostosowane kolory: %1 z 9</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>Kolor selektywny: metoda względna, dostosowane kolory: %1 z 9</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>Cyjan</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>Żółty</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>Czarny</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>Kolory:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18771,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Wysokość ramki kadrowania</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>Kolor &amp;selektywny...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Kolor selektywny</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>Anulowano: Kolor selektywny</translation>
     </message>
 </context>
 <context>
