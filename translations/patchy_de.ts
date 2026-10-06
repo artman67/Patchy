@@ -8913,6 +8913,30 @@ RGB: %2, %3, %4</translation>
         <source>Rotate View</source>
         <translation>Ansicht drehen</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Verlaufsumsetzung</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>Verlauf für die Graustufenumsetzung</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>Dies ist ein Rauschverlauf. Wählen Sie eine Vorgabe, um ihn durch bearbeitbare Farbunterbrechungen zu ersetzen.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Ergebnis</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>Verlaufsoptionen</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>Verlaufsumsetzung: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18698,6 +18722,18 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Cycle View Tools</source>
         <translation>Ansicht-Werkzeuge durchschalten</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>Verlaufs&amp;umsetzung...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Verlaufsumsetzung</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>Verlaufsumsetzung abgebrochen</translation>
     </message>
 </context>
 <context>

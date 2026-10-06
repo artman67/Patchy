@@ -8883,6 +8883,30 @@ RGB：%2, %3, %4</translation>
         <source>Rotate View</source>
         <translation>旋轉檢視</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>漸層對應</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>灰階對應所使用的漸層</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>這是雜訊漸層。選擇預設集即可將其取代為可編輯的色標。</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>結果</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>漸層選項</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>漸層對應：%1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18642,6 +18666,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cycle View Tools</source>
         <translation>循環切換檢視工具</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>漸層對應(&amp;G)...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>漸層對應</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>已取消漸層對應</translation>
     </message>
 </context>
 <context>

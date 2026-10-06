@@ -134,6 +134,8 @@ constexpr std::array<char, 4> kPhotoshopBrightnessContrastDescriptorBlockKey{'C'
 // highlights i16 x3 (cyan/red, magenta/green, yellow/blue each), preserve
 // luminosity u8, pad u8. Patchy models the midtones triple only.
 constexpr std::array<char, 4> kPhotoshopColorBalanceBlockKey{'b', 'l', 'n', 'c'};
+// Gradient Map: layout and its uncertainties beside the codec in psd_adjustments.cpp.
+constexpr std::array<char, 4> kPhotoshopGradientMapBlockKey{'g', 'r', 'd', 'm'};
 // version u16, colorize u8, pad u8, colorize h/s/l i16 x3, master h/s/l i16 x3,
 // then six band records of four i16 range stops plus an i16 h/s/l triple, then
 // an undocumented 36-byte trailer Photoshop always writes.
@@ -597,6 +599,11 @@ std::vector<std::uint8_t> photoshop_color_balance_payload(const ColorBalanceAdju
 // True when the payload carries settings Patchy preserves but does not render
 // (nonzero shadows/highlights or preserve luminosity) - drives the import notice.
 [[nodiscard]] bool photoshop_color_balance_payload_has_unrendered_data(std::span<const std::uint8_t> payload);
+std::optional<AdjustmentSettings> parse_photoshop_gradient_map_adjustment(std::span<const std::uint8_t> payload);
+// Re-emits the imported payload while the gradient is unchanged, patching only
+// the reverse/dither/method fields; a gradient edit regenerates the block.
+std::vector<std::uint8_t> photoshop_gradient_map_payload(const GradientMapAdjustment& settings,
+                                                         const UnknownPsdBlock* original);
 // Reads the legacy private 'plAD' block. Read-only since 2026-07: Photoshop
 // reports the unknown key as "unknown data" on open, so no kind writes it
 // anymore; native levl/curv/hue2/blnc blocks carry the modeled state instead.

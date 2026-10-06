@@ -8883,6 +8883,30 @@ Mixed selection</source>
         <source>Rotate View</source>
         <translation>回転ビュー</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>グラデーションマップ</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>グレースケールマッピングに使用するグラデーション</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>これはノイズグラデーションです。プリセットを選ぶと、編集できるカラーストップに置き換わります。</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>結果</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>グラデーションオプション</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>グラデーションマップ: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18642,6 +18666,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cycle View Tools</source>
         <translation>表示ツールを切り替え</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>グラデーションマップ(&amp;G)...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>グラデーションマップ</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>グラデーションマップをキャンセルしました</translation>
     </message>
 </context>
 <context>

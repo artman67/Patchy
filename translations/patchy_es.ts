@@ -8913,6 +8913,30 @@ RGB: %2, %3, %4</translation>
         <source>Rotate View</source>
         <translation>Rotar vista</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Mapa de degradado</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>Degradado usado para la asignación de escala de grises</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>Es un degradado de ruido. Elija un ajuste preestablecido para reemplazarlo por detenciones de color editables.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Resultado</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>Opciones de degradado</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>Mapa de degradado: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18698,6 +18722,18 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Cycle View Tools</source>
         <translation>Alternar herramientas de vista</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>&amp;Mapa de degradado...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Mapa de degradado</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>Se ha cancelado Mapa de degradado</translation>
     </message>
 </context>
 <context>

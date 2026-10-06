@@ -8913,6 +8913,30 @@ RVB : %2, %3, %4</translation>
         <source>Rotate View</source>
         <translation>Rotation de l&apos;affichage</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Courbe de transfert de dégradé</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>Dégradé utilisé pour le mappage des niveaux de gris</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>Il s&apos;agit d&apos;un dégradé de bruit. Choisissez un paramètre prédéfini pour le remplacer par des étapes de couleur modifiables.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Résultat</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>Options de dégradé</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>Courbe de transfert de dégradé : %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18698,6 +18722,18 @@ Convertis en images : %1.</translation>
     <message>
         <source>Cycle View Tools</source>
         <translation>Alterner les outils d&apos;affichage</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>Courbe de transfert de &amp;dégradé...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Courbe de transfert de dégradé</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>Courbe de transfert de dégradé annulée</translation>
     </message>
 </context>
 <context>

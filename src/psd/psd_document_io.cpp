@@ -789,6 +789,12 @@ std::vector<Layer> read_layer_info_records(BigEndianReader& layer_reader, std::i
             ++unrendered_color_balance_count;
           }
         }
+      } else if (block.key == "grdm") {
+        // An unparseable payload (CMYK/Lab stops, an unknown layout) keeps the
+        // pre-model path: an empty pixel layer that re-emits the raw block.
+        if (auto parsed = parse_photoshop_gradient_map_adjustment(block.payload); parsed.has_value()) {
+          native_adjustment_settings = parsed;
+        }
       } else if (block.key == "brit") {
         brit_adjustment_settings = parse_photoshop_brightness_contrast_adjustment(block.payload);
       } else if (block.key == "CgEd") {

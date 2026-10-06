@@ -68,7 +68,13 @@ QString smart_object_layer_warning(const Layer& layer) {
 int unknown_layer_block_count(const Layer& layer) {
   return static_cast<int>(
       std::count_if(layer.unknown_psd_blocks().begin(), layer.unknown_psd_blocks().end(),
-                    [](const UnknownPsdBlock& block) { return !known_round_trip_layer_block(block); }));
+                    [&layer](const UnknownPsdBlock& block) {
+                      // An unparseable grdm leaves a plain layer; only then is it unknown data.
+                      if (block.key == "grdm") {
+                        return layer.kind() != LayerKind::Adjustment;
+                      }
+                      return !known_round_trip_layer_block(block);
+                    }));
 }
 
 void append_unrendered_style_warnings(const Layer& layer, QStringList& warnings) {
@@ -144,7 +150,7 @@ void append_layer_warnings(const Layer& layer, QStringList& warnings) {
   if (layer.kind() == LayerKind::Adjustment) {
     const auto settings = adjustment_settings_from_layer(layer);
     // Every modeled adjustment kind writes a native Photoshop block (levl /
-    // curv / hue2 / blnc / nvrt / post / thrs / brit); only an adjustment
+    // curv / hue2 / blnc / nvrt / post / thrs / brit / grdm); only an adjustment
     // layer whose settings cannot be parsed stays Patchy-opaque.
     if (!settings.has_value()) {
       warnings << QObject::tr("%1 is a Patchy-native adjustment layer; it round-trips in Patchy PSDs but may "

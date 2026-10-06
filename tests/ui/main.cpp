@@ -309,6 +309,7 @@ int main(int argc, char* argv[]) {
            divide_photos_tests,
            folder_open_export_tests,
            image_adjustments_curves_tests,
+           gradient_map_tests,
            selection_engines_tests,
            misc_visuals_outline_stress_tests,
            float_window_tests,

@@ -8943,6 +8943,30 @@ RGB: %2, %3, %4</translation>
         <source>Rotate View</source>
         <translation>Поворот вида</translation>
     </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Карта градиента</translation>
+    </message>
+    <message>
+        <source>Gradient Used for Grayscale Mapping</source>
+        <translation>Градиент для отображения оттенков серого</translation>
+    </message>
+    <message>
+        <source>This is a Noise gradient. Choose a preset to replace it with editable color stops.</source>
+        <translation>Это шумовой градиент. Выберите набор, чтобы заменить его редактируемыми контрольными точками цвета.</translation>
+    </message>
+    <message>
+        <source>Result</source>
+        <translation>Результат</translation>
+    </message>
+    <message>
+        <source>Gradient Options</source>
+        <translation>Параметры градиента</translation>
+    </message>
+    <message>
+        <source>Gradient Map: %1</source>
+        <translation>Карта градиента: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18754,6 +18778,18 @@ Y: %2
     <message>
         <source>Cycle View Tools</source>
         <translation>Сменить инструмент просмотра</translation>
+    </message>
+    <message>
+        <source>&amp;Gradient Map...</source>
+        <translation>Карта &amp;градиента...</translation>
+    </message>
+    <message>
+        <source>Gradient Map</source>
+        <translation>Карта градиента</translation>
+    </message>
+    <message>
+        <source>Cancelled Gradient Map</source>
+        <translation>Карта градиента отменена</translation>
     </message>
 </context>
 <context>

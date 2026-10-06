@@ -992,6 +992,7 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/curves_presets.cpp
       src/ui/filter_workflows.cpp
       src/ui/adjustment_dialogs.cpp
+      src/ui/gradient_map_dialog.cpp
       src/ui/filter_look_library.hpp
       src/ui/filter_look_library.cpp
       src/ui/visual_filter_gallery_dialog.hpp
@@ -1681,6 +1682,7 @@ if(PATCHY_BUILD_TESTS)
     tests/core/psd_test_support.cpp
     tests/core/smart_filter_descriptors_test_support.cpp
     tests/core/adjustments_curves_tests.cpp
+    tests/core/adjustments_gradient_map_tests.cpp
     tests/core/af_tests.cpp
     tests/core/brush_engine_tests.cpp
     tests/core/composite_corpus_tests.cpp
@@ -1816,6 +1818,7 @@ if(PATCHY_BUILD_TESTS)
       tests/ui/divide_photos_tests.cpp
       tests/ui/folder_open_export_tests.cpp
       tests/ui/image_adjustments_curves_tests.cpp
+      tests/ui/gradient_map_tests.cpp
       tests/ui/selection_engines_tests.cpp
       tests/ui/misc_visuals_outline_stress_tests.cpp
       tests/ui/float_window_tests.cpp
