@@ -1462,6 +1462,19 @@ std::optional<ExposureSettings> request_exposure_settings(
       });
 }
 
+std::optional<VibranceSettings> request_vibrance_settings(
+    QWidget* parent, std::function<void(bool, const VibranceSettings&)> preview_changed, VibranceSettings initial) {
+  initial = clamp_vibrance(initial);
+  return request_adjustment_settings_dialog<VibranceSettings>(
+      parent, QStringLiteral("patchyVibranceDialog"), QObject::tr("Vibrance"), QStringLiteral("vibrancePreviewCheck"),
+      {{QObject::tr("Vibrance"), QStringLiteral("vibranceVibrance"), -kVibranceRange, kVibranceRange,
+        initial.vibrance, {}},
+       {QObject::tr("Saturation"), QStringLiteral("vibranceSaturation"), -kVibranceRange, kVibranceRange,
+        initial.saturation, {}}},
+      [](const std::vector<QSpinBox*>& spins) { return VibranceSettings{spins[0]->value(), spins[1]->value()}; },
+      std::move(preview_changed));
+}
+
 std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed,
     BrightnessContrastSettings initial) {

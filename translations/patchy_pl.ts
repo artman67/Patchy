@@ -8939,6 +8939,14 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporcje</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Jaskrawość</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Jaskrawość: jaskrawość %1, nasycenie %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18722,14 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Wysokość ramki kadrowania</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Jaskrawość...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Anulowano: Jaskrawość</translation>
     </message>
 </context>
 <context>

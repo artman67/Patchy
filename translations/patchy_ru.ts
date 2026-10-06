@@ -8939,6 +8939,14 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Сочность</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Сочность: сочность %1, насыщенность %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18722,14 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Сочность...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Отменена сочность</translation>
     </message>
 </context>
 <context>

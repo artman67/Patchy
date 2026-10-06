@@ -74,6 +74,7 @@ struct ColorBalanceSettings {
 using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
+using VibranceSettings = VibranceAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 
 struct FilterControlSpec {
@@ -166,6 +167,9 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<ExposureSettings> request_exposure_settings(
     QWidget* parent, std::function<void(bool, const ExposureSettings&)> preview_changed = {},
     ExposureSettings initial = {});
+[[nodiscard]] std::optional<VibranceSettings> request_vibrance_settings(
+    QWidget* parent, std::function<void(bool, const VibranceSettings&)> preview_changed = {},
+    VibranceSettings initial = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -202,5 +206,7 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+void apply_vibrance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection, VibranceSettings settings,
+                              const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui
