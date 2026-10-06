@@ -48,6 +48,16 @@ Fitted against Photoshop's renders of psd-tools' `adjustments/levels_rgb.psd` an
 - Refuted: the piecewise sRGB curve in place of the plain 2.2 power (up to 7/255 off at +2 stops).
 - Unprobed: Grayscale and CMYK documents (Photoshop adjusts in the document's space; Patchy converts to sRGB on open first) and 16/32-bit sources.
 
+## Vibrance (October 2026)
+
+`AdjustmentKind::Vibrance`, Photoshop's `vibA` block: u32 descriptor version 16, then a `null` descriptor holding `vibrance` (stringID) and `Strt` (charID, the Saturation slider), both `long`, -100..100. Adobe's [PSD specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/) names only the key and the descriptor wrapper; the item keys are Photoshop's Action Manager names. A missing item reads as 0, a `doub` item rounds; Patchy writes both items. An unedited imported block is written back byte for byte.
+
+- Math (`apply_vibrance`), on HSL saturation `s = (max-min) / (255 - |max+min-255|)` at fixed `L = (max+min)/2`: `s1 = 1 - (1-s)^(2^(vibrance/100))`, then `s2 = min(1, s1 * (1 + saturation/100))`, each channel `L + (c-L) * s2/s`, rounded. Hue and HSL lightness are kept, neutrals never change, no channel clips. Vibrance +100 about doubles a muted color and leaves full saturation alone; -100 about halves a muted color and barely touches vivid ones. Saturation -100 is gray at L, +100 doubles s up to 1.
+- Uncalibrated. Written from Adobe's published behavior (Vibrance raises less-saturated colors more and limits clipping near full saturation; Saturation applies the same amount to every color) with no Photoshop render to fit; the curve shape, the stage order and the Saturation endpoints are Patchy's choices. psd-tools' adjustment corpus (`testy/fetch_psd_tools_corpus.py`) is the calibration route, as for Exposure. Photoshop has not yet opened a Patchy-written `vibA` (warning-free open, editable Vibrance layer): owed. Today it round-trips through Patchy's reader only.
+- Deliberate deviation: no skin-tone protection (patent note below). Photoshop damps warm, skin-like hues; Patchy's strength depends only on saturation, so skin saturates more than in Photoshop.
+- Image > Adjustments > Vibrance... rewrites the active pixel layer through the same function (`apply_vibrance_to_pixels`), equal to a Vibrance layer with the same settings. CMYK and grayscale documents keep the RGB math, like Hue/Saturation.
+- Patent note (2026-10-06, claim text on Google Patents). Apple US 8638338 (to 2032-03-22): claims 1, 8, 12, 16 and 21 need one control that adjusts colors inside a color sub-region (skin) by their deviation from a reference color and colors outside it UNIFORMLY; claim 25 needs a region selector and one control that adjusts one pixel set uniformly and another non-uniformly. Its continuation US 9639965 (to 2028-09-29): claims 1 and 8 adjust a pixel inside a color sub-region by its deviation from the NEAREST of several reference colors there and other pixels to a different degree; claim 14 the same with one or more selected reference colors. Adobe US 8406482 (to 2031-05-03): a skin mask from a trained model refined by image-specific skin and non-skin models. Patchy's Vibrance is one formula of each pixel's own saturation for every color: no color sub-region, no reference or skin color, no hue term, no image statistics, so no pixel set is adjusted uniformly and nothing is measured against a reference color. The Saturation slider is the long-standing uniform scale with the usual gamut cap, the same as Hue/Saturation's master slider. Kodak US 6771311 and Jasc US 6868179 (automatic saturation from image statistics or hue/lightness tables) expired in 2023. Binding rule: [legal-constraints.md](legal-constraints.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -71,7 +81,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Vibrance and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

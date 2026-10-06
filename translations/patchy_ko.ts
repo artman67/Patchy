@@ -8879,6 +8879,14 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>생동감</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>생동감: 생동감 %1, 채도 %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18610,14 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>생동감(&amp;V)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>취소된 생동감</translation>
     </message>
 </context>
 <context>

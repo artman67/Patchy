@@ -8909,6 +8909,14 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Intensidad</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Intensidad: intensidad %1, saturación %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18666,14 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Intensidad...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Se ha cancelado Intensidad</translation>
     </message>
 </context>
 <context>

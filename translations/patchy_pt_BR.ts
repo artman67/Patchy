@@ -8909,6 +8909,14 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporção</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Vibração</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Vibração: vibração %1, saturação %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18666,14 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Altura da caixa de corte</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Vibração...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Vibração cancelada</translation>
     </message>
 </context>
 <context>
