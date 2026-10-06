@@ -8898,6 +8898,10 @@ RGB: %2, %3, %4</source>
         <source>Ratio</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10452,6 +10456,26 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Crop box reset to the canvas</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>History Brush</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -18607,6 +18631,30 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

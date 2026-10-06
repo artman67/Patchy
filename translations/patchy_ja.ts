@@ -8879,6 +8879,10 @@ Mixed selection</source>
         <source>Ratio</source>
         <translation>比率</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>ヒストリーブラシ</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10434,6 +10438,26 @@ Mixed selection</source>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>切り抜き枠をカンバスに戻しました</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>グレースケールチャンネルの編集中はヒストリーブラシを使用できません</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>先に履歴パネルでヒストリーブラシのソースを設定してください</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>履歴の状態のカンバスサイズが異なるため、ヒストリーブラシを使用できませんでした</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>履歴の状態に対応するレイヤーがないため、ヒストリーブラシを使用できませんでした</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>ヒストリーブラシ</translation>
     </message>
 </context>
 <context>
@@ -18602,6 +18626,30 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>ヒストリーブラシ</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>履歴のソース状態からピクセルを描き戻します。履歴パネルの行を右クリックすると、その行をソースにできます。</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>ヒストリーブラシ：ドラッグして、作業中のレイヤーを履歴のソース状態に戻します。ソースは開いたときのドキュメントで、履歴パネルの行を右クリックすると変更できます。</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>ヒストリーブラシのソース</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>ヒストリーブラシのソースに設定</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>ヒストリーブラシのソース：%1</translation>
     </message>
 </context>
 <context>

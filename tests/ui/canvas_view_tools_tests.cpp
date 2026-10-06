@@ -1770,6 +1770,7 @@ void ui_tool_palette_icons_render_sheet() {
       {"toolBrushAction", "Brush"},
       {"toolCloneAction", "Clone"},
       {"toolPatternStampAction", "Pattern Stamp"},
+      {"toolHistoryBrushAction", "History Brush"},
       {"toolHealingBrushAction", "Healing Brush"},
       {"toolSpotHealingAction", "Spot Healing"},
       {"toolPatchAction", "Patch"},

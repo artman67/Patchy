@@ -8909,6 +8909,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporção</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pincel do histórico</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10464,6 +10468,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Caixa de corte redefinida para a tela</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>O pincel do histórico não está disponível ao editar um canal em tons de cinza</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Defina primeiro uma origem para o pincel do histórico no painel Histórico</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>Não foi possível usar o pincel do histórico porque o estado do histórico tem um tamanho de tela diferente</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>Não foi possível usar o pincel do histórico porque o estado do histórico não contém uma camada correspondente</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pincel do histórico</translation>
     </message>
 </context>
 <context>
@@ -18658,6 +18682,30 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Altura da caixa de corte</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pincel do histórico</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Pinta de volta os pixels do estado de origem do histórico. Clique com o botão direito em uma linha do painel Histórico para torná-la a origem.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Pincel do histórico: pinte para restaurar a camada ativa a partir do estado de origem do histórico, o documento como foi aberto, a menos que você clique com o botão direito em uma linha do painel Histórico para mudá-lo.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Origem do pincel do histórico</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Definir origem do pincel do histórico</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Origem do pincel do histórico: %1</translation>
     </message>
 </context>
 <context>
