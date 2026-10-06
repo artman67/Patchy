@@ -8879,6 +8879,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>샘플 색상</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>중간톤</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>검정 매트</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>흰색 매트</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>빠른 마스크</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>색상 범위</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>선택:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>허용량:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>색상 범위 미리 보기</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>선택 영역 미리 보기:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>스포이드: 이미지를 클릭하여 색상을 샘플링합니다</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>샘플에 추가(Shift 키를 누른 채 클릭)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>샘플에서 빼기(%ALT% 클릭)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>반전</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18659,22 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>색상 범위(&amp;N)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>취소된 색상 범위</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>색상 범위</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>색상 범위로 선택된 픽셀이 없습니다</translation>
     </message>
 </context>
 <context>

@@ -8879,6 +8879,63 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>取样颜色</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>中间调</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>黑色杂边</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>白色杂边</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>快速蒙版</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>色彩范围</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>选择:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>颜色容差:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>色彩范围预览</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>选区预览:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>吸管：单击图像以取样颜色</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>添加到取样（Shift+单击）</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>从取样中减去（%ALT%+单击）</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>反相</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18659,22 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁剪框高度</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>色彩范围(&amp;N)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>已取消色彩范围</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>色彩范围</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>色彩范围未选中任何像素</translation>
     </message>
 </context>
 <context>

@@ -8939,6 +8939,63 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporcje</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>Próbkowane kolory</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>Półtony</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>Czarne tło</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>Białe tło</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>Szybka maska</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Zakres koloru</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>Zaznacz:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>Tolerancja:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>Podgląd zakresu koloru</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>Podgląd zaznaczenia:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>Kroplomierz: kliknij obraz, aby pobrać próbkę koloru</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>Dodaj do próbki (kliknij z Shift)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>Odejmij od próbki (kliknij z %ALT%)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>Odwróć</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18771,22 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Wysokość ramki kadrowania</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>Zakres &amp;koloru...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>Anulowano: Zakres koloru</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Zakres koloru</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>Zakres koloru nie zaznaczył żadnych pikseli</translation>
     </message>
 </context>
 <context>

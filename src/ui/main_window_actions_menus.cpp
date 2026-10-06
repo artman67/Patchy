@@ -643,6 +643,16 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   register_hotkey(deselect_layers_action, "select.deselect_layers");
   connect(deselect_layers_action, &QAction::triggered, this, [this] { deselect_all_layers(); });
   register_document_action(deselect_layers_action);
+  // Select > Color Range (Photoshop's placement: its own group under the layer
+  // selection commands); color_range_dialog in main_window_layer_ops.cpp.
+  auto* color_range_action = new QAction(tr("Color Ra&nge..."), this);
+  color_range_action->setObjectName(QStringLiteral("selectColorRangeAction"));
+  color_range_action->setIcon(simple_icon(QStringLiteral("CR")));
+  bind_action_text(color_range_action, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Color Ra&nge..."));
+  register_hotkey(color_range_action, "select.color_range");
+  connect(color_range_action, &QAction::triggered, this, [this] { color_range_dialog(); });
+  register_document_action(color_range_action);
+  color_range_action->setProperty("patchy.quickMaskBlocked", true);
   quick_mask_action_ = new QAction(tr("Edit in &Quick Mask Mode"), this);
   quick_mask_action_->setObjectName(QStringLiteral("selectQuickMaskAction"));
   quick_mask_action_->setCheckable(true);
@@ -767,6 +777,8 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   select_menu->addAction(reselect_action);
   select_menu->addAction(inverse_selection_action);
   select_menu->addAction(deselect_layers_action);
+  select_menu->addSeparator();
+  select_menu->addAction(color_range_action);
   select_menu->addSeparator();
   select_menu->addAction(quick_mask_action_);
   select_menu->addSeparator();

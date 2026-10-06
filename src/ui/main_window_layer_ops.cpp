@@ -70,6 +70,7 @@
 #include "ui/hotkey_editor.hpp"
 #include "ui/edit_conversions.hpp"
 #include "ui/color_panel.hpp"
+#include "ui/color_range_dialog.hpp"
 #include "ui/layer_style_dialog.hpp"
 #include "ui/canvas_widget_shared.hpp"
 #include "ui/layer_list_widget.hpp"
@@ -89,6 +90,7 @@
 #include "ui/tile_preview_window.hpp"
 #include "ui/warp_text_dialog.hpp"
 #include "ui/qt_geometry.hpp"
+#include "ui/tool_cursors.hpp"
 #include "ui/theme_qss.hpp"
 #include "ui/splash_dialog.hpp"
 #include "ui/update_checker.hpp"
@@ -4169,6 +4171,91 @@ void MainWindow::border_selection_dialog() {
                                             tr("Border Selection"), tr("Width"), 4, 1, 250, 1);
   if (pixels.has_value()) {
     canvas_->run_selection_command(tr("Border Selection"), [this, pixels] { canvas_->border_selection(*pixels); });
+  }
+}
+
+// Select > Color Range: scores the visible composite by color in a non-modal
+// dialog (the canvas stays clickable for the eyedroppers) and combines the result
+// with the active selection tool's combine mode. New keeps Photoshop's rule that
+// Color Range works within an existing selection.
+void MainWindow::color_range_dialog() {
+  if (canvas_ == nullptr || !has_active_document()) {
+    return;
+  }
+  if (preview_dialog_edit_locked()) {
+    show_preview_dialog_edit_lock_message();
+    return;
+  }
+  const auto& doc = std::as_const(document());
+  ColorRangeDialogInput input;
+  input.composite = qimage_from_document(doc, true).convertToFormat(QImage::Format_RGBA8888);
+  if (input.composite.isNull()) {
+    return;
+  }
+  if (canvas_->has_selection()) {
+    const auto base = canvas_->selection_as_grayscale();
+    input.base_selection = QImage(base.width(), base.height(), QImage::Format_Grayscale8);
+    for (std::int32_t y = 0; y < base.height(); ++y) {
+      const auto row = base.row(y);
+      std::copy(row.begin(), row.end(), input.base_selection.scanLine(y));
+    }
+  }
+  const auto tool_mode = CanvasWidget::selection_tool_index(canvas_->tool()) >= 0
+                             ? canvas_->selection_mode()
+                             : CanvasWidget::SelectionMode::Replace;
+  switch (tool_mode) {
+    case CanvasWidget::SelectionMode::Replace:
+      input.combine = ColorRangeCombine::Replace;
+      break;
+    case CanvasWidget::SelectionMode::Add:
+      input.combine = ColorRangeCombine::Add;
+      break;
+    case CanvasWidget::SelectionMode::Subtract:
+      input.combine = ColorRangeCombine::Subtract;
+      break;
+    case CanvasWidget::SelectionMode::Intersect:
+      input.combine = ColorRangeCombine::Intersect;
+      break;
+  }
+  input.initial_sample = canvas_->primary_color();
+
+  const QPointer<CanvasWidget> target_canvas = canvas_;
+  ColorRangeDialogHooks hooks;
+  hooks.set_canvas_sampler = [target_canvas](std::function<void(const CanvasReadGesture&)> callback) {
+    if (target_canvas == nullptr) {
+      return;
+    }
+    if (callback) {
+      target_canvas->set_transient_read_interaction(std::move(callback), eyedropper_cursor());
+    } else {
+      target_canvas->clear_transient_read_interaction();
+    }
+  };
+  hooks.set_canvas_overlay = [target_canvas](const QImage& overlay) {
+    if (target_canvas != nullptr) {
+      target_canvas->set_selection_preview_overlay(overlay);
+    }
+  };
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  auto result = request_color_range(this, input, hooks);
+  preview_edit_lock.release();
+  if (!result.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Color Range"));
+    return;
+  }
+  if (canvas_ != target_canvas || canvas_ == nullptr || !has_active_document() ||
+      document().width() != input.composite.width() || document().height() != input.composite.height()) {
+    return;
+  }
+  PixelBuffer selection(input.composite.width(), input.composite.height(), PixelFormat::gray8());
+  for (std::int32_t y = 0; y < selection.height(); ++y) {
+    const auto offset = static_cast<std::ptrdiff_t>(y) * selection.width();
+    std::copy_n(result->selection.begin() + offset, selection.width(), selection.row(y).begin());
+  }
+  canvas_->replace_selection_from_grayscale(selection, tr("Color Range"));
+  const auto& chosen = result->selection;
+  if (std::none_of(chosen.begin(), chosen.end(), [](std::uint8_t value) { return value != 0U; })) {
+    statusBar()->showMessage(tr("Color Range selected no pixels"));
   }
 }
 
