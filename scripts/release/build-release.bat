@@ -69,7 +69,7 @@ rem 2026), which "if errorlevel 1" does not catch, so every check in this file c
 rem against 0 instead. Belt and braces: delete the previous executables first, moving a
 rem running one aside the way the PRE_LINK steps in CMakeLists.txt do (a renamed image
 rem keeps running), so a failed link leaves no executable to package.
-for %%E in (patchy.exe patchy-mcp.exe) do (
+for %%E in (patchy.exe patchy-mcp.exe patchy-8bf-host32.exe patchy-8bf-host64.exe) do (
   "%CMAKE_EXE%" "-DPATCHY_LOCKED_EXECUTABLE=%BUILD_DIR:\=/%/%%E" -P "%REPO%\cmake\unlock_locked_executable.cmake"
   if exist "%BUILD_DIR%\%%E" (
     echo "%BUILD_DIR%\%%E" could not be deleted or moved aside. Close the program using it and rerun.
@@ -114,6 +114,20 @@ mkdir "%STAGE_DIR%" || goto fail
 echo Staging application and Qt runtime...
 copy /Y "%APP_EXE%" "%STAGE_DIR%\" >nul || goto fail
 copy /Y "%BUILD_DIR%\patchy-mcp.exe" "%STAGE_DIR%\" >nul || goto fail
+rem The legacy 8BF plug-in hosts (docs/plugins.md): both bitnesses ship next to patchy.exe.
+if not exist "%BUILD_DIR%\patchy-8bf-host32.exe" (
+  echo The 32-bit plug-in host was not created at "%BUILD_DIR%\patchy-8bf-host32.exe".
+  goto fail
+)
+if not exist "%BUILD_DIR%\patchy-8bf-host64.exe" (
+  echo The 64-bit plug-in host was not created at "%BUILD_DIR%\patchy-8bf-host64.exe".
+  goto fail
+)
+copy /Y "%BUILD_DIR%\patchy-8bf-host32.exe" "%STAGE_DIR%\" >nul || goto fail
+copy /Y "%BUILD_DIR%\patchy-8bf-host64.exe" "%STAGE_DIR%\" >nul || goto fail
+rem The plug-ins folder ships with its README so users see where .8bf files go.
+mkdir "%STAGE_DIR%\plugins" || goto fail
+copy /Y "%REPO%\packaging\plugins\README.txt" "%STAGE_DIR%\plugins\README.txt" >nul || goto fail
 xcopy /E /I /Y "%BUILD_DIR%\ai" "%STAGE_DIR%\ai" >nul || goto fail
 xcopy /E /I /Y "%BUILD_DIR%\scripts" "%STAGE_DIR%\scripts" >nul || goto fail
 "%WINDEPLOYQT%" --release ^
@@ -189,6 +203,14 @@ if not "!ERRORLEVEL!"=="0" goto fail
 call :SignInstaller
 if not "!ERRORLEVEL!"=="0" goto fail
 
+rem Unpack the finished installer and zip and exercise them without installing: the
+rem wizard's smoke mode, a self-contained DLL check, and packaging\package-selftest.js
+rem on the unpacked patchy.exe. A package that fails is moved aside so the upload
+rem scripts can never publish it (issue 55 shipped an installer nobody had run).
+echo Verifying the built packages...
+powershell -NoProfile -ExecutionPolicy Bypass -File "%REPO%\scripts\release\verify-windows-package.ps1" -Installer "%INSTALLER_PATH%" -Zip "%ZIP_PATH%" -Version "%PATCHY_PACKAGE_VERSION%"
+if not "!ERRORLEVEL!"=="0" goto rejectpackage
+
 echo Release installer created: "%INSTALLER_PATH%"
 popd
 exit /b 0
@@ -197,6 +219,10 @@ exit /b 0
 call :SignFile "%APP_EXE%"
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 call :SignFile "%BUILD_DIR%\patchy-mcp.exe"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+call :SignFile "%BUILD_DIR%\patchy-8bf-host32.exe"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+call :SignFile "%BUILD_DIR%\patchy-8bf-host64.exe"
 exit /b %ERRORLEVEL%
 
 :SignInstaller
@@ -418,6 +444,10 @@ set "PATCHY_INSTALLER_PAYLOAD_DIR=%INSTALLER_PAYLOAD_DIR%\"
 copy /Y "%ZIP_PATH%" "%INSTALLER_PAYLOAD_DIR%\%ZIP_FILE_NAME%" >nul || exit /b 1
 copy /Y "%WINDOWS_PACKAGING_DIR%\InstallPatchy.ps1" "%INSTALLER_PAYLOAD_DIR%\InstallPatchy.ps1" >nul || exit /b 1
 copy /Y "%APP_ICON%" "%INSTALLER_PAYLOAD_DIR%\Patchy.ico" >nul || exit /b 1
+rem The wizard draws its logo from that icon; a frame the installer's PowerShell cannot
+rem decode used to stop setup at its first window (issue 55).
+powershell -NoProfile -ExecutionPolicy Bypass -File "%INSTALLER_PAYLOAD_DIR%\InstallPatchy.ps1" -PayloadZip "%INSTALLER_PAYLOAD_DIR%\%ZIP_FILE_NAME%" -CheckLogo
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Content -LiteralPath (Join-Path $env:PATCHY_INSTALLER_PAYLOAD_DIR 'PatchyVersion.txt') -Value $env:PATCHY_PACKAGE_VERSION -Encoding ASCII"
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
@@ -455,6 +485,15 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "$path = $env:PATCHY_INST
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 if not "%IEXPRESS_EXIT_CODE%"=="0" echo IExpress returned exit code %IEXPRESS_EXIT_CODE% after creating "%INSTALLER_PATH%"; continuing.
 exit /b 0
+
+:rejectpackage
+echo Package verification failed. Moving the packages to "%PACKAGE_ROOT%\rejected".
+if not exist "%PACKAGE_ROOT%\rejected" mkdir "%PACKAGE_ROOT%\rejected"
+if exist "%ZIP_PATH%" move /Y "%ZIP_PATH%" "%PACKAGE_ROOT%\rejected\" >nul
+if exist "%INSTALLER_PATH%" move /Y "%INSTALLER_PATH%" "%PACKAGE_ROOT%\rejected\" >nul
+rem A package that could not be moved must not stay where the upload scripts look.
+if exist "%ZIP_PATH%" del /q "%ZIP_PATH%"
+if exist "%INSTALLER_PATH%" del /q "%INSTALLER_PATH%"
 
 :fail
 echo Release build/package failed.

@@ -803,6 +803,101 @@ void ui_duplicate_layer_copies_text_and_folder_trees() {
   save_widget_artifact("ui_duplicate_text_folder_tree", window);
 }
 
+// GitHub issue 38: Duplicate Layer stacks the copies as one block directly above
+// the topmost selected layer, inside its parent and in source order, and the
+// copies become the selection. The old behavior appended them to the top.
+void ui_duplicate_layer_inserts_copies_above_source() {
+  const auto format = patchy::PixelFormat::rgba8();
+  patchy::Document document(64, 48, format);
+  document.add_pixel_layer("Background", solid_pixels(64, 48, format, QColor(Qt::white)));
+  document.add_pixel_layer("Middle", solid_pixels(64, 48, format, QColor(Qt::red)));
+  patchy::Layer folder(document.allocate_layer_id(), "Folder", patchy::LayerKind::Group);
+  folder.add_child(patchy::Layer(document.allocate_layer_id(), "Inner Low", solid_pixels(8, 8, format, QColor(Qt::blue))));
+  folder.add_child(
+      patchy::Layer(document.allocate_layer_id(), "Inner High", solid_pixels(8, 8, format, QColor(Qt::green))));
+  document.add_layer(std::move(folder));
+  document.add_pixel_layer("Top", solid_pixels(64, 48, format, QColor(Qt::black)));
+
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(std::move(document), QStringLiteral("Duplicate Placement"));
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+
+  const auto rows = [layer_list] {
+    QStringList out;
+    for (int row = 0; row < layer_list->count(); ++row) {
+      out << layer_list->item(row)->text();
+    }
+    return out;
+  };
+  const auto selected_rows = [layer_list] {
+    QStringList out;
+    for (int row = 0; row < layer_list->count(); ++row) {
+      if (layer_list->item(row)->isSelected()) {
+        out << layer_list->item(row)->text();
+      }
+    }
+    return out;
+  };
+  const auto active_name = [&doc] {
+    const auto id = doc.active_layer_id();
+    const auto* layer = id.has_value() ? std::as_const(doc).find_layer(*id) : nullptr;
+    return layer != nullptr ? QString::fromStdString(layer->name()) : QString();
+  };
+  const auto select_only = [layer_list](QListWidgetItem* item) {
+    layer_list->clearSelection();
+    layer_list->setCurrentItem(item);
+    item->setSelected(true);
+  };
+
+  CHECK((rows() == QStringList{QStringLiteral("Top"), QStringLiteral("Folder"), QStringLiteral("Inner High"),
+                              QStringLiteral("Inner Low"), QStringLiteral("Middle"), QStringLiteral("Background")}));
+
+  // A single layer in the middle of the stack: the copy sits directly above it.
+  select_only(require_layer_item(*layer_list, QStringLiteral("Middle")));
+  require_action(window, "layerDuplicateAction")->trigger();
+  QApplication::processEvents();
+  CHECK((rows() == QStringList{QStringLiteral("Top"), QStringLiteral("Folder"), QStringLiteral("Inner High"),
+                              QStringLiteral("Inner Low"), QStringLiteral("Middle copy"), QStringLiteral("Middle"),
+                              QStringLiteral("Background")}));
+  CHECK(active_name() == QStringLiteral("Middle copy"));
+  CHECK((selected_rows() == QStringList{QStringLiteral("Middle copy")}));
+
+  // A child of a folder: the copy stays inside the folder, above its source.
+  select_only(require_layer_item(*layer_list, QStringLiteral("Inner Low")));
+  require_action(window, "layerDuplicateAction")->trigger();
+  QApplication::processEvents();
+  CHECK((rows() == QStringList{QStringLiteral("Top"), QStringLiteral("Folder"), QStringLiteral("Inner High"),
+                              QStringLiteral("Inner Low copy"), QStringLiteral("Inner Low"),
+                              QStringLiteral("Middle copy"), QStringLiteral("Middle"), QStringLiteral("Background")}));
+  CHECK(require_layer_item(*layer_list, QStringLiteral("Inner Low copy"))->data(patchy::ui::kLayerDepthRole).toInt() ==
+        1);
+  CHECK(active_name() == QStringLiteral("Inner Low copy"));
+
+  // A non-contiguous multi-selection: one block above the topmost selected
+  // layer, in source order, and the copies are the new selection.
+  const auto before_multi = rows();
+  layer_list->clearSelection();
+  require_layer_item(*layer_list, QStringLiteral("Top"))->setSelected(true);
+  require_layer_item(*layer_list, QStringLiteral("Background"))->setSelected(true);
+  require_action(window, "layerDuplicateAction")->trigger();
+  QApplication::processEvents();
+  CHECK((rows() == QStringList{QStringLiteral("Top copy"), QStringLiteral("Background copy"), QStringLiteral("Top"),
+                              QStringLiteral("Folder"), QStringLiteral("Inner High"), QStringLiteral("Inner Low copy"),
+                              QStringLiteral("Inner Low"), QStringLiteral("Middle copy"), QStringLiteral("Middle"),
+                              QStringLiteral("Background")}));
+  CHECK(active_name() == QStringLiteral("Top copy"));
+  CHECK((selected_rows() == QStringList{QStringLiteral("Top copy"), QStringLiteral("Background copy")}));
+
+  // One undo entry removes the whole block.
+  require_action_by_text(window, QStringLiteral("Undo"))->trigger();
+  QApplication::processEvents();
+  CHECK(rows() == before_multi);
+  save_widget_artifact("ui_duplicate_layer_inserts_copies_above_source", window);
+}
+
 void ui_copy_paste_layer_panel_copies_layers_and_folder_trees() {
   patchy::Document document(120, 90, patchy::PixelFormat::rgba8());
   document.add_pixel_layer("Background", solid_pixels(120, 90, patchy::PixelFormat::rgba8(), QColor(Qt::white)));
@@ -2377,6 +2472,71 @@ void ui_layer_shape_row_double_click_opens_layer_style() {
   CHECK(saw_style_dialog);
 }
 
+// The vector badge owns its clicks: a real press is not a row drag start, and
+// a double-click on it never falls through to the row's Layer Style editor
+// (regression: double-clicking the badge opened Layer Style, September 2026).
+void ui_layer_vector_badge_double_click_opens_shape_appearance() {
+  VectorSettingsGuard settings_guard;
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  canvas->set_tool(patchy::ui::CanvasTool::Rectangle);
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(100, 100)),
+       canvas->widget_position_for_document_point(QPoint(400, 300)));
+  QApplication::processEvents();
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+  const auto shape_id = doc.active_layer_id();
+  CHECK(shape_id.has_value());
+  CHECK(patchy::layer_is_vector_shape(*std::as_const(doc).find_layer(*shape_id)));
+
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+  auto* item = layer_list->currentItem();
+  CHECK(item != nullptr);
+  auto* badge = layer_list->itemWidget(item)->findChild<QToolButton*>(QStringLiteral("layerVectorBadgeButton"));
+  CHECK(badge != nullptr);
+
+  // The badge opens Shape Appearance one timer tick after its release, so the
+  // closer polls until the dialog exists (it fires inside the dialog's loop).
+  bool saw_style_dialog = false;
+  bool saw_appearance_dialog = false;
+  int attempts = 0;
+  std::function<void()> close_appearance_dialog = [&] {
+    if (find_top_level_dialog(QStringLiteral("patchyLayerStyleDialog")) != nullptr) {
+      saw_style_dialog = true;
+    }
+    if (auto* dialog = find_top_level_dialog(QStringLiteral("shapeAppearanceDialog")); dialog != nullptr) {
+      saw_appearance_dialog = true;
+      dialog->reject();
+      return;
+    }
+    if (++attempts < 20) {
+      QTimer::singleShot(0, close_appearance_dialog);
+    }
+  };
+
+  // A real double-click arrives as press, release, double-click, release.
+  const auto center = badge->rect().center();
+  send_mouse(*badge, QEvent::MouseButtonPress, center, Qt::LeftButton, Qt::LeftButton, Qt::NoModifier);
+  CHECK(badge->isDown());
+  QTimer::singleShot(0, close_appearance_dialog);
+  send_mouse(*badge, QEvent::MouseButtonRelease, center, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+  QApplication::processEvents();
+  CHECK(saw_appearance_dialog);
+  CHECK(!saw_style_dialog);
+
+  saw_appearance_dialog = false;
+  attempts = 0;
+  send_double_click(*badge, center);
+  CHECK(find_inline_rename_edit(*layer_list) == nullptr);
+  QTimer::singleShot(0, close_appearance_dialog);
+  send_mouse(*badge, QEvent::MouseButtonRelease, center, Qt::LeftButton, Qt::NoButton, Qt::NoModifier);
+  QApplication::processEvents();
+  CHECK(saw_appearance_dialog);
+  CHECK(!saw_style_dialog);
+  CHECK(find_top_level_dialog(QStringLiteral("patchyLayerStyleDialog")) == nullptr);
+}
+
 // Layer ids restart per document: a commit whose focus loss went to another
 // document's tab is dropped rather than renaming that document's same-id layer.
 void ui_layer_inline_rename_drops_commit_after_document_switch() {
@@ -3659,6 +3819,7 @@ std::vector<patchy::test::TestCase> layer_panel_organization_tests() {
       {"ui_document_with_only_folders_opens_with_no_layer_selected",
        ui_document_with_only_folders_opens_with_no_layer_selected},
       {"ui_duplicate_layer_copies_text_and_folder_trees", ui_duplicate_layer_copies_text_and_folder_trees},
+      {"ui_duplicate_layer_inserts_copies_above_source", ui_duplicate_layer_inserts_copies_above_source},
       {"ui_copy_paste_layer_panel_copies_layers_and_folder_trees",
        ui_copy_paste_layer_panel_copies_layers_and_folder_trees},
       {"ui_layer_rows_toggle_visibility_and_drag_reorder", ui_layer_rows_toggle_visibility_and_drag_reorder},
@@ -3715,6 +3876,8 @@ std::vector<patchy::test::TestCase> layer_panel_organization_tests() {
       {"ui_layer_inline_rename_drops_commit_after_document_switch",
        ui_layer_inline_rename_drops_commit_after_document_switch},
       {"ui_layer_shape_row_double_click_opens_layer_style", ui_layer_shape_row_double_click_opens_layer_style},
+      {"ui_layer_vector_badge_double_click_opens_shape_appearance",
+       ui_layer_vector_badge_double_click_opens_shape_appearance},
       {"ui_layer_eye_alt_click_isolates_and_restores", ui_layer_eye_alt_click_isolates_and_restores},
       {"ui_layer_eye_alt_click_folder_isolates_group", ui_layer_eye_alt_click_folder_isolates_group},
       {"ui_layer_eye_alt_click_reisolate_keeps_original_snapshot",

@@ -1,5 +1,6 @@
 #include "ui/canvas_widget.hpp"
 #include "ui/main_window_shared.hpp"
+#include "ui/font_face_name_index.hpp"
 #include "ui/qt_paths.hpp"
 #include "core/adjustment_layer.hpp"
 #include "core/contour_presets.hpp"
@@ -160,6 +161,7 @@
 #include <QTest>
 #include <QTextBlock>
 #include <QTextCursor>
+#include <QRawFont>
 #include <QTextEdit>
 #include <QTextDocument>
 #include <QTextFragment>
@@ -3273,6 +3275,133 @@ void ui_transformed_text_click_returns_to_the_caret_it_drew() {
   }
 }
 
+void ui_transformed_text_press_drag_from_outside_session_selects_range() {
+  // The one-gesture press-drag (see ui_text_press_drag_from_outside_session_selects_range) on a
+  // rotated layer: the drag half is inverse-mapped through the text transform like the overlay's
+  // own clicks, so it selects the glyphs under the pointer and not their unrotated positions.
+  patchy::test::register_test_fonts(patchy::test::TestFontRole::UiDefault);
+  const auto path = patchy::test::committed_psd_fixture_path("photoshop-text-point-fixed-leading.psd");
+  auto document = patchy::psd::DocumentIo::read_file(path);
+  patchy::LayerId layer_id = 0;
+  bool found = false;
+  std::function<void(const std::vector<patchy::Layer>&)> find_text_layer =
+      [&](const std::vector<patchy::Layer>& layers) {
+        for (const auto& layer : layers) {
+          if (!found) {
+            if (const auto it = layer.metadata().find(patchy::kLayerMetadataText);
+                it != layer.metadata().end() && it->second.find("HHHH") != std::string::npos) {
+              layer_id = layer.id();
+              found = true;
+            }
+          }
+          find_text_layer(layer.children());
+        }
+      };
+  find_text_layer(document.layers());
+  CHECK(found);
+  if (!found) {
+    return;
+  }
+
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(std::move(document), QStringLiteral("Transformed Press Drag"));
+  auto* canvas = require_canvas(window);
+  canvas->set_zoom(1.0);
+  QApplication::processEvents();
+
+  auto& live_document = patchy::ui::MainWindowTestAccess::document(window);
+  auto* source = live_document.find_layer(layer_id);
+  CHECK(source != nullptr);
+  if (source == nullptr) {
+    return;
+  }
+  const auto bounds_now = source->bounds();
+  QTransform rotated;
+  rotated.translate(bounds_now.x, bounds_now.y);
+  rotated.rotate(20.0);
+  source->metadata()[patchy::kLayerMetadataTextTransform] = patchy::serialize_layer_affine_transform(
+      patchy::LayerAffineTransform{rotated.m11(), rotated.m12(), rotated.m21(), rotated.m22(),
+                                   rotated.dx(), rotated.dy()});
+  live_document.set_active_layer(layer_id);
+  require_action_by_text(window, QStringLiteral("Type"))->trigger();
+  const auto hit_point = canvas->widget_position_for_document_point(
+      QPoint(bounds_now.x + bounds_now.width / 2, bounds_now.y + 12));
+  accept_missing_psd_text_font_warning_if_present();
+  send_mouse(*canvas, QEvent::MouseButtonPress, hit_point, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, hit_point, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  process_events_for(250);
+
+  const auto live_editor = [&] { return canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")); };
+  auto* editor = live_editor();
+  auto* overlay = canvas->findChild<QWidget*>(QStringLiteral("transformedTextEditOverlay"));
+  CHECK(editor != nullptr);
+  CHECK(overlay != nullptr);
+  if (editor == nullptr || overlay == nullptr) {
+    return;
+  }
+  CHECK(editor->property("patchy.transformedPreviewOverlayActive").toBool());
+
+  // Where two carets of the SECOND line sit on the canvas, read from the open session. The
+  // canvas hit-tests the opening press against the layer's stored (unrotated) bounds, and the
+  // rotation pivots on the first baseline: the first line swings above those bounds, the start
+  // of the second stays inside them.
+  int line_start = -1;
+  int lines_seen = 0;
+  for (auto block = editor->document()->begin(); block.isValid() && line_start < 0; block = block.next()) {
+    if (block.text().trimmed().size() >= 4 && ++lines_seen == 2) {
+      line_start = block.position();
+    }
+  }
+  CHECK(line_start >= 0);
+  const auto caret_canvas_point = [&](int position) -> std::optional<QPoint> {
+    auto cursor = editor->textCursor();
+    cursor.setPosition(position);
+    editor->setTextCursor(cursor);
+    QApplication::processEvents();
+    overlay->repaint();  // publishes patchy.transformedTextCaretPolygon for this cursor
+    const auto polygon = overlay->property("patchy.transformedTextCaretPolygon").toList();
+    if (polygon.size() != 4) {
+      return std::nullopt;
+    }
+    QPointF centre;
+    for (const auto& value : polygon) {
+      centre += value.toPointF();
+    }
+    return (centre / 4.0).toPoint();
+  };
+  const auto drag_from = caret_canvas_point(line_start + 1);
+  const auto drag_to = caret_canvas_point(line_start + 3);
+  CHECK(drag_from.has_value());
+  CHECK(drag_to.has_value());
+  send_key(*editor, Qt::Key_Escape);
+  QApplication::processEvents();
+  process_events_for(150);
+  CHECK(live_editor() == nullptr);
+  if (!drag_from.has_value() || !drag_to.has_value() || line_start < 0 || live_editor() != nullptr) {
+    return;
+  }
+
+  accept_missing_psd_text_font_warning_if_present();
+  send_mouse(*canvas, QEvent::MouseButtonPress, *drag_from, Qt::LeftButton, Qt::LeftButton);
+  // The press alone opened the session (on the layer, not as a new text box at release).
+  CHECK(live_editor() != nullptr);
+  send_mouse(*canvas, QEvent::MouseMove, (*drag_from + *drag_to) / 2, Qt::NoButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseMove, *drag_to, Qt::NoButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, *drag_to, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  auto* entered = live_editor();
+  CHECK(entered != nullptr);
+  if (entered != nullptr) {
+    CHECK(entered->textCursor().selectionStart() == line_start + 1);
+    CHECK(entered->textCursor().selectionEnd() == line_start + 3);
+    send_key(*entered, Qt::Key_Escape);
+    QApplication::processEvents();
+    process_events_for(150);
+  }
+}
+
 void ui_psd_frame_text_highlight_matches_scaled_glyphs() {
   // A PSD-frame session keeps its runs in raw engine units and folds the frame transform's
   // vertical scale into the glyph sizes only at RENDER time. The caret/selection layout was built
@@ -3405,6 +3534,440 @@ void ui_psd_frame_text_highlight_matches_scaled_glyphs() {
   CHECK(clicked_position == 3);
   CHECK(std::abs(highlight_left - ink.left()) <= 6);
   CHECK(std::abs(highlight_right - ink.right()) <= 6);
+}
+
+// Seth's Title02 repro: on a Photoshop-layout point layer with tracking 400 (WWW.COCKPITMASTER.COM,
+// Photoshop 5.x), the caret sat in the middle of the glyphs while a typed letter appeared at the
+// end. Click the middle of the rendered ink and the cursor must land mid-text; select-all must
+// highlight the ink's span.
+void run_tracking_click_probe(double frame_scale) {
+  patchy::test::register_test_fonts(patchy::test::TestFontRole::UiDefault);
+  const auto path = patchy::test::committed_psd_fixture_path("photoshop-text-point-fixed-leading.psd");
+  auto document = patchy::psd::DocumentIo::read_file(path);
+  patchy::LayerId layer_id = 0;
+  bool found = false;
+  std::function<void(const std::vector<patchy::Layer>&)> find_text_layer =
+      [&](const std::vector<patchy::Layer>& layers) {
+        for (const auto& layer : layers) {
+          if (!found) {
+            if (const auto it = layer.metadata().find(patchy::kLayerMetadataText);
+                it != layer.metadata().end() && it->second.find("HHHH") != std::string::npos) {
+              layer_id = layer.id();
+              found = true;
+            }
+          }
+          find_text_layer(layer.children());
+        }
+      };
+  find_text_layer(document.layers());
+  CHECK(found);
+  if (!found) {
+    return;
+  }
+  {
+    auto* layer = document.find_layer(layer_id);
+    CHECK(layer != nullptr);
+    if (layer == nullptr) {
+      return;
+    }
+    // One line of six equal glyphs, tracking 400 (0.4 em after every gap).
+    const auto runs = QString::fromStdString(layer->metadata().at(patchy::kLayerMetadataTextRuns));
+    const auto first_run = runs.split(QLatin1Char('\n')).value(1).split(QLatin1Char('\t'));
+    CHECK(first_run.size() >= 7);
+    if (first_run.size() < 7) {
+      return;
+    }
+    layer->metadata()[patchy::kLayerMetadataText] = "HHHHHH";
+    layer->metadata()[patchy::kLayerMetadataTextRuns] =
+        QStringLiteral("v3\n0\t6\t%1\t0\t0\t%2\t%3\tauto\t400\t1\t1")
+            .arg(first_run[2], first_run[5], first_run[6])
+            .toStdString();
+    layer->metadata()[patchy::kLayerMetadataTextParagraphRuns] = "v1\n0\t6\tleft";
+    layer->metadata().erase(patchy::kLayerMetadataTextHtml);
+  }
+
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(std::move(document), QStringLiteral("Tracked PSD Text"));
+  auto* canvas = require_canvas(window);
+  canvas->set_zoom(1.0);
+  QApplication::processEvents();
+
+  auto& live_document = patchy::ui::MainWindowTestAccess::document(window);
+  auto* source = live_document.find_layer(layer_id);
+  CHECK(source != nullptr);
+  if (source == nullptr) {
+    return;
+  }
+  const auto bounds_now = source->bounds();
+  if (std::abs(frame_scale - 1.0) > 0.0001) {
+    // A PSD-frame session, like the Title02 layer (0.7722 on both transform keys).
+    QTransform scaled;
+    scaled.translate(bounds_now.x, bounds_now.y);
+    scaled.scale(frame_scale, frame_scale);
+    const auto affine = patchy::serialize_layer_affine_transform(patchy::LayerAffineTransform{
+        scaled.m11(), scaled.m12(), scaled.m21(), scaled.m22(), scaled.dx(), scaled.dy()});
+    source->metadata()[patchy::kLayerMetadataTextTransform] = affine;
+    source->metadata()[patchy::kLayerMetadataPsdTextTransform] = affine;
+  }
+  live_document.set_active_layer(layer_id);
+  require_action_by_text(window, QStringLiteral("Type"))->trigger();
+  const auto hit_point = canvas->widget_position_for_document_point(
+      QPoint(bounds_now.x + bounds_now.width / 2, bounds_now.y + std::min(12, bounds_now.height / 2)));
+  accept_missing_psd_text_font_warning_if_present();
+  send_mouse(*canvas, QEvent::MouseButtonPress, hit_point, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, hit_point, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  process_events_for(300);
+
+  auto* editor = canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
+  CHECK(editor != nullptr);
+  if (editor == nullptr) {
+    return;
+  }
+  const bool overlay_active = editor->property("patchy.transformedPreviewOverlayActive").toBool();
+  const auto editor_origin_x = editor->property("patchy.documentTextX").toInt();
+  auto* overlay = canvas->findChild<QWidget*>(QStringLiteral("transformedTextEditOverlay"));
+
+  // Where the glyphs actually are, straight off the rendered preview (document space).
+  QRect ink;
+  if (auto* preview = preview_layer_for_editor(live_document, *editor); preview != nullptr) {
+    if (const auto alpha = alpha_pixel_bounds_in_rows(preview->pixels(), 0, preview->pixels().height());
+        alpha.has_value()) {
+      ink = alpha->translated(preview->bounds().x, preview->bounds().y);
+    }
+  }
+  // Flat session only: select-all must highlight the ink's span.
+  QRect highlight;
+  if (!overlay_active) {
+    editor->selectAll();
+    QApplication::processEvents();
+    for (const auto& value : editor->property("patchy.previewSelectionRects").toList()) {
+      highlight = highlight.united(value.toRect());
+    }
+  }
+
+  // The caret drawn for position 3, in document space.
+  double caret_three_x = -1.0;
+  {
+    auto mid = editor->textCursor();
+    mid.setPosition(3);
+    editor->setTextCursor(mid);
+    QApplication::processEvents();
+    if (overlay_active && overlay != nullptr) {
+      overlay->repaint();
+      const auto polygon = overlay->property("patchy.transformedTextCaretPolygon").toList();
+      if (polygon.size() == 4) {
+        QPointF centre;
+        for (const auto& value : polygon) {
+          centre += value.toPointF();
+        }
+        centre /= 4.0;
+        caret_three_x = canvas->document_point_for_widget_position(centre).x();
+      }
+    } else {
+      const auto caret = editor->property("patchy.previewCaretRect").toRect();
+      if (!caret.isEmpty()) {
+        caret_three_x = editor_origin_x + caret.left();
+      }
+    }
+  }
+
+  // Click the MIDDLE OF THE INK, a point derived from the render rather than from the layout,
+  // and the cursor has to land at position 3 (six equal glyphs).
+  int clicked_position = -1;
+  if (!ink.isEmpty()) {
+    auto clear_cursor = editor->textCursor();
+    clear_cursor.setPosition(0);
+    editor->setTextCursor(clear_cursor);
+    QApplication::processEvents();
+    if (overlay_active) {
+      const auto probe = canvas->widget_position_for_document_point(ink.center());
+      send_mouse(*canvas, QEvent::MouseButtonPress, probe, Qt::LeftButton, Qt::LeftButton);
+      send_mouse(*canvas, QEvent::MouseButtonRelease, probe, Qt::LeftButton, Qt::NoButton);
+    } else {
+      const auto caret_now = editor->property("patchy.previewCaretRect").toRect();
+      const QPoint probe(ink.center().x() - editor_origin_x,
+                         caret_now.isEmpty() ? 8 : (caret_now.top() + caret_now.bottom()) / 2);
+      send_mouse(*editor->viewport(), QEvent::MouseButtonPress, probe, Qt::LeftButton, Qt::LeftButton);
+      send_mouse(*editor->viewport(), QEvent::MouseButtonRelease, probe, Qt::LeftButton, Qt::NoButton);
+    }
+    QApplication::processEvents();
+    if (auto* still_open = canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
+        still_open != nullptr) {
+      clicked_position = still_open->textCursor().position();
+    }
+  }
+
+  if (canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr) {
+    require_action_by_text(window, QStringLiteral("Move"))->trigger();
+    QApplication::processEvents();
+    process_events_for(150);
+  }
+
+  std::cout << "[tracking] scale " << frame_scale << " overlay " << overlay_active << " ink " << ink.left() << ".."
+            << ink.right() << " highlight " << (editor_origin_x + highlight.left()) << ".."
+            << (editor_origin_x + highlight.right()) << " clicked " << clicked_position << " caret@3 x "
+            << caret_three_x << '\n';
+  CHECK(!ink.isEmpty());
+  if (ink.isEmpty()) {
+    return;
+  }
+  CHECK(overlay_active == (std::abs(frame_scale - 1.0) > 0.0001));
+  CHECK(clicked_position == 3);
+  // The caret at position 3 stands in the middle of the ink (tracking after every gap, none
+  // after the last glyph, so the midpoint sits slightly past the ink centre).
+  CHECK(caret_three_x >= 0.0 && std::abs(caret_three_x - ink.center().x()) <= ink.width() / 8);
+  if (!overlay_active) {
+    CHECK(!highlight.isEmpty());
+    const auto highlight_left = editor_origin_x + highlight.left();
+    const auto highlight_right = editor_origin_x + highlight.right();
+    CHECK(std::abs(highlight_left - ink.left()) <= 6);
+    // Qt's letter spacing also trails the last glyph, so the highlight may run one gap past the ink.
+    CHECK(highlight_right >= ink.right() - 6 && highlight_right <= ink.right() + ink.width() / 5);
+  }
+}
+
+void ui_psd_text_tracking_click_lands_on_glyphs() {
+  run_tracking_click_probe(1.0);
+}
+
+void ui_psd_frame_text_tracking_click_lands_on_glyphs() {
+  run_tracking_click_probe(0.7722);
+}
+
+// Seth's report on Title02.psd (Photoshop 5.x, docs/psd-legacy-text.md): editing the tracking-400
+// layer WWW.COCKPITMASTER.COM, the caret sat mid-string while a typed letter appeared at the
+// end. Probe the real layer: the live preview must keep the imported raster's width, the caret
+// for a mid-string position must stand mid-ink, a click mid-ink must land mid-string, and a
+// letter typed there must widen the text where the caret was.
+void ui_title02_tracked_legacy_text_caret_matches_glyphs_if_available() {
+  const auto path = patchy::test::local_psd_fixture_path("Title02.psd");
+  if (!std::filesystem::exists(path)) {
+    return;
+  }
+  patchy::test::register_test_fonts(patchy::test::TestFontRole::UiDefault);
+  const auto futura = QStringLiteral(PATCHY_SOURCE_DIR) + QStringLiteral("/local-test-fixtures/fonts/FUTURABC.TTF");
+  // Registered the way user fonts are: on macOS under the Windows names, so the face is
+  // "Futura BdCn BT" + "Bold" everywhere instead of sharing Apple's "Futura" + "Bold" slot.
+  const int futura_id = QFile::exists(futura) ? patchy::ui::add_application_font_by_windows_names(futura) : -1;
+  const bool futura_registered = futura_id >= 0;
+  if (!futura_registered) {
+    std::cout << "[SKIP] Futura fixture font missing: " << futura.toStdString() << '\n';
+    return;
+  }
+  // What the platform database made of the fixture: CoreText files FUTURABC.TTF under its
+  // Macintosh names ("Futura" + "Bold"), the Windows engines under "Futura BdCn BT" + "Bold".
+  // Every face the listed family holds is dumped with its PostScript name so a wrong face
+  // (Apple's Futura Bold sharing the style slot) is visible in the log.
+  for (const auto& family : QFontDatabase::applicationFontFamilies(futura_id)) {
+    std::cout << "[title02] fixture family '" << family.toStdString() << "'";
+    for (const auto& style : QFontDatabase::styles(family)) {
+      const auto raw = QRawFont::fromFont(QFontDatabase::font(family, style, 12));
+      const auto names = patchy::ui::parse_opentype_face_names(raw.fontTable("name"));
+      std::cout << " | style '" << style.toStdString() << "' -> '" << raw.familyName().toStdString() << "'/'"
+                << raw.styleName().toStdString() << "' ps '"
+                << (names.has_value() ? names->postscript_name.toStdString() : std::string("?")) << "' win-family '"
+                << (names.has_value() ? names->family.toStdString() : std::string("?")) << "' weight "
+                << QFontDatabase::weight(family, style);
+    }
+    std::cout << '\n';
+  }
+  for (const auto& name : {QStringLiteral("Futura BdCn BT"), QStringLiteral("FuturaBT-BoldCondensed")}) {
+    const auto match = patchy::ui::font_face_for_name_table_name(name);
+    std::cout << "[title02] name-table '" << name.toStdString() << "' -> "
+              << (match.has_value() ? ("'" + match->family.toStdString() + "'/'" + match->style.toStdString() + "'")
+                                    : std::string("none"))
+              << '\n';
+  }
+  auto document = patchy::psd::DocumentIo::read_file(path);
+  patchy::LayerId layer_id = 0;
+  patchy::Rect source_bounds{};
+  bool found = false;
+  std::function<void(const std::vector<patchy::Layer>&)> find_text_layer =
+      [&](const std::vector<patchy::Layer>& layers) {
+        for (const auto& layer : layers) {
+          if (!found) {
+            if (const auto it = layer.metadata().find(patchy::kLayerMetadataText);
+                it != layer.metadata().end() && it->second == "WWW.COCKPITMASTER.COM") {
+              layer_id = layer.id();
+              source_bounds = layer.bounds();
+              found = true;
+            }
+          }
+          find_text_layer(layer.children());
+        }
+      };
+  find_text_layer(document.layers());
+  CHECK(found);
+  if (!found) {
+    return;
+  }
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(std::move(document), QStringLiteral("Title02 tracked text"));
+  auto* canvas = require_canvas(window);
+  canvas->set_zoom(1.0);
+  QApplication::processEvents();
+
+  auto& live_document = patchy::ui::MainWindowTestAccess::document(window);
+  auto* source = live_document.find_layer(layer_id);
+  CHECK(source != nullptr);
+  if (source == nullptr) {
+    return;
+  }
+  const auto source_visible = alpha_pixel_bounds_in_rows(source->pixels(), 0, source->pixels().height());
+  CHECK(source_visible.has_value());
+  if (!source_visible.has_value()) {
+    return;
+  }
+  const QRect source_ink = source_visible->translated(source_bounds.x, source_bounds.y);
+  const auto missing_families = patchy::ui::missing_text_families_for_layer(*source);
+  std::cout << "[title02] layer font '" << source->metadata().at(patchy::kLayerMetadataTextFont) << "' missing ["
+            << missing_families.join(QStringLiteral(", ")).toStdString() << "]\n";
+
+  live_document.set_active_layer(layer_id);
+  require_action_by_text(window, QStringLiteral("Type"))->trigger();
+  const auto hit_point = canvas->widget_position_for_document_point(
+      QPoint(source_ink.left() + source_ink.width() / 2, source_ink.top() + source_ink.height() / 2));
+  accept_missing_psd_text_font_warning_if_present();
+  send_mouse(*canvas, QEvent::MouseButtonPress, hit_point, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, hit_point, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  process_events_for(300);
+
+  auto* editor = canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
+  CHECK(editor != nullptr);
+  if (editor == nullptr) {
+    return;
+  }
+  const bool overlay_active = editor->property("patchy.transformedPreviewOverlayActive").toBool();
+  const bool uses_frame = editor->property("patchy.usesPsdTextFrame").toBool();
+  const auto display_scale = editor->property("patchy.textSizeDisplayScale").toDouble();
+  const bool source_raster = editor->property("patchy.sourceRasterPreview").toBool();
+  const auto editor_origin_x = editor->property("patchy.documentTextX").toInt();
+  auto* overlay = canvas->findChild<QWidget*>(QStringLiteral("transformedTextEditOverlay"));
+  const auto text = editor->toPlainText();
+  // The family the session renders with, and the face Qt really hands it: CoreText lists the
+  // fixture under "Futura" + "Bold" while the record (and every Windows database) says
+  // "Futura BdCn BT", so the resolution has to bridge the two (docs/font-resolution.md).
+  const auto session_family = editor->property("patchy.documentTextFamily").toString();
+  const auto rendered_face = QRawFont::fromFont(editor->document()->begin().begin().fragment().charFormat().font());
+
+  const auto preview_ink = [&]() -> QRect {
+    if (auto* preview = preview_layer_for_editor(live_document, *editor); preview != nullptr) {
+      if (const auto alpha = alpha_pixel_bounds_in_rows(preview->pixels(), 0, preview->pixels().height());
+          alpha.has_value()) {
+        return alpha->translated(preview->bounds().x, preview->bounds().y);
+      }
+    }
+    return {};
+  };
+  const auto caret_document_x = [&](int position) -> double {
+    auto cursor = editor->textCursor();
+    cursor.setPosition(position);
+    editor->setTextCursor(cursor);
+    QApplication::processEvents();
+    if (overlay_active && overlay != nullptr) {
+      overlay->repaint();
+      const auto polygon = overlay->property("patchy.transformedTextCaretPolygon").toList();
+      if (polygon.size() != 4) {
+        return -1.0;
+      }
+      QPointF centre;
+      for (const auto& value : polygon) {
+        centre += value.toPointF();
+      }
+      centre /= 4.0;
+      return canvas->document_point_for_widget_position(centre).x();
+    }
+    const auto caret = editor->property("patchy.previewCaretRect").toRect();
+    return caret.isEmpty() ? -1.0 : editor_origin_x + caret.left();
+  };
+
+  // Force the live render (a source-raster session shows Photoshop's pixels until the first
+  // keystroke) with an edit that changes nothing: type and delete a space at the end.
+  {
+    auto cursor = editor->textCursor();
+    cursor.movePosition(QTextCursor::End);
+    editor->setTextCursor(cursor);
+    cursor.insertText(QStringLiteral(" "));
+    QApplication::processEvents();
+    cursor.deletePreviousChar();
+    QApplication::processEvents();
+    process_events_for(300);
+  }
+  const auto ink_before = preview_ink();
+  const auto override_now = editor->property("patchy.textTransformOverride").toString();
+  const auto caret_mid = caret_document_x(10);  // after "WWW.COCKPI"
+
+  int clicked_position = -1;
+  if (!ink_before.isEmpty()) {
+    auto clear_cursor = editor->textCursor();
+    clear_cursor.setPosition(0);
+    editor->setTextCursor(clear_cursor);
+    QApplication::processEvents();
+    if (overlay_active) {
+      const auto probe = canvas->widget_position_for_document_point(ink_before.center());
+      send_mouse(*canvas, QEvent::MouseButtonPress, probe, Qt::LeftButton, Qt::LeftButton);
+      send_mouse(*canvas, QEvent::MouseButtonRelease, probe, Qt::LeftButton, Qt::NoButton);
+    } else {
+      const auto caret_now = editor->property("patchy.previewCaretRect").toRect();
+      const QPoint probe(ink_before.center().x() - editor_origin_x,
+                         caret_now.isEmpty() ? 8 : (caret_now.top() + caret_now.bottom()) / 2);
+      send_mouse(*editor->viewport(), QEvent::MouseButtonPress, probe, Qt::LeftButton, Qt::LeftButton);
+      send_mouse(*editor->viewport(), QEvent::MouseButtonRelease, probe, Qt::LeftButton, Qt::NoButton);
+    }
+    QApplication::processEvents();
+    if (auto* still_open = canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
+        still_open != nullptr) {
+      clicked_position = still_open->textCursor().position();
+    }
+  }
+
+  // Type a wide letter at position 10: the ink to the LEFT of the caret must stay put and the
+  // text must widen, so the new glyph lands where the caret was, not at the end.
+  QRect ink_after;
+  double caret_after = -1.0;
+  if (canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr) {
+    auto cursor = editor->textCursor();
+    cursor.setPosition(10);
+    editor->setTextCursor(cursor);
+    QApplication::processEvents();
+    cursor.insertText(QStringLiteral("W"));
+    QApplication::processEvents();
+    process_events_for(300);
+    ink_after = preview_ink();
+    caret_after = caret_document_x(11);
+  }
+
+  if (canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr) {
+    require_action_by_text(window, QStringLiteral("Move"))->trigger();
+    QApplication::processEvents();
+    process_events_for(150);
+  }
+
+  std::cout << "[title02] override '" << override_now.toStdString() << "' futura " << futura_registered << " text '" << text.toStdString() << "' overlay "
+            << overlay_active << " frame " << uses_frame << " display_scale " << display_scale << " source_raster "
+            << source_raster << " source_ink " << source_ink.left() << ".." << source_ink.right() << " preview_ink "
+            << ink_before.left() << ".." << ink_before.right() << " caret@10 " << caret_mid << " clicked "
+            << clicked_position << " after_insert_ink " << ink_after.left() << ".." << ink_after.right()
+            << " caret@11 " << caret_after << " family '" << session_family.toStdString() << "' face '"
+            << rendered_face.familyName().toStdString() << "' / '" << rendered_face.styleName().toStdString() << "'\n";
+  CHECK(text == QStringLiteral("WWW.COCKPITMASTER.COM"));
+  CHECK(!ink_before.isEmpty());
+  if (ink_before.isEmpty()) {
+    return;
+  }
+  // The live render keeps the imported width (within 10%): tracking and size scale together.
+  CHECK(std::abs(ink_before.width() - source_ink.width()) <= source_ink.width() / 10);
+  // Position 10 of 21 sits near the middle of the ink.
+  CHECK(caret_mid > ink_before.left() + ink_before.width() * 0.35 &&
+        caret_mid < ink_before.left() + ink_before.width() * 0.62);
+  CHECK(clicked_position >= 9 && clicked_position <= 12);
+  // The inserted glyph widened the text and the caret after it moved right by about one cell.
+  CHECK(ink_after.width() > ink_before.width() + 4);
+  CHECK(caret_after > caret_mid + 4.0 && caret_after < ink_after.left() + ink_after.width() * 0.7);
 }
 
 void ui_psd_frame_text_second_session_still_takes_clicks() {
@@ -3552,6 +4115,8 @@ std::vector<patchy::test::TestCase> text_transform_commit_tests_part2() {
        ui_psd_frame_text_highlight_matches_scaled_glyphs},
       {"ui_transformed_text_click_returns_to_the_caret_it_drew",
        ui_transformed_text_click_returns_to_the_caret_it_drew},
+      {"ui_transformed_text_press_drag_from_outside_session_selects_range",
+       ui_transformed_text_press_drag_from_outside_session_selects_range},
       {"ui_psd_text_caret_follows_photoshop_leading", ui_psd_text_caret_follows_photoshop_leading},
       {"ui_psd_text_click_returns_to_the_caret_it_drew", ui_psd_text_click_returns_to_the_caret_it_drew},
       {"ui_psd_text_fixed_leading_commit_matches_photoshop_row_bands",
@@ -3597,5 +4162,9 @@ std::vector<patchy::test::TestCase> text_transform_commit_tests_part2() {
       {"ui_text_tool_commits_rich_text_spans", ui_text_tool_commits_rich_text_spans},
       {"ui_text_options_follow_active_rich_text_span",
        ui_text_options_follow_active_rich_text_span},
+      {"ui_psd_text_tracking_click_lands_on_glyphs", ui_psd_text_tracking_click_lands_on_glyphs},
+      {"ui_psd_frame_text_tracking_click_lands_on_glyphs", ui_psd_frame_text_tracking_click_lands_on_glyphs},
+      {"ui_title02_tracked_legacy_text_caret_matches_glyphs_if_available",
+       ui_title02_tracked_legacy_text_caret_matches_glyphs_if_available},
   };
 }

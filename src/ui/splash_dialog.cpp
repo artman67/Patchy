@@ -4,6 +4,7 @@
 #include "ui/app_settings.hpp"
 #include "ui/build_info.hpp"
 #include "ui/dialog_utils.hpp"
+#include "ui/legacy_plugin_folder.hpp"
 #include "ui/memory_info.hpp"
 #include "ui/splash_artwork.hpp"
 #include "ui/update_checker.hpp"
@@ -31,6 +32,7 @@
 #include <QWindow>
 
 #include <algorithm>
+#include <functional>
 
 #include "patchy_version.hpp"
 
@@ -76,6 +78,8 @@ public:
 
   explicit PatchySplashDialog(QWidget* parent = nullptr) : QDialog(parent) {
     setObjectName(QStringLiteral("patchySplashScreen"));
+    // About always opens centered on the app; a remembered spot is never wanted.
+    mark_dialog_always_centered(*this);
     setWindowFlags(Qt::Dialog | Qt::FramelessWindowHint);
     apply_frameless_window_effects_on_show(*this, WindowCornerRadius::Standard);
     setModal(true);
@@ -157,8 +161,8 @@ public:
 
     auto* artwork = new SplashArtwork(this);
     artwork->setObjectName(QStringLiteral("splashArtwork"));
-    artwork->setFixedSize(210, 270);
-    layout->addWidget(artwork);
+    artwork->setFixedSize(180, 180);
+    layout->addWidget(artwork, 0, Qt::AlignTop);
 
     auto* copy = new QVBoxLayout();
     copy->setContentsMargins(0, 12, 0, 6);
@@ -168,6 +172,7 @@ public:
     auto* title = new QLabel(QObject::tr("Patchy Image Editor"), this);
     title->setObjectName(QStringLiteral("splashTitle"));
     title->setTextFormat(Qt::PlainText);
+    title->setWordWrap(true);
     copy->addWidget(title);
 
     auto* subtitle = new QLabel(QObject::tr("Open source photo editing. Free forever, no subscriptions."), this);
@@ -208,10 +213,12 @@ public:
     contributors->setTextFormat(Qt::RichText);
     set_themed_label_text(
         *contributors,
-        QObject::tr("Code contributions from %1")
-            .arg(code_contributors_link_html(QStringLiteral("@splash_link_text"))));
+        QObject::tr("Incredible people who donated suggestions, bug reports, and code: %1")
+            .arg(contributors_link_html(QStringLiteral("@splash_link_text"))));
     contributors->setTextInteractionFlags(Qt::TextBrowserInteraction);
     contributors->setOpenExternalLinks(true);
+    // The list outgrows one line; wrap inside the fixed dialog width.
+    contributors->setWordWrap(true);
     copy->addWidget(contributors);
 
     auto add_home_link = [this, copy](const QString& text) {
@@ -238,7 +245,8 @@ public:
     const auto add_folder_row = [this, copy](const QString& caption_text, const QString& path_text,
                                              const QString& folder_path, const QString& button_text,
                                              const QString& failure_text, const char* caption_name,
-                                             const char* path_name, const char* button_name) {
+                                             const char* path_name, const char* button_name,
+                                             std::function<void()> before_open = {}) {
       auto* caption = new QLabel(caption_text, this);
       caption->setObjectName(QString::fromLatin1(caption_name));
       caption->setTextFormat(Qt::PlainText);
@@ -255,7 +263,10 @@ public:
       button_row->setContentsMargins(0, 0, 0, 0);
       auto* open_folder = new QPushButton(button_text, this);
       open_folder->setObjectName(QString::fromLatin1(button_name));
-      connect(open_folder, &QPushButton::clicked, this, [this, folder_path, failure_text] {
+      connect(open_folder, &QPushButton::clicked, this, [this, folder_path, failure_text, before_open] {
+        if (before_open) {
+          before_open();
+        }
         if (folder_path.isEmpty() || !QDir().mkpath(folder_path) ||
             !QDesktopServices::openUrl(QUrl::fromLocalFile(folder_path))) {
           auto* status = findChild<QLabel*>(QStringLiteral("splashStatus"));
@@ -282,6 +293,15 @@ public:
     add_folder_row(QObject::tr("User data folder (fonts, scripts):"), data_folder_path, data_folder_path,
                    QObject::tr("Open Data Folder"), QObject::tr("Could not open data folder."),
                    "splashDataCaption", "splashDataPath", "splashOpenDataFolderButton");
+#ifdef Q_OS_WIN
+    // Classic Photoshop .8bf filters (Windows only): the folder next to the
+    // application, created with its README on first open (docs/plugins.md).
+    const auto plugins_folder_path = legacy_plugins_folder_path();
+    add_folder_row(QObject::tr("Plug-ins folder (.8bf filters):"), plugins_folder_path, plugins_folder_path,
+                   QObject::tr("Open Plug-ins Folder"), QObject::tr("Could not open the plug-ins folder."),
+                   "splashPluginsCaption", "splashPluginsPath", "splashOpenPluginsFolderButton",
+                   [] { (void)ensure_legacy_plugins_folder(); });
+#endif
 #endif
 
     // Live memory readout, mainly for the wasm build where the heap ceiling is
@@ -386,8 +406,11 @@ void show_about_splash(QWidget* parent) {
   PatchySplashDialog splash(parent);
 #ifndef Q_OS_WASM
   // The web build always runs the latest deployed site, so there is no update
-  // to check for; the status label keeps its "Patchy is ready." text.
-  splash.begin_update_check();
+  // to check for; the status label keeps its "Patchy is ready." text. The same
+  // goes for a store build, where the store delivers updates.
+  if (update_checks_available()) {
+    splash.begin_update_check();
+  }
 #endif
   // exec_dialog centers the dialog on its owner clamped to the screen (a raw
   // parent-centered move could push the Close button below a low main window)

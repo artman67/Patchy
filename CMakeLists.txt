@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 
 project(
   Patchy
-  VERSION 0.99
+  VERSION 1.06
   DESCRIPTION "A native, PSD-oriented image editor foundation"
   LANGUAGES CXX
 )
@@ -35,6 +35,7 @@ include(GNUInstallDirs)
 option(PATCHY_BUILD_APP "Build the Qt desktop application when Qt 6 is available" ON)
 option(PATCHY_BUILD_TESTS "Build unit tests" ON)
 option(PATCHY_ENABLE_STRICT_WARNINGS "Enable strict compiler warnings" ON)
+option(PATCHY_STORE_BUILD "Build for a store that delivers updates itself: no in-app update check" OFF)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -93,6 +94,7 @@ endif()
 add_library(patchy_core
   src/core/gradient_presets.cpp
   src/core/adjustment_layer.cpp
+  src/core/ink_space.cpp
   src/core/blend_math.cpp
   src/core/brush_dynamics.cpp
   src/core/brush_tip.cpp
@@ -311,6 +313,8 @@ add_library(patchy_psd
   src/psd/pat_reader.cpp
   src/psd/psd_adjustments.cpp
   src/psd/psd_binary.cpp
+  src/psd/engine_data.cpp
+  src/psd/engine_data.hpp
   src/psd/psd_channel_data.cpp
   src/psd/psd_descriptor.cpp
   src/psd/psd_document_io.cpp
@@ -322,6 +326,10 @@ add_library(patchy_psd
   src/psd/psd_layer_styles.cpp
   src/psd/psd_patterns.cpp
   src/psd/psd_smart_objects.cpp
+  src/psd/psd_text_engine_block.cpp
+  src/psd/psd_text_engine_block.hpp
+  src/psd/psd_text_engine_template.cpp
+  src/psd/psd_text_legacy.cpp
   src/psd/psd_text_read.cpp
   src/psd/psd_text_write.cpp
   src/psd/psd_vector.cpp
@@ -334,10 +342,41 @@ patchy_configure_target(patchy_psd)
 
 add_library(patchy_plugins
   src/plugins/legacy_photoshop_adapter.cpp
+  src/plugins/pipl.cpp
   src/plugins/plugin_host.cpp
 )
 target_link_libraries(patchy_plugins PUBLIC patchy_core)
 patchy_configure_target(patchy_plugins)
+
+if(WIN32)
+  # The out-of-process host for classic Photoshop filter plug-ins
+  # (docs/plugins.md): one Qt-free Win32 program built twice. The 64-bit
+  # helper is an ordinary target of this build; the 32-bit helper is the same
+  # sources configured as their own Ninja project inside the x86 developer
+  # environment (scriptsuild-8bf-host32.bat), because a 64-bit process cannot
+  # load a 32-bit plug-in. Both land next to patchy.exe.
+  set(PATCHY_8BF_HOST_OUTPUT_DIR "${CMAKE_BINARY_DIR}")
+  set(PATCHY_8BF_HOST_NAME patchy-8bf-host64)
+  add_subdirectory(src/plugins/host)
+  set(PATCHY_8BF_HOST32_EXE "${CMAKE_BINARY_DIR}/patchy-8bf-host32.exe")
+  file(GLOB PATCHY_8BF_HOST_SOURCES CONFIGURE_DEPENDS
+       "${PROJECT_SOURCE_DIR}/src/plugins/host/*.cpp"
+       "${PROJECT_SOURCE_DIR}/src/plugins/host/*.hpp"
+       "${PROJECT_SOURCE_DIR}/src/plugins/host/CMakeLists.txt")
+  add_custom_command(
+    OUTPUT "${PATCHY_8BF_HOST32_EXE}"
+    COMMAND "${PROJECT_SOURCE_DIR}/scripts/build-8bf-host32.bat"
+            "${PROJECT_SOURCE_DIR}/src/plugins/host"
+            "${CMAKE_BINARY_DIR}/8bf-host32"
+            "${CMAKE_BINARY_DIR}"
+            "${CMAKE_COMMAND}"
+            "$<IF:$<CONFIG:Debug>,Debug,Release>"
+            "${CMAKE_MAKE_PROGRAM}"
+    DEPENDS ${PATCHY_8BF_HOST_SOURCES} "${PROJECT_SOURCE_DIR}/scripts/build-8bf-host32.bat"
+    COMMENT "Building the 32-bit legacy plug-in host (patchy-8bf-host32.exe)"
+    VERBATIM)
+  add_custom_target(patchy_8bf_host32 ALL DEPENDS "${PATCHY_8BF_HOST32_EXE}")
+endif()
 
 add_library(patchy_filters
   src/filters/auto_levels_math.cpp
@@ -425,7 +464,11 @@ if(EMSCRIPTEN AND PATCHY_BUILD_APP)
   patchy_add_wasm_libheif()
 endif()
 
+include(cmake/patchy_webp.cmake)
+
 add_library(patchy_formats
+  src/formats/animation_timing.cpp
+  src/formats/webp_animation_io.cpp
   src/formats/af_document_io.cpp
   src/formats/af_tree.cpp
   src/formats/aseprite_document_io.cpp
@@ -471,6 +514,8 @@ add_library(patchy_formats
 # PRIVATE too: af_document_io.cpp bakes Gaussian-blur layer effects through the calibrated
 # smart-filter blur (filters depends only on core, so no cycle).
 target_link_libraries(patchy_formats PUBLIC patchy_core patchy_render patchy_psd PRIVATE patchy_filters patchy_libraw)
+target_link_libraries(patchy_formats PRIVATE webp webpdemux libwebpmux)
+target_include_directories(patchy_formats PRIVATE src/formats/libwebp/src)
 if(EMSCRIPTEN AND PATCHY_BUILD_APP)
   target_sources(patchy_formats PRIVATE src/formats/heif_document_io_wasm.cpp)
   target_compile_definitions(patchy_formats PRIVATE PATCHY_HEIF_WEBCODECS=1)
@@ -544,7 +589,7 @@ if(PATCHY_BUILD_APP)
     find_package(Python3 3.8 REQUIRED COMPONENTS Interpreter)
     # Every shipped UI language except the English source. Mirrors the table in
     # src/ui/localization.cpp; docs/localization.md describes adding one.
-    set(PATCHY_TRANSLATED_LANGUAGES de es fr it ja zh_CN zh_TW)
+    set(PATCHY_TRANSLATED_LANGUAGES de es fr it ja ko pl pt_BR ru zh_CN zh_TW)
     # The English template: every extractable string with empty translations. It is
     # regenerated with the language files and is never compiled.
     set(PATCHY_TRANSLATION_TEMPLATE "${PROJECT_SOURCE_DIR}/translations/patchy_en.ts")
@@ -933,6 +978,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/color_panel.cpp
       src/ui/compatibility_report.cpp
       src/ui/coalesced_preview_emitter.hpp
+      src/ui/curved_slider.hpp
+      src/ui/curved_slider.cpp
       src/ui/dialog_utils.cpp
       src/ui/document_float_window.hpp
       src/ui/document_float_window.cpp
@@ -1004,11 +1051,14 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/main_window_filters.cpp
       src/ui/main_window_document_dialogs.cpp
       src/ui/main_window_files.cpp
+      src/ui/network_mounts.cpp
       src/ui/main_window_history.cpp
       src/ui/main_window_layer_ops.cpp
       src/ui/main_window_layer_panel.cpp
       src/ui/main_window_palette.cpp
       src/ui/main_window_plugins.cpp
+      src/ui/legacy_plugin_run_dialog.hpp
+      src/ui/legacy_plugin_run_dialog.cpp
       src/ui/main_window_preferences.cpp
       src/ui/main_window_scripting.cpp
       src/ui/main_window_sessions.cpp
@@ -1017,6 +1067,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/document_recovery.cpp
       src/ui/main_window_shared.hpp
       src/ui/main_window_shared.cpp
+      src/ui/font_face_name_index.hpp
+      src/ui/font_face_name_index.cpp
       src/ui/main_window_smart_objects.cpp
       src/ui/main_window_stress_test.cpp
       src/ui/main_window_theme.cpp
@@ -1031,6 +1083,10 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/default_custom_shapes.cpp
       src/ui/shape_appearance_dialog.hpp
       src/ui/shape_appearance_dialog.cpp
+      src/ui/appearance_edits.hpp
+      src/ui/appearance_edits.cpp
+      src/ui/appearance_properties.hpp
+      src/ui/appearance_properties.cpp
       src/ui/shape_create_dialog.hpp
       src/ui/shape_create_dialog.cpp
       src/ui/measurement_units.hpp
@@ -1127,6 +1183,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/style_library.cpp
       src/ui/style_manager_dialog.hpp
       src/ui/style_manager_dialog.cpp
+      src/ui/theme_file.hpp
+      src/ui/theme_file.cpp
       src/ui/theme_manager.hpp
       src/ui/theme_manager.cpp
       src/ui/theme_palette.hpp
@@ -1146,8 +1204,12 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/splash_artwork.hpp
       src/ui/splash_artwork.cpp
       src/ui/splash_dialog.cpp
+      src/ui/legacy_plugin_folder.hpp
+      src/ui/legacy_plugin_folder.cpp
       src/ui/tool_cursors.hpp
       src/ui/tool_cursors.cpp
+      src/ui/single_instance.hpp
+      src/ui/single_instance.cpp
       src/ui/update_checker.hpp
       src/ui/update_checker.cpp
       src/ui/user_fonts.hpp
@@ -1160,6 +1222,7 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/zoom_status_bar.cpp
       src/ui/icons.qrc
       src/ui/textures.qrc
+      src/ui/themes.qrc
     )
     # The print dialog TU is the one QtPrintSupport user; Qt ships no
     # PrintSupport for wasm, so that build compiles the stub TU instead
@@ -1243,6 +1306,12 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
     set_source_files_properties(src/ui/build_info.cpp PROPERTIES
       INCLUDE_DIRECTORIES "${CMAKE_BINARY_DIR}/generated"
     )
+    if(PATCHY_STORE_BUILD)
+      # One source, not the target: update_checks_available() is the only reader.
+      set_source_files_properties(src/ui/update_checker.cpp PROPERTIES
+        COMPILE_DEFINITIONS PATCHY_STORE_BUILD
+      )
+    endif()
     # main_window.cpp exceeds the default COFF section limit under MSVC.
     target_compile_options(patchy_ui PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/bigobj>)
     if(APPLE)
@@ -1265,9 +1334,12 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
     endif()
     if(WIN32)
       # WIA scanner/camera acquisition (File > Import > From Scanner or Camera...).
-      target_sources(patchy_ui PRIVATE src/ui/scanner_import_win.cpp)
+      # legacy_plugin_runner_win.cpp drives the out-of-process 8BF host.
+      target_sources(patchy_ui PRIVATE src/ui/scanner_import_win.cpp src/ui/legacy_plugin_runner_win.cpp)
+      add_dependencies(patchy_ui patchy-8bf-host64 patchy_8bf_host32)
       # winmm: PlaySound for the script sound effects (sound_effects.cpp).
-      target_link_libraries(patchy_ui PUBLIC wiaguid winmm)
+      # ws2_32: getaddrinfo for the update check's own host resolve (update_checker.cpp).
+      target_link_libraries(patchy_ui PUBLIC wiaguid winmm ws2_32)
     endif()
     patchy_configure_target(patchy_ui)
 
@@ -1473,6 +1545,11 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
     endif()
     if(WIN32)
       target_sources(patchy PRIVATE src/app/patchy.rc)
+      # The resource compiler's dependency scan follows #include only, not the
+      # ICON statement, so a changed icon left a stale patchy.rc.res (and the
+      # old taskbar/Explorer icon) in every existing build tree.
+      set_source_files_properties(src/app/patchy.rc PROPERTIES
+        OBJECT_DEPENDS "${PROJECT_SOURCE_DIR}/src/app/patchy.ico")
     endif()
     if(APPLE)
       set_target_properties(patchy PROPERTIES
@@ -1577,10 +1654,18 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
               DESTINATION "${CMAKE_INSTALL_DATADIR}/applications")
       install(FILES "${PROJECT_SOURCE_DIR}/packaging/linux/com.rtsoft.patchy.metainfo.xml"
               DESTINATION "${CMAKE_INSTALL_DATADIR}/metainfo")
-      foreach(icon_size 16 32 48 64 128 256)
+      # Flathub requires each module's license files here; the notice covers the
+      # vendored libraries and the bundled font.
+      install(FILES "${PROJECT_SOURCE_DIR}/LICENSE"
+                    "${PROJECT_SOURCE_DIR}/NOTICE-THIRD-PARTY.md"
+              DESTINATION "${CMAKE_INSTALL_DATADIR}/licenses/com.rtsoft.patchy")
+      foreach(icon_size 16 32 48 64 128 256 512)
         install(FILES "${PROJECT_SOURCE_DIR}/packaging/linux/icons/hicolor/${icon_size}x${icon_size}/apps/com.rtsoft.patchy.png"
                 DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/${icon_size}x${icon_size}/apps")
       endforeach()
+      install(FILES "${PROJECT_SOURCE_DIR}/packaging/branding/patchy-logo-folded.svg"
+              DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
+              RENAME com.rtsoft.patchy.svg)
     endif()
   else()
     message(STATUS "Qt 6 Widgets was not found; skipping the native Patchy app target.")
@@ -1611,6 +1696,7 @@ if(PATCHY_BUILD_TESTS)
     tests/core/gradients_interior_effects_tests.cpp
     tests/core/image_trace_tests.cpp
     tests/core/infra_selection_tests.cpp
+    tests/core/pipl_tests.cpp
     tests/core/layer_alignment_tests.cpp
     tests/core/layer_metadata_tests.cpp
     tests/core/palette_tests.cpp
@@ -1621,6 +1707,8 @@ if(PATCHY_BUILD_TESTS)
     tests/core/psd_core_io_tests.cpp
     tests/core/psd_structure_tests.cpp
     tests/core/psd_text_tests.cpp
+    tests/core/psd_legacy_text_tests.cpp
+    tests/core/text_engine_block_tests.cpp
     tests/core/psd_vector_fixtures_tests.cpp
     tests/core/psd_writer_stability_tests.cpp
     tests/core/jxr_tests.cpp
@@ -1652,6 +1740,10 @@ if(PATCHY_BUILD_TESTS)
   )
   patchy_configure_target(patchy_core_tests)
   target_compile_definitions(patchy_core_tests PRIVATE PATCHY_SOURCE_DIR="${PROJECT_SOURCE_DIR}")
+  if(WIN32)
+    # The legacy host self-tests run the helper executables next to the binary.
+    add_dependencies(patchy_core_tests patchy-8bf-host64 patchy_8bf_host32)
+  endif()
   add_test(NAME patchy_core_tests COMMAND patchy_core_tests)
 
   if(PATCHY_BUILD_APP AND Qt6_FOUND)
@@ -1727,6 +1819,7 @@ if(PATCHY_BUILD_TESTS)
       tests/ui/misc_visuals_outline_stress_tests.cpp
       tests/ui/float_window_tests.cpp
       tests/ui/vector_shape_tool_tests.cpp
+      tests/ui/batch_appearance_tests.cpp
       tests/ui/vector_preview_tests.cpp
       tests/ui/vector_point_editing_tests.cpp
       tests/ui/vector_commands_tests.cpp
@@ -1735,9 +1828,11 @@ if(PATCHY_BUILD_TESTS)
       tests/ui/svg_ui_tests.cpp
       tests/ui/image_trace_ui_tests.cpp
       tests/ui/scripting_tests.cpp
+      tests/ui/script_move_tests.cpp
       tests/ui/document_recovery_tests.cpp
       tests/ui/mcp_tests.cpp
       tests/ui/unicode_path_tests.cpp
+      tests/ui/legacy_plugin_tests.cpp
       tests/ui/history_panel_tests.cpp
       tests/ui/composite_render_tests.cpp
       tests/ui/readme_screenshot_tests.cpp

@@ -200,6 +200,9 @@
 #include "ui_test_access.hpp"
 #include "ui_test_groups.hpp"
 #include "ui_test_support.hpp"
+#include "unicode_path_names.hpp"
+
+#include <cstdlib>
 
 namespace {
 
@@ -1584,6 +1587,289 @@ void ui_text_mouse_and_keyboard_selection_match_glyphs() {
   check_text_selection_matches_glyphs(true);
 }
 
+// With the Type tool and no session open, one press-drag across an existing text layer opens the
+// session AND selects the dragged range, as in Photoshop. The press that opens the session goes
+// to the canvas, so the canvas has to carry the rest of that gesture to the new editor; it used
+// to drop it, and selecting took a second press-drag.
+void ui_text_press_drag_from_outside_session_selects_range() {
+  patchy::test::register_test_fonts(patchy::test::TestFontRole::UiDefault);
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  canvas->set_zoom(1.0);
+  require_action_by_text(window, QStringLiteral("Type"))->trigger();
+  canvas->set_primary_color(QColor(20, 20, 20));
+
+  const auto widget_point = canvas->widget_position_for_document_point(QPoint(60, 80));
+  send_mouse(*canvas, QEvent::MouseButtonPress, widget_point, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, widget_point, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  auto* editor = canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
+  CHECK(editor != nullptr);
+  if (editor == nullptr) {
+    return;
+  }
+  editor->setPlainText(QStringLiteral("Handgloves"));
+  QApplication::processEvents();
+  process_events_for(150);
+  require_action_by_text(window, QStringLiteral("Move"))->trigger();
+  QApplication::processEvents();
+  process_events_for(150);
+  auto& document = patchy::ui::MainWindowTestAccess::document(window);
+  const auto* committed = std::as_const(document).find_layer(document.active_layer_id().value_or(patchy::LayerId{}));
+  CHECK(committed != nullptr);
+  if (committed == nullptr) {
+    return;
+  }
+  const auto bounds = committed->bounds();
+  const auto layer_centre =
+      canvas->widget_position_for_document_point(QPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2));
+  require_action_by_text(window, QStringLiteral("Type"))->trigger();
+
+  const auto live_editor = [&] { return canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")); };
+  const auto cancel_session = [&] {
+    if (auto* open = live_editor(); open != nullptr) {
+      send_key(*open, Qt::Key_Escape);
+      QApplication::processEvents();
+      process_events_for(100);
+    }
+  };
+
+  // Open the session once the old way to learn where carets 1 and 5 sit on the canvas, then
+  // cancel it: the layer is untouched, so the next session lays out identically.
+  send_mouse(*canvas, QEvent::MouseButtonPress, layer_centre, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, layer_centre, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  process_events_for(200);
+  editor = live_editor();
+  CHECK(editor != nullptr);
+  if (editor == nullptr) {
+    return;
+  }
+  const auto caret_canvas_point = [&](int position) {
+    auto cursor = editor->textCursor();
+    cursor.setPosition(position);
+    editor->setTextCursor(cursor);
+    QApplication::processEvents();
+    auto caret = editor->property("patchy.previewCaretRect").toRect();
+    if (caret.isEmpty()) {
+      caret = editor->cursorRect();
+    }
+    return editor->viewport()->mapTo(canvas, QPoint(caret.left(), (caret.top() + caret.bottom()) / 2));
+  };
+  const auto drag_from = caret_canvas_point(1);
+  const auto drag_to = caret_canvas_point(5);
+  cancel_session();
+  CHECK(live_editor() == nullptr);
+  CHECK(drag_to.x() > drag_from.x());
+
+  // One gesture: press on the text, drag, release.
+  send_mouse(*canvas, QEvent::MouseButtonPress, drag_from, Qt::LeftButton, Qt::LeftButton);
+  auto* entered = live_editor();
+  CHECK(entered != nullptr);
+  if (entered == nullptr) {
+    return;
+  }
+  CHECK(!entered->textCursor().hasSelection());
+  CHECK(entered->textCursor().position() == 1);
+  send_mouse(*canvas, QEvent::MouseMove, QPoint((drag_from.x() + drag_to.x()) / 2, drag_to.y()), Qt::NoButton,
+             Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseMove, drag_to, Qt::NoButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, drag_to, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  CHECK(live_editor() == entered);
+  CHECK(entered->textCursor().selectedText() == QStringLiteral("andg"));
+  CHECK(entered->textCursor().anchor() == 1);
+
+  // The gesture ended at the release: later moves over the canvas leave the selection alone,
+  // with or without a button (a held button here belongs to some other gesture).
+  send_mouse(*canvas, QEvent::MouseMove, drag_from, Qt::NoButton, Qt::NoButton);
+  send_mouse(*canvas, QEvent::MouseMove, drag_from, Qt::NoButton, Qt::LeftButton);
+  QApplication::processEvents();
+  CHECK(live_editor() == entered);
+  CHECK(entered->textCursor().selectedText() == QStringLiteral("andg"));
+  cancel_session();
+
+  // A plain click still leaves a bare caret.
+  send_mouse(*canvas, QEvent::MouseButtonPress, drag_from, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, drag_from, Qt::LeftButton, Qt::NoButton);
+  send_mouse(*canvas, QEvent::MouseMove, drag_to, Qt::NoButton, Qt::NoButton);
+  QApplication::processEvents();
+  entered = live_editor();
+  CHECK(entered != nullptr);
+  if (entered != nullptr) {
+    CHECK(!entered->textCursor().hasSelection());
+    CHECK(entered->textCursor().position() == 1);
+  }
+  cancel_session();
+
+  // A release the canvas never saw (a prompt took it while the session opened): the first move
+  // without the button ends the gesture, and a button held after that does not revive it.
+  send_mouse(*canvas, QEvent::MouseButtonPress, drag_from, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseMove, drag_from, Qt::NoButton, Qt::NoButton);
+  send_mouse(*canvas, QEvent::MouseMove, drag_to, Qt::NoButton, Qt::LeftButton);
+  QApplication::processEvents();
+  entered = live_editor();
+  CHECK(entered != nullptr);
+  if (entered != nullptr) {
+    CHECK(!entered->textCursor().hasSelection());
+  }
+  cancel_session();
+}
+
+namespace {
+
+// Opens a point-text session at `document_point` with the Type tool and returns its editor.
+QTextEdit* open_point_text_session(patchy::ui::MainWindow& window, patchy::ui::CanvasWidget& canvas,
+                                   QPoint document_point) {
+  require_action_by_text(window, QStringLiteral("Type"))->trigger();
+  const auto widget_point = canvas.widget_position_for_document_point(document_point);
+  send_mouse(canvas, QEvent::MouseButtonPress, widget_point, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(canvas, QEvent::MouseButtonRelease, widget_point, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  return canvas.findChild<QTextEdit*>(QStringLiteral("inlineTextEditor"));
+}
+
+}  // namespace
+
+// GitHub issue 71: the keypad Enter key commits the session on its own (Photoshop's commit
+// key), Ctrl+Return still commits, and plain Return stays a line break.
+void ui_text_keypad_enter_commits_and_return_breaks_line() {
+  patchy::test::register_test_fonts(patchy::test::TestFontRole::UiDefault);
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  canvas->set_zoom(1.0);
+  canvas->set_primary_color(QColor(20, 20, 20));
+  const auto live_editor = [&] { return canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")); };
+
+  auto* editor = open_point_text_session(window, *canvas, QPoint(40, 60));
+  CHECK(editor != nullptr);
+  if (editor == nullptr) {
+    return;
+  }
+  editor->setPlainText(QStringLiteral("First"));
+  editor->moveCursor(QTextCursor::End);
+  send_key(*editor, Qt::Key_Return);
+  editor->insertPlainText(QStringLiteral("Second"));
+  QApplication::processEvents();
+  CHECK(live_editor() == editor);
+  CHECK(editor->document()->blockCount() == 2);
+  CHECK(editor->toPlainText() == QStringLiteral("First\nSecond"));
+
+  send_key(*editor, Qt::Key_Enter, Qt::KeypadModifier);
+  QApplication::processEvents();
+  process_events_for(150);
+  CHECK(live_editor() == nullptr);
+  auto& document = patchy::ui::MainWindowTestAccess::document(window);
+  const auto* committed = std::as_const(document).find_layer(document.active_layer_id().value_or(patchy::LayerId{}));
+  CHECK(committed != nullptr);
+  if (committed == nullptr) {
+    return;
+  }
+  CHECK(patchy::layer_is_text(*committed));
+  const auto bounds = committed->bounds();
+  const auto layer_centre =
+      canvas->widget_position_for_document_point(QPoint(bounds.x + bounds.width / 2, bounds.y + bounds.height / 2));
+  send_mouse(*canvas, QEvent::MouseButtonPress, layer_centre, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, layer_centre, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  process_events_for(150);
+  auto* reopened = live_editor();
+  CHECK(reopened != nullptr);
+  if (reopened != nullptr) {
+    CHECK(reopened->toPlainText() == QStringLiteral("First\nSecond"));
+    send_key(*reopened, Qt::Key_Escape);
+    QApplication::processEvents();
+    process_events_for(100);
+  }
+  CHECK(live_editor() == nullptr);
+
+  // Ctrl+Return still commits a fresh session.
+  auto* second = open_point_text_session(window, *canvas, QPoint(40, 160));
+  CHECK(second != nullptr);
+  if (second == nullptr) {
+    return;
+  }
+  second->setPlainText(QStringLiteral("Ctrl"));
+  send_key(*second, Qt::Key_Return, Qt::ControlModifier);
+  QApplication::processEvents();
+  process_events_for(150);
+  CHECK(live_editor() == nullptr);
+}
+
+// GitHub issue 74: inside a session the first click places the caret, the second selects the
+// word, and a third click in quick succession selects that row; a fourth click is a plain
+// click again. The row comes from Patchy's own line plan, so it works per visual line.
+void ui_text_triple_click_selects_the_line() {
+  patchy::test::register_test_fonts(patchy::test::TestFontRole::UiDefault);
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  canvas->set_zoom(1.0);
+  canvas->set_primary_color(QColor(20, 20, 20));
+
+  auto* editor = open_point_text_session(window, *canvas, QPoint(40, 60));
+  CHECK(editor != nullptr);
+  if (editor == nullptr) {
+    return;
+  }
+  editor->setPlainText(QStringLiteral("Handgloves and more\nSecond row here"));
+  QApplication::processEvents();
+  process_events_for(150);
+
+  const auto viewport_point_for_position = [&](int position) {
+    auto cursor = editor->textCursor();
+    cursor.setPosition(position);
+    editor->setTextCursor(cursor);
+    QApplication::processEvents();
+    auto caret = editor->property("patchy.previewCaretRect").toRect();
+    if (caret.isEmpty()) {
+      caret = editor->cursorRect();
+    }
+    return QPoint(caret.left() + 1, (caret.top() + caret.bottom()) / 2);
+  };
+  auto* viewport = editor->viewport();
+  CHECK(viewport != nullptr);
+  const auto click = [&](QEvent::Type type, QPoint point) {
+    send_mouse(*viewport, type, point, Qt::LeftButton,
+               type == QEvent::MouseButtonRelease ? Qt::MouseButtons(Qt::NoButton) : Qt::MouseButtons(Qt::LeftButton));
+  };
+
+  // "and" on the first row: position 12 sits inside it.
+  const auto first_row_point = viewport_point_for_position(12);
+  click(QEvent::MouseButtonPress, first_row_point);
+  click(QEvent::MouseButtonRelease, first_row_point);
+  CHECK(!editor->textCursor().hasSelection());
+  click(QEvent::MouseButtonDblClick, first_row_point);
+  click(QEvent::MouseButtonRelease, first_row_point);
+  CHECK(editor->textCursor().selectedText() == QStringLiteral("and"));
+  click(QEvent::MouseButtonPress, first_row_point);
+  click(QEvent::MouseButtonRelease, first_row_point);
+  CHECK(editor->textCursor().selectedText() == QStringLiteral("Handgloves and more"));
+
+  // A fourth click is an ordinary click: bare caret again.
+  click(QEvent::MouseButtonPress, first_row_point);
+  click(QEvent::MouseButtonRelease, first_row_point);
+  CHECK(!editor->textCursor().hasSelection());
+
+  // The second row selects on its own, without the first.
+  const auto second_row_point = viewport_point_for_position(28);
+  click(QEvent::MouseButtonPress, second_row_point);
+  click(QEvent::MouseButtonRelease, second_row_point);
+  click(QEvent::MouseButtonDblClick, second_row_point);
+  click(QEvent::MouseButtonRelease, second_row_point);
+  CHECK(editor->textCursor().selectedText() == QStringLiteral("row"));
+  click(QEvent::MouseButtonPress, second_row_point);
+  click(QEvent::MouseButtonRelease, second_row_point);
+  CHECK(editor->textCursor().selectedText() == QStringLiteral("Second row here"));
+
+  send_key(*editor, Qt::Key_Escape);
+  QApplication::processEvents();
+  process_events_for(100);
+  CHECK(canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) == nullptr);
+}
+
 void ui_text_commit_is_zoom_independent() {
   // The same text typed at the same place must commit the same pixels whatever the canvas zoom
   // happened to be. The inline editor's font used to be set to an integer pixel size of
@@ -1977,10 +2263,16 @@ void ui_user_fonts_add_persist_and_clear() {
 
   const auto store_dir = user_fonts::user_fonts_directory();
   CHECK(!store_dir.isEmpty());
+  // The store is private to this process (tests/ui/main.cpp), so only this process could have
+  // put anything in it. Deleting is safe here and only here: this is the first test of the
+  // process to register anything from the store.
   user_fonts::clear_user_font_store();
+  user_fonts::apply_pending_user_font_removals(store_dir);
   const QStringList font_filters = {QStringLiteral("*.ttf"), QStringLiteral("*.otf"),
                                     QStringLiteral("*.ttc")};
   CHECK(QDir(store_dir).entryList(font_filters, QDir::Files).isEmpty());
+  const auto pending_list = store_dir + QStringLiteral("/.remove-at-next-launch");
+  CHECK(!QFileInfo::exists(pending_list));
 
   const auto regular_font =
       QStringLiteral(PATCHY_SOURCE_DIR "/third_party/fonts/noto_naskh_arabic/NotoNaskhArabic-Regular.ttf");
@@ -2099,11 +2391,103 @@ void ui_user_fonts_add_persist_and_clear() {
   user_fonts::restore_user_fonts_at_startup();
   CHECK(QDir(store_dir).entryList(font_filters, QDir::Files).size() == 2);
 
-  // Clearing empties the store; already-registered fonts stay usable
-  // (application fonts are never removed at runtime).
+  // Clearing marks the store's files for the next launch and deletes nothing: the fonts are
+  // promised to stay usable until a restart, and their files back them.
   user_fonts::clear_user_font_store();
-  CHECK(QDir(store_dir).entryList(font_filters, QDir::Files).isEmpty());
+  CHECK(QDir(store_dir).entryList(font_filters, QDir::Files).size() == 2);
+  const auto pending_names = [&pending_list] {
+    QFile file(pending_list);
+    return file.open(QIODevice::ReadOnly) ? QString::fromUtf8(file.readAll()).split(QLatin1Char('\n'))
+                                          : QStringList{};
+  };
+  CHECK(pending_names().contains(QStringLiteral("PatchyUserFontFixture.ttf")));
+  CHECK(pending_names().contains(QStringLiteral("NotoNaskhArabic-Bold.ttf")));
   CHECK(model_contains(family));
+  // "Usable" means it still DRAWS, at a size nothing has asked for yet: a font database that
+  // opens the file again for a new engine (FreeType: Linux, and the offscreen platform
+  // everywhere) must not find the store copy gone and hand back another family.
+  for (const bool bold : {false, true}) {
+    QFont cleared(family);
+    cleared.setPixelSize(bold ? 41 : 37);
+    cleared.setBold(bold);
+    const auto face = QRawFont::fromFont(cleared, QFontDatabase::Arabic);
+    CHECK(face.isValid());
+    CHECK(face.familyName() == family);
+    CHECK(face.supportsCharacter(QChar(0x0633)));
+  }
+
+  // Adding a removed font again before the restart keeps it: it comes off the list.
+  const auto readded = user_fonts::add_user_fonts({dropped_font});
+  CHECK(readded.duplicate_count == 1);
+  CHECK(!pending_names().contains(QStringLiteral("PatchyUserFontFixture.ttf")));
+  CHECK(pending_names().contains(QStringLiteral("NotoNaskhArabic-Bold.ttf")));
+  user_fonts::clear_user_font_store();
+  CHECK(pending_names().contains(QStringLiteral("PatchyUserFontFixture.ttf")));
+
+  // The next launch deletes what was marked, and only that. Proven on a scratch store: this
+  // process still draws with the real one's files.
+  QTemporaryDir scratch_store;
+  CHECK(scratch_store.isValid());
+  const auto scratch_file = [&scratch_store](const QString& name) { return scratch_store.filePath(name); };
+  const auto write_file = [](const QString& path, const QByteArray& bytes) {
+    QFile file(path);
+    return file.open(QIODevice::WriteOnly) && file.write(bytes) == bytes.size();
+  };
+  CHECK(write_file(scratch_file(QStringLiteral("gone.ttf")), "a"));
+  CHECK(write_file(scratch_file(QStringLiteral("also gone.otf")), "b"));
+  CHECK(write_file(scratch_file(QStringLiteral("kept.ttf")), "c"));
+  QTemporaryDir outside;
+  CHECK(outside.isValid());
+  const auto outside_file = outside.filePath(QStringLiteral("outside.ttf"));
+  CHECK(write_file(outside_file, "d"));
+  CHECK(write_file(scratch_file(QStringLiteral(".remove-at-next-launch")),
+                   (QStringLiteral("gone.ttf\nalso gone.otf\nmissing.ttf\n") + outside_file +
+                    QStringLiteral("\n../") + QFileInfo(outside.path()).fileName() + QStringLiteral("/outside.ttf\n"))
+                       .toUtf8()));
+  user_fonts::apply_pending_user_font_removals(scratch_store.path());
+  CHECK(!QFileInfo::exists(scratch_file(QStringLiteral("gone.ttf"))));
+  CHECK(!QFileInfo::exists(scratch_file(QStringLiteral("also gone.otf"))));
+  CHECK(QFileInfo::exists(scratch_file(QStringLiteral("kept.ttf"))));
+  CHECK(QFileInfo::exists(outside_file));
+  CHECK(!QFileInfo::exists(scratch_file(QStringLiteral(".remove-at-next-launch"))));
+}
+
+// Two suite processes must never share a store: a process keeps its registered store files
+// open, so a shared store fails the second process's cleanup on Windows and pulls live fonts
+// out from under the first one elsewhere. The harness therefore points PATCHY_USER_FONTS_DIR
+// at a per-process directory, which wins over QStandardPaths in either mode.
+void ui_user_fonts_store_is_private_to_the_process() {
+  namespace user_fonts = patchy::ui::user_fonts;
+  const auto configured = qEnvironmentVariable("PATCHY_USER_FONTS_DIR");
+  CHECK(!configured.isEmpty());
+  const auto store_dir = user_fonts::user_fonts_directory();
+  CHECK(store_dir == QDir::cleanPath(configured));
+  CHECK(QFileInfo(store_dir).fileName() == QString::number(QCoreApplication::applicationPid()));
+  CHECK(QFileInfo::exists(store_dir + QStringLiteral("/store.lock")));
+  {
+    struct StandardPathsTestMode {
+      StandardPathsTestMode() { QStandardPaths::setTestModeEnabled(true); }
+      ~StandardPathsTestMode() { QStandardPaths::setTestModeEnabled(false); }
+    } standard_paths_test_mode;
+    CHECK(user_fonts::user_fonts_directory() == store_dir);
+    CHECK(!store_dir.startsWith(QStandardPaths::writableLocation(QStandardPaths::AppDataLocation)));
+  }
+
+  // The override is read as Unicode, and an empty one falls back to the app-data folder.
+  const EnvironmentVariableRestorer restore_override("PATCHY_USER_FONTS_DIR");
+  const auto unicode_dir =
+      QDir::current().filePath(QStringLiteral("test-artifacts/") +
+                               QString::fromUtf8(patchy::test::utf8_string(patchy::test::kUnicodeDirName)) +
+                               QStringLiteral("/user fonts"));
+#ifdef Q_OS_WIN
+  CHECK(_wputenv_s(L"PATCHY_USER_FONTS_DIR", reinterpret_cast<const wchar_t*>(unicode_dir.utf16())) == 0);
+#else
+  qputenv("PATCHY_USER_FONTS_DIR", unicode_dir.toUtf8());
+#endif
+  CHECK(user_fonts::user_fonts_directory() == QDir::cleanPath(unicode_dir));
+  qputenv("PATCHY_USER_FONTS_DIR", QByteArray());
+  CHECK(user_fonts::user_fonts_directory() ==
+        QStandardPaths::writableLocation(QStandardPaths::AppDataLocation) + QStringLiteral("/user-fonts"));
 }
 
 // Every bundled web font must register in the FreeType font database (the
@@ -2140,6 +2524,7 @@ void ui_bundled_web_fonts_register_and_create_engines() {
   CHECK(listed("Noto Sans"));
   CHECK(listed("Noto Serif"));
   CHECK(listed("Noto Sans JP"));
+  CHECK(listed("NanumGothic"));
 }
 
 // Dropping a font file on the main window registers it instead of trying to
@@ -2150,7 +2535,6 @@ void ui_font_drop_registers_instead_of_opening() {
     ~StandardPathsTestMode() { QStandardPaths::setTestModeEnabled(false); }
   } standard_paths_test_mode;
   namespace user_fonts = patchy::ui::user_fonts;
-  user_fonts::clear_user_font_store();
 
   patchy::ui::MainWindow window;
   show_window(window);
@@ -2178,6 +2562,7 @@ void ui_font_drop_registers_instead_of_opening() {
   CHECK(window.statusBar()->currentMessage().contains(QStringLiteral("Pacifico")));
   const auto store_dir = user_fonts::user_fonts_directory();
   CHECK(QFileInfo::exists(store_dir + QStringLiteral("/PatchyDropFixture.ttf")));
+  // Marks the store for the next run's cleanup; nothing is deleted under the live fonts.
   user_fonts::clear_user_font_store();
 }
 
@@ -2208,6 +2593,10 @@ std::vector<patchy::test::TestCase> text_editor_font_picker_tests() {
       {"ui_text_commit_is_zoom_independent", ui_text_commit_is_zoom_independent},
       {"ui_text_mouse_and_keyboard_selection_match_glyphs",
        ui_text_mouse_and_keyboard_selection_match_glyphs},
+      {"ui_text_press_drag_from_outside_session_selects_range",
+       ui_text_press_drag_from_outside_session_selects_range},
+      {"ui_text_keypad_enter_commits_and_return_breaks_line", ui_text_keypad_enter_commits_and_return_breaks_line},
+      {"ui_text_triple_click_selects_the_line", ui_text_triple_click_selects_the_line},
       {"ui_expensive_text_style_preview_never_blanks_while_typing",
        ui_expensive_text_style_preview_never_blanks_while_typing},
       {"ui_text_editor_paste_uses_current_format_for_rich_emoji_clipboard",
@@ -2216,6 +2605,7 @@ std::vector<patchy::test::TestCase> text_editor_font_picker_tests() {
        ui_text_tool_drag_creates_resizable_wrapped_text_box},
       {"ui_text_size_popup_slider_caps_at_200pt", ui_text_size_popup_slider_caps_at_200pt},
       {"ui_user_fonts_add_persist_and_clear", ui_user_fonts_add_persist_and_clear},
+      {"ui_user_fonts_store_is_private_to_the_process", ui_user_fonts_store_is_private_to_the_process},
       {"ui_bundled_web_fonts_register_and_create_engines",
        ui_bundled_web_fonts_register_and_create_engines},
       {"ui_font_drop_registers_instead_of_opening", ui_font_drop_registers_instead_of_opening},

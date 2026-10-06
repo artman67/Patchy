@@ -319,7 +319,7 @@ void MainWindow::add_document_session(Document document, QString title, QString 
   if (retouch_sample_all_layers_check_ != nullptr) {
     session->canvas->set_retouch_sample_all_layers(retouch_sample_all_layers_check_->isChecked());
   }
-  session->canvas->set_crop_ratio(current_crop_ratio_w_, current_crop_ratio_h_);
+  session->canvas->set_crop_ratio(effective_crop_ratio_width(), effective_crop_ratio_height());
   if (patch_mode_combo_ != nullptr) {
     session->canvas->set_patch_tool_mode(
         static_cast<CanvasWidget::PatchToolMode>(patch_mode_combo_->currentData().toInt()));
@@ -494,6 +494,7 @@ void MainWindow::activate_document_canvas(CanvasWidget* canvas, const std::funct
     show_preview_dialog_edit_lock_message();
     return;
   }
+  if (canvas != canvas_) finish_pending_shape_appearance_edit();
   const auto canvas_changed = canvas != canvas_;
   if (canvas_changed) {
     // Animation-preview playback belongs to the outgoing document: stop it and restore
@@ -548,6 +549,8 @@ void MainWindow::activate_document_canvas(CanvasWidget* canvas, const std::funct
     canvas_->set_fill_softness(current_fill_softness_);
     canvas_->set_fill_tolerance(current_fill_tolerance_);
     canvas_->set_fill_contiguous(current_fill_contiguous_);
+    canvas_->set_zoom_scrubby(current_zoom_scrubby_);
+    canvas_->set_zoom_tool_zooms_out(current_zoom_tool_zooms_out_);
     canvas_->set_quick_select_size(current_quick_select_size_);
     canvas_->set_quick_select_sample_all_layers(current_quick_select_sample_all_layers_);
     canvas_->set_quick_select_enhance_edge(current_quick_select_enhance_edge_);
@@ -682,6 +685,7 @@ bool MainWindow::close_document_session(DocumentSession& target_session) {
   // smart-object child recursion both run arbitrary UI code (dialogs, nested
   // closes) that can erase sessions_ entries.
   const auto target_id = target_session.session_id;
+  if (&target_session == active_session()) finish_pending_shape_appearance_edit();
   // Commit any in-progress inline text edit while its canvas is still active:
   // the pending text belongs in the save-changes decision below, and an editor
   // that survives into removeTab() auto-commits on the focus change mid
@@ -1398,14 +1402,16 @@ bool MainWindow::confirm_close_session(DocumentSession& target_session) {
   }
 
   const auto title = target_session.title.isEmpty() ? tr("Untitled") : target_session.title;
+  // Save / Don't Save / Cancel name the outcomes (GitHub issue 70); Save is the
+  // default, and the helper answers S, D and the older Y/N keys.
   const auto answer = show_warning_message(this, tr("Save changes?"),
                                            tr("Save changes to %1 before closing?").arg(title),
-                                           QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-                                           QMessageBox::Yes, QStringLiteral("saveChangesMessageBox"));
+                                           QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel,
+                                           QMessageBox::Save, QStringLiteral("saveChangesMessageBox"));
   if (answer == QMessageBox::Cancel) {
     return false;
   }
-  if (answer == QMessageBox::No) {
+  if (answer == QMessageBox::Discard) {
     return true;
   }
   return maybe_save_session(target_session);

@@ -19,6 +19,7 @@
 #include "core/pixel_tools.hpp"
 #include "core/quick_select.hpp"
 #include "core/vector_shape.hpp"
+#include "ui/dialog_utils.hpp"
 #include "ui/edit_conversions.hpp"
 #include "ui/image_document_io.hpp"
 #include "ui/qt_geometry.hpp"
@@ -88,28 +89,6 @@ std::uint8_t channel_from_color(QColor color, int channel) {
     default:
       return static_cast<std::uint8_t>(color.alpha());
   }
-}
-
-std::optional<QColor> screen_color_at_global_position(QPoint global_position) {
-  QScreen* screen = QGuiApplication::screenAt(global_position);
-  if (screen == nullptr) {
-    screen = QGuiApplication::primaryScreen();
-  }
-  if (screen == nullptr) {
-    return std::nullopt;
-  }
-
-  const QPoint screen_position = global_position - screen->geometry().topLeft();
-  const QPixmap sample = screen->grabWindow(0, screen_position.x(), screen_position.y(), 1, 1);
-  if (sample.isNull()) {
-    return std::nullopt;
-  }
-
-  const auto image = sample.toImage();
-  if (!image.rect().contains(0, 0)) {
-    return std::nullopt;
-  }
-  return image.pixelColor(0, 0);
 }
 
 }  // namespace
@@ -435,7 +414,7 @@ void CanvasWidget::draw_shape_preview(QPainter& painter, QRect exposed_rect) {
 
       if (quick_mask_active_ || mask_display_mode_ == MaskDisplayMode::Overlay) {
         QImage base(preview_rect.size(), QImage::Format_ARGB32_Premultiplied);
-        base.fill(theme().canvas_backdrop);
+        base.fill(backdrop_color());
         {
           QPainter base_painter(&base);
           base_painter.translate(-preview_rect.topLeft());
@@ -444,7 +423,7 @@ void CanvasWidget::draw_shape_preview(QPainter& painter, QRect exposed_rect) {
             const auto& display_image = zoom_ < 1.0 ? display_image_for_zoom() : render_cache_;
             base_painter.setRenderHint(
                 QPainter::SmoothPixmapTransform,
-                uses_smooth_display_scaling(zoom_, uses_deep_zoom_pixel_renderer(zoom_)));
+                uses_smooth_display_scaling(view_zoom(), uses_deep_zoom_pixel_renderer(view_zoom())));
             if (pixel_aligned_view) {
               base_painter.drawImage(pixel_aligned_target_rect, display_image, display_image.rect());
             } else {

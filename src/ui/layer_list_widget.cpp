@@ -101,11 +101,16 @@ int scroll_bar_drag_travel(QScrollBar& scroll_bar, const QStyleOptionSlider& opt
 
 // Row child buttons that must receive mouse clicks themselves instead of the
 // list-level select/drag handling.
+// Row buttons that handle their own presses. Every badge button belongs here:
+// a missing entry makes the list eat its press as a row drag start (so a real
+// click never reaches the button) and route its double-click to the row's
+// editor (a double-click on the vector badge opened Layer Style, September 2026).
 bool layer_row_button_owns_clicks(const QString& object_name) {
   return object_name == QLatin1String("layerVisibilityCheck") ||
          object_name == QLatin1String("layerMaskLinkButton") ||
          object_name == QLatin1String("layerFxBadgeButton") ||
          object_name == QLatin1String("layerSmartObjectBadgeButton") ||
+         object_name == QLatin1String("layerVectorBadgeButton") ||
          object_name == QLatin1String("layerClippingBadgeButton") ||
          object_name == QLatin1String("layerSmartFiltersVisibilityButton") ||
          object_name == QLatin1String("layerSmartFilterVisibilityButton") ||
@@ -1158,6 +1163,10 @@ void LayerListWidget::begin_single_drag_item(QListWidgetItem* item) {
     return;
   }
 
+  editor_click_selection_ = selected_layer_ids_top_to_bottom();
+  editor_click_layer_ = static_cast<LayerId>(item->data(kLayerIdRole).toULongLong());
+  if (!item->isSelected()) editor_click_selection_.clear();
+  editor_click_time_.start();
   drag_anchor_layer_id_ = static_cast<LayerId>(item->data(kLayerIdRole).toULongLong());
   pending_single_select_on_release_ = item->isSelected();
   if (!pending_single_select_on_release_) {
@@ -1800,8 +1809,22 @@ bool LayerListWidget::handle_item_double_click(QListWidgetItem* item, QPoint vie
   row_widget_drag_candidate_ = false;
   pending_single_select_on_release_ = false;
   drag_anchor_layer_id_.reset();
+  const auto layer_id = static_cast<LayerId>(item->data(kLayerIdRole).toULongLong());
+  if (editor_click_layer_ == layer_id && editor_click_time_.isValid() &&
+      editor_click_time_.elapsed() <= QApplication::doubleClickInterval() && editor_click_selection_.size() > 1) {
+    QItemSelection selection;
+    for (const auto id : editor_click_selection_) {
+      if (const auto* selected = item_for_layer_id(id)) {
+        const auto index = model()->index(row(selected), 0);
+        selection.select(index, index);
+      }
+    }
+    selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect);
+  }
+  editor_click_selection_.clear();
   if (currentItem() != item || !item->isSelected()) {
-    set_current_item_preserving_scroll(item, QItemSelectionModel::ClearAndSelect);
+    set_current_item_preserving_scroll(item, item->isSelected() ? QItemSelectionModel::NoUpdate
+                                                               : QItemSelectionModel::ClearAndSelect);
   }
   // A double-click inside a Smart Filter entry row edits that filter's
   // settings (the Photoshop behavior) instead of the layer's styles.

@@ -34,7 +34,7 @@ bool MainWindow::any_canvas_interaction_active() const {
     const auto* canvas = target_session != nullptr ? target_session->canvas : nullptr;
     if (canvas != nullptr &&
         (canvas->pointer_gesture_active() || canvas->free_transform_active() || canvas->warp_transform_active() ||
-         canvas->path_transform_active() || canvas->crop_session_active() ||
+         canvas->path_transform_active() || canvas->crop_session_has_changes() ||
          canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr)) {
       return true;
     }
@@ -110,6 +110,20 @@ std::vector<recovery::RecoveryEntry> MainWindow::list_recovery_entries() const {
 
 std::vector<OrphanedRecoveryFolder> MainWindow::list_orphaned_recovery() const {
   return RecoveryInstanceFolder::scan_orphaned(RecoveryInstanceFolder::recovery_root());
+}
+
+void MainWindow::discard_recovery_folder_for_forced_exit() {
+  if (recovery_timer_ != nullptr) {
+    recovery_timer_->stop();
+  }
+  if (recovery_folder_ == nullptr || !recovery_folder_->created()) {
+    return;
+  }
+  recovery_folder_->discard_on_release();
+  // The lock file stays open until the process ends (Windows refuses to delete
+  // it), so what may survive is a lock-only folder, which the next start sweeps
+  // as an empty orphan.
+  (void)RecoveryInstanceFolder::remove_folder(recovery_folder_->directory());
 }
 
 void MainWindow::discard_recovery_for_session(std::int64_t session_id) {

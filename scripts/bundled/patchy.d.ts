@@ -209,6 +209,41 @@ interface PatchyImageData {
   data: ArrayBuffer;
 }
 
+/** One run of formatted text: the layer options apply unless a field overrides them. */
+interface PatchyTextRun {
+  text: string;
+  font?: string; size?: number; bold?: boolean; italic?: boolean; color?: string;
+}
+
+/** A stored run read back from a text layer (see PatchyLayer.textRuns). */
+interface PatchyTextRunInfo {
+  text: string; font: string; style: string; size: number; bold: boolean; italic: boolean; color: string;
+}
+
+/** What a smart-object layer holds (see PatchyLayer.getSmartObject). */
+interface PatchySmartObjectState {
+  /** true: the layer references a file on disk (Place Linked); false: the contents are stored in the document. */
+  linked: boolean;
+  /** The source file's name, e.g. "logo.svg". */
+  fileName: string;
+  /** Linked: the file the link resolves to right now ("/" separators), or the stored absolute path when it is missing. "" for embedded contents. */
+  path: string;
+  /** Linked: the stored path relative to the document's folder (what makes the PSD portable). "" for embedded contents. */
+  relativePath: string;
+  /** Linked: the file could not be found. */
+  missing: boolean;
+  /** Linked: the file on disk differs from the copy the layer was rendered from; updateSmartObject() refreshes it. */
+  changed: boolean;
+  /** Identity of the shared source element. Layers with the same sourceId show the same contents, and one update refreshes all of them. */
+  sourceId: string;
+  /** The contents' own size in pixels and their pixels per inch. */
+  width: number;
+  height: number;
+  resolution: number;
+  /** The placement quad in document pixels: top-left, top-right, bottom-right, bottom-left as [x0, y0, x1, y1, x2, y2, x3, y3]. */
+  quad: number[];
+}
+
 interface PatchyLayer {
   /** Decimal string identity, scoped to this open document. Re-query after undo/reopen. */
   readonly id: string;
@@ -221,13 +256,32 @@ interface PatchyLayer {
   /** Blend mode id string (see the list above). */
   blendMode: string;
   locked: boolean;
-  /** Content offset in document pixels; setting either moves the layer. */
+  /** Content offset in document pixels; setting either moves the layer like `moveTo`. */
   x: number;
   y: number;
   readonly bounds: PatchyRect;
   readonly isGroup: boolean;
   readonly isText: boolean;
   readonly isShape: boolean;
+  readonly isSmartObject: boolean;
+  /** The smart object's state, or null for other layers. */
+  getSmartObject(): PatchySmartObjectState | null;
+  /**
+   * Update Smart Object Content: re-reads this linked layer's file from disk and
+   * re-renders every layer that shares its source, as one undo step. Returns the
+   * number of layers re-rendered. Throws for an embedded smart object, a plain
+   * layer, or a linked file that is missing or cannot be decoded.
+   */
+  updateSmartObject(): number;
+  /**
+   * Renders this embedded smart object again from the file it stores, for every layer
+   * that shares its source, as one undo step. A smart object opened from a PSD shows
+   * the pixels saved in the file until it is transformed or its contents change; this
+   * replaces them with Patchy's own render. Returns the number of layers re-rendered.
+   * Throws for a linked smart object (see updateSmartObject), a plain layer, one
+   * Patchy keeps locked, or contents that cannot be decoded.
+   */
+  rerenderSmartObject(): number;
   getShape(): PatchyShapeState | null;
   /** Partial update. geometry and path are mutually exclusive; group targets one existing shape group. */
   updateShape(changes: {geometry?: PatchyVectorGeometry; group?: number; path?: PatchyVectorPath;
@@ -250,17 +304,63 @@ interface PatchyLayer {
   /** Child layers (groups only). */
   readonly children: PatchyLayer[];
   /** Text layers: setting text re-renders the layer with the first character's formatting
-   * (size, glyph scales, leading, tracking); an empty string clears its ink. */
+   * (size, glyph scales, leading, tracking); an empty string clears its ink. Like every
+   * text setter here, it logs a console warning (never a dialog) when a font is not
+   * installed or has no glyphs for the text; a missing font is replaced by the
+   * substitute it was drawn in, which textFont then reports. Compact family spellings
+   * such as LiberationSans resolve to Liberation Sans without a substitution warning. */
   text: string;
   /** Text layers: "horizontal" or "vertical" (columns top to bottom, right to left). Setting it re-renders. */
   textOrientation: 'horizontal' | 'vertical';
   /** Text layers: paragraph base direction, "auto" (first strong character), "ltr" or "rtl". Setting it re-renders. */
   textDirection: 'auto' | 'ltr' | 'rtl';
+  /** Text layers: the font family name the layer uses; "" for other layers. */
+  readonly textFont: string;
+  /**
+   * Text layers: the formatted runs in text order, each {text, font, style, size,
+   * bold, italic, color} (style is a recorded face beyond bold/italic such as
+   * "Black", size in document px before any layer transform). Concatenated
+   * texts equal `text`. Empty for other layers.
+   */
+  readonly textRuns: PatchyTextRunInfo[];
+  /** Text layers: the paragraph box {width, height}, or null for point text. */
+  readonly textBox: { width: number; height: number } | null;
+  /** Text layers: the first paragraph's alignment; setting it aligns every paragraph and re-renders. */
+  textAlign: 'left' | 'center' | 'right' | 'justify';
+  /**
+   * Text layers: the first paragraph's indents and spacing in DOCUMENT PIXELS
+   * (Photoshop's Paragraph panel: first line indent, left indent, right indent,
+   * space before, space after). Setting it merges the given fields into every
+   * paragraph and re-renders; a field left out keeps its value. A negative
+   * firstLineIndent with a positive startIndent is a hanging indent. null for
+   * other layers.
+   */
+  textParagraph: { firstLineIndent: number; startIndent: number; endIndent: number; spaceBefore: number; spaceAfter: number } | null;
+  /**
+   * Text layers: replaces the content with formatted runs the way retyping
+   * does. Every run starts from the first character's current formatting and
+   * applies its own font, size, bold, italic and color on top, so
+   * setTextRuns([{text: "Ask "}, {text: "Seth", bold: true}]) keeps the
+   * layer's face and size and bolds one word.
+   */
+  setTextRuns(runs: (PatchyTextRun | string)[]): void;
+  /**
+   * Text layers: renders the layer again from its stored text, fonts and formatting,
+   * changing none of them. A type layer opened from a PSD shows the pixels saved in the
+   * file until it is edited; this replaces them with Patchy's own render. Logs the same
+   * font warnings as the text setters. Throws on a layer that is not text or is locked.
+   */
+  rerenderText(): void;
 
   /**
    * Finite signed 32-bit positions; throws if the position or resulting bounds overflow.
    * Layers sit on whole pixels: a fraction rounds like Photoshop (halves up, 3.5 -> 4,
    * -3.5 -> -3), the same rule `x`/`y` assignment uses.
+   * The move is the Move tool's: the layer's placement travels with its pixels (a text
+   * layer's anchor, a shape's path and geometry, a smart object's quad, a linked raster
+   * or vector mask), so later edits, re-renders and saved PSDs keep the new position. An
+   * unlinked mask stays where it is. On a group, every layer inside moves; a group has
+   * no position of its own (`x`/`y` read 0), so `moveTo(dx, dy)` offsets its contents.
    */
   moveTo(x: number, y: number): void;
   /**
@@ -290,6 +390,16 @@ interface PatchyLayer {
    * parameters throw.
    */
   applyFilter(filterId: string, params?: Record<string, number | boolean | string>): void;
+  /**
+   * Runs a legacy Photoshop filter plug-in (an id from patchy.plugins.list()) on this
+   * layer, limited to the document selection, as one undoable edit. {dialog: false}
+   * skips the plug-in's own settings dialog and reuses its last (or default) settings
+   * (a plug-in that opens its dialog anyway gets its OK pressed); unattended runs never
+   * show it. {captureDialog: "<png path>"} saves an image of the plug-in's dialog while
+   * it is up (an unattended run then shows the dialog for the capture and answers it
+   * itself). Windows only; unknown or unsupported ids throw.
+   */
+  applyPlugin(pluginId: string, options?: { dialog?: boolean; captureDialog?: string }): void;
   /**
    * Edit > Remove Object: fills the document selection from its surroundings
    * (the dialog's fill, without the dialog). `method` "contentAware"
@@ -478,20 +588,42 @@ interface PatchyDocument {
   /** Adds an empty pixel layer on top and makes it active. */
   addLayer(name: string): PatchyLayer;
   /**
-   * Adds a text layer rendered through Patchy's text engine. Options:
-   * {font, size, x, y, color, bold, italic, orientation, direction}; x/y is
-   * the text anchor point (for vertical text: the first column's top centre).
+   * Adds a text layer rendered through Patchy's text engine. text is a string
+   * or an array of runs ({text, font?, size?, bold?, italic?, color?}): each
+   * run is typed in its own format on top of the layer options, so one layer
+   * can mix faces, sizes and colors ("Hold the " + bold "LEFT TRIGGER").
+   * Options: {font, size, x, y, color, bold, italic, orientation, direction,
+   * box, align}; x/y is the text anchor point (for vertical text: the first
+   * column's top centre). box: {width, height} (each at least 16 document px)
+   * opens a paragraph text box with x/y as its top-left corner: lines wrap at
+   * the box width, exactly like dragging a box with the Type tool. align
+   * ("left", "center", "right", "justify") sets every paragraph's alignment;
+   * paragraph ({firstLineIndent, startIndent, endIndent, spaceBefore,
+   * spaceAfter}, document pixels, each optional) sets every paragraph's
+   * indents and spacing, like layer.textParagraph.
    * size is the text height in DOCUMENT PIXELS, independent of the canvas
    * zoom and the document PPI (the Character panel shows the pt equivalent).
    * orientation "vertical" stacks upright glyphs in columns that advance right
    * to left (Photoshop's Vertical Type); direction sets the paragraph base
-   * direction ("auto" follows the first strong character).
+   * direction ("auto" follows the first strong character). font is a family
+   * name ("Georgia"), family plus face ("Arial Black"), or on Windows a face's
+   * full or PostScript name ("Futura Extra Black BT"); a font that is not
+   * installed, or that has no glyph for any character of the text (the bundled
+   * Noto Naskh Arabic has no Latin letters), renders in a fallback and logs a
+   * console warning that says which of the two it was. The face is
+   * exactly what font/bold/italic name, never the options bar's current one.
+   * text (and any run's text) may contain "\n": every line lands in the SAME
+   * layer as a new paragraph, so a heading and its subline need no second
+   * layer.
    */
-  addTextLayer(text: string, options?: {
+  addTextLayer(text: string | PatchyTextRun[], options?: {
     font?: string; size?: number; x?: number; y?: number;
     color?: string; bold?: boolean; italic?: boolean;
     orientation?: 'horizontal' | 'vertical';
     direction?: 'auto' | 'ltr' | 'rtl';
+    box?: { width: number; height: number };
+    align?: 'left' | 'center' | 'right' | 'justify';
+    paragraph?: { firstLineIndent?: number; startIndent?: number; endIndent?: number; spaceBefore?: number; spaceAfter?: number };
   }): PatchyLayer;
   /**
    * Files as Layers: adds each image file as a new layer directly above the
@@ -503,6 +635,28 @@ interface PatchyDocument {
    * top-level layers in argument order.
    */
   importFilesAsLayers(paths: string | string[]): PatchyLayer[];
+  /**
+   * Place Embedded / Place Linked: adds the file (PSD, PSB, PNG, JPEG, TIFF, BMP,
+   * SVG, ...) as a smart-object layer on top and makes it active. Embedded
+   * (default) stores a copy of the file in the document; `linked: true` stores a
+   * reference to the file, so editing the file and calling updateSmartObject()
+   * refreshes the layer, and placing the same file linked again shares that
+   * reference (one update refreshes every layer placed from it). Without a
+   * position or size the file lands at its physical size (its pixels scaled by
+   * the document's resolution over the file's), centered, and scaled down to fit
+   * a smaller canvas, like the menu commands. `x`/`y` place the top-left corner
+   * (an omitted axis centers); `width`/`height` set the placed size in document
+   * pixels, one of them alone keeping the aspect ratio; `scale` multiplies the
+   * physical size (1 = 100%) and is ignored when a size is given. SVG contents
+   * render sharp at any size. `name` overrides the layer name (default: the
+   * file's base name). Throws, adding nothing, for a file that cannot be read or
+   * decoded, a size outside 1..30000 pixels, or an unknown option. The linked
+   * file's path is stored relative to the document's folder when the document is
+   * saved as PSD/PSB; until then an absolute path keeps the link working.
+   */
+  addSmartObject(path: string, options?: {
+    linked?: boolean; x?: number; y?: number; width?: number; height?: number; scale?: number; name?: string;
+  }): PatchyLayer;
   /** First layer (depth-first) with this exact name, or undefined. */
   findLayer(name: string): PatchyLayer | undefined;
   /**
@@ -518,9 +672,15 @@ interface PatchyDocument {
    * keepVectors=false explicitly rasterizes merges; separateVectorTypes separates
    * solid, gradient, pattern and mixed-paint categories, irrespective of colors/stroke settings.
    * A single leaf is unchanged (no implicit layer below, unlike Merge Down).
+   * singleVector=true overrides the three options above: at least two editable vector
+   * layers become one at the bottommost source's stack position, including across unselected layers.
+   * Removes individual layer effects unless effectsFrom names a vector included in the merge;
+   * that layer's effects apply once to the combined silhouette. Masks, clipping, locks,
+   * unsupported data and incompatible blending/group boundaries throw before mutation.
    */
   mergeLayers(layers: PatchyLayer[], options?: {
     keepVectors?: boolean; withinGroups?: boolean; separateVectorTypes?: boolean;
+    singleVector?: boolean; effectsFrom?: PatchyLayer;
   }): PatchyLayer[];
   /** Layer > Arrange > Align: lines the layers' edges or centers up with the reference
    *  (the selection when one exists and alignTo is "selection", the canvas when alignTo is
@@ -546,6 +706,16 @@ interface PatchyDocument {
   saveAs(path: string): boolean;
   /** Same as saveAs; reads better for export-a-copy flows. */
   exportAs(path: string): boolean;
+  /** Exports visible top-level layers, top first, as animated WebP. Groups become one frame.
+   * Trailing seconds tokens ("blink 0.033s") override frameDelayMs. Preserves the document path
+   * and modified state. loopCount is total plays (0 = forever), defaults to the imported or
+   * last exported count, otherwise 0. Other defaults: frameDelayMs 100, quality 75, lossless false.
+   * quality 100 also selects lossless. Integers: frameDelayMs 0..16777215, loopCount 0..65535,
+   * quality 0..100. Unknown/invalid options, non-.webp paths and export failures throw.
+   * saveAs/exportAs with .webp continue to write a single flattened image. */
+  exportAnimatedWebp(path: string, options?: {
+    frameDelayMs?: number; loopCount?: number; quality?: number; lossless?: boolean;
+  }): boolean;
   /** Closes without prompting (the script decided). */
   close(): void;
   /** Makes this the active document tab. */
@@ -594,6 +764,15 @@ interface PatchyApp {
   runCommand(commandId: string): boolean;
   /** Every registered command id, sorted. */
   commandIds(): string[];
+  /**
+   * Every font family the text engine can use right now (installed and user-added),
+   * with its face names and the writing systems the font declares (a declared
+   * system can still lack letters: addTextLayer warns when a font cannot draw
+   * the text), sorted by family. Pass
+   * a family (or family plus face) as addTextLayer's font. Under --headless on
+   * Windows this also loads the installed fonts first.
+   */
+  listFonts(): {family: string; styles: string[]; writingSystems: string[]}[];
   /**
    * Writes one PDF with a page per document, in array order, each page sized
    * from that document's pixels and resolution. A single document is accepted
@@ -801,6 +980,32 @@ interface PatchyIo {
  * a crash, reopens the copies on the next launch as "(Recovered)" documents. The web
  * build has no recovery store: enabled is false and every list is empty.
  */
+interface PatchyPlugins {
+  /**
+   * The plug-ins folder next to the application ("/" separators), the place Plugins >
+   * Open Plug-ins Folder shows; created with its README.txt when read. "" on macOS and
+   * Linux, which cannot run these plug-ins.
+   */
+  readonly folder: string;
+  /** The user-added plug-in folders (persisted, Preferences > Plug-ins). Setting it rescans. */
+  folders: string[];
+  /**
+   * Every plug-in file the last scan saw, in menu order. `supported` is false for files
+   * that cannot run (not a filter, wrong platform), with the reason.
+   */
+  list(): {
+    id: string;
+    name: string;
+    category: string;
+    path: string;
+    supported: boolean;
+    reason: string;
+    architecture: string;
+  }[];
+  /** Rescans the automatic and user folders and returns list(). */
+  rescan(): ReturnType<PatchyPlugins["list"]>;
+}
+
 interface PatchyRecovery {
   /** The Preferences checkbox (persisted). Setting it re-arms the timer. */
   enabled: boolean;
@@ -832,6 +1037,7 @@ interface PatchyNamespace {
   readonly io: PatchyIo;
   readonly ui: PatchyUi;
   readonly recovery: PatchyRecovery;
+  readonly plugins: PatchyPlugins;
   readonly brushes: PatchyBrushes;
   readonly apiVersion: number;
   readonly version: string;
