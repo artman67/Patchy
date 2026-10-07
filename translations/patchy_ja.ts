@@ -9316,6 +9316,38 @@ Mixed selection</source>
         <source>Show More Options</source>
         <translation>詳細オプションを表示</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>カラールックアップ</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>3D LUT を読み込み...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>3D LUT ファイル:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>3D LUT を読み込み</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>Cube LUT (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>3D LUT を読み込めませんでした。Patchy は 64 MB までの 3D .cube ファイルを読み込めます。ファイルが破損しているか、サポートされていない可能性があります。</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>カラールックアップ: 3D LUT が読み込まれていません</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>カラールックアップ: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19283,6 +19315,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>シャドウ・ハイライトをキャンセルしました</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>カラールックアップ(&amp;O)...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>カラールックアップ</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>カラールックアップをキャンセルしました</translation>
     </message>
 </context>
 <context>

@@ -642,6 +642,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(150, 200, 140);
     case AdjustmentKind::PhotoFilter:
       return QColor(240, 160, 70);
+    case AdjustmentKind::ColorLookup:
+      return QColor(175, 150, 245);
   }
   return QColor(145, 175, 215);
 }
@@ -849,6 +851,11 @@ QString adjustment_settings_summary(const Layer& layer) {
           .arg(filter)
           .arg(photo_filter.density);
     }
+    case AdjustmentKind::ColorLookup:
+      if (settings->color_lookup.data == nullptr) {
+        return QObject::tr("Color Lookup: no 3D LUT loaded");
+      }
+      return QObject::tr("Color Lookup: %1").arg(QString::fromStdString(settings->color_lookup.name));
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
@@ -1217,6 +1224,24 @@ void draw_photo_filter_adjustment_thumbnail_symbol(QPainter& painter, const QCol
   painter.drawEllipse(QPointF(12.0, 12.0), 1.6, 1.6);
 }
 
+void draw_color_lookup_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
+  // A 3 x 3 grid of shifted colors: one slice of the lookup table.
+  const std::array<QColor, 9> cells{QColor(40, 60, 120),  QColor(70, 120, 170), QColor(120, 200, 215),
+                                    QColor(150, 60, 110), QColor(185, 135, 130), QColor(215, 220, 170),
+                                    QColor(235, 90, 60),  QColor(245, 170, 80),  QColor(250, 240, 200)};
+  const QRectF square(7.0, 7.0, 14.0, 14.0);
+  const auto cell = square.width() / 3.0;
+  painter.setPen(Qt::NoPen);
+  for (std::size_t index = 0; index < cells.size(); ++index) {
+    const auto column = static_cast<double>(index % 3U);
+    const auto row = static_cast<double>(index / 3U);
+    painter.fillRect(QRectF(square.left() + column * cell, square.top() + row * cell, cell, cell), cells[index]);
+  }
+  painter.setPen(QPen(accent.lighter(120), 1.5));
+  painter.setBrush(Qt::NoBrush);
+  painter.drawRect(square);
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1480,6 +1505,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::PhotoFilter:
           draw_photo_filter_adjustment_thumbnail_symbol(painter, accent, settings->photo_filter);
+          break;
+        case AdjustmentKind::ColorLookup:
+          draw_color_lookup_adjustment_thumbnail_symbol(painter, accent);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);

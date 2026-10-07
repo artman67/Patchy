@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/color_lookup.hpp"
 #include "core/document.hpp"
 #include "core/ink_space.hpp"
 #include "core/layer.hpp"
@@ -9,6 +10,7 @@
 #include <optional>
 #include <span>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace patchy {
@@ -115,6 +117,13 @@ private:
   explicit LabToRgbTransform(std::unique_ptr<Impl> impl);
   std::unique_ptr<Impl> impl_;
 };
+
+// An RGB-to-RGB ICC device link (version 4.4, one 16-bit CLUT in A2B0, the shape Little
+// CMS gives a .cube file) holding a Color Lookup table, for the 'profile' item of a PSD
+// 'clrL' block. Empty when the table is invalid or larger than the ICC grid limit of
+// 255 nodes per axis.
+[[nodiscard]] std::vector<std::uint8_t> build_color_lookup_device_link(const ColorLookupTable& table,
+                                                                     std::string_view description);
 
 class ColorManager {
 public:

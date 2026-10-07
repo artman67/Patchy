@@ -1335,4 +1335,28 @@ void apply_match_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion
   for_each_selected_row_span(pixels, bounds, selection, progress, apply_span);
 }
 
+void apply_color_lookup_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                  const ColorLookupSettings& settings, const FilterProgress* progress) {
+  // The adjustment layer's per-pixel function at each pixel's document position, so
+  // the destructive command equals a Color Lookup layer with the same settings, Dither
+  // included.
+  if (settings.data == nullptr || !settings.data->table.valid()) {
+    return;
+  }
+  const auto pixel_bytes = bytes_per_pixel(pixels.format());
+  const auto apply_span = [&](std::int32_t y, std::int32_t x_begin, std::int32_t x_end) {
+    auto* px = pixels.row(y).data() + static_cast<std::size_t>(x_begin) * pixel_bytes;
+    for (std::int32_t x = x_begin; x < x_end; ++x, px += pixel_bytes) {
+      const auto adjusted = apply_color_lookup(RgbColor{px[0], px[1], px[2]}, settings, bounds.x + x, bounds.y + y);
+      px[0] = adjusted.red;
+      px[1] = adjusted.green;
+      px[2] = adjusted.blue;
+    }
+  };
+  if (apply_row_spans_in_parallel(pixels, selection, progress, apply_span)) {
+    return;
+  }
+  for_each_selected_row_span(pixels, bounds, selection, progress, apply_span);
+}
+
 }  // namespace patchy::ui

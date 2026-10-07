@@ -9316,6 +9316,38 @@ RGB: %2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>추가 옵션 표시</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>색상 검색</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>3D LUT 불러오기...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>3DLUT 파일:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>3D LUT 불러오기</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>Cube LUT(*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>3D LUT를 불러올 수 없습니다. Patchy는 64MB 이하의 3D .cube 파일을 읽습니다. 파일이 손상되었거나 지원되지 않는 형식일 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>색상 검색: 불러온 3D LUT 없음</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>색상 검색: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19283,6 +19315,18 @@ Y: %2
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>취소된 그림자/하이라이트</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>색상 검색(&amp;O)...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>색상 검색</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>취소된 색상 검색</translation>
     </message>
 </context>
 <context>

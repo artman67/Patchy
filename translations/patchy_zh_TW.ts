@@ -9316,6 +9316,38 @@ RGB：%2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>顯示更多選項</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>顏色查詢</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>載入 3D LUT...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>3DLUT 檔案:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>載入 3D LUT</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>Cube LUT (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>無法載入 3D LUT。Patchy 可讀取不超過 64 MB 的 3D .cube 檔案；該檔案可能已損毀或不受支援。</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>顏色查詢：未載入 3D LUT</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>顏色查詢：%1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19283,6 +19315,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>已取消陰影/亮部</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>顏色查詢(&amp;O)...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>顏色查詢</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>已取消顏色查詢</translation>
     </message>
 </context>
 <context>

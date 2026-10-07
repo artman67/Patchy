@@ -156,6 +156,8 @@ QString localized_adjustment_display_name(AdjustmentKind kind) {
       return QObject::tr("Channel Mixer");
     case AdjustmentKind::PhotoFilter:
       return QObject::tr("Photo Filter");
+    case AdjustmentKind::ColorLookup:
+      return QObject::tr("Color Lookup");
   }
   return QObject::tr("Adjustment");
 }

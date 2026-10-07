@@ -112,6 +112,7 @@ using SelectiveColorSettings = SelectiveColorAdjustment;
 using BlackWhiteSettings = BlackWhiteAdjustment;
 using ChannelMixerSettings = ChannelMixerAdjustment;
 using PhotoFilterSettings = PhotoFilterAdjustment;
+using ColorLookupSettings = ColorLookupAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 struct ScannerAcquireResult;
 struct UpdateInfo;
@@ -1075,6 +1076,9 @@ private:
   void new_photo_filter_adjustment_layer();
   void apply_photo_filter_adjustment(const PhotoFilterSettings& settings, bool allow_identity = false);
   void photo_filter_dialog();
+  void new_color_lookup_adjustment_layer();
+  void apply_color_lookup_adjustment(const ColorLookupSettings& settings, bool allow_identity = false);
+  void color_lookup_dialog();
   void new_brightness_contrast_adjustment_layer();
   void apply_brightness_contrast_adjustment(const BrightnessContrastSettings& settings,
                                             bool allow_identity = false);

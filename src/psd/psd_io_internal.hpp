@@ -152,6 +152,15 @@ constexpr std::array<char, 4> kPhotoshopChannelMixerBlockKey{'m', 'i', 'x', 'r'}
 // components), u32 density percent, u8 Preserve Luminosity. Patchy writes version 2
 // RGB plus three zero pad bytes (20 bytes).
 constexpr std::array<char, 4> kPhotoshopPhotoFilterBlockKey{'p', 'h', 'f', 'l'};
+// Color Lookup is a u16 version (1), a u32 descriptor version (16) and a 'null'
+// descriptor (Adobe's PSD specification gives only that wrapper:
+// https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/). Its items are
+// Photoshop's Action Manager names: lookupType (enum colorLookupType: 3DLUT,
+// abstractProfile, deviceLinkProfile), 'Nm  ' (TEXT), 'Dthr' (bool), profile (tdta, an
+// ICC profile), LUTFormat (enum LUTFormatType: LUTFormatCUBE, LUTFormat3DL,
+// LUTFormatLOOK), dataOrder and tableOrder (enum colorLookupOrder: rgbOrder,
+// bgrOrder), LUT3DFileData (tdta, the LUT file's bytes) and LUT3DFileName (TEXT).
+constexpr std::array<char, 4> kPhotoshopColorLookupBlockKey{'c', 'l', 'r', 'L'};
 // Brightness/Contrast: legacy-mode PS 2026 writes ONLY the 8-byte 'brit'
 // (brightness i16, contrast i16, mean u16 = 127, lab u8 = 0, pad u8 = 0);
 // modern mode writes an all-zero 'brit' plus a 'CgEd' descriptor (u32 version
@@ -613,6 +622,11 @@ std::vector<std::uint8_t> photoshop_channel_mixer_payload(const ChannelMixerAdju
                                                           const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_photo_filter_adjustment(std::span<const std::uint8_t> payload);
 std::vector<std::uint8_t> photoshop_photo_filter_payload(const PhotoFilterAdjustment& settings,
+                                                         const UnknownPsdBlock* original);
+// 3DLUT mode with .cube data (or no LUT yet) only; the profile modes and .3dl/.look
+// data return nullopt and stay on the opaque, byte-preserved path.
+std::optional<AdjustmentSettings> parse_photoshop_color_lookup_adjustment(std::span<const std::uint8_t> payload);
+std::vector<std::uint8_t> photoshop_color_lookup_payload(const ColorLookupAdjustment& settings,
                                                          const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_brightness_contrast_adjustment(
     std::span<const std::uint8_t> payload);

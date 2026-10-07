@@ -1159,6 +1159,161 @@ std::vector<std::uint8_t> photoshop_photo_filter_payload(const PhotoFilterAdjust
   return writer.bytes();
 }
 
+namespace {
+
+std::optional<DescriptorObject> read_color_lookup_descriptor(std::span<const std::uint8_t> payload) {
+  if (payload.size() < 6) {
+    return std::nullopt;
+  }
+  try {
+    BigEndianReader reader(payload);
+    if (reader.read_u16() != 1 || reader.read_u32() != 16) {
+      return std::nullopt;
+    }
+    return read_descriptor(reader);
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
+bool descriptor_enum_is(const DescriptorObject& descriptor, std::string_view key, std::string_view value) {
+  const auto* item = descriptor_value(descriptor, key);
+  return item != nullptr && item->type == DescriptorValue::Type::Enum && item->enum_value == value;
+}
+
+}  // namespace
+
+std::optional<AdjustmentSettings> parse_photoshop_color_lookup_adjustment(std::span<const std::uint8_t> payload) {
+  const auto descriptor = read_color_lookup_descriptor(payload);
+  if (!descriptor.has_value()) {
+    return std::nullopt;
+  }
+  // Only the 3DLUT File mode is modeled; Abstract and Device Link render from an ICC
+  // profile Patchy does not evaluate.
+  if (descriptor_value(*descriptor, "lookupType") != nullptr &&
+      !descriptor_enum_is(*descriptor, "lookupType", "3DLUT")) {
+    return std::nullopt;
+  }
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::ColorLookup;
+  if (const auto* dither = descriptor_value(*descriptor, "Dthr");
+      dither != nullptr && dither->type == DescriptorValue::Type::Bool) {
+    settings.color_lookup.dither = dither->bool_value;
+  }
+  if (const auto* name = descriptor_value(*descriptor, "Nm  ");
+      name != nullptr && name->type == DescriptorValue::Type::String) {
+    settings.color_lookup.name = name->string_value;
+  }
+  const auto* file_data = descriptor_value(*descriptor, "LUT3DFileData");
+  if (file_data == nullptr || file_data->type != DescriptorValue::Type::Raw || file_data->raw_value.empty()) {
+    // No LUT chosen yet is a valid, effect-free layer; a profile without the file it
+    // came from cannot be rendered here.
+    if (descriptor_value(*descriptor, "profile") != nullptr) {
+      return std::nullopt;
+    }
+    return settings;
+  }
+  if (descriptor_value(*descriptor, "LUTFormat") != nullptr &&
+      !descriptor_enum_is(*descriptor, "LUTFormat", "LUTFormatCUBE")) {
+    return std::nullopt;  // .3dl and .look data are not parsed
+  }
+  settings.color_lookup.data = make_color_lookup_data(file_data->raw_value);
+  if (settings.color_lookup.data == nullptr) {
+    return std::nullopt;
+  }
+  return settings;
+}
+
+std::vector<std::uint8_t> photoshop_color_lookup_payload(const ColorLookupAdjustment& settings,
+                                                         const UnknownPsdBlock* original) {
+  const auto data_id = settings.data != nullptr ? settings.data->id : std::string();
+  std::optional<DescriptorObject> base;
+  std::string original_id;
+  if (original != nullptr) {
+    // Unedited imported payloads re-emit byte-for-byte; an edit keeps the imported
+    // descriptor's other items (and Photoshop's own profile while the LUT is unchanged).
+    const auto parsed = parse_photoshop_color_lookup_adjustment(original->payload);
+    if (parsed.has_value()) {
+      original_id = parsed->color_lookup.data != nullptr ? parsed->color_lookup.data->id : std::string();
+      if (original_id == data_id && parsed->color_lookup.dither == settings.dither &&
+          parsed->color_lookup.name == settings.name) {
+        return original->payload;
+      }
+      base = read_color_lookup_descriptor(original->payload);
+    }
+  }
+  DescriptorObject descriptor;
+  const auto lut_unchanged = base.has_value() && original_id == data_id;
+  if (base.has_value()) {
+    descriptor = std::move(*base);
+  } else {
+    descriptor.name = "";
+    descriptor.class_id = "null";
+  }
+  const auto set_item = [&descriptor](const std::string& key, bool long_form, DescriptorValue value) {
+    if (descriptor.values.find(key) == descriptor.values.end()) {
+      descriptor.key_order.push_back({key, long_form});
+    }
+    descriptor.values[key] = std::move(value);
+  };
+  const auto erase_item = [&descriptor](const std::string& key) {
+    descriptor.values.erase(key);
+    std::erase_if(descriptor.key_order, [&key](const DescriptorObject::KeyEntry& entry) { return entry.key == key; });
+  };
+  const auto enum_item = [](std::string type, std::string value) {
+    DescriptorValue item;
+    item.type = DescriptorValue::Type::Enum;
+    item.enum_type = std::move(type);
+    item.enum_value = std::move(value);
+    item.enum_type_long_form = true;
+    item.enum_value_long_form = true;
+    return item;
+  };
+  const auto text_item = [](std::string text) {
+    DescriptorValue item;
+    item.type = DescriptorValue::Type::String;
+    item.string_value = std::move(text);
+    return item;
+  };
+  const auto raw_item = [](std::vector<std::uint8_t> bytes) {
+    DescriptorValue item;
+    item.type = DescriptorValue::Type::Raw;
+    item.raw_value = std::move(bytes);
+    return item;
+  };
+  DescriptorValue dither;
+  dither.type = DescriptorValue::Type::Bool;
+  dither.bool_value = settings.dither;
+  // Photoshop's item order.
+  set_item("lookupType", true, enum_item("colorLookupType", "3DLUT"));
+  set_item("Nm  ", false, text_item(settings.name));
+  set_item("Dthr", false, std::move(dither));
+  if (settings.data == nullptr) {
+    for (const auto* key : {"profile", "LUTFormat", "dataOrder", "tableOrder", "LUT3DFileData", "LUT3DFileName"}) {
+      erase_item(key);
+    }
+  } else if (!lut_unchanged) {
+    // A new LUT: Patchy's device link stands in for the profile Photoshop derives from
+    // the file, and the file itself travels in LUT3DFileData so the document needs
+    // nothing outside it.
+    if (auto profile = build_color_lookup_device_link(settings.data->table, settings.name); !profile.empty()) {
+      set_item("profile", true, raw_item(std::move(profile)));
+    } else {
+      erase_item("profile");
+    }
+    set_item("LUTFormat", true, enum_item("LUTFormatType", "LUTFormatCUBE"));
+    set_item("dataOrder", true, enum_item("colorLookupOrder", "rgbOrder"));
+    set_item("tableOrder", true, enum_item("colorLookupOrder", "bgrOrder"));
+    set_item("LUT3DFileData", true, raw_item(settings.data->file_bytes));
+    set_item("LUT3DFileName", true, text_item(settings.name));
+  }
+  BigEndianWriter writer;
+  writer.write_u16(1);
+  writer.write_u32(16);
+  write_descriptor(writer, descriptor);
+  return writer.bytes();
+}
+
 std::optional<AdjustmentSettings> parse_photoshop_threshold_adjustment(std::span<const std::uint8_t> payload) {
   if (payload.size() < 2) {
     return std::nullopt;

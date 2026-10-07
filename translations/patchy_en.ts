@@ -9335,6 +9335,38 @@ RGB: %2, %3, %4</source>
         <source>Show More Options</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19288,6 +19320,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Cancelled Shadows/Highlights</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

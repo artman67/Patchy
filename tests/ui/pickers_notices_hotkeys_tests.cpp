@@ -826,7 +826,8 @@ void ui_compatibility_report_pins_native_vs_private_adjustment_kinds() {
         patchy::AdjustmentKind::GradientMap, patchy::AdjustmentKind::Vibrance,
         patchy::AdjustmentKind::SelectiveColor, patchy::AdjustmentKind::BlackWhite,
         patchy::AdjustmentKind::ChannelMixer,
-        patchy::AdjustmentKind::PhotoFilter}) {
+        patchy::AdjustmentKind::PhotoFilter,
+        patchy::AdjustmentKind::ColorLookup}) {
     CHECK(adjustment_warnings(kind).isEmpty());
   }
 

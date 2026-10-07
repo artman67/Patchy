@@ -9346,6 +9346,38 @@ RGB: %2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>Mostra più opzioni</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Ricerca colore</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>Carica LUT 3D...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>File 3DLUT:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>Carica LUT 3D</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>LUT Cube (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>Impossibile caricare la LUT 3D. Patchy legge file .cube 3D fino a 64 MB; il file potrebbe essere danneggiato o non supportato.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Ricerca colore: nessuna LUT 3D caricata</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Ricerca colore: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19339,6 +19371,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>Annullato: Ombre/Luci</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>Ricerca c&amp;olore...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Ricerca colore</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Annullato: Ricerca colore</translation>
     </message>
 </context>
 <context>

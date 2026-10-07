@@ -13791,7 +13791,8 @@ void MainWindow::update_document_action_state() {
                            QStringLiteral("image.channel_mixer"),
                            QStringLiteral("image.photo_filter"),
                            QStringLiteral("image.match_color"),
-                           QStringLiteral("image.shadows_highlights")}) {
+                           QStringLiteral("image.shadows_highlights"),
+                           QStringLiteral("image.color_lookup")}) {
       set_command_enabled(id, false);
     }
     for (const auto& command : hotkey_registry_.commands()) {

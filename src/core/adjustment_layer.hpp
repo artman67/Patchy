@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/color_lookup.hpp"
 #include "core/ink_space.hpp"
 #include "core/layer.hpp"
 
@@ -130,6 +131,11 @@ inline constexpr const char* kLayerMetadataAdjustmentPhotoFilterColor = "patchy.
 inline constexpr const char* kLayerMetadataAdjustmentPhotoFilterDensity = "patchy.adjustment.photo_filter.density";
 inline constexpr const char* kLayerMetadataAdjustmentPhotoFilterPreserveLuminosity =
     "patchy.adjustment.photo_filter.preserve_luminosity";
+// Color Lookup: the LUT's registry id (see core/color_lookup.hpp), the file name shown
+// in the dialog and written to the PSD, and the Dither option (1/0).
+inline constexpr const char* kLayerMetadataAdjustmentColorLookupId = "patchy.adjustment.color_lookup.id";
+inline constexpr const char* kLayerMetadataAdjustmentColorLookupName = "patchy.adjustment.color_lookup.name";
+inline constexpr const char* kLayerMetadataAdjustmentColorLookupDither = "patchy.adjustment.color_lookup.dither";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastBrightness =
     "patchy.adjustment.brightness_contrast.brightness";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast =
@@ -169,7 +175,8 @@ enum class AdjustmentKind {
   SelectiveColor,
   BlackWhite,
   ChannelMixer,
-  PhotoFilter
+  PhotoFilter,
+  ColorLookup
 };
 
 enum class LevelsChannel {
@@ -483,6 +490,18 @@ inline constexpr std::size_t kPhotoFilterPresetCount = 20;
 // does. A white filter changes nothing.
 [[nodiscard]] RgbColor apply_photo_filter(RgbColor color, PhotoFilterAdjustment settings);
 
+// Photoshop's Color Lookup adjustment ('clrL') in its 3DLUT File mode. No table means
+// no LUT chosen yet: the layer has no effect. Dither defaults on, as in Photoshop.
+struct ColorLookupAdjustment {
+  std::shared_ptr<const ColorLookupData> data;
+  std::string name;
+  bool dither{true};
+};
+// One pixel through the table. Dither rounds with a per-position threshold instead
+// of to nearest, so (x, y) must be the pixel's document position.
+[[nodiscard]] RgbColor apply_color_lookup(RgbColor color, const ColorLookupAdjustment& settings, std::int32_t x,
+                                          std::int32_t y);
+
 // Both Photoshop algorithms are modeled. Modern mode (Photoshop's default,
 // use_legacy false) takes brightness -150..150 and contrast -50..100; legacy
 // mode takes -100..100 for both. Old Patchy documents and 'brit'-only PSDs
@@ -542,6 +561,7 @@ struct AdjustmentSettings {
   BlackWhiteAdjustment black_white{};
   ChannelMixerAdjustment channel_mixer{};
   PhotoFilterAdjustment photo_filter{};
+  ColorLookupAdjustment color_lookup{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.
@@ -611,8 +631,10 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
 // the positioned form, whose (x, y) is the document coordinate that seeds the
 // Gradient Map dither, so a dirty-rect repaint matches a full render.
 [[nodiscard]] RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings);
+// Color Lookup's Dither reads the position the same way.
 [[nodiscard]] RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings,
                                                  std::int32_t x, std::int32_t y);
+// Positions (for the Gradient Map and Color Lookup dithers) are the buffer's own coordinates.
 void apply_adjustment_to_pixels(PixelBuffer& pixels, const AdjustmentSettings& settings);
 [[nodiscard]] bool adjustment_has_effect(const AdjustmentSettings& settings);
 

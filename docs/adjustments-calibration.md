@@ -105,6 +105,10 @@ Added without Photoshop access (October 2026); nothing below is pinned by a PS c
 - Owed: Photoshop has not opened a Patchy-written `phfl` (warning-free open, editable layer, same color) and no Photoshop file has pinned the version 3 color or the math. psd-tools' adjustment corpus is the calibration route, as for Exposure.
 - Patent note (2026-10-07, claim text read). Wertheim US 9378563 (filed 2014-02-18, 110 days term adjustment, to about 2034-06 if maintained) multiplies each pixel's RGB by a filter's transmission, but its only independent claim needs a diagnostic image for a color vision disorder, trying filters until the image is acceptable to that person, and correlating the change to the CLOSEST filter in a database. Patchy has no diagnostic image or person and matches a preset only by exact equality for display. The multiply-and-luminosity design is the Multiply and Luminosity blend modes (PDF 1.4, 2001) and Photoshop CS (2003) behavior; Adobe's adjustment-layer patent US 5974198 and the luminance-filter patent US 6731797 have expired. Binding rule: [legal-constraints.md](legal-constraints.md).
 
+## Color Lookup (October 2026)
+
+3DLUT File mode with .cube tables, tetrahedral interpolation and a position-hash Dither; uncalibrated. Math, `clrL` layout, caps and the patent note: [color-lookup.md](color-lookup.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -128,7 +132,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance, Vibrance, Selective Color, Black & White, Channel Mixer, Photo Filter and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Vibrance, Selective Color, Black & White, Channel Mixer, Photo Filter, Color Lookup and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

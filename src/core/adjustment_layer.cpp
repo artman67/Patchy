@@ -1856,6 +1856,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "channel_mixer";
     case AdjustmentKind::PhotoFilter:
       return "photo_filter";
+    case AdjustmentKind::ColorLookup:
+      return "color_lookup";
   }
   return "levels";
 }
@@ -1892,6 +1894,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Channel Mixer";
     case AdjustmentKind::PhotoFilter:
       return "Photo Filter";
+    case AdjustmentKind::ColorLookup:
+      return "Color Lookup";
   }
   return "Adjustment";
 }
@@ -1941,6 +1945,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "photo_filter") {
     return AdjustmentKind::PhotoFilter;
+  }
+  if (key == "color_lookup") {
+    return AdjustmentKind::ColorLookup;
   }
   return std::nullopt;
 }
@@ -2069,6 +2076,10 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
         metadata_int_or(layer, kLayerMetadataAdjustmentPhotoFilterPreserveLuminosity, 1) != 0;
     settings.photo_filter = clamp_photo_filter(photo_filter);
   }
+  settings.color_lookup.data =
+      find_color_lookup(metadata_string_or(layer, kLayerMetadataAdjustmentColorLookupId, {}));
+  settings.color_lookup.name = std::string(metadata_string_or(layer, kLayerMetadataAdjustmentColorLookupName, {}));
+  settings.color_lookup.dither = metadata_int_or(layer, kLayerMetadataAdjustmentColorLookupDither, 1) != 0;
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -2241,6 +2252,13 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
   set_metadata_int(layer, kLayerMetadataAdjustmentPhotoFilterDensity, photo_filter.density);
   set_metadata_int(layer, kLayerMetadataAdjustmentPhotoFilterPreserveLuminosity,
                    photo_filter.preserve_luminosity ? 1 : 0);
+  // The table lives in the process registry; registering here guarantees the id the
+  // metadata names can be found again.
+  register_color_lookup(settings.color_lookup.data);
+  set_metadata_string(layer, kLayerMetadataAdjustmentColorLookupId,
+                      settings.color_lookup.data != nullptr ? settings.color_lookup.data->id : std::string());
+  set_metadata_string(layer, kLayerMetadataAdjustmentColorLookupName, settings.color_lookup.name);
+  set_metadata_int(layer, kLayerMetadataAdjustmentColorLookupDither, settings.color_lookup.dither ? 1 : 0);
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -2348,6 +2366,8 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
     // a gray document's pixels are already gray, which the RGB math keeps.
     // So does Channel Mixer: Photoshop's CMYK form mixes four ink outputs (with a
     // Black source) in its own domain, which is not modeled.
+    // A Color Lookup 3D LUT is an RGB table by definition (Photoshop offers only its
+    // ICC profile modes in CMYK).
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
     case AdjustmentKind::GradientMap:
@@ -2356,9 +2376,18 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
     case AdjustmentKind::BlackWhite:
     case AdjustmentKind::ChannelMixer:
     case AdjustmentKind::PhotoFilter:
+    case AdjustmentKind::ColorLookup:
       return false;
   }
   return false;
+}
+
+RgbColor apply_color_lookup(RgbColor color, const ColorLookupAdjustment& settings, std::int32_t x, std::int32_t y) {
+  if (settings.data == nullptr || !settings.data->table.valid()) {
+    return color;
+  }
+  return settings.data->table.apply(
+      color, settings.dither ? color_lookup_dither_threshold(x, y) : kColorLookupRoundNearest);
 }
 
 RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings) {
@@ -2427,6 +2456,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return apply_channel_mixer(color, settings.channel_mixer);
     case AdjustmentKind::PhotoFilter:
       return apply_photo_filter(color, settings.photo_filter);
+    case AdjustmentKind::ColorLookup:
+      return apply_color_lookup(color, settings.color_lookup, x, y);
   }
   return color;
 }
@@ -2469,13 +2500,14 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
   // Hue/Saturation and Vibrance mix channels through HSL; Threshold, Gradient Map
   // and Photo Filter's Preserve Luminosity read the mixed RGB luminance; Selective
   // Color and Black & White weigh each pixel by its whole RGB triple; Channel Mixer
-  // sums all three channels into each output. A per-channel gray-probe LUT would be
-  // wrong for any colored pixel, so they take the per-pixel path. Photo Filter
-  // without Preserve Luminosity is a per-channel map.
+  // sums all three channels into each output; a Color Lookup table maps whole
+  // colors. A per-channel gray-probe LUT would be wrong for any colored pixel, so
+  // they take the per-pixel path. Photo Filter without Preserve Luminosity is a
+  // per-channel map.
   if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
       settings.kind == AdjustmentKind::GradientMap || settings.kind == AdjustmentKind::Vibrance ||
       settings.kind == AdjustmentKind::SelectiveColor || settings.kind == AdjustmentKind::BlackWhite ||
-      settings.kind == AdjustmentKind::ChannelMixer ||
+      settings.kind == AdjustmentKind::ChannelMixer || settings.kind == AdjustmentKind::ColorLookup ||
       (settings.kind == AdjustmentKind::PhotoFilter && settings.photo_filter.preserve_luminosity)) {
     return std::nullopt;
   }
@@ -2547,6 +2579,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return channel_mixer_has_effect(clamp_channel_mixer(settings.channel_mixer));
     case AdjustmentKind::PhotoFilter:
       return settings.photo_filter.color != RgbColor{255, 255, 255};  // white passes everything
+    case AdjustmentKind::ColorLookup:
+      return settings.color_lookup.data != nullptr && settings.color_lookup.data->table.valid();
   }
   return false;
 }

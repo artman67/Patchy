@@ -1907,6 +1907,89 @@ std::optional<PhotoFilterSettings> request_photo_filter_settings(
       });
 }
 
+std::optional<ColorLookupSettings> request_color_lookup_settings(
+    QWidget* parent, std::function<void(bool, const ColorLookupSettings&)> preview_changed,
+    ColorLookupSettings initial) {
+  // The dropdown lists None, the LUT this dialog last had (so switching to None and
+  // back is free), and Load 3D LUT..., which opens a file and becomes that entry.
+  struct State {
+    ColorLookupSettings settings;
+    std::shared_ptr<const ColorLookupData> loaded;
+    std::string loaded_name;
+    QCheckBox* dither{nullptr};
+  };
+  auto state = std::make_shared<State>();
+  state->settings = initial;
+  state->loaded = initial.data;
+  state->loaded_name = initial.name;
+  const auto build_settings = [state](const std::vector<QSpinBox*>&) {
+    auto settings = state->settings;
+    if (state->dither != nullptr) {
+      settings.dither = state->dither->isChecked();
+    }
+    return settings;
+  };
+  return request_adjustment_settings_dialog<ColorLookupSettings>(
+      parent, QStringLiteral("patchyColorLookupDialog"), QObject::tr("Color Lookup"),
+      QStringLiteral("colorLookupPreviewCheck"), {}, build_settings, std::move(preview_changed), {},
+      [state](QDialog& dialog, QFormLayout* form, const std::vector<QSpinBox*>&,
+              const std::function<void()>& flush_preview) {
+        auto* combo = new QComboBox(&dialog);
+        combo->setObjectName(QStringLiteral("colorLookupFileCombo"));
+        // Room for a typical LUT file name; longer ones elide instead of widening the dialog.
+        combo->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+        combo->setMinimumContentsLength(28);
+        const auto refill = [state, combo] {
+          const QSignalBlocker block(combo);
+          combo->clear();
+          combo->addItem(QObject::tr("None"));
+          if (state->loaded != nullptr) {
+            combo->addItem(QString::fromStdString(state->loaded_name));
+          }
+          combo->addItem(QObject::tr("Load 3D LUT..."));
+          combo->setCurrentIndex(state->settings.data != nullptr ? 1 : 0);
+        };
+        refill();
+        form->addRow(QObject::tr("3DLUT File:"), combo);
+        auto* dither = new QCheckBox(QObject::tr("Dither"), &dialog);
+        dither->setObjectName(QStringLiteral("colorLookupDitherCheck"));
+        dither->setChecked(state->settings.dither);
+        state->dither = dither;
+        form->addRow(QString(), dither);
+        QObject::connect(dither, &QCheckBox::toggled, &dialog, [flush_preview](bool) { flush_preview(); });
+        QObject::connect(combo, &QComboBox::activated, &dialog,
+                         [&dialog, state, combo, refill, flush_preview](int index) {
+                           if (index == combo->count() - 1) {
+                             const auto path = get_open_file_name(
+                                 &dialog, QObject::tr("Load 3D LUT"), QString(), QObject::tr("Cube LUT (*.cube)"),
+                                 nullptr, QStringLiteral("colorLookupOpenFileDialog"));
+                             if (!path.isEmpty()) {
+                               if (auto data = read_color_lookup_file(to_filesystem_path(path)); data != nullptr) {
+                                 state->loaded = std::move(data);
+                                 state->loaded_name = QFileInfo(path).fileName().toStdString();
+                                 state->settings.data = state->loaded;
+                                 state->settings.name = state->loaded_name;
+                               } else {
+                                 show_critical_message(
+                                     &dialog, QObject::tr("Load 3D LUT"),
+                                     QObject::tr("The 3D LUT could not be loaded. Patchy reads 3D .cube files "
+                                                 "up to 64 MB; the file may be damaged or unsupported."),
+                                     QStringLiteral("colorLookupLoadErrorMessageBox"));
+                               }
+                             }
+                           } else if (index == 0) {
+                             state->settings.data = nullptr;
+                             state->settings.name.clear();
+                           } else {
+                             state->settings.data = state->loaded;
+                             state->settings.name = state->loaded_name;
+                           }
+                           refill();
+                           flush_preview();
+                         });
+      });
+}
+
 std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed,
     BrightnessContrastSettings initial) {

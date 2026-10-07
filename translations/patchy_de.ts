@@ -9346,6 +9346,38 @@ RGB: %2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>Weitere Optionen einblenden</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Color Lookup</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>3D-LUT laden...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>3DLUT-Datei:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>3D-LUT laden</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>Cube-LUT (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>Die 3D-LUT konnte nicht geladen werden. Patchy liest 3D-.cube-Dateien bis 64 MB; die Datei ist eventuell beschädigt oder wird nicht unterstützt.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Color Lookup: keine 3D-LUT geladen</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Color Lookup: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19339,6 +19371,18 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>Tiefen/Lichter abgebrochen</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>C&amp;olor Lookup...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Color Lookup</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Color Lookup abgebrochen</translation>
     </message>
 </context>
 <context>

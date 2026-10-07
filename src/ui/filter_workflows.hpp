@@ -84,6 +84,7 @@ using BlackWhiteSettings = BlackWhiteAdjustment;
 using ChannelMixerSettings = ChannelMixerAdjustment;
 using PhotoFilterSettings = PhotoFilterAdjustment;
 using ShadowsHighlightsSettings = ::patchy::ShadowsHighlightsSettings;
+using ColorLookupSettings = ColorLookupAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 using GradientMapSettings = GradientMapAdjustment;
 
@@ -198,6 +199,11 @@ using FilterCancelled = ::patchy::FilterCancelled;
 // Opens with the saved defaults (Save Defaults) or Photoshop's factory values.
 [[nodiscard]] std::optional<ShadowsHighlightsSettings> request_shadows_highlights_settings(
     QWidget* parent, std::function<void(bool, const ShadowsHighlightsSettings&)> preview_changed = {});
+// Photoshop's Color Lookup dialog in its 3DLUT File mode: a file dropdown (None, the
+// loaded LUT, Load 3D LUT...) and Dither.
+[[nodiscard]] std::optional<ColorLookupSettings> request_color_lookup_settings(
+    QWidget* parent, std::function<void(bool, const ColorLookupSettings&)> preview_changed = {},
+    ColorLookupSettings initial = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -271,5 +277,7 @@ void apply_match_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion
 void apply_shadows_highlights_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                         const ShadowsHighlightsSettings& settings,
                                         const FilterProgress* progress = nullptr);
+void apply_color_lookup_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                  const ColorLookupSettings& settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

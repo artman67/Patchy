@@ -9376,6 +9376,38 @@ RGB: %2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>Pokaż więcej opcji</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Wyszukiwanie kolorów</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>Wczytaj 3D LUT...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>Plik 3DLUT:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>Wczytaj 3D LUT</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>LUT Cube (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>Nie można wczytać 3D LUT. Patchy odczytuje pliki 3D .cube do 64 MB; plik może być uszkodzony lub nieobsługiwany.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Wyszukiwanie kolorów: nie wczytano 3D LUT</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Wyszukiwanie kolorów: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19395,6 +19427,18 @@ Y: %2
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>Anulowano: Cienie/Światła</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>Wyszukiwanie k&amp;olorów...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Wyszukiwanie kolorów</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Anulowano: Wyszukiwanie kolorów</translation>
     </message>
 </context>
 <context>

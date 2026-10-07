@@ -9376,6 +9376,38 @@ RGB: %2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>Показать дополнительные параметры</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Поиск цвета</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>Загрузить 3D LUT...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>Файл 3DLUT:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>Загрузить 3D LUT</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>LUT Cube (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>Не удалось загрузить 3D LUT. Patchy читает файлы 3D .cube размером до 64 МБ; файл может быть поврежден или не поддерживается.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Поиск цвета: 3D LUT не загружена</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Поиск цвета: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19395,6 +19427,18 @@ Y: %2
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>Отменено: Тени/Светлые тона</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>П&amp;оиск цвета...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Поиск цвета</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Поиск цвета отменен</translation>
     </message>
 </context>
 <context>

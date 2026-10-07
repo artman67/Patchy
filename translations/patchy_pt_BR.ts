@@ -9346,6 +9346,38 @@ RGB: %2, %3, %4</translation>
         <source>Show More Options</source>
         <translation>Mostrar mais opções</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Pesquisa de cores</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>Carregar LUT 3D...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>Arquivo 3DLUT:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>Carregar LUT 3D</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>LUT Cube (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>Não foi possível carregar a LUT 3D. O Patchy lê arquivos .cube 3D de até 64 MB; o arquivo pode estar danificado ou não ser compatível.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Pesquisa de cores: nenhuma LUT 3D carregada</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Pesquisa de cores: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19339,6 +19371,18 @@ Y: %2
     <message>
         <source>Cancelled Shadows/Highlights</source>
         <translation>Sombras/Realces cancelado</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>Pesquisa de c&amp;ores...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Pesquisa de cores</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Pesquisa de cores cancelada</translation>
     </message>
 </context>
 <context>
