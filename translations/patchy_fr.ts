@@ -8951,20 +8951,44 @@ RVB : %2, %3, %4</translation>
     </message>
     <message>
         <source>Eyedropper: click the image to sample a color</source>
-        <translation>Pipette : cliquez sur l'image pour échantillonner une couleur</translation>
+        <translation>Pipette : cliquez sur l&apos;image pour échantillonner une couleur</translation>
     </message>
     <message>
         <source>Add to Sample (Shift-click)</source>
-        <translation>Ajouter à l'échantillon (Shift-clic)</translation>
+        <translation>Ajouter à l&apos;échantillon (Shift-clic)</translation>
     </message>
     <message>
         <source>Subtract from Sample (%ALT%-click)</source>
-        <translation>Soustraire de l'échantillon (%ALT%-clic)</translation>
+        <translation>Soustraire de l&apos;échantillon (%ALT%-clic)</translation>
     </message>
     <message>
         <source>Invert</source>
         <comment>Color Range: invert the selection</comment>
         <translation>Inverser</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Couleur échantillonnée</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Aperçu du remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Remplacement</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Couleur résultante</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Résultat :</translation>
     </message>
 </context>
 <context>
@@ -18730,7 +18754,19 @@ Convertis en images : %1.</translation>
     </message>
     <message>
         <source>Color Range selected no pixels</source>
-        <translation>La plage de couleurs n'a sélectionné aucun pixel</translation>
+        <translation>La plage de couleurs n&apos;a sélectionné aucun pixel</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>Re&amp;mplacement de couleur...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Remplacement de couleur annulé</translation>
     </message>
 </context>
 <context>

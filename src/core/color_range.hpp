@@ -50,6 +50,17 @@ struct ColorRangeParams {
   bool invert{false};
 };
 
+// How one eyedropper click edits the sample lists: the plain eyedropper replaces them
+// with the clicked color, Add appends it, Subtract adds a removal sample. Shared with
+// Image > Adjustments > Replace Color (docs/replace-color.md).
+enum class ColorRangeSampleAction {
+  Replace,
+  Add,
+  Subtract
+};
+
+void apply_color_range_sample(ColorRangeParams& params, ColorRangeColor sample, ColorRangeSampleAction action);
+
 // How the result combines with the selection that existed before the command.
 enum class ColorRangeCombine {
   Replace,  // within the existing selection (Photoshop: Color Range never reaches outside it)

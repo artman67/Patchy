@@ -8966,6 +8966,30 @@ RGB: %2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>Umkehren</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Farbe ersetzen</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Aufgenommene Farbe</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Vorschau für Farbe ersetzen</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Ersetzung</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Ergebnisfarbe</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Ergebnis:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18731,6 +18755,18 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Color Range selected no pixels</source>
         <translation>Farbbereich hat keine Pixel ausgewählt</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>Farbe &amp;ersetzen...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Farbe ersetzen</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Farbe ersetzen abgebrochen</translation>
     </message>
 </context>
 <context>

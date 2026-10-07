@@ -167,6 +167,23 @@ std::uint8_t color_range_alpha(ColorRangeColor color, const ColorRangeParams& pa
   return static_cast<std::uint8_t>(params.invert ? 255 - strength : strength);
 }
 
+void apply_color_range_sample(ColorRangeParams& params, ColorRangeColor sample, ColorRangeSampleAction action) {
+  switch (action) {
+    case ColorRangeSampleAction::Replace:
+      params.added = {sample};
+      params.subtracted.clear();
+      break;
+    case ColorRangeSampleAction::Add:
+      params.added.push_back(sample);
+      std::erase(params.subtracted, sample);
+      break;
+    case ColorRangeSampleAction::Subtract:
+      params.subtracted.push_back(sample);
+      std::erase(params.added, sample);
+      break;
+  }
+}
+
 std::vector<std::uint8_t> color_range_mask(const std::uint8_t* rgba, std::int32_t width, std::int32_t height,
                                            std::ptrdiff_t stride_bytes, const ColorRangeParams& params) {
   if (rgba == nullptr || width <= 0 || height <= 0) {

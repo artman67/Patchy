@@ -8966,6 +8966,30 @@ RGB: %2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>Inverter</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Substituir cor</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Cor da amostra</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Visualização de Substituir cor</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Substituição</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Cor resultante</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Resultado:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18731,6 +18755,18 @@ Y: %2
     <message>
         <source>Color Range selected no pixels</source>
         <translation>Intervalo de cores não selecionou nenhum pixel</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>Substituir c&amp;or...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Substituir cor</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Substituir cor cancelado</translation>
     </message>
 </context>
 <context>

@@ -5,15 +5,73 @@
 
 #include <QColor>
 #include <QImage>
+#include <QWidget>
 
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <vector>
 
-class QWidget;
+class QBoxLayout;
+class QButtonGroup;
+class QToolButton;
 
 namespace patchy::ui {
+
+// Pieces shared with Image > Adjustments > Replace Color, which samples and previews
+// colors the same way (docs/replace-color.md).
+
+// The preview box: an image fitted into a 240 px square, clickable for sampling like
+// the canvas. `clicked` receives the point inside the shown image.
+class ColorRangePreview final : public QWidget {
+public:
+  static constexpr int kBox = 240;
+
+  explicit ColorRangePreview(QWidget* parent);
+
+  std::function<void(QPoint image_point, Qt::KeyboardModifiers modifiers)> clicked;
+
+  void set_image(QImage image);
+  [[nodiscard]] const QImage& image() const noexcept { return image_; }
+  [[nodiscard]] QRect image_rect() const;
+
+protected:
+  void paintEvent(QPaintEvent* event) override;
+  void mousePressEvent(QMouseEvent* event) override;
+
+private:
+  QImage image_;
+};
+
+// How a document maps into the preview box: small documents scale up (fast
+// scaling), large ones down (smooth scaling).
+struct ColorRangePreviewFit {
+  double scale{1.0};
+  QSize size;
+  Qt::TransformationMode mode{Qt::SmoothTransformation};
+
+  [[nodiscard]] QPoint document_point(QPoint image_point, QSize document_size) const;
+};
+[[nodiscard]] ColorRangePreviewFit fit_color_range_preview(QSize document_size);
+
+// A row-major gray8 mask as a Grayscale8 image (null when the size does not match).
+[[nodiscard]] QImage color_range_gray_image(const std::vector<std::uint8_t>& mask, int width, int height);
+
+// The eyedropper, Add (+) and Subtract (-) buttons, appended to `row`. Object names are
+// `<prefix>EyedropperButton`, `<prefix>AddSampleButton`, `<prefix>SubtractSampleButton`.
+struct ColorRangeSamplerButtons {
+  QToolButton* sample{nullptr};
+  QToolButton* add{nullptr};
+  QToolButton* subtract{nullptr};
+  QButtonGroup* group{nullptr};
+
+  // The checked button's action; Shift adds and Alt subtracts with any of them, as in
+  // Photoshop.
+  [[nodiscard]] ColorRangeSampleAction action(Qt::KeyboardModifiers modifiers) const;
+  void set_enabled(bool enabled) const;
+};
+[[nodiscard]] ColorRangeSamplerButtons add_color_range_sampler_buttons(QWidget& parent, QBoxLayout* row,
+                                                                       const QString& object_prefix);
 
 // Photoshop's Selection Preview menu: how the canvas shows the pending selection
 // while the dialog is open. None is Photoshop's default.

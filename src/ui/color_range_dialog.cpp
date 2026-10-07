@@ -37,8 +37,6 @@ const QString kColorRangeFuzzinessKey = QStringLiteral("tools/colorRangeFuzzines
 const QString kColorRangeInvertKey = QStringLiteral("tools/colorRangeInvert");
 const QString kColorRangeCanvasPreviewKey = QStringLiteral("tools/colorRangeSelectionPreview");
 
-constexpr int kPreviewBox = 240;
-
 struct SelectEntry {
   ColorRangeSelect select;
   const char* token;
@@ -112,13 +110,6 @@ QString canvas_preview_label(ColorRangeCanvasPreview mode) {
   return {};
 }
 
-QImage gray_image(const std::vector<std::uint8_t>& mask, int width, int height) {
-  if (mask.size() != static_cast<std::size_t>(width) * static_cast<std::size_t>(height) || width <= 0) {
-    return {};
-  }
-  return QImage(mask.data(), width, height, width, QImage::Format_Grayscale8).copy();
-}
-
 std::vector<std::uint8_t> gray_bytes(const QImage& image) {
   std::vector<std::uint8_t> bytes(static_cast<std::size_t>(image.width()) * static_cast<std::size_t>(image.height()));
   for (int y = 0; y < image.height(); ++y) {
@@ -128,60 +119,112 @@ std::vector<std::uint8_t> gray_bytes(const QImage& image) {
   return bytes;
 }
 
-// The dialog's preview box: the scaled selection or image, clickable for sampling
-// like the canvas.
-class ColorRangePreview final : public QWidget {
-public:
-  explicit ColorRangePreview(QWidget* parent) : QWidget(parent) {
-    setFixedSize(kPreviewBox + 2, kPreviewBox + 2);
-    setCursor(Qt::CrossCursor);
-  }
-
-  std::function<void(QPoint image_point, Qt::KeyboardModifiers modifiers)> clicked;
-
-  void set_image(QImage image) {
-    image_ = std::move(image);
-    update();
-  }
-  [[nodiscard]] const QImage& image() const noexcept { return image_; }
-  [[nodiscard]] QRect image_rect() const {
-    const QSize size = image_.size();
-    return QRect(QPoint((width() - size.width()) / 2, (height() - size.height()) / 2), size);
-  }
-
-protected:
-  void paintEvent(QPaintEvent*) override {
-    QPainter painter(this);
-    painter.fillRect(rect(), theme().canvas_backdrop);
-    if (!image_.isNull()) {
-      painter.drawImage(image_rect(), image_);
-    }
-    painter.setPen(theme().layer_thumbnail_border);
-    painter.drawRect(rect().adjusted(0, 0, -1, -1));
-  }
-
-  void mousePressEvent(QMouseEvent* event) override {
-    if (event->button() != Qt::LeftButton || !clicked) {
-      return;
-    }
-    const auto local = event->position().toPoint() - image_rect().topLeft();
-    if (QRect(QPoint(), image_.size()).contains(local)) {
-      clicked(local, event->modifiers());
-    }
-    event->accept();
-  }
-
-private:
-  QImage image_;
-};
-
-enum class SampleAction {
-  Replace,
-  Add,
-  Subtract
-};
-
 }  // namespace
+
+ColorRangePreview::ColorRangePreview(QWidget* parent) : QWidget(parent) {
+  setFixedSize(kBox + 2, kBox + 2);
+  setCursor(Qt::CrossCursor);
+}
+
+void ColorRangePreview::set_image(QImage image) {
+  image_ = std::move(image);
+  update();
+}
+
+QRect ColorRangePreview::image_rect() const {
+  const QSize size = image_.size();
+  return QRect(QPoint((width() - size.width()) / 2, (height() - size.height()) / 2), size);
+}
+
+void ColorRangePreview::paintEvent(QPaintEvent*) {
+  QPainter painter(this);
+  painter.fillRect(rect(), theme().canvas_backdrop);
+  if (!image_.isNull()) {
+    painter.drawImage(image_rect(), image_);
+  }
+  painter.setPen(theme().layer_thumbnail_border);
+  painter.drawRect(rect().adjusted(0, 0, -1, -1));
+}
+
+void ColorRangePreview::mousePressEvent(QMouseEvent* event) {
+  if (event->button() != Qt::LeftButton || !clicked) {
+    return;
+  }
+  const auto local = event->position().toPoint() - image_rect().topLeft();
+  if (QRect(QPoint(), image_.size()).contains(local)) {
+    clicked(local, event->modifiers());
+  }
+  event->accept();
+}
+
+QPoint ColorRangePreviewFit::document_point(QPoint image_point, QSize document_size) const {
+  return QPoint(std::clamp(static_cast<int>(image_point.x() / scale), 0, document_size.width() - 1),
+                std::clamp(static_cast<int>(image_point.y() / scale), 0, document_size.height() - 1));
+}
+
+ColorRangePreviewFit fit_color_range_preview(QSize document_size) {
+  constexpr int box = ColorRangePreview::kBox;
+  ColorRangePreviewFit fit;
+  fit.scale = static_cast<double>(box) / std::max({document_size.width(), document_size.height(), 1});
+  fit.mode = fit.scale > 1.0 ? Qt::FastTransformation : Qt::SmoothTransformation;
+  fit.size = QSize(std::clamp(static_cast<int>(document_size.width() * fit.scale + 0.5), 1, box),
+                   std::clamp(static_cast<int>(document_size.height() * fit.scale + 0.5), 1, box));
+  return fit;
+}
+
+QImage color_range_gray_image(const std::vector<std::uint8_t>& mask, int width, int height) {
+  if (mask.size() != static_cast<std::size_t>(width) * static_cast<std::size_t>(height) || width <= 0) {
+    return {};
+  }
+  return QImage(mask.data(), width, height, width, QImage::Format_Grayscale8).copy();
+}
+
+ColorRangeSampleAction ColorRangeSamplerButtons::action(Qt::KeyboardModifiers modifiers) const {
+  if ((modifiers & Qt::ShiftModifier) != 0) {
+    return ColorRangeSampleAction::Add;
+  }
+  if ((modifiers & Qt::AltModifier) != 0) {
+    return ColorRangeSampleAction::Subtract;
+  }
+  return static_cast<ColorRangeSampleAction>(std::max(0, group->checkedId()));
+}
+
+void ColorRangeSamplerButtons::set_enabled(bool enabled) const {
+  for (auto* button : {sample, add, subtract}) {
+    button->setEnabled(enabled);
+  }
+}
+
+ColorRangeSamplerButtons add_color_range_sampler_buttons(QWidget& parent, QBoxLayout* row,
+                                                         const QString& object_prefix) {
+  const auto make_button = [&parent, row, &object_prefix](const QString& name, const QString& text,
+                                                          const QString& tooltip) {
+    auto* button = new QToolButton(&parent);
+    button->setObjectName(object_prefix + name);
+    button->setCheckable(true);
+    button->setIcon(themed_svg_icon(QStringLiteral("tool-eyedropper")));
+    button->setText(text);
+    button->setToolButtonStyle(text.isEmpty() ? Qt::ToolButtonIconOnly : Qt::ToolButtonTextBesideIcon);
+    button->setToolTip(tooltip);
+    button->setAccessibleName(tooltip);
+    row->addWidget(button);
+    return button;
+  };
+  ColorRangeSamplerButtons buttons;
+  buttons.sample = make_button(QStringLiteral("EyedropperButton"), QString(),
+                               QObject::tr("Eyedropper: click the image to sample a color"));
+  buttons.add = make_button(QStringLiteral("AddSampleButton"), QStringLiteral("+"),
+                            QObject::tr("Add to Sample (Shift-click)"));
+  buttons.subtract = make_button(QStringLiteral("SubtractSampleButton"), QStringLiteral("-"),
+                                 resolve_modifier_names(QObject::tr("Subtract from Sample (%ALT%-click)")));
+  buttons.sample->setChecked(true);
+  buttons.group = new QButtonGroup(&parent);
+  buttons.group->setExclusive(true);
+  buttons.group->addButton(buttons.sample, static_cast<int>(ColorRangeSampleAction::Replace));
+  buttons.group->addButton(buttons.add, static_cast<int>(ColorRangeSampleAction::Add));
+  buttons.group->addButton(buttons.subtract, static_cast<int>(ColorRangeSampleAction::Subtract));
+  return buttons;
+}
 
 QImage color_range_canvas_preview_image(const QImage& composite, const std::vector<std::uint8_t>& selection,
                                         ColorRangeCanvasPreview mode) {
@@ -320,32 +363,7 @@ std::optional<ColorRangeDialogResult> request_color_range(QWidget* parent, const
   right->addWidget(buttons);
   right->addSpacing(12);
   auto* sampler_row = new QHBoxLayout();
-  const auto make_sampler_button = [&dialog, sampler_row](const QString& object_name, const QString& text,
-                                                          const QString& tooltip) {
-    auto* button = new QToolButton(&dialog);
-    button->setObjectName(object_name);
-    button->setCheckable(true);
-    button->setIcon(themed_svg_icon(QStringLiteral("tool-eyedropper")));
-    button->setText(text);
-    button->setToolButtonStyle(text.isEmpty() ? Qt::ToolButtonIconOnly : Qt::ToolButtonTextBesideIcon);
-    button->setToolTip(tooltip);
-    button->setAccessibleName(tooltip);
-    sampler_row->addWidget(button);
-    return button;
-  };
-  auto* sample_button = make_sampler_button(QStringLiteral("colorRangeEyedropperButton"), QString(),
-                                            QObject::tr("Eyedropper: click the image to sample a color"));
-  auto* add_button = make_sampler_button(QStringLiteral("colorRangeAddSampleButton"), QStringLiteral("+"),
-                                         QObject::tr("Add to Sample (Shift-click)"));
-  auto* subtract_button =
-      make_sampler_button(QStringLiteral("colorRangeSubtractSampleButton"), QStringLiteral("-"),
-                          resolve_modifier_names(QObject::tr("Subtract from Sample (%ALT%-click)")));
-  sample_button->setChecked(true);
-  auto* sampler_group = new QButtonGroup(&dialog);
-  sampler_group->setExclusive(true);
-  sampler_group->addButton(sample_button, static_cast<int>(SampleAction::Replace));
-  sampler_group->addButton(add_button, static_cast<int>(SampleAction::Add));
-  sampler_group->addButton(subtract_button, static_cast<int>(SampleAction::Subtract));
+  const auto samplers = add_color_range_sampler_buttons(dialog, sampler_row, QStringLiteral("colorRange"));
   right->addLayout(sampler_row);
   auto* invert_check = new QCheckBox(QObject::tr("Invert", "Color Range: invert the selection"), &dialog);
   invert_check->setObjectName(QStringLiteral("colorRangeInvertCheck"));
@@ -355,10 +373,9 @@ std::optional<ColorRangeDialogResult> request_color_range(QWidget* parent, const
 
   // The preview box works on a copy fitted to it (small documents scale up with
   // whole pixels); OK and the canvas preview score the full image.
-  const auto scale = static_cast<double>(kPreviewBox) / std::max(document_width, document_height);
-  const auto scaling = scale > 1.0 ? Qt::FastTransformation : Qt::SmoothTransformation;
-  const QSize thumb_size(std::clamp(static_cast<int>(document_width * scale + 0.5), 1, kPreviewBox),
-                         std::clamp(static_cast<int>(document_height * scale + 0.5), 1, kPreviewBox));
+  const auto fit = fit_color_range_preview(composite.size());
+  const auto scaling = fit.mode;
+  const auto thumb_size = fit.size;
   const auto thumb_composite =
       composite.scaled(thumb_size, Qt::IgnoreAspectRatio, scaling).convertToFormat(QImage::Format_RGBA8888);
   const auto thumb_base =
@@ -391,13 +408,11 @@ std::optional<ColorRangeDialogResult> request_color_range(QWidget* parent, const
     if (auto* label = form->labelForField(fuzziness_spin->parentWidget()); label != nullptr) {
       label->setEnabled(sampled);
     }
-    for (auto* button : {sample_button, add_button, subtract_button}) {
-      button->setEnabled(sampled);
-    }
+    samplers.set_enabled(sampled);
     if (show_image->isChecked()) {
       preview->set_image(thumb_composite);
     } else {
-      preview->set_image(gray_image(final_selection(thumb_composite, thumb_base), thumb_size.width(),
+      preview->set_image(color_range_gray_image(final_selection(thumb_composite, thumb_base), thumb_size.width(),
                                     thumb_size.height()));
     }
     canvas_emitter.schedule(canvas_preview_mode);
@@ -407,29 +422,9 @@ std::optional<ColorRangeDialogResult> request_color_range(QWidget* parent, const
     if (params.select != ColorRangeSelect::SampledColors || !color.isValid() || color.alpha() == 0) {
       return;
     }
-    // Shift adds and Alt subtracts with any of the three eyedroppers, as in Photoshop.
-    auto action = static_cast<SampleAction>(std::max(0, sampler_group->checkedId()));
-    if ((modifiers & Qt::ShiftModifier) != 0) {
-      action = SampleAction::Add;
-    } else if ((modifiers & Qt::AltModifier) != 0) {
-      action = SampleAction::Subtract;
-    }
     const ColorRangeColor sample{static_cast<std::uint8_t>(color.red()), static_cast<std::uint8_t>(color.green()),
                                  static_cast<std::uint8_t>(color.blue())};
-    switch (action) {
-      case SampleAction::Replace:
-        params.added = {sample};
-        params.subtracted.clear();
-        break;
-      case SampleAction::Add:
-        params.added.push_back(sample);
-        std::erase(params.subtracted, sample);
-        break;
-      case SampleAction::Subtract:
-        params.subtracted.push_back(sample);
-        std::erase(params.added, sample);
-        break;
-    }
+    apply_color_range_sample(params, sample, samplers.action(modifiers));
     refresh();
   };
 
@@ -458,10 +453,7 @@ std::optional<ColorRangeDialogResult> request_color_range(QWidget* parent, const
   };
 
   preview->clicked = [&](QPoint image_point, Qt::KeyboardModifiers modifiers) {
-    const QPoint document_point(
-        std::clamp(static_cast<int>(image_point.x() / scale), 0, document_width - 1),
-        std::clamp(static_cast<int>(image_point.y() / scale), 0, document_height - 1));
-    sample_color(composite.pixelColor(document_point), modifiers);
+    sample_color(composite.pixelColor(fit.document_point(image_point, composite.size())), modifiers);
   };
   QObject::connect(select_combo, &QComboBox::currentIndexChanged, &dialog, [&](int) {
     const auto token = select_combo->currentData().toString();

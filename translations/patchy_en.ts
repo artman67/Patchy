@@ -8955,6 +8955,30 @@ RGB: %2, %3, %4</source>
         <comment>Color Range: invert the selection</comment>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18680,6 +18704,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Color Range selected no pixels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

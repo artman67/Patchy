@@ -1,6 +1,6 @@
 // MainWindow destructive adjustment dialogs, split out of
 // main_window_adjustments.cpp: the Levels / Curves / Hue-Saturation /
-// Color Balance dialogs that rewrite layer pixels in place. Their formerly
+// Color Balance / Replace Color dialogs that rewrite layer pixels in place. Their formerly
 // per-dialog async preview workers now run through the shared launcher in
 // main_window_shared.{hpp,cpp} (make_destructive_adjustment_preview_state);
 // everything else is a pure function move from the pre-split code.
@@ -51,7 +51,9 @@
 #include "ui/palette_panel.hpp"
 #include "ui/print_dialog.hpp"
 #include "ui/qt_geometry.hpp"
+#include "ui/replace_color_dialog.hpp"
 #include "ui/splash_dialog.hpp"
+#include "ui/tool_cursors.hpp"
 #include "ui/smart_object_render.hpp"
 #include "ui/update_checker.hpp"
 #include "ui/visual_filter_gallery_dialog.hpp"
@@ -761,6 +763,179 @@ void MainWindow::color_balance_dialog() {
     return;
   }
   apply_color_balance_adjustment(settings->cyan_red, settings->magenta_green, settings->yellow_blue);
+}
+
+// Image > Adjustments > Replace Color (docs/replace-color.md): a Color Range Sampled
+// Colors score of the active layer's own pixels weights a Hue/Saturation master shift.
+// The dialog is non-modal so the canvas eyedroppers keep working under the preview
+// edit lock; the canvas shows the live result and OK commits one undo step.
+void MainWindow::replace_color_dialog() {
+  auto& doc = document();
+  select_only_layer_if_none_active();
+  const auto active = doc.active_layer_id();
+  if (!active.has_value()) {
+    return;
+  }
+  auto* layer = doc.find_layer(*active);
+  if (!editable_rgb8_layer(layer)) {
+    show_status_error(tr("Select an editable RGB pixel layer"));
+    return;
+  }
+  if (layer_is_smart_object(*layer)) {
+    show_status_error(tr(
+        "Rasterize the Smart Object before applying destructive filters or adjustments"));
+    return;
+  }
+  if (layer_id_locks_image_pixels(*active)) {
+    show_status_error(tr("Layer pixels are locked."));
+    return;
+  }
+  if (!prompt_rasterize_procedural_layer(*active, tr("Replace Color"), false)) {
+    return;
+  }
+  layer = doc.find_layer(*active);
+  if (!editable_rgb8_layer(layer)) {
+    show_status_error(tr("Select an editable RGB pixel layer"));
+    return;
+  }
+  const auto active_id = *active;
+  const auto bounds = layer->bounds();
+  auto original_pixels =
+      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
+  const auto selection = canvas_->selected_document_region();
+  DestructiveAdjustmentPreviewHooks preview_hooks;
+  preview_hooks.original_pixels = original_pixels;
+  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
+    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
+      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
+      if (canvas_ != nullptr) {
+        canvas_->document_changed(to_qrect(bounds));
+      }
+    }
+  };
+  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
+                                bounds](PixelBuffer result) {
+    if (window == nullptr) {
+      return;
+    }
+    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
+      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
+      if (window->canvas_ != nullptr) {
+        window->canvas_->document_changed(to_qrect(bounds));
+      }
+    }
+  };
+  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
+    if (window != nullptr && window->canvas_ != nullptr) {
+      if (active) {
+        window->canvas_->begin_preview_render();
+      } else {
+        window->canvas_->end_preview_render();
+      }
+    }
+  };
+  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
+
+  ReplaceColorDialogInput input;
+  input.layer = qimage_from_pixel_buffer(*original_pixels);
+  input.layer_origin = QPoint(bounds.x, bounds.y);
+  input.document_size = QSize(doc.width(), doc.height());
+  input.selection = selection;
+  input.initial_sample = canvas_->primary_color();
+  const QPointer<CanvasWidget> target_canvas = canvas_;
+  ReplaceColorDialogHooks hooks;
+  hooks.set_canvas_sampler = [target_canvas](std::function<void(const CanvasReadGesture&)> callback) {
+    if (target_canvas == nullptr) {
+      return;
+    }
+    if (callback) {
+      target_canvas->set_transient_read_interaction(std::move(callback), eyedropper_cursor());
+    } else {
+      target_canvas->clear_transient_read_interaction();
+    }
+  };
+  hooks.preview_changed = [preview_state, bounds, selection](bool enabled, const ReplaceColorSettings& settings) {
+    const auto identity = !enabled || !replace_color_has_effect(settings);
+    DestructiveAdjustmentPreviewRequest request;
+    request.identity = identity;
+    if (!identity) {
+      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
+        apply_replace_color_to_pixels(pixels, bounds, selection, settings, nullptr);
+      };
+    }
+    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
+    close_async_pixel_preview(preview_state);
+    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
+      *target = original;
+      canvas_->document_changed();
+    }
+  });
+  const auto settings = request_replace_color(this, input, hooks);
+  close_async_pixel_preview(preview_state);
+  layer = doc.find_layer(active_id);
+  if (layer == nullptr) {
+    return;
+  }
+  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
+  canvas_->document_changed(to_qrect(bounds));
+  preview_cleanup.dismiss();
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Replace Color"));
+    return;
+  }
+
+  const auto display_name = tr("Replace Color");
+  auto final_pixels = *original_pixels;
+  if (replace_color_has_effect(*settings)) {
+    if (canvas_ != nullptr) {
+      canvas_->begin_processing_operation();
+    }
+    const auto finish_processing = qScopeGuard([this] {
+      if (canvas_ != nullptr) {
+        canvas_->end_processing_operation();
+      }
+    });
+    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
+    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
+    remember_dialog_position(progress);
+    progress.setValue(0);
+    try {
+      run_filter_compute_with_progress(
+          progress,
+          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
+          [this] {
+            if (canvas_ != nullptr) {
+              canvas_->tick_processing_operation();
+            }
+          },
+          [&](FilterProgress& filter_progress) {
+            apply_replace_color_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
+          });
+      progress.setValue(100);
+    } catch (const FilterCancelled&) {
+      statusBar()->showMessage(tr("Cancelled Replace Color"));
+      return;
+    }
+  }
+  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
+    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
+    return;
+  }
+  push_undo_snapshot(display_name);
+  layer = doc.find_layer(active_id);
+  if (layer == nullptr) {
+    return;
+  }
+  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
+  canvas_->document_changed(to_qrect(bounds));
+  statusBar()->showMessage(tr("Applied %1").arg(display_name));
 }
 
 }  // namespace patchy::ui

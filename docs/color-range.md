@@ -6,7 +6,7 @@ Photoshop's Color Range command: a soft selection scored from color alone. The b
 
 - Menu: Select > Color Range... (`selectColorRangeAction`, hotkey id `select.color_range`, no default key), its own group after Deselect Layers as in Photoshop. Blocked in Quick Mask like the other selection commands.
 - `MainWindow::color_range_dialog` (main_window_layer_ops.cpp) renders the visible composite once with `qimage_from_document`, copies the current selection with `selection_as_grayscale`, holds the preview-dialog edit lock, and commits through `replace_selection_from_grayscale` with the history label "Color Range" (one undo entry; Cancel records nothing).
-- `request_color_range` (`src/ui/color_range_dialog.{hpp,cpp}`) is the non-modal dialog. The scoring is Qt-free in `src/core/color_range.{hpp,cpp}`.
+- `request_color_range` (`src/ui/color_range_dialog.{hpp,cpp}`) is the non-modal dialog. The scoring is Qt-free in `src/core/color_range.{hpp,cpp}`. Its sample editing (`apply_color_range_sample`), preview box, preview fit and eyedropper buttons are shared with Image > Adjustments > Replace Color ([replace-color.md](replace-color.md)).
 
 ## Behavior
 
