@@ -13752,7 +13752,8 @@ void MainWindow::update_document_action_state() {
                            QStringLiteral("tools.move"), QStringLiteral("tools.clone"),
                            QStringLiteral("tools.smudge"), QStringLiteral("tools.type"),
                            QStringLiteral("image.levels"), QStringLiteral("image.curves"),
-                           QStringLiteral("image.hue_saturation"), QStringLiteral("image.color_balance")}) {
+                           QStringLiteral("image.hue_saturation"), QStringLiteral("image.color_balance"),
+                           QStringLiteral("image.black_white")}) {
       set_command_enabled(id, false);
     }
     for (const auto& command : hotkey_registry_.commands()) {

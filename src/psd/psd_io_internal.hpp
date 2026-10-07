@@ -123,6 +123,13 @@ constexpr std::array<char, 4> kPhotoshopThresholdBlockKey{'t', 'h', 'r', 's'};
 // big-endian float32, then 2 zero pad bytes (psd-tools' exposure_rgb.psd, saved
 // by Photoshop: 00 01 | 40 01 EB 85 | 3D 9E B8 52 | 3F C2 8F 5C | 00 00).
 constexpr std::array<char, 4> kPhotoshopExposureBlockKey{'e', 'x', 'p', 'A'};
+// Black & White is a u32 descriptor version (16) and a descriptor holding the six
+// color weights as integers ('Rd  ', 'Yllw', 'Grn ', 'Cyn ', 'Bl  ', 'Mgnt'), the
+// 'useTint' boolean and the 'tintColor' RGBC object; Photoshop also stores its
+// preset choice ('bwPresetKind', 'blackAndWhitePresetFileName'). Adobe's PSD
+// specification names the key and the descriptor wrapper only:
+// https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
+constexpr std::array<char, 4> kPhotoshopBlackWhiteBlockKey{'b', 'l', 'w', 'h'};
 // Brightness/Contrast: legacy-mode PS 2026 writes ONLY the 8-byte 'brit'
 // (brightness i16, contrast i16, mean u16 = 127, lab u8 = 0, pad u8 = 0);
 // modern mode writes an all-zero 'brit' plus a 'CgEd' descriptor (u32 version
@@ -567,6 +574,9 @@ std::vector<std::uint8_t> photoshop_threshold_payload(const ThresholdAdjustment&
 std::optional<AdjustmentSettings> parse_photoshop_exposure_adjustment(std::span<const std::uint8_t> payload);
 std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& settings,
                                                      const UnknownPsdBlock* original);
+std::optional<AdjustmentSettings> parse_photoshop_black_white_adjustment(std::span<const std::uint8_t> payload);
+std::vector<std::uint8_t> photoshop_black_white_payload(const BlackWhiteAdjustment& settings,
+                                                        const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_brightness_contrast_adjustment(
     std::span<const std::uint8_t> payload);
 struct BrightnessContrastDescriptorParse {

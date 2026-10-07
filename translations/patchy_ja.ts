@@ -8879,6 +8879,22 @@ Mixed selection</source>
         <source>Ratio</source>
         <translation>比率</translation>
     </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>白黒</translation>
+    </message>
+    <message>
+        <source>Tint</source>
+        <translation>着色</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, tint hue %7, tint saturation %8</source>
+        <translation>白黒: レッド系 %1、イエロー系 %2、グリーン系 %3、シアン系 %4、ブルー系 %5、マゼンタ系 %6、着色の色相 %7、着色の彩度 %8</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
+        <translation>白黒: レッド系 %1、イエロー系 %2、グリーン系 %3、シアン系 %4、ブルー系 %5、マゼンタ系 %6</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18618,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>Blac&amp;k &amp;&amp; White...</source>
+        <translation>白黒(&amp;K)...</translation>
+    </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>白黒</translation>
+    </message>
+    <message>
+        <source>Cancelled Black &amp; White</source>
+        <translation>白黒をキャンセルしました</translation>
     </message>
 </context>
 <context>

@@ -164,6 +164,39 @@ std::optional<HueSaturationBand> parse_hue_saturation_band(std::string_view enco
                            std::clamp(fields[6], -100, 100)};
 }
 
+// "reds;yellows;greens;cyans;blues;magentas". A malformed value falls back to
+// Photoshop's default weights.
+std::string serialize_black_white_weights(const std::array<int, kBlackWhiteColorCount>& weights) {
+  std::string encoded;
+  for (std::size_t index = 0; index < weights.size(); ++index) {
+    if (index > 0U) {
+      encoded += ';';
+    }
+    encoded += std::to_string(weights[index]);
+  }
+  return encoded;
+}
+
+std::optional<std::array<int, kBlackWhiteColorCount>> parse_black_white_weights(std::string_view encoded) {
+  std::array<int, kBlackWhiteColorCount> weights{};
+  for (auto& weight : weights) {
+    if (encoded.empty()) {
+      return std::nullopt;
+    }
+    const auto separator = encoded.find(';');
+    const auto value = parse_int(encoded.substr(0, separator));
+    if (!value.has_value()) {
+      return std::nullopt;
+    }
+    weight = std::clamp(*value, kBlackWhiteWeightMin, kBlackWhiteWeightMax);
+    encoded = separator == std::string_view::npos ? std::string_view{} : encoded.substr(separator + 1U);
+  }
+  if (!encoded.empty()) {
+    return std::nullopt;
+  }
+  return weights;
+}
+
 LevelsRecord metadata_levels_record_or(const Layer& layer, const char* black_input_key, const char* white_input_key,
                                        const char* gamma_percent_key, const char* black_output_key,
                                        const char* white_output_key) {
@@ -944,6 +977,126 @@ std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment setti
   return static_cast<std::uint8_t>(std::clamp(std::lround(encoded * 255.0), 0L, 255L));
 }
 
+BlackWhiteAdjustment clamp_black_white(BlackWhiteAdjustment settings) {
+  for (auto& weight : settings.weights) {
+    weight = std::clamp(weight, kBlackWhiteWeightMin, kBlackWhiteWeightMax);
+  }
+  settings.tint_hue = std::clamp(settings.tint_hue, 0, 360);
+  settings.tint_saturation = std::clamp(settings.tint_saturation, 0, 100);
+  return settings;
+}
+
+std::uint8_t black_white_gray(RgbColor color, const std::array<int, kBlackWhiteColorCount>& weights) {
+  // NOT calibrated against Photoshop (added without Photoshop access). The pixel splits
+  // into its gray floor, the part its two largest channels share (the secondary color)
+  // and the part the largest channel holds alone (the primary color); each colored part
+  // is scaled by its slider. Integer math in hundredths, rounded half up.
+  const int red = color.red;
+  const int green = color.green;
+  const int blue = color.blue;
+  BlackWhiteColor primary = BlackWhiteColor::Reds;
+  BlackWhiteColor secondary = BlackWhiteColor::Yellows;
+  int high = red;
+  int mid = green;
+  int low = blue;
+  if (red >= green && red >= blue) {
+    if (green < blue) {
+      secondary = BlackWhiteColor::Magentas;
+      mid = blue;
+      low = green;
+    }
+  } else if (green >= blue) {
+    primary = BlackWhiteColor::Greens;
+    high = green;
+    if (red >= blue) {
+      mid = red;
+      low = blue;
+    } else {
+      secondary = BlackWhiteColor::Cyans;
+      mid = blue;
+      low = red;
+    }
+  } else {
+    primary = BlackWhiteColor::Blues;
+    high = blue;
+    if (red >= green) {
+      secondary = BlackWhiteColor::Magentas;
+      mid = red;
+      low = green;
+    } else {
+      secondary = BlackWhiteColor::Cyans;
+      mid = green;
+      low = red;
+    }
+  }
+  const auto weight = [&weights](BlackWhiteColor which) {
+    return std::clamp(weights[static_cast<std::size_t>(which)], kBlackWhiteWeightMin, kBlackWhiteWeightMax);
+  };
+  const auto scaled = low * 100 + (mid - low) * weight(secondary) + (high - mid) * weight(primary);
+  if (scaled <= 0) {
+    return 0;
+  }
+  return static_cast<std::uint8_t>(std::min(255, (scaled + 50) / 100));
+}
+
+RgbColor black_white_tint_color(int hue, int saturation) {
+  hue = ((hue % 360) + 360) % 360;
+  const auto spread = 255.0 * static_cast<double>(std::clamp(saturation, 0, 100)) / 100.0;
+  const auto sector = hue / 60;
+  const auto fraction = static_cast<double>(hue - sector * 60) / 60.0;
+  const auto low = 255.0 - spread;
+  const auto rising = low + spread * fraction;
+  const auto falling = 255.0 - spread * fraction;
+  const auto byte = [](double value) {
+    return static_cast<std::uint8_t>(std::clamp(std::lround(value), 0L, 255L));
+  };
+  switch (sector) {
+    case 0:
+      return RgbColor{255, byte(rising), byte(low)};
+    case 1:
+      return RgbColor{byte(falling), 255, byte(low)};
+    case 2:
+      return RgbColor{byte(low), 255, byte(rising)};
+    case 3:
+      return RgbColor{byte(low), byte(falling), 255};
+    case 4:
+      return RgbColor{byte(rising), byte(low), 255};
+    default:
+      return RgbColor{255, byte(low), byte(falling)};
+  }
+}
+
+void black_white_tint_from_color(double red, double green, double blue, int& hue, int& saturation) {
+  const auto high = std::max({red, green, blue});
+  const auto spread = high - std::min({red, green, blue});
+  if (!(spread > 1e-9)) {
+    saturation = 0;
+    return;
+  }
+  saturation = static_cast<int>(std::clamp(std::lround(spread / 255.0 * 100.0), 0L, 100L));
+  double degrees = 0.0;
+  if (high == red) {
+    degrees = 60.0 * (green - blue) / spread;
+  } else if (high == green) {
+    degrees = 60.0 * ((blue - red) / spread + 2.0);
+  } else {
+    degrees = 60.0 * ((red - green) / spread + 4.0);
+  }
+  hue = static_cast<int>(((std::lround(degrees) % 360) + 360) % 360);
+}
+
+RgbColor apply_black_white(RgbColor color, const BlackWhiteAdjustment& settings) {
+  const auto gray = black_white_gray(color, settings.weights);
+  if (!settings.tint) {
+    return RgbColor{gray, gray, gray};
+  }
+  // The tint is Photoshop's Color blend mode of the tint color over the gray: hue and
+  // spread from the tint, luminosity from the gray, so black and white stay put.
+  const auto tint = black_white_tint_color(settings.tint_hue, settings.tint_saturation);
+  const auto tinted = blend_rgb({tint.red, tint.green, tint.blue}, {gray, gray, gray}, BlendMode::Color);
+  return RgbColor{tinted[0], tinted[1], tinted[2]};
+}
+
 int threshold_luminance(std::uint8_t red, std::uint8_t green, std::uint8_t blue) {
   return (static_cast<int>(red) * 30 + static_cast<int>(green) * 59 + static_cast<int>(blue) * 11) / 100;
 }
@@ -1111,6 +1264,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "brightness_contrast";
     case AdjustmentKind::Exposure:
       return "exposure";
+    case AdjustmentKind::BlackWhite:
+      return "black_white";
   }
   return "levels";
 }
@@ -1135,6 +1290,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Brightness/Contrast";
     case AdjustmentKind::Exposure:
       return "Exposure";
+    case AdjustmentKind::BlackWhite:
+      return "Black & White";
   }
   return "Adjustment";
 }
@@ -1166,6 +1323,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "exposure") {
     return AdjustmentKind::Exposure;
+  }
+  if (key == "black_white") {
+    return AdjustmentKind::BlackWhite;
   }
   return std::nullopt;
 }
@@ -1252,6 +1412,15 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureValue, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureOffset, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureGamma, 100)});
+  if (const auto weights =
+          parse_black_white_weights(metadata_string_or(layer, kLayerMetadataAdjustmentBlackWhiteWeights, {}))) {
+    settings.black_white.weights = *weights;
+  }
+  settings.black_white.tint = metadata_int_or(layer, kLayerMetadataAdjustmentBlackWhiteTint, 0) != 0;
+  settings.black_white.tint_hue = metadata_int_or(layer, kLayerMetadataAdjustmentBlackWhiteTintHue, 35);
+  settings.black_white.tint_saturation =
+      metadata_int_or(layer, kLayerMetadataAdjustmentBlackWhiteTintSaturation, 25);
+  settings.black_white = clamp_black_white(settings.black_white);
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -1362,6 +1531,21 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureValue, exposure.exposure_hundredths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureOffset, exposure.offset_ten_thousandths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureGamma, exposure.gamma_hundredths);
+  // Written only for Black & White layers: the keys would be noise on every other kind.
+  if (settings.kind == AdjustmentKind::BlackWhite) {
+    const auto black_white = clamp_black_white(settings.black_white);
+    set_metadata_string(layer, kLayerMetadataAdjustmentBlackWhiteWeights,
+                        serialize_black_white_weights(black_white.weights));
+    set_metadata_int(layer, kLayerMetadataAdjustmentBlackWhiteTint, black_white.tint ? 1 : 0);
+    set_metadata_int(layer, kLayerMetadataAdjustmentBlackWhiteTintHue, black_white.tint_hue);
+    set_metadata_int(layer, kLayerMetadataAdjustmentBlackWhiteTintSaturation, black_white.tint_saturation);
+  } else {
+    for (const auto* key : {kLayerMetadataAdjustmentBlackWhiteWeights, kLayerMetadataAdjustmentBlackWhiteTint,
+                            kLayerMetadataAdjustmentBlackWhiteTintHue,
+                            kLayerMetadataAdjustmentBlackWhiteTintSaturation}) {
+      layer.metadata().erase(key);
+    }
+  }
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -1458,8 +1642,11 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
       return settings.ink_space->is_gray();
     // Hue/Saturation and Color Balance mix channels (as does Threshold on four inks);
     // Photoshop's CMYK forms of them are not modeled, so they stay on the RGB math.
+    // Black & White mixes channels too; its six weights are defined on RGB hues, and
+    // a gray document's pixels are already gray, which the RGB math keeps.
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
+    case AdjustmentKind::BlackWhite:
       return false;
   }
   return false;
@@ -1511,6 +1698,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return RgbColor{exposure_channel_value(color.red, settings.exposure),
                       exposure_channel_value(color.green, settings.exposure),
                       exposure_channel_value(color.blue, settings.exposure)};
+    case AdjustmentKind::BlackWhite:
+      return apply_black_white(color, settings.black_white);
   }
   return color;
 }
@@ -1546,9 +1735,11 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
     return std::nullopt;
   }
   // Hue/Saturation mixes channels through HSL; Threshold compares the mixed
-  // RGB luminance, so a per-channel gray-probe LUT would be wrong for any
-  // colored pixel. Both take the per-pixel path.
-  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold) {
+  // RGB luminance; Black & White weighs each pixel by its whole RGB triple. A
+  // per-channel gray-probe LUT would be wrong for any colored pixel, so they
+  // take the per-pixel path.
+  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
+      settings.kind == AdjustmentKind::BlackWhite) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -1605,6 +1796,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return exposure.exposure_hundredths != 0 || exposure.offset_ten_thousandths != 0 ||
              exposure.gamma_hundredths != 100;
     }
+    case AdjustmentKind::BlackWhite:
+      return true;  // every setting removes the color
   }
   return false;
 }

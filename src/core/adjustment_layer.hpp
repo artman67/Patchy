@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -100,6 +101,13 @@ inline constexpr const char* kLayerMetadataAdjustmentThresholdLevel = "patchy.ad
 inline constexpr const char* kLayerMetadataAdjustmentExposureValue = "patchy.adjustment.exposure.value";
 inline constexpr const char* kLayerMetadataAdjustmentExposureOffset = "patchy.adjustment.exposure.offset";
 inline constexpr const char* kLayerMetadataAdjustmentExposureGamma = "patchy.adjustment.exposure.gamma";
+// Black & White: the six color weights as "reds;yellows;greens;cyans;blues;magentas"
+// (percent), the tint switch (0/1), and the tint hue (degrees) and saturation (percent).
+inline constexpr const char* kLayerMetadataAdjustmentBlackWhiteWeights = "patchy.adjustment.black_white.weights";
+inline constexpr const char* kLayerMetadataAdjustmentBlackWhiteTint = "patchy.adjustment.black_white.tint";
+inline constexpr const char* kLayerMetadataAdjustmentBlackWhiteTintHue = "patchy.adjustment.black_white.tint_hue";
+inline constexpr const char* kLayerMetadataAdjustmentBlackWhiteTintSaturation =
+    "patchy.adjustment.black_white.tint_saturation";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastBrightness =
     "patchy.adjustment.brightness_contrast.brightness";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast =
@@ -118,7 +126,8 @@ enum class AdjustmentKind {
   Posterize,
   Threshold,
   BrightnessContrast,
-  Exposure
+  Exposure,
+  BlackWhite
 };
 
 enum class LevelsChannel {
@@ -273,6 +282,44 @@ struct ExposureAdjustment {
 // render of psd-tools' exposure_rgb.psd on all four of its setting triples.
 [[nodiscard]] std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment settings);
 
+// Photoshop's Black & White ('blwh'): every pixel becomes one gray value mixed from six
+// color weights (percent, -200..300), optionally tinted. The defaults are Photoshop's.
+// NOT calibrated against Photoshop; see docs/adjustments-calibration.md.
+enum class BlackWhiteColor {
+  Reds,
+  Yellows,
+  Greens,
+  Cyans,
+  Blues,
+  Magentas
+};
+inline constexpr std::size_t kBlackWhiteColorCount = 6;
+inline constexpr int kBlackWhiteWeightMin = -200;
+inline constexpr int kBlackWhiteWeightMax = 300;
+inline constexpr std::array<int, kBlackWhiteColorCount> kBlackWhiteDefaultWeights{40, 60, 40, 60, 20, 80};
+struct BlackWhiteAdjustment {
+  std::array<int, kBlackWhiteColorCount> weights{kBlackWhiteDefaultWeights};
+  bool tint{false};
+  int tint_hue{35};         // degrees, 0..360
+  int tint_saturation{25};  // percent, 0..100
+
+  friend bool operator==(const BlackWhiteAdjustment&, const BlackWhiteAdjustment&) = default;
+};
+[[nodiscard]] BlackWhiteAdjustment clamp_black_white(BlackWhiteAdjustment settings);
+// The gray value: `min + (mid - min) * secondary% + (max - mid) * primary%`, where the
+// primary color is the largest channel's (Reds, Greens, Blues) and the secondary the
+// pair of the two largest (Yellows, Cyans, Magentas). Grays keep their value.
+[[nodiscard]] std::uint8_t black_white_gray(RgbColor color, const std::array<int, kBlackWhiteColorCount>& weights);
+// The tint as a color: the fully bright color of `hue` whose channel spread is
+// `saturation` percent of the full range (HSB with brightness 100%).
+[[nodiscard]] RgbColor black_white_tint_color(int hue, int saturation);
+// The tint read back from a color: its hexcone hue and its spread in percent, the two
+// things the Color-mode tint depends on. A gray color keeps `hue` and reads saturation 0.
+void black_white_tint_from_color(double red, double green, double blue, int& hue, int& saturation);
+// The gray value, then (with Tint on) the tint color laid over it in Color blend mode,
+// which keeps the gray's luminosity.
+[[nodiscard]] RgbColor apply_black_white(RgbColor color, const BlackWhiteAdjustment& settings);
+
 // Both Photoshop algorithms are modeled. Modern mode (Photoshop's default,
 // use_legacy false) takes brightness -150..150 and contrast -50..100; legacy
 // mode takes -100..100 for both. Old Patchy documents and 'brit'-only PSDs
@@ -299,6 +346,7 @@ struct AdjustmentSettings {
   ThresholdAdjustment threshold{};
   BrightnessContrastAdjustment brightness_contrast{};
   ExposureAdjustment exposure{};
+  BlackWhiteAdjustment black_white{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.

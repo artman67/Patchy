@@ -11,6 +11,7 @@
 #include "ui/curves_editor.hpp"
 #include "ui/curves_presets.hpp"
 #include "ui/dialog_utils.hpp"
+#include "ui/measurement_units.hpp"
 #include "ui/qt_paths.hpp"
 #include "ui/filter_workflows_internal.hpp"
 
@@ -1459,6 +1460,71 @@ std::optional<ExposureSettings> request_exposure_settings(
         fields->gamma = add_row(QObject::tr("Gamma Correction:"), QStringLiteral("exposureGammaSpin"),
                                 kExposureGammaMin / 100.0, kExposureGammaMax / 100.0, 2, 0.05,
                                 initial.gamma_hundredths / 100.0);
+      });
+}
+
+std::optional<BlackWhiteSettings> request_black_white_settings(
+    QWidget* parent, std::function<void(bool, const BlackWhiteSettings&)> preview_changed,
+    BlackWhiteSettings initial) {
+  initial = clamp_black_white(initial);
+  // Photoshop's layout: six color sliders, then Tint with its Hue and Saturation,
+  // which stay disabled while Tint is off. No Auto button and no Preset menu (see
+  // docs/adjustments-calibration.md).
+  auto tint_check = std::make_shared<QCheckBox*>(nullptr);
+  const auto weight_row = [&initial](const QString& label, const QString& prefix, BlackWhiteColor color) {
+    return SliderRowSpec{label, prefix, kBlackWhiteWeightMin, kBlackWhiteWeightMax,
+                         initial.weights[static_cast<std::size_t>(color)], percent_suffix()};
+  };
+  const std::vector<SliderRowSpec> rows{
+      weight_row(QObject::tr("Reds"), QStringLiteral("blackWhiteReds"), BlackWhiteColor::Reds),
+      weight_row(QObject::tr("Yellows"), QStringLiteral("blackWhiteYellows"), BlackWhiteColor::Yellows),
+      weight_row(QObject::tr("Greens"), QStringLiteral("blackWhiteGreens"), BlackWhiteColor::Greens),
+      weight_row(QObject::tr("Cyans"), QStringLiteral("blackWhiteCyans"), BlackWhiteColor::Cyans),
+      weight_row(QObject::tr("Blues"), QStringLiteral("blackWhiteBlues"), BlackWhiteColor::Blues),
+      weight_row(QObject::tr("Magentas"), QStringLiteral("blackWhiteMagentas"), BlackWhiteColor::Magentas),
+      {QObject::tr("Hue"), QStringLiteral("blackWhiteTintHue"), 0, 360, initial.tint_hue, degree_suffix()},
+      {QObject::tr("Saturation"), QStringLiteral("blackWhiteTintSaturation"), 0, 100, initial.tint_saturation,
+       percent_suffix()}};
+  constexpr std::size_t kHueRow = kBlackWhiteColorCount;
+  constexpr std::size_t kSaturationRow = kBlackWhiteColorCount + 1U;
+  const std::array<QString, 2> tint_prefixes{rows[kHueRow].object_prefix, rows[kSaturationRow].object_prefix};
+
+  const auto build_settings = [tint_check](const std::vector<QSpinBox*>& spins) {
+    BlackWhiteSettings settings;
+    for (std::size_t index = 0; index < kBlackWhiteColorCount; ++index) {
+      settings.weights[index] = spins[index]->value();
+    }
+    settings.tint = *tint_check != nullptr && (*tint_check)->isChecked();
+    settings.tint_hue = spins[kHueRow]->value();
+    settings.tint_saturation = spins[kSaturationRow]->value();
+    return clamp_black_white(settings);
+  };
+
+  return request_adjustment_settings_dialog<BlackWhiteSettings>(
+      parent, QStringLiteral("patchyBlackWhiteDialog"), QObject::tr("Black & White"),
+      QStringLiteral("blackWhitePreviewCheck"), rows, build_settings, std::move(preview_changed), {},
+      [tint_check, tint_prefixes, initial](QDialog& dialog, QFormLayout* form, const std::vector<QSpinBox*>&,
+                                           const std::function<void()>& flush_preview) {
+        auto* check = new QCheckBox(QObject::tr("Tint"), &dialog);
+        check->setObjectName(QStringLiteral("blackWhiteTintCheck"));
+        check->setChecked(initial.tint);
+        *tint_check = check;
+        form->insertRow(static_cast<int>(kBlackWhiteColorCount), QString(), check);
+        const auto enable_tint_rows = [&dialog, tint_prefixes](bool enabled) {
+          for (const auto& prefix : tint_prefixes) {
+            if (auto* slider = dialog.findChild<QSlider*>(prefix + QStringLiteral("Slider")); slider != nullptr) {
+              slider->setEnabled(enabled);
+            }
+            if (auto* spin = dialog.findChild<QSpinBox*>(prefix + QStringLiteral("Spin")); spin != nullptr) {
+              spin->setEnabled(enabled);
+            }
+          }
+        };
+        enable_tint_rows(initial.tint);
+        QObject::connect(check, &QCheckBox::toggled, &dialog, [enable_tint_rows, flush_preview](bool tint) {
+          enable_tint_rows(tint);
+          flush_preview();
+        });
       });
 }
 

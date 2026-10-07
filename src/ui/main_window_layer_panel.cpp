@@ -630,6 +630,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(250, 225, 120);
     case AdjustmentKind::Exposure:
       return QColor(255, 170, 110);
+    case AdjustmentKind::BlackWhite:
+      return QColor(175, 180, 188);
   }
   return QColor(145, 175, 215);
 }
@@ -773,6 +775,28 @@ QString adjustment_settings_summary(const Layer& layer) {
           .arg(QLocale().toString(settings->exposure.exposure_hundredths / 100.0, 'f', 2))
           .arg(QLocale().toString(settings->exposure.offset_ten_thousandths / 10000.0, 'f', 4))
           .arg(QLocale().toString(settings->exposure.gamma_hundredths / 100.0, 'f', 2));
+    case AdjustmentKind::BlackWhite: {
+      const auto& black_white = settings->black_white;
+      const auto& weights = black_white.weights;
+      return (black_white.tint
+                  ? QObject::tr("Black & White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, "
+                                "tint hue %7, tint saturation %8")
+                        .arg(weights[0])
+                        .arg(weights[1])
+                        .arg(weights[2])
+                        .arg(weights[3])
+                        .arg(weights[4])
+                        .arg(weights[5])
+                        .arg(black_white.tint_hue)
+                        .arg(black_white.tint_saturation)
+                  : QObject::tr("Black & White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6")
+                        .arg(weights[0])
+                        .arg(weights[1])
+                        .arg(weights[2])
+                        .arg(weights[3])
+                        .arg(weights[4])
+                        .arg(weights[5]));
+    }
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
@@ -1050,6 +1074,27 @@ void draw_exposure_adjustment_thumbnail_symbol(QPainter& painter, const QColor& 
   painter.drawRect(square);
 }
 
+void draw_black_white_adjustment_thumbnail_symbol(QPainter& painter, const BlackWhiteAdjustment& settings,
+                                                  const QColor& accent) {
+  // A disc split into a dark and a light half; with Tint on, the light half takes
+  // the tint color.
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  const QRectF disc(7.0, 7.0, 14.0, 14.0);
+  auto light = QColor(238, 243, 248);
+  if (settings.tint) {
+    const auto tint = black_white_tint_color(settings.tint_hue, settings.tint_saturation);
+    light = QColor(tint.red, tint.green, tint.blue);
+  }
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(QColor(31, 37, 46));
+  painter.drawPie(disc, 90 * 16, 180 * 16);
+  painter.setBrush(light);
+  painter.drawPie(disc, -90 * 16, 180 * 16);
+  painter.setPen(QPen(accent.lighter(120), 1.5));
+  painter.setBrush(Qt::NoBrush);
+  painter.drawEllipse(disc);
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1280,6 +1325,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::Exposure:
           draw_exposure_adjustment_thumbnail_symbol(painter, accent);
+          break;
+        case AdjustmentKind::BlackWhite:
+          draw_black_white_adjustment_thumbnail_symbol(painter, settings->black_white, accent);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);
