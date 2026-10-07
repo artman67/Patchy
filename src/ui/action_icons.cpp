@@ -623,4 +623,33 @@ QIcon align_edge_icon(AlignEdge edge) {
                            &ThemePalette::icon_ink, std::move(glyph));
 }
 
+QIcon paint_symmetry_icon() {
+  auto glyph = [](QPainter& painter, const QColor& ink) {
+    painter.setRenderHint(QPainter::Antialiasing, true);
+    painter.setBrush(Qt::NoBrush);
+    painter.setPen(QPen(ink, 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+    // Two wings per side, mirrored across the body at x = 11.
+    for (const double side : {-1.0, 1.0}) {
+      painter.save();
+      painter.translate(11.0, 0.0);
+      painter.scale(side, 1.0);
+      QPainterPath upper;
+      upper.moveTo(1.2, 9.5);
+      upper.cubicTo(3.0, 3.0, 9.5, 2.0, 9.0, 6.0);
+      upper.cubicTo(8.6, 9.0, 4.5, 10.5, 1.2, 10.5);
+      painter.drawPath(upper);
+      QPainterPath lower;
+      lower.moveTo(1.2, 11.5);
+      lower.cubicTo(5.5, 11.5, 8.0, 14.5, 6.5, 17.0);
+      lower.cubicTo(5.0, 19.0, 2.0, 16.0, 1.2, 13.5);
+      painter.drawPath(lower);
+      painter.restore();
+    }
+    painter.drawLine(QPointF(11.0, 6.5), QPointF(11.0, 17.0));
+    painter.drawLine(QPointF(11.0, 6.5), QPointF(9.5, 3.5));
+    painter.drawLine(QPointF(11.0, 6.5), QPointF(12.5, 3.5));
+  };
+  return themed_glyph_icon(QStringLiteral("paint-symmetry"), 22.0, &ThemePalette::icon_ink, std::move(glyph));
+}
+
 }  // namespace patchy::ui

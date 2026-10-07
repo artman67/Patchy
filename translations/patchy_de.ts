@@ -18659,6 +18659,58 @@ In Bilder umgewandelt: %1.</translation>
         <source>Height of the crop box</source>
         <translation>Höhe des Zuschneiderahmens</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>Mandala-Symmetrie</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>Radiale Symmetrie</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>Anzahl der Segmente:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>Malsymmetrie</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>Symmetrie aus</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>Zwei Achsen</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>Diagonal</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>Radial...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>Mandala...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>Symmetrie transformieren</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>Symmetrie zurücksetzen</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>Symmetrie ausblenden</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>Ziehen Sie die Mitte, um die Symmetrie zu verschieben, oder ziehen Sie an anderer Stelle, um sie zu drehen (Umschalt rastet ein). Enter wendet an, Esc bricht ab.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

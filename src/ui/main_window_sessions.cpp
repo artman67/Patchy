@@ -345,6 +345,7 @@ void MainWindow::add_document_session(Document document, QString title, QString 
   session->canvas->set_brush_smoothing_catch_up(current_brush_smoothing_catch_up_);
   session->canvas->set_brush_smoothing_catch_up_end(current_brush_smoothing_catch_up_end_);
   session->canvas->set_brush_smoothing_zoom_adjust(current_brush_smoothing_zoom_adjust_);
+  apply_paint_symmetry_to_canvas(session->canvas);
   apply_pattern_stamp_settings_to_canvas(session->canvas);
   apply_selection_modes_to_canvas(session->canvas);
   session->canvas->set_tool(current_tool_);
@@ -507,6 +508,10 @@ void MainWindow::activate_document_canvas(CanvasWidget* canvas, const std::funct
     // User-driven tab clicks already committed via the focus change, but
     // programmatic switches (File > Open, float/dock) reach here mid-edit.
     finish_active_text_editor();
+    // A Transform Symmetry session belongs to the outgoing document's canvas.
+    if (canvas_ != nullptr) {
+      canvas_->end_paint_symmetry_transform(true);
+    }
     // Brush settings are application-wide: capture the outgoing canvas's live
     // values so the incoming canvas (whose copies may be stale) inherits them.
     stash_active_brush_settings();
@@ -590,6 +595,7 @@ void MainWindow::activate_document_canvas(CanvasWidget* canvas, const std::funct
   canvas_->set_brush_smoothing_catch_up(current_brush_smoothing_catch_up_);
   canvas_->set_brush_smoothing_catch_up_end(current_brush_smoothing_catch_up_end_);
   canvas_->set_brush_smoothing_zoom_adjust(current_brush_smoothing_zoom_adjust_);
+  apply_paint_symmetry_to_canvas(canvas_);
   apply_pattern_stamp_settings_to_canvas(canvas_);
   if (canvas_changed) {
     apply_active_brush_settings_to_canvas();

@@ -66,7 +66,11 @@ QRect CanvasWidget::paint_script_stroke(const ScriptStroke& stroke, const std::f
   const auto saved_build_up = brush_build_up_;
   const auto saved_progress = script_brush_progress_;
   const auto saved_cancelled = script_brush_cancelled_;
+  // Native script strokes state their geometry explicitly: the artist's Paint
+  // Symmetry never replicates them (docs/paint-symmetry.md).
+  const auto saved_symmetry_mode = paint_symmetry_mode_;
   const auto restore = qScopeGuard([&] {
+    paint_symmetry_mode_ = saved_symmetry_mode;
     reset_brush_smoothing(); clear_brush_stroke_tracking(); stroke_stabilizer_ = {};
     apply_script_brush(saved); tool_ = saved_tool;
     layer_edit_target_ = saved_target; quick_mask_active_ = saved_quick_mask;
@@ -77,6 +81,7 @@ QRect CanvasWidget::paint_script_stroke(const ScriptStroke& stroke, const std::f
     script_brush_progress_ = saved_progress; script_brush_cancelled_ = saved_cancelled;
   });
   apply_script_brush(stroke);
+  paint_symmetry_mode_ = patchy::PaintSymmetryMode::Off;
   script_brush_cancelled_ = false;
   script_brush_progress_ = [&](const QRect& changed) {
     if (progress && progress(changed)) script_brush_cancelled_ = true;

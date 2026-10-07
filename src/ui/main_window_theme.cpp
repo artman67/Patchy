@@ -367,6 +367,7 @@ QString photoshop_style_template() {
     QToolButton[optionsBarMenuButton="true"]::menu-indicator {
       width: 0;
     }
+    QToolButton#paintSymmetryButton[symmetryActive="true"],
     QToolButton#brushDynamicsButton[dynamicsActive="true"] {
       border-color: @accent_border_bright;
     }

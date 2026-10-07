@@ -186,6 +186,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <numbers>
 #include <optional>
 #include <span>
 #include <stdexcept>
@@ -3352,6 +3353,206 @@ void ui_brush_smoothing_catch_up_on_end_completes_stroke() {
   CHECK(canvas_pixel(canvas, release_doc).red() < 40);
 }
 
+
+// Paint Symmetry (docs/paint-symmetry.md): the butterfly menu reaches the canvas, a mirrored
+// stroke is one undo step, Transform Symmetry moves the axis instead of painting, and the
+// button follows the Brush/Mixer/Eraser rows only.
+void ui_paint_symmetry_button_mirrors_stroke_in_one_undo_step() {
+  clear_brush_tip_test_state();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  require_action_by_text(window, QStringLiteral("Brush"))->trigger();
+  QApplication::processEvents();
+  auto* button = window.findChild<QToolButton*>(QStringLiteral("paintSymmetryButton"));
+  CHECK(button != nullptr);
+  if (button == nullptr || button->menu() == nullptr) {
+    return;
+  }
+  CHECK(button->isVisible());
+  CHECK(canvas->paint_symmetry_mode() == patchy::PaintSymmetryMode::Off);  // every launch starts off
+  const auto menu_action = [button](const QString& text) -> QAction* {
+    for (auto* action : button->menu()->actions()) {
+      if (action->text() == text) {
+        return action;
+      }
+    }
+    return nullptr;
+  };
+  auto* vertical = menu_action(QStringLiteral("Vertical"));
+  auto* off = menu_action(QStringLiteral("Symmetry Off"));
+  CHECK(vertical != nullptr);
+  CHECK(off != nullptr);
+  CHECK(menu_action(QStringLiteral("Mandala...")) != nullptr);
+  if (vertical == nullptr || off == nullptr) {
+    return;
+  }
+  vertical->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->paint_symmetry_mode() == patchy::PaintSymmetryMode::Vertical);
+  CHECK(vertical->isChecked());
+  CHECK(button->property("symmetryActive").toBool());
+
+  auto& document = patchy::ui::MainWindowTestAccess::document(window);
+  const auto width = document.width();
+  const auto height = document.height();
+  CHECK(canvas->paint_symmetry_center() == QPointF(width / 2.0, height / 2.0));
+  canvas->set_zoom(1.0);
+  canvas->set_primary_color(Qt::black);
+  canvas->set_brush_size(9);
+  canvas->set_brush_opacity(100);
+  canvas->set_brush_softness(0);
+  // Black paint on the active layer: opaque and dark. Unpainted reads as 255 whether the layer
+  // is an opaque white Background or a transparent layer.
+  const auto layer_red = [&document](QPoint point) {
+    const auto* layer = document.find_layer(*document.active_layer_id());
+    const auto bounds = layer->bounds();
+    if (!bounds.contains(point.x(), point.y())) {
+      return 255;
+    }
+    const auto& pixels = std::as_const(*layer).pixels();
+    const auto* pixel = pixels.pixel(point.x() - bounds.x, point.y() - bounds.y);
+    const auto alpha = pixels.format().channels >= 4 ? pixel[3] : 255;
+    return alpha < 128 ? 255 : static_cast<int>(pixel[0]);
+  };
+  const auto mirrored = [width](QPoint point) { return QPoint(width - 1 - point.x(), point.y()); };
+  const QPoint from(width / 2 - 40, height / 2 - 20);
+  const QPoint to(width / 2 - 25, height / 2 + 20);
+  const auto depth = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  drag_document_path(*canvas, {from, to}, 8);
+  QApplication::processEvents();
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == depth + 1);
+  CHECK(layer_red(from) < 40);
+  CHECK(layer_red(mirrored(from)) < 40);
+  CHECK(layer_red(mirrored(to)) < 40);
+  CHECK(layer_red(QPoint(width / 2, height / 2 - 20)) > 200);  // nothing painted on the axis itself
+  patchy::ui::MainWindowTestAccess::undo(window);
+  QApplication::processEvents();
+  CHECK(layer_red(from) > 200);
+  CHECK(layer_red(mirrored(from)) > 200);
+
+  // Transform Symmetry: a drag from the center moves the axis and paints nothing; Escape
+  // reverts, Enter keeps the new placement.
+  const auto center = canvas->paint_symmetry_center();
+  const auto center_widget = canvas->widget_position_for_document_point(center.toPoint());
+  const auto moved_widget = canvas->widget_position_for_document_point(center.toPoint() - QPoint(20, 0));
+  canvas->begin_paint_symmetry_transform();
+  CHECK(canvas->paint_symmetry_transform_active());
+  drag(*canvas, center_widget, moved_widget);
+  QApplication::processEvents();
+  CHECK(std::abs(canvas->paint_symmetry_center().x() - (center.x() - 20.0)) <= 1.0);
+  send_key(*canvas, Qt::Key_Escape);
+  CHECK(!canvas->paint_symmetry_transform_active());
+  CHECK(canvas->paint_symmetry_center() == center);
+  canvas->begin_paint_symmetry_transform();
+  drag(*canvas, center_widget, moved_widget);
+  send_key(*canvas, Qt::Key_Return);
+  QApplication::processEvents();
+  CHECK(!canvas->paint_symmetry_transform_active());
+  CHECK(std::abs(canvas->paint_symmetry_center().x() - (center.x() - 20.0)) <= 1.0);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == depth);  // no paint, no history
+
+  // The button follows Photoshop's tool set: Mixer Brush and Eraser yes, Smudge no.
+  require_action_by_text(window, QStringLiteral("Mixer Brush"))->trigger();
+  QApplication::processEvents();
+  CHECK(button->isVisible());
+  require_action_by_text(window, QStringLiteral("Eraser"))->trigger();
+  QApplication::processEvents();
+  CHECK(button->isVisible());
+  require_action_by_text(window, QStringLiteral("Smudge"))->trigger();
+  QApplication::processEvents();
+  CHECK(!button->isVisible());
+  off->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->paint_symmetry_mode() == patchy::PaintSymmetryMode::Off);
+  CHECK(!button->property("symmetryActive").toBool());
+}
+
+// Mandala copies are rotations and mirrors of the stroke (checked through sector balance and the
+// exact vertical mirror), and each Mixer copy smears its own side of the canvas: a shared pickup
+// would carry the left side's red into the right side's copy. Writes the artifact
+// ui_paint_symmetry_mandala.png (guide included) for a visual check.
+void ui_paint_symmetry_mandala_and_mixer_copies_paint_their_own_side() {
+  constexpr int kSize = 240;
+  patchy::Document document(kSize, kSize, patchy::PixelFormat::rgba8());
+  auto& paint = document.add_pixel_layer(
+      "Paint", solid_pixels(kSize, kSize, patchy::PixelFormat::rgba8(), QColor(Qt::white)));
+  patchy::ui::CanvasWidget canvas;
+  canvas.resize(kSize + 40, kSize + 40);
+  canvas.set_document(&document);
+  canvas.set_tool(patchy::ui::CanvasTool::Brush);
+  canvas.set_zoom(1.0);
+  canvas.set_primary_color(QColor(30, 60, 160));
+  canvas.set_brush_size(7);
+  canvas.set_brush_opacity(100);
+  canvas.set_brush_softness(0);
+  canvas.set_paint_symmetry(patchy::PaintSymmetryMode::Mandala, 6);
+  canvas.show();
+  QApplication::processEvents();
+  drag_document_path(canvas, {QPoint(120, 30), QPoint(150, 60), QPoint(138, 96), QPoint(126, 80)}, 10);
+  QApplication::processEvents();
+  save_image_artifact("ui_paint_symmetry_mandala", canvas.grab().toImage());
+
+  const auto& pixels = std::as_const(paint).pixels();
+  std::array<int, 6> sector_counts{};
+  int mirror_mismatches = 0;
+  int painted = 0;
+  for (std::int32_t y = 0; y < kSize; ++y) {
+    for (std::int32_t x = 0; x < kSize; ++x) {
+      const auto* pixel = pixels.pixel(x, y);
+      const auto* mirror = pixels.pixel(kSize - 1 - x, y);
+      if (std::abs(static_cast<int>(pixel[0]) - static_cast<int>(mirror[0])) > 3) {
+        ++mirror_mismatches;
+      }
+      if (pixel[0] > 128) {
+        continue;
+      }
+      ++painted;
+      const auto angle = std::atan2(static_cast<double>(y) - 119.5, static_cast<double>(x) - 119.5);
+      const auto sector = static_cast<int>(std::floor((angle + std::numbers::pi) / (std::numbers::pi / 3.0))) % 6;
+      ++sector_counts[static_cast<std::size_t>(sector)];
+    }
+  }
+  CHECK(painted > 600);
+  CHECK(mirror_mismatches < 12);
+  const auto [fewest, most] = std::minmax_element(sector_counts.begin(), sector_counts.end());
+  CHECK(*fewest > 0);
+  CHECK(static_cast<double>(*most - *fewest) < 0.15 * static_cast<double>(*most));
+
+  // Mixer: a red block at the left edge, a blue block at the right edge, white between. A
+  // Vertical-symmetry stroke leaves the red block and carries its pickup into the white; the
+  // copy must carry blue out of its own block. One shared pickup would see the two sides
+  // alternate and carry nothing.
+  patchy::Document halves(120, 60, patchy::PixelFormat::rgba8());
+  auto& halves_layer = halves.add_pixel_layer(
+      "Paint", solid_pixels(120, 60, patchy::PixelFormat::rgba8(), QColor(Qt::white)));
+  for (std::int32_t y = 0; y < 60; ++y) {
+    for (std::int32_t x = 0; x < 25; ++x) {
+      auto* red = halves_layer.pixels().pixel(x, y);
+      red[1] = red[2] = 30;
+      auto* blue = halves_layer.pixels().pixel(119 - x, y);
+      blue[0] = blue[1] = 30;
+    }
+  }
+  canvas.set_document(&halves);
+  canvas.set_tool(patchy::ui::CanvasTool::MixerBrush);
+  canvas.set_zoom(1.0);
+  canvas.set_primary_color(QColor(Qt::white));
+  canvas.set_brush_size(10);
+  canvas.set_mixer_wet(100);
+  canvas.set_mixer_load(50);
+  canvas.set_mixer_mix(100);
+  canvas.set_mixer_flow(100);
+  canvas.set_paint_symmetry(patchy::PaintSymmetryMode::Vertical, 6);
+  QApplication::processEvents();
+  drag_document_path(canvas, {QPoint(10, 30), QPoint(55, 30)}, 20);
+  QApplication::processEvents();
+  const auto* left = std::as_const(halves_layer).pixels().pixel(40, 30);
+  const auto* right = std::as_const(halves_layer).pixels().pixel(119 - 40, 30);
+  CHECK(left[0] > left[2] + 40);
+  CHECK(right[2] > right[0] + 40);
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_engine_stroke_tests_part1() {
@@ -3436,6 +3637,10 @@ std::vector<patchy::test::TestCase> brush_engine_stroke_tests_part1() {
        ui_brush_smoothing_pulled_string_short_drag_paints_only_press_dab},
       {"ui_brush_smoothing_catch_up_on_end_completes_stroke",
        ui_brush_smoothing_catch_up_on_end_completes_stroke},
+      {"ui_paint_symmetry_button_mirrors_stroke_in_one_undo_step",
+       ui_paint_symmetry_button_mirrors_stroke_in_one_undo_step},
+      {"ui_paint_symmetry_mandala_and_mixer_copies_paint_their_own_side",
+       ui_paint_symmetry_mandala_and_mixer_copies_paint_their_own_side},
       {"ui_copy_ignores_hidden_active_layer", ui_copy_ignores_hidden_active_layer},
       {"ui_copy_selected_layers_copies_composited_selection", ui_copy_selected_layers_copies_composited_selection},
       {"ui_eraser_on_background_reveals_transparency_and_size_cursor",

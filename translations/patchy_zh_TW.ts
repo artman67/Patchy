@@ -18603,6 +18603,58 @@ Baked into images: %1.</source>
         <source>Height of the crop box</source>
         <translation>裁切框高度</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>曼陀羅對稱</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>放射狀對稱</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>區段數:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>繪畫對稱</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>關閉對稱</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>雙軸</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>對角線</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>放射狀...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>曼陀羅...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>變形對稱</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>重設對稱</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>隱藏對稱</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>拖曳中心可移動對稱，在其他位置拖曳可旋轉對稱（按 Shift 對齊角度）。按 Enter 套用，按 Esc 取消。</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

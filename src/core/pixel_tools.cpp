@@ -1260,9 +1260,63 @@ void expand_layer_to_include_rect(Layer& layer, Rect document_rect) {
   layer.set_bounds(new_bounds);
 }
 
-Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,
-                   bool erase, const TipDabTransform& transform, float opacity_multiplier,
-                   const BrushDabVariation* variation = nullptr) {
+namespace {
+
+// Paint Symmetry --------------------------------------------------------------------------------
+// Copies reuse the original footprint math: a copy's dab is centered on the mapped center and each
+// of its pixels evaluates the ORIGINAL coverage at the offset mapped back through the copy's
+// orthogonal part. Constraint comment in core/paint_symmetry.hpp.
+
+constexpr Rect kUnboundedRect{-(1 << 29), -(1 << 29), 1 << 30, 1 << 30};
+
+// Bounds of `source` (pixel sample points, original frame) after the copy's placement.
+[[nodiscard]] Rect symmetry_copy_rect(const SymmetryTransform& copy, Rect source, Rect bounds) {
+  if (source.empty()) {
+    return {};
+  }
+  const double xs[2] = {static_cast<double>(source.x), static_cast<double>(source.x + source.width - 1)};
+  const double ys[2] = {static_cast<double>(source.y), static_cast<double>(source.y + source.height - 1)};
+  auto min_x = std::numeric_limits<double>::max();
+  auto min_y = std::numeric_limits<double>::max();
+  auto max_x = std::numeric_limits<double>::lowest();
+  auto max_y = std::numeric_limits<double>::lowest();
+  for (const auto corner_x : xs) {
+    for (const auto corner_y : ys) {
+      const auto mapped_x = copy.map_x(corner_x, corner_y);
+      const auto mapped_y = copy.map_y(corner_x, corner_y);
+      min_x = std::min(min_x, mapped_x);
+      min_y = std::min(min_y, mapped_y);
+      max_x = std::max(max_x, mapped_x);
+      max_y = std::max(max_y, mapped_y);
+    }
+  }
+  const auto left = static_cast<std::int32_t>(std::floor(min_x));
+  const auto top = static_cast<std::int32_t>(std::floor(min_y));
+  const auto right = static_cast<std::int32_t>(std::ceil(max_x)) + 1;
+  const auto bottom = static_cast<std::int32_t>(std::ceil(max_y)) + 1;
+  return intersect_rect(Rect{left, top, right - left, bottom - top}, bounds);
+}
+
+// A one-pixel footprint is the pixel floor(x), floor(y). Its copy is that pixel index mapped
+// through the placement (exact for mirrors and quarter turns), not floor() of the mapped
+// position, which would land one pixel off on the far side of a mirror axis.
+[[nodiscard]] std::pair<std::int32_t, std::int32_t> symmetry_copy_pixel(const SymmetryTransform& copy,
+                                                                        std::int32_t x,
+                                                                        std::int32_t y) noexcept {
+  const auto px = static_cast<double>(x);
+  const auto py = static_cast<double>(y);
+  return {static_cast<std::int32_t>(std::lround(copy.map_x(px, py))),
+          static_cast<std::int32_t>(std::lround(copy.map_y(px, py)))};
+}
+
+}  // namespace
+
+// One placement of a tip dab: `copy` null paints the stroke's own dab at (x, y); otherwise the
+// dab lands at the copy's mapped center and copy_index selects the dab color provider's state.
+Rect paint_tip_dab_copy(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,
+                        bool erase, const TipDabTransform& transform, float opacity_multiplier,
+                        const BrushDabVariation* variation, const SymmetryTransform* copy,
+                        std::size_t copy_index) {
   auto* layer = editable_layer(document, layer_id);
   if (layer == nullptr || options.brush_tip == nullptr || options.brush_tip->empty()) {
     return {};
@@ -1272,10 +1326,15 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
   }
 
   const auto& tip = *options.brush_tip;
-  const auto dab_rect = tip_dab_rect(x, y, tip, transform, canvas_rect(document));
+  const auto dab_rect =
+      copy == nullptr ? tip_dab_rect(x, y, tip, transform, canvas_rect(document))
+                      : symmetry_copy_rect(*copy, tip_dab_rect(x, y, tip, transform, kUnboundedRect),
+                                           canvas_rect(document));
   if (dab_rect.empty()) {
     return {};
   }
+  const auto center_x = copy == nullptr ? x : copy->map_x(x, y);
+  const auto center_y = copy == nullptr ? y : copy->map_y(x, y);
   if (!erase && !options.lock_transparent_pixels) {
     expand_layer_to_include_rect(*layer, dab_rect);
   }
@@ -1288,7 +1347,7 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
     dab_options.primary = color_dynamics_color(options, *variation);
   }
   if (!erase && options.dab_primary_provider) {
-    dab_options.primary = options.dab_primary_provider(x, y, dab_options.primary);
+    dab_options.primary = options.dab_primary_provider(center_x, center_y, dab_options.primary, copy_index);
   }
   Rect dirty;
 
@@ -1300,8 +1359,13 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
 
     auto row = pixels.row(local_y);
     for (std::int32_t px_doc = dab_rect.x; px_doc < dab_rect.x + dab_rect.width; ++px_doc) {
-      const auto offset_x = static_cast<double>(px_doc) - x;
-      const auto offset_y = static_cast<double>(py) - y;
+      auto offset_x = static_cast<double>(px_doc) - center_x;
+      auto offset_y = static_cast<double>(py) - center_y;
+      if (copy != nullptr) {
+        const auto copy_x = offset_x;
+        offset_x = copy->unmap_offset_x(copy_x, offset_y);
+        offset_y = copy->unmap_offset_y(copy_x, offset_y);
+      }
       auto coverage = tip_dab_coverage(tip, transform, offset_x, offset_y);
       if (coverage <= 0.0F) {
         continue;
@@ -1351,12 +1415,25 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
   return dirty;
 }
 
-Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,
-                     bool erase) {
-  if (options.brush_tip != nullptr) {
-    return paint_tip_dab(document, layer_id, x, y, options, erase, tip_dab_transform(options), 1.0F);
+Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,
+                   bool erase, const TipDabTransform& transform, float opacity_multiplier,
+                   const BrushDabVariation* variation = nullptr) {
+  auto dirty = paint_tip_dab_copy(document, layer_id, x, y, options, erase, transform, opacity_multiplier,
+                                  variation, nullptr, 0);
+  for (std::size_t index = 0; index < options.symmetry.size(); ++index) {
+    if (paint_symmetry_copy_repeats_point(options.symmetry, index, x, y)) {
+      continue;
+    }
+    dirty = unite_rect(dirty, paint_tip_dab_copy(document, layer_id, x, y, options, erase, transform,
+                                                 opacity_multiplier, variation, &options.symmetry[index],
+                                                 index + 1));
   }
+  return dirty;
+}
 
+// One placement of a procedural dab; see paint_tip_dab_copy.
+Rect paint_brush_dab_copy(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,
+                          bool erase, const SymmetryTransform* copy, std::size_t copy_index) {
   auto* layer = editable_layer(document, layer_id);
   if (layer == nullptr) {
     return {};
@@ -1366,7 +1443,24 @@ Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, c
   }
 
   const auto radius = std::max(1, options.brush_size) / 2;
-  const auto dab_rect = brush_dab_rect(x, y, radius, options, canvas_rect(document));
+  auto dab_rect = brush_dab_rect(x, y, radius, options, canvas_rect(document));
+  auto center_x = x;
+  auto center_y = y;
+  if (copy != nullptr) {
+    center_x = copy->map_x(x, y);
+    center_y = copy->map_y(x, y);
+    if (radius <= 0) {
+      const auto [pixel_x, pixel_y] = symmetry_copy_pixel(
+          *copy, static_cast<std::int32_t>(std::floor(x)), static_cast<std::int32_t>(std::floor(y)));
+      dab_rect = intersect_rect(Rect{pixel_x, pixel_y, 1, 1}, canvas_rect(document));
+    } else {
+      dab_rect = symmetry_copy_rect(*copy, brush_dab_rect(x, y, radius, options, kUnboundedRect),
+                                    canvas_rect(document));
+    }
+  }
+  if (dab_rect.empty()) {
+    return {};
+  }
   if (!erase && !options.lock_transparent_pixels) {
     expand_layer_to_include_rect(*layer, dab_rect);
   }
@@ -1376,7 +1470,7 @@ Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, c
   const auto channels = pixels.format().channels;
   auto dab_options = options;
   if (!erase && options.dab_primary_provider) {
-    dab_options.primary = options.dab_primary_provider(x, y, dab_options.primary);
+    dab_options.primary = options.dab_primary_provider(center_x, center_y, dab_options.primary, copy_index);
   }
   Rect dirty;
 
@@ -1396,9 +1490,15 @@ Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, c
       if (local_x < 0 || local_x >= pixels.width()) {
         continue;
       }
+      auto offset_x = static_cast<double>(px_doc) - center_x;
+      auto offset_y = static_cast<double>(py) - center_y;
+      if (copy != nullptr) {
+        const auto copy_x = offset_x;
+        offset_x = copy->unmap_offset_x(copy_x, offset_y);
+        offset_y = copy->unmap_offset_y(copy_x, offset_y);
+      }
       const auto effective_coverage =
-          brush_shape_coverage(static_cast<double>(px_doc) - x, static_cast<double>(py) - y, radius, options) *
-          selected_coverage;
+          brush_shape_coverage(offset_x, offset_y, radius, options) * selected_coverage;
       if (effective_coverage <= 0.0F) {
         continue;
       }
@@ -1420,6 +1520,22 @@ Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, c
       }
     }
     report_edit_progress(options);
+  }
+  return dirty;
+}
+
+Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,
+                     bool erase) {
+  if (options.brush_tip != nullptr) {
+    return paint_tip_dab(document, layer_id, x, y, options, erase, tip_dab_transform(options), 1.0F);
+  }
+  auto dirty = paint_brush_dab_copy(document, layer_id, x, y, options, erase, nullptr, 0);
+  for (std::size_t index = 0; index < options.symmetry.size(); ++index) {
+    if (paint_symmetry_copy_repeats_point(options.symmetry, index, x, y)) {
+      continue;
+    }
+    dirty = unite_rect(dirty, paint_brush_dab_copy(document, layer_id, x, y, options, erase,
+                                                   &options.symmetry[index], index + 1));
   }
   return dirty;
 }
@@ -1577,11 +1693,12 @@ Rect paint_brush_segment(Document& document, LayerId layer_id, double x0, double
     const auto start_y = static_cast<std::int32_t>(std::floor(y0));
     const auto end_x = static_cast<std::int32_t>(std::floor(x1));
     const auto end_y = static_cast<std::int32_t>(std::floor(y1));
-    const auto path_rect = intersect_rect(Rect{std::min(start_x, end_x),
-                                               std::min(start_y, end_y),
-                                               std::abs(end_x - start_x) + 1,
-                                               std::abs(end_y - start_y) + 1},
-                                          canvas_rect(document));
+    const auto line_rect = Rect{std::min(start_x, end_x), std::min(start_y, end_y),
+                                std::abs(end_x - start_x) + 1, std::abs(end_y - start_y) + 1};
+    auto path_rect = intersect_rect(line_rect, canvas_rect(document));
+    for (const auto& copy : options.symmetry) {
+      path_rect = unite_rect(path_rect, symmetry_copy_rect(copy, line_rect, canvas_rect(document)));
+    }
     if (path_rect.empty()) {
       return {};
     }
@@ -1594,7 +1711,7 @@ Rect paint_brush_segment(Document& document, LayerId layer_id, double x0, double
     const auto bounds = layer->bounds();
     const auto channels = pixels.format().channels;
     Rect dirty;
-    visit_pixel_line(start_x, start_y, end_x, end_y, [&](std::int32_t px_doc, std::int32_t py) {
+    const auto write_line_pixel = [&](std::int32_t px_doc, std::int32_t py) {
       if (!canvas_rect(document).contains(px_doc, py)) {
         return;
       }
@@ -1621,80 +1738,119 @@ Rect paint_brush_segment(Document& document, LayerId layer_id, double x0, double
       if (changed) {
         dirty = unite_rect(dirty, Rect{px_doc, py, 1, 1});
       }
+    };
+    // Symmetry copies map each visited pixel, so a one-pixel line mirrors exactly instead of
+    // re-running the line walk from mapped endpoints (whose tie-breaks differ).
+    std::vector<std::pair<std::int32_t, std::int32_t>> painted;
+    visit_pixel_line(start_x, start_y, end_x, end_y, [&](std::int32_t px_doc, std::int32_t py) {
+      write_line_pixel(px_doc, py);
+      if (options.symmetry.empty()) {
+        return;
+      }
+      painted.assign(1, {px_doc, py});
+      for (const auto& copy : options.symmetry) {
+        const auto pixel = symmetry_copy_pixel(copy, px_doc, py);
+        if (std::find(painted.begin(), painted.end(), pixel) != painted.end()) {
+          continue;
+        }
+        painted.push_back(pixel);
+        write_line_pixel(pixel.first, pixel.second);
+      }
     });
     return dirty;
   }
 
-  const auto left = static_cast<std::int32_t>(std::floor(std::min(x0, x1) - static_cast<double>(radius)));
-  const auto top = static_cast<std::int32_t>(std::floor(std::min(y0, y1) - static_cast<double>(radius)));
-  const auto right =
-      static_cast<std::int32_t>(std::ceil(std::max(x0, x1) + static_cast<double>(radius))) + 1;
-  const auto bottom =
-      static_cast<std::int32_t>(std::ceil(std::max(y0, y1) + static_cast<double>(radius))) + 1;
-  const auto stroke_rect = intersect_rect(Rect{left, top, right - left, bottom - top}, canvas_rect(document));
-  if (stroke_rect.empty()) {
-    return {};
-  }
+  // One capsule from (ax, ay) to (bx, by): the stroke itself (copy null) or a symmetry copy,
+  // whose pixels evaluate the original footprint at their offset mapped back through the copy.
+  const auto paint_capsule = [&](double ax, double ay, double bx, double by,
+                                 const SymmetryTransform* copy) -> Rect {
+    const auto left = static_cast<std::int32_t>(std::floor(std::min(ax, bx) - static_cast<double>(radius)));
+    const auto top = static_cast<std::int32_t>(std::floor(std::min(ay, by) - static_cast<double>(radius)));
+    const auto right =
+        static_cast<std::int32_t>(std::ceil(std::max(ax, bx) + static_cast<double>(radius))) + 1;
+    const auto bottom =
+        static_cast<std::int32_t>(std::ceil(std::max(ay, by) + static_cast<double>(radius))) + 1;
+    const auto stroke_rect = intersect_rect(Rect{left, top, right - left, bottom - top}, canvas_rect(document));
+    if (stroke_rect.empty()) {
+      return {};
+    }
 
-  if (!erase && !options.lock_transparent_pixels) {
-    expand_layer_to_include_rect(*layer, stroke_rect);
-  }
+    if (!erase && !options.lock_transparent_pixels) {
+      expand_layer_to_include_rect(*layer, stroke_rect);
+    }
 
-  auto& pixels = layer->pixels();
-  const auto bounds = layer->bounds();
-  const auto channels = pixels.format().channels;
-  const auto dx = x1 - x0;
-  const auto dy = y1 - y0;
-  const auto segment_length_squared = dx * dx + dy * dy;
-  Rect dirty;
+    auto& pixels = layer->pixels();
+    const auto bounds = layer->bounds();
+    const auto channels = pixels.format().channels;
+    const auto dx = bx - ax;
+    const auto dy = by - ay;
+    const auto segment_length_squared = dx * dx + dy * dy;
+    Rect dirty;
 
-  for (std::int32_t py = stroke_rect.y; py < stroke_rect.y + stroke_rect.height; ++py) {
-    const auto local_y = py - bounds.y;
-    if (local_y < 0 || local_y >= pixels.height()) {
+    for (std::int32_t py = stroke_rect.y; py < stroke_rect.y + stroke_rect.height; ++py) {
+      const auto local_y = py - bounds.y;
+      if (local_y < 0 || local_y >= pixels.height()) {
+        continue;
+      }
+
+      auto row = pixels.row(local_y);
+      for (std::int32_t px_doc = stroke_rect.x; px_doc < stroke_rect.x + stroke_rect.width; ++px_doc) {
+        const auto along =
+            segment_length_squared <= std::numeric_limits<double>::epsilon()
+                ? 0.0
+                : std::clamp(((static_cast<double>(px_doc) - ax) * dx + (static_cast<double>(py) - ay) * dy) /
+                                  segment_length_squared,
+                             0.0, 1.0);
+        const auto closest_x = ax + dx * along;
+        const auto closest_y = ay + dy * along;
+        auto distance_x = static_cast<double>(px_doc) - closest_x;
+        auto distance_y = static_cast<double>(py) - closest_y;
+        if (copy != nullptr) {
+          const auto copy_x = distance_x;
+          distance_x = copy->unmap_offset_x(copy_x, distance_y);
+          distance_y = copy->unmap_offset_y(copy_x, distance_y);
+        }
+        const auto coverage = brush_shape_coverage(distance_x, distance_y, radius, options);
+        if (coverage <= 0.0F) {
+          continue;
+        }
+        const auto selected_coverage = selection_coverage(options, px_doc, py);
+        if (selected_coverage <= 0.0F) {
+          continue;
+        }
+
+        const auto local_x = px_doc - bounds.x;
+        if (local_x < 0 || local_x >= pixels.width()) {
+          continue;
+        }
+        if (options.stroke_pixel_gate && !options.stroke_pixel_gate(px_doc, py)) {
+          continue;
+        }
+        const auto effective_coverage = coverage * selected_coverage;
+
+        auto* px = row.data() + static_cast<std::size_t>(local_x) * channels;
+        const auto changed =
+            options.stroke_pixel_writer
+                ? options.stroke_pixel_writer(px_doc, py, px, channels, effective_coverage,
+                                              options.primary)
+                : write_pixel(pixels, px, options, erase, effective_coverage);
+        if (changed) {
+          dirty = unite_rect(dirty, Rect{px_doc, py, 1, 1});
+        }
+      }
+      report_edit_progress(options);
+    }
+    return dirty;
+  };
+
+  auto dirty = paint_capsule(x0, y0, x1, y1, nullptr);
+  for (std::size_t index = 0; index < options.symmetry.size(); ++index) {
+    if (paint_symmetry_copy_repeats_segment(options.symmetry, index, x0, y0, x1, y1)) {
       continue;
     }
-
-    auto row = pixels.row(local_y);
-    for (std::int32_t px_doc = stroke_rect.x; px_doc < stroke_rect.x + stroke_rect.width; ++px_doc) {
-      const auto along =
-          segment_length_squared <= std::numeric_limits<double>::epsilon()
-              ? 0.0
-              : std::clamp(((static_cast<double>(px_doc) - x0) * dx + (static_cast<double>(py) - y0) * dy) /
-                                segment_length_squared,
-                           0.0, 1.0);
-      const auto closest_x = x0 + dx * along;
-      const auto closest_y = y0 + dy * along;
-      const auto distance_x = static_cast<double>(px_doc) - closest_x;
-      const auto distance_y = static_cast<double>(py) - closest_y;
-      const auto coverage = brush_shape_coverage(distance_x, distance_y, radius, options);
-      if (coverage <= 0.0F) {
-        continue;
-      }
-      const auto selected_coverage = selection_coverage(options, px_doc, py);
-      if (selected_coverage <= 0.0F) {
-        continue;
-      }
-
-      const auto local_x = px_doc - bounds.x;
-      if (local_x < 0 || local_x >= pixels.width()) {
-        continue;
-      }
-      if (options.stroke_pixel_gate && !options.stroke_pixel_gate(px_doc, py)) {
-        continue;
-      }
-      const auto effective_coverage = coverage * selected_coverage;
-
-      auto* px = row.data() + static_cast<std::size_t>(local_x) * channels;
-      const auto changed =
-          options.stroke_pixel_writer
-              ? options.stroke_pixel_writer(px_doc, py, px, channels, effective_coverage,
-                                            options.primary)
-              : write_pixel(pixels, px, options, erase, effective_coverage);
-      if (changed) {
-        dirty = unite_rect(dirty, Rect{px_doc, py, 1, 1});
-      }
-    }
-    report_edit_progress(options);
+    const auto& copy = options.symmetry[index];
+    dirty = unite_rect(dirty, paint_capsule(copy.map_x(x0, y0), copy.map_y(x0, y0), copy.map_x(x1, y1),
+                                            copy.map_y(x1, y1), &copy));
   }
   return dirty;
 }

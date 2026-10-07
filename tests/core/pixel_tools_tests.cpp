@@ -1017,7 +1017,7 @@ void tool_write_paths_digest_baseline() {
     options.brush_tip_spacing = 0.5;
     patchy::MixerBrushState mixer;
     patchy::begin_mixer_brush_stroke(mixer);
-    options.dab_primary_provider = [&mixer](double x, double y, const patchy::EditColor& loaded) {
+    options.dab_primary_provider = [&mixer](double x, double y, const patchy::EditColor& loaded, std::size_t) {
       return patchy::mixer_brush_dab_color(mixer, x, y, 9, loaded,
                                            patchy::EditColor{20, 40, 230, 255}, 60, 40, 70);
     };

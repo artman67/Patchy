@@ -119,6 +119,7 @@ add_library(patchy_core
   src/core/mask_outline.cpp
   src/core/palette.cpp
   src/core/palette_presets.cpp
+  src/core/paint_symmetry.cpp
   src/core/path_fit.cpp
   src/core/path_simplify.cpp
   src/core/shape_combine.cpp
@@ -1163,6 +1164,7 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/mcp_attachment.hpp
       src/ui/mcp_attachment.cpp
       src/ui/canvas_widget_script_stroke.cpp
+      src/ui/canvas_widget_symmetry.cpp
       src/ui/script_folders.hpp
       src/ui/script_folders.cpp
       src/ui/selection_outline.hpp

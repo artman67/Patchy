@@ -269,6 +269,12 @@ bool CanvasWidget::event(QEvent* event) {
       event->accept();
       return true;
     }
+    if (paint_symmetry_transforming_ &&
+        (key_event->key() == Qt::Key_Escape || key_event->key() == Qt::Key_Return ||
+         key_event->key() == Qt::Key_Enter)) {
+      event->accept();
+      return true;
+    }
     if (key_event->modifiers() == Qt::NoModifier &&
         (key_event->key() == Qt::Key_Backspace || key_event->key() == Qt::Key_Delete)) {
       // While a magnetic-lasso trace is live (Backspace pops the last anchor) or guides
@@ -510,6 +516,12 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     // Stale drag after a lost right-button release: end it and let this
     // press behave normally.
     end_brush_adjust_drag(true);
+  }
+
+  // Transform Symmetry owns left drags (move the center or rotate the axes)
+  // until Enter or Escape; Space still pans.
+  if (!spacebar_panning_ && handle_paint_symmetry_transform_press(event)) {
+    return;
   }
 
   // Photoshop-style brush resize: Alt+Right-drag adjusts size (horizontal)
@@ -1403,6 +1415,10 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
     event->accept();
     return;
   }
+  if (!spacebar_panning_ && handle_paint_symmetry_transform_move(event)) {
+    last_mouse_position_ = event->pos();
+    return;
+  }
   if (mouse_pen_action_button_ != Qt::NoButton) {
     // Driver-injected pen-button clicks are invisible to the tablet stream,
     // so moves synthesized from hover tablet events report no held buttons;
@@ -2082,6 +2098,9 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
       end_brush_adjust_drag(true);
     }
     event->accept();
+    return;
+  }
+  if (handle_paint_symmetry_transform_release(event)) {
     return;
   }
   if (mouse_pen_action_button_ != Qt::NoButton) {
@@ -3044,6 +3063,10 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
     return;
   }
 
+  if (handle_paint_symmetry_transform_key(event)) {
+    return;
+  }
+
   if (spot_healing_stroke_active_ && event->key() == Qt::Key_Escape) {
     // Discards the accumulated footprint before anything was written: no
     // pixels change and no history entry exists yet (begin_edit runs at
@@ -3729,6 +3752,7 @@ void CanvasWidget::focusOutEvent(QFocusEvent* event) {
   if (brush_adjust_dragging_) {
     end_brush_adjust_drag(true);
   }
+  paint_symmetry_drag_ = PaintSymmetryDrag::None;
   if (color_picking_) {
     end_color_pick();
   }
