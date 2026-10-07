@@ -1384,6 +1384,14 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   add_adjustment_action(QT_TR_NOOP("&Desaturate"), QStringLiteral("imageAdjustDesaturateAction"),
                         QStringLiteral("patchy.filters.desaturate"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_U));
+  // Photoshop lists Match Color directly after Desaturate and gives it no shortcut.
+  auto* match_color_action = adjustments_menu->addAction(tr("&Match Color..."));
+  bind_action_text(match_color_action, QT_TR_NOOP("&Match Color..."));
+  match_color_action->setObjectName(QStringLiteral("imageAdjustMatchColorAction"));
+  match_color_action->setIcon(simple_icon(QStringLiteral("MC")));
+  register_hotkey(match_color_action, "image.match_color");
+  connect(match_color_action, &QAction::triggered, this, [this] { match_color_dialog(); });
+  register_document_action(match_color_action);
   add_adjustment_action(QT_TR_NOOP("&Auto Tone"), QStringLiteral("imageAdjustAutoToneAction"),
                         QStringLiteral("patchy.filters.auto_tone"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));

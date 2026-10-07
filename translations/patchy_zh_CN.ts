@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>匹配颜色</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>目标图像</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>应用调整时忽略选区</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>图像选项</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>明亮度</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>颜色强度</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>渐隐</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>中和</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>图像统计</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>使用源选区计算颜色</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>使用目标选区计算调整</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>无</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>源:</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>图层:</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>预览</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>合并的</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Patchy raster image editor.</source>
@@ -19147,6 +19214,22 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Photo Filter</source>
         <translation>已取消照片滤镜</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>匹配颜色(&amp;M)...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>匹配颜色</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>目标: %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>已取消匹配颜色</translation>
     </message>
 </context>
 <context>

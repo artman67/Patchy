@@ -117,6 +117,7 @@ add_library(patchy_core
   src/core/layer_tree.cpp
   src/core/liquify.cpp
   src/core/magnetic_lasso.cpp
+  src/core/match_color.cpp
   src/core/mask_outline.cpp
   src/core/palette.cpp
   src/core/palette_presets.cpp
@@ -997,6 +998,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/filter_workflows.cpp
       src/ui/adjustment_dialogs.cpp
       src/ui/gradient_map_dialog.cpp
+      src/ui/match_color_dialog.hpp
+      src/ui/match_color_dialog.cpp
       src/ui/filter_look_library.hpp
       src/ui/filter_look_library.cpp
       src/ui/visual_filter_gallery_dialog.hpp

@@ -42,6 +42,7 @@
 #include "psd/psd_document_io.hpp"
 #include "core/contour_presets.hpp"
 #include "core/magnetic_lasso.hpp"
+#include "core/match_color.hpp"
 #include "core/palette.hpp"
 #include "core/palette_presets.hpp"
 #include "core/pattern_presets.hpp"
@@ -2860,6 +2861,105 @@ void adjustment_photo_filter_math_metadata_and_psd_round_trip() {
   CHECK(psd_layer_block_payload(psd_layer_extra_data(edited, 1), "phfl") != version3);
 }
 
+// A 16x16 opaque RGBA swatch whose red varies with x and blue with y, so every
+// Lab channel has real spread while the colors stay well inside sRGB.
+patchy::PixelBuffer match_color_swatch(int red, int green, int blue, int spread) {
+  patchy::PixelBuffer pixels(16, 16, patchy::PixelFormat::rgba8());
+  for (std::int32_t y = 0; y < 16; ++y) {
+    for (std::int32_t x = 0; x < 16; ++x) {
+      auto* px = pixels.pixel(x, y);
+      px[0] = static_cast<std::uint8_t>(red + (x - 8) * spread);
+      px[1] = static_cast<std::uint8_t>(green + ((x + y) % 4 - 2) * spread);
+      px[2] = static_cast<std::uint8_t>(blue + (y - 8) * spread);
+      px[3] = 255;
+    }
+  }
+  return pixels;
+}
+
+patchy::PixelBuffer match_color_applied(patchy::PixelBuffer pixels, const patchy::MatchColorTransform& transform) {
+  for (std::int32_t y = 0; y < pixels.height(); ++y) {
+    for (std::int32_t x = 0; x < pixels.width(); ++x) {
+      auto* px = pixels.pixel(x, y);
+      const auto adjusted = patchy::apply_match_color({px[0], px[1], px[2]}, transform);
+      px[0] = adjusted.red;
+      px[1] = adjusted.green;
+      px[2] = adjusted.blue;
+    }
+  }
+  return pixels;
+}
+
+void match_color_statistics_transfer_and_controls() {
+  const auto target = match_color_swatch(110, 100, 90, 6);
+  const auto source = match_color_swatch(150, 120, 170, 4);
+  const auto target_stats = patchy::match_color_statistics(target);
+  const auto source_stats = patchy::match_color_statistics(source);
+  CHECK(!target_stats.empty() && !source_stats.empty());
+
+  // Matching an image to itself, or to no source, changes nothing.
+  CHECK(patchy::make_match_color_transform(target_stats, &target_stats, {}).identity);
+  CHECK(patchy::make_match_color_transform(target_stats, nullptr, {}).identity);
+
+  // A real source moves the target's per-channel Lab mean and spread onto the
+  // source's (within 8-bit rounding; both spreads clear the 2-unit floor).
+  const auto matched = match_color_applied(
+      target, patchy::make_match_color_transform(target_stats, &source_stats, {}));
+  const auto matched_stats = patchy::match_color_statistics(matched);
+  for (std::size_t channel = 0; channel < 3; ++channel) {
+    CHECK(std::abs(target_stats.mean[channel] - source_stats.mean[channel]) > 3.0 || channel == 0);
+    CHECK(std::abs(matched_stats.mean[channel] - source_stats.mean[channel]) < 0.5);
+    CHECK(std::abs(matched_stats.deviation[channel] - source_stats.deviation[channel]) < 0.5);
+  }
+
+  // Fade 100 is a no-op; Fade 50 lands halfway between the match and the original.
+  patchy::MatchColorOptions faded;
+  faded.fade = 100;
+  CHECK(patchy::make_match_color_transform(target_stats, &source_stats, faded).identity);
+  faded.fade = 50;
+  const patchy::RgbColor sample{110, 100, 90};
+  const auto full = patchy::apply_match_color(sample, patchy::make_match_color_transform(target_stats, &source_stats, {}));
+  const auto half =
+      patchy::apply_match_color(sample, patchy::make_match_color_transform(target_stats, &source_stats, faded));
+  CHECK(std::abs(half.red - (full.red + sample.red) / 2) <= 1);
+  CHECK(std::abs(half.blue - (full.blue + sample.blue) / 2) <= 1);
+
+  // Neutralize with Source None removes a warm cast: a*/b* means go to zero and
+  // the lightness mean stays.
+  const auto cast = match_color_swatch(160, 110, 90, 3);
+  const auto cast_stats = patchy::match_color_statistics(cast);
+  CHECK(cast_stats.mean[1] > 5.0 && cast_stats.mean[2] > 5.0);
+  patchy::MatchColorOptions neutralize;
+  neutralize.neutralize = true;
+  const auto neutral_stats = patchy::match_color_statistics(
+      match_color_applied(cast, patchy::make_match_color_transform(cast_stats, nullptr, neutralize)));
+  CHECK(std::abs(neutral_stats.mean[1]) < 0.5 && std::abs(neutral_stats.mean[2]) < 0.5);
+  CHECK(std::abs(neutral_stats.mean[0] - cast_stats.mean[0]) < 0.5);
+
+  // Luminance scales L*, Color Intensity scales a*/b*.
+  patchy::MatchColorOptions sliders;
+  sliders.luminance = 50;
+  sliders.color_intensity = 1;
+  const auto slid = patchy::match_color_lab(
+      patchy::apply_match_color({200, 80, 40}, patchy::make_match_color_transform(target_stats, nullptr, sliders)));
+  CHECK(std::abs(slid[0] - patchy::match_color_lab({200, 80, 40})[0] / 2.0) < 0.6);
+  CHECK(std::abs(slid[1]) < 1.5 && std::abs(slid[2]) < 1.5);
+
+  // Coverage (a selection) and alpha both restrict which pixels count.
+  auto pair = solid_rgba(2, 1, 200, 40, 40, 255);
+  pair.pixel(1, 0)[0] = 40;
+  pair.pixel(1, 0)[2] = 200;
+  const std::array<std::uint8_t, 2> left_only{255, 0};
+  const auto red_lab = patchy::match_color_lab({200, 40, 40});
+  const auto covered = patchy::match_color_statistics(pair, left_only.data());
+  CHECK(std::abs(covered.weight - 1.0) < 1e-9);
+  CHECK(std::abs(covered.mean[1] - red_lab[1]) < 1e-9 && covered.deviation[1] < 1e-6);
+  pair.pixel(1, 0)[3] = 0;
+  CHECK(std::abs(patchy::match_color_statistics(pair).mean[2] - red_lab[2]) < 1e-9);
+  pair.pixel(0, 0)[3] = 0;
+  CHECK(patchy::match_color_statistics(pair).empty());
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3619,6 +3719,7 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
        adjustment_channel_mixer_math_metadata_and_psd_round_trip},
       {"adjustment_photo_filter_math_metadata_and_psd_round_trip",
        adjustment_photo_filter_math_metadata_and_psd_round_trip},
+      {"match_color_statistics_transfer_and_controls", match_color_statistics_transfer_and_controls},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",

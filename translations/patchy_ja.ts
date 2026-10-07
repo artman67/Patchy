@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>カラーの適用</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>適用先の画像</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>補正の適用時に選択範囲を無視</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>画像オプション</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>輝度</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>カラーの強さ</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>フェード</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>中和</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>画像の統計</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>ソースの選択範囲を使用してカラーを計算</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>ターゲットの選択範囲を使用して補正を計算</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>なし</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>ソース:</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>レイヤー:</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>プレビュー</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>結合済み</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Rotate Canvas</source>
@@ -19147,6 +19214,22 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Photo Filter</source>
         <translation>レンズフィルターをキャンセルしました</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>カラーの適用(&amp;M)...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>カラーの適用</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>ターゲット: %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>カラーの適用をキャンセルしました</translation>
     </message>
 </context>
 <context>

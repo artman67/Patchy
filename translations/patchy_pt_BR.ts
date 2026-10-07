@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>Corresponder cores</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>Imagem de destino</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>Ignorar seleção ao aplicar o ajuste</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>Opções de imagem</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>Luminância</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>Intensidade da cor</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>Atenuar</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>Neutralizar</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>Estatísticas da imagem</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>Usar seleção na origem para calcular cores</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>Usar seleção no destino para calcular o ajuste</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Nenhum</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>Origem:</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>Camada:</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>Visualização</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>Mesclado</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Patchy raster image editor.</source>
@@ -19203,6 +19270,22 @@ Y: %2
     <message>
         <source>Cancelled Photo Filter</source>
         <translation>Filtro de fotos cancelado</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>&amp;Corresponder cores...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>Corresponder cores</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>Destino: %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>Corresponder cores cancelado</translation>
     </message>
 </context>
 <context>

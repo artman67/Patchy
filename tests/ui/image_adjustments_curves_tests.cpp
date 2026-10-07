@@ -4,6 +4,7 @@
 #include "core/contour_presets.hpp"
 #include "core/gradient_presets.hpp"
 #include "core/layer_metadata.hpp"
+#include "core/match_color.hpp"
 #include "core/pattern_presets.hpp"
 #include "core/smart_filter.hpp"
 #include "core/smart_filter_effects.hpp"
@@ -551,6 +552,104 @@ void ui_auto_all_applies_three_autos_as_one_undo_step() {
   QApplication::processEvents();
   CHECK(window.statusBar()->currentMessage().contains(QStringLiteral("made no changes")));
   CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth_after_fill);
+}
+
+void ui_match_color_matches_another_document_inside_selection() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  const auto document_with = [](QColor left, QColor right) {
+    patchy::Document document(120, 80, patchy::PixelFormat::rgba8());
+    patchy::PixelBuffer pixels(120, 80, patchy::PixelFormat::rgba8());
+    for (std::int32_t y = 0; y < 80; ++y) {
+      for (std::int32_t x = 0; x < 120; ++x) {
+        const auto color = x < 60 ? left : right;
+        auto* px = pixels.pixel(x, y);
+        px[0] = static_cast<std::uint8_t>(color.red());
+        px[1] = static_cast<std::uint8_t>(color.green());
+        px[2] = static_cast<std::uint8_t>(color.blue());
+        px[3] = 255;
+      }
+    }
+    document.add_pixel_layer("Background", std::move(pixels));
+    return document;
+  };
+  window.add_document_session(document_with(QColor(190, 120, 70), QColor(210, 150, 60)), QStringLiteral("Source"));
+  QApplication::processEvents();
+  window.add_document_session(document_with(QColor(60, 60, 60), QColor(120, 120, 120)), QStringLiteral("Target"));
+  QApplication::processEvents();
+  auto* canvas = require_canvas(window);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+  const auto target_id = doc.active_layer_id().value_or(patchy::LayerId{});
+  const auto original = std::as_const(doc).find_layer(target_id)->pixels();
+  const auto source_pixels = std::as_const(patchy::ui::MainWindowTestAccess::session_document(
+                                               window, patchy::ui::MainWindowTestAccess::session_count(window) - 2))
+                                 .layers()
+                                 .front()
+                                 .pixels();
+
+  // Expected: the whole target layer's statistics matched to the source layer's.
+  const auto target_stats = patchy::match_color_statistics(original);
+  const auto source_stats = patchy::match_color_statistics(source_pixels);
+  const auto expected =
+      patchy::apply_match_color({60, 60, 60}, patchy::make_match_color_transform(target_stats, &source_stats, {}));
+  CHECK(expected.red > expected.green + 30 && expected.green > expected.blue + 20);
+
+  require_action_by_text(window, QStringLiteral("Marquee"))->trigger();
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(10, 10)),
+       canvas->widget_position_for_document_point(QPoint(50, 70)));
+  QApplication::processEvents();
+
+  bool saw_preview = false;
+  QTimer::singleShot(0, [&] {
+    for (auto* widget : QApplication::topLevelWidgets()) {
+      if (widget->objectName() != QStringLiteral("patchyMatchColorDialog")) {
+        continue;
+      }
+      auto* dialog = qobject_cast<QDialog*>(widget);
+      auto* source_combo = widget->findChild<QComboBox*>(QStringLiteral("matchColorSourceCombo"));
+      auto* layer_combo = widget->findChild<QComboBox*>(QStringLiteral("matchColorLayerCombo"));
+      auto* luminance = widget->findChild<QSpinBox*>(QStringLiteral("matchColorLuminanceSpin"));
+      auto* use_source_selection = widget->findChild<QCheckBox*>(QStringLiteral("matchColorUseSourceSelectionCheck"));
+      auto* use_target_selection = widget->findChild<QCheckBox*>(QStringLiteral("matchColorUseTargetSelectionCheck"));
+      CHECK(dialog != nullptr && source_combo != nullptr && layer_combo != nullptr && luminance != nullptr);
+      CHECK(use_source_selection != nullptr && use_target_selection != nullptr);
+      CHECK(luminance->value() == 100 && luminance->minimum() == 1 && luminance->maximum() == 200);
+      CHECK(source_combo->currentIndex() == 0 && !layer_combo->isEnabled());
+      // Only the target has a selection.
+      CHECK(use_target_selection->isEnabled() && !use_source_selection->isEnabled());
+      const auto source_index = source_combo->findText(QStringLiteral("Source"));
+      CHECK(source_index > 0 && source_combo->findText(QStringLiteral("Target")) > 0);
+      source_combo->setCurrentIndex(source_index);
+      CHECK(layer_combo->isEnabled() && layer_combo->count() == 2);
+      CHECK(layer_combo->currentText() == QStringLiteral("Background"));
+      CHECK(layer_combo->itemText(1) == QStringLiteral("Merged"));
+      process_events_for(150);
+      saw_preview = color_close(canvas_pixel(*canvas, QPoint(30, 40)),
+                                QColor(expected.red, expected.green, expected.blue), 2);
+      save_widget_artifact("ui_match_color_dialog", *dialog);
+      dialog->accept();
+      return;
+    }
+    CHECK(false);
+  });
+  const auto undo_depth_before = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  require_action(window, "imageAdjustMatchColorAction")->trigger();
+  QApplication::processEvents();
+  CHECK(saw_preview);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth_before + 1);
+
+  // Applied inside the selection only, as one undo step.
+  const auto* layer = std::as_const(doc).find_layer(target_id);
+  CHECK(layer != nullptr);
+  if (layer != nullptr) {
+    const auto* inside = layer->pixels().pixel(30, 40);
+    CHECK(inside[0] == expected.red && inside[1] == expected.green && inside[2] == expected.blue);
+    CHECK(layer->pixels().pixel(5, 5)[0] == 60 && layer->pixels().pixel(90, 40)[2] == 120);
+  }
+  save_widget_artifact("ui_match_color_matches_another_document_inside_selection", *canvas);
+  require_action_by_text(window, QStringLiteral("Undo"))->trigger();
+  QApplication::processEvents();
+  CHECK(patchy::ui::pixel_buffers_equal(std::as_const(doc).find_layer(target_id)->pixels(), original));
 }
 
 void ui_image_adjustments_respect_active_selection() {
@@ -4033,6 +4132,8 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_auto_all_applies_three_autos_as_one_undo_step",
        ui_auto_all_applies_three_autos_as_one_undo_step},
       {"ui_image_adjustments_respect_active_selection", ui_image_adjustments_respect_active_selection},
+      {"ui_match_color_matches_another_document_inside_selection",
+       ui_match_color_matches_another_document_inside_selection},
       {"ui_direct_pixel_previews_preserve_floating_layer_bounds",
        ui_direct_pixel_previews_preserve_floating_layer_bounds},
       {"ui_levels_dialog_adjusts_selected_color_channel_on_transparent_layer",
