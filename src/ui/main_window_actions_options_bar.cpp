@@ -1475,7 +1475,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   // refresh_vector_tool_options_visibility hides them in the vector modes.
   vector_pixel_only_option_widgets_.push_back(add_option_label(
       QT_TR_NOOP("Size:"),
-      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
+      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
        CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
        CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
        CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
@@ -1486,7 +1486,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   brush_size->setProperty(kToolbarSpinboxSliderCurvedProperty, true);
   configure_toolbar_spinbox(brush_size, 58);
   add_option_widget(brush_size,
-                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
+                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
                      CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
                      CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
@@ -1507,7 +1507,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   vector_pixel_only_option_widgets_.push_back(add_option_label(
       QT_TR_NOOP("Opacity:"),
-      {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
+      {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
        CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
   auto* brush_opacity = new QSpinBox(toolbar);
   brush_opacity->setObjectName(QStringLiteral("brushOpacitySpin"));
@@ -1516,7 +1516,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   brush_opacity->setSuffix(percent_suffix());
   configure_toolbar_spinbox(brush_opacity, 52);
   add_option_widget(brush_opacity,
-                    {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
+                    {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   auto* brush_opacity_slider = new QSlider(Qt::Horizontal, toolbar);
   brush_opacity_slider->setObjectName(QStringLiteral("brushOpacitySlider"));
@@ -1530,7 +1530,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   vector_pixel_only_option_widgets_.push_back(add_option_label(
       QT_TR_NOOP("Soft:"),
-      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
+      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
        CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
        CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
        CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
@@ -1541,7 +1541,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   brush_softness->setSuffix(percent_suffix());
   configure_toolbar_spinbox(brush_softness, 52);
   add_option_widget(brush_softness,
-                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
+                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
                      CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
                      CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
@@ -1580,7 +1580,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     }
   });
 
-  auto* brush_flow_label = add_option_label(QT_TR_NOOP("Flow:"), {CanvasTool::Brush, CanvasTool::PatternStamp});
+  auto* brush_flow_label = add_option_label(QT_TR_NOOP("Flow:"), {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush});
   bind_widget_text(brush_flow_label, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Flow:"));
   auto* brush_flow = new QSpinBox(toolbar);
   brush_flow->setObjectName(QStringLiteral("brushFlowSpin"));
@@ -1589,7 +1589,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   brush_flow->setSuffix(percent_suffix());
   bind_tooltip(brush_flow, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush flow: Shift+number keys (number keys with Airbrush)"));
   configure_toolbar_spinbox(brush_flow, 60);
-  add_option_widget(brush_flow, {CanvasTool::Brush, CanvasTool::PatternStamp});
+  add_option_widget(brush_flow, {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush});
   auto* brush_airbrush = new CheckGlyphBox(tr("Airbrush"), toolbar);
   brush_airbrush->setObjectName(QStringLiteral("brushAirbrushCheck"));
   bind_widget_text(brush_airbrush, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Airbrush"));
@@ -1878,7 +1878,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   });
 
   add_option_label(QT_TR_NOOP("Tip:"),
-                   {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp,
+                   {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush,
                    CanvasTool::Eraser});
   (void)brush_automation_library();
   refresh_automation_brush_presets();
@@ -1887,7 +1887,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   // The options bar is built after load_tool_settings() reset the active tip to Round.
   brush_tip_picker_->set_current_tip_id(active_brush_tip_id_);
   add_option_widget(brush_tip_picker_,
-                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp,
+                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush,
                      CanvasTool::Eraser});
   connect(brush_tip_picker_, &BrushTipPicker::tip_selected, this,
           [this](const QString& id) { set_active_brush_tip(id, true); });

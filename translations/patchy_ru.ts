@@ -9048,6 +9048,10 @@ RGB: %2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>Черно-белое: красные %1, желтые %2, зелёные %3, голубые %4, синие %5, пурпурные %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Архивная кисть</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10603,6 +10607,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Рамка кадрирования сброшена к холсту</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>Архивная кисть недоступна при редактировании канала в градациях серого</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Сначала задайте источник архивной кисти на панели «История»</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>Не удалось использовать архивную кисть: у состояния истории другой размер холста</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>Не удалось использовать архивную кисть: в состоянии истории нет соответствующего слоя</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Архивная кисть</translation>
     </message>
 </context>
 <context>
@@ -18903,6 +18927,30 @@ Y: %2
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>Отменено черно-белое</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Архивная кисть</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Возвращает пиксели из исходного состояния истории. Щёлкните строку панели «История» правой кнопкой, чтобы сделать её источником.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Архивная кисть: рисуйте, чтобы восстановить активный слой из исходного состояния истории. Источником служит документ в момент открытия, если не выбрать другую строку панели «История» правым щелчком.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Источник архивной кисти</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Сделать источником архивной кисти</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Источник архивной кисти: %1</translation>
     </message>
 </context>
 <context>

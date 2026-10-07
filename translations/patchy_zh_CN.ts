@@ -8988,6 +8988,10 @@ RGB：%2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>黑白：红色 %1，黄色 %2，绿色 %3，青色 %4，蓝色 %5，洋红 %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>历史记录画笔</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10543,6 +10547,26 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>裁剪框已重置为画布</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>编辑灰度通道时无法使用历史记录画笔</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>请先在历史记录面板中设置历史记录画笔的源</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>无法使用历史记录画笔，因为历史记录状态的画布大小不同</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>无法使用历史记录画笔，因为历史记录状态中没有对应的图层</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>历史记录画笔</translation>
     </message>
 </context>
 <context>
@@ -18791,6 +18815,30 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>已取消黑白</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>历史记录画笔</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>从历史记录的源状态绘回像素。右键单击历史记录面板中的一行可将其设为源。</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>历史记录画笔：涂抹以将当前图层恢复为历史记录的源状态，默认是打开时的文档，右键单击历史记录面板中的一行可更改。</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>历史记录画笔的源</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>设置为历史记录画笔的源</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>历史记录画笔的源：%1</translation>
     </message>
 </context>
 <context>

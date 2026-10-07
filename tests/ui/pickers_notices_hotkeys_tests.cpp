@@ -1303,6 +1303,7 @@ void ui_photoshop_shortcuts_are_registered() {
   CHECK(require_action_by_text(window, QStringLiteral("Clone"))->shortcut() == QKeySequence(Qt::Key_S));
   CHECK(require_action_by_text(window, QStringLiteral("Pattern Stamp"))->shortcut().isEmpty());
   CHECK(require_action(window, "toolCycleStampAction")->shortcut() == QKeySequence(Qt::SHIFT | Qt::Key_S));
+  CHECK(require_action(window, "toolHistoryBrushAction")->shortcut() == QKeySequence(Qt::Key_Y));
   CHECK(require_action_by_text(window, QStringLiteral("Healing Brush"))->shortcut() ==
         QKeySequence(Qt::Key_J));
   CHECK(require_action(window, "toolSpotHealingAction")->shortcut().isEmpty());

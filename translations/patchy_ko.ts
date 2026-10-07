@@ -8988,6 +8988,10 @@ RGB: %2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>흑백: 빨강 계열 %1, 노랑 계열 %2, 녹색 계열 %3, 청록 계열 %4, 파랑 계열 %5, 마젠타 계열 %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>작업 내역 브러시</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10543,6 +10547,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>자르기 상자를 캔버스로 재설정했습니다</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>회색조 채널을 편집하는 동안 작업 내역 브러시를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>먼저 작업 내역 패널에서 작업 내역 브러시의 소스를 설정하십시오.</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>작업 내역 상태의 캔버스 크기가 달라 작업 내역 브러시를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>작업 내역 상태에 해당 레이어가 없어 작업 내역 브러시를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>작업 내역 브러시</translation>
     </message>
 </context>
 <context>
@@ -18791,6 +18815,30 @@ Y: %2
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>취소된 흑백</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>작업 내역 브러시</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>작업 내역의 소스 상태에서 픽셀을 다시 칠합니다. 작업 내역 패널의 행을 마우스 오른쪽 버튼으로 클릭하면 소스로 지정할 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>작업 내역 브러시: 칠하여 활성 레이어를 작업 내역의 소스 상태로 복원합니다. 소스는 처음 연 문서이며, 작업 내역 패널의 행을 마우스 오른쪽 버튼으로 클릭하여 바꿀 수 있습니다.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>작업 내역 브러시의 소스</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>작업 내역 브러시 소스로 설정</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>작업 내역 브러시 소스: %1</translation>
     </message>
 </context>
 <context>

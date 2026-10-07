@@ -123,7 +123,9 @@ enum class CanvasTool {
   DeleteAnchor,
   ConvertPoint,
   // September 2026 Rotate View (append-only: values ride persisted settings).
-  RotateView
+  RotateView,
+  // October 2026 History Brush (append-only: values ride persisted settings).
+  HistoryBrush
 };
 
 // Which tool produced a committed vector path; MainWindow picks the layer
@@ -595,6 +597,11 @@ public:
   [[nodiscard]] const std::optional<PatternResource>& pattern_stamp_pattern() const noexcept;
   void set_pattern_stamp_aligned(bool aligned) noexcept;
   [[nodiscard]] bool pattern_stamp_aligned() const noexcept;
+  // The document state History Brush strokes paint back from. MainWindow owns
+  // it per session (the opened state by default, or the History panel row the
+  // user picked; docs/history-brush.md); null refuses strokes.
+  void set_history_brush_source(std::shared_ptr<const Document> source) noexcept;
+  [[nodiscard]] const std::shared_ptr<const Document>& history_brush_source() const noexcept;
   void set_healing_diffusion(int diffusion) noexcept;
   [[nodiscard]] int healing_diffusion() const noexcept;
   void set_retouch_sample_all_layers(bool enabled) noexcept;
@@ -1791,6 +1798,13 @@ private:
   [[nodiscard]] QRect local_adjustment_brush_segment(QPoint from, QPoint to);
   void set_clone_source(QPoint point);
   [[nodiscard]] bool begin_pattern_stamp_stroke(QPoint point);
+  // Resolves the active layer's counterpart in the history source for one
+  // stroke; reports why and returns false when the source cannot be used.
+  [[nodiscard]] bool begin_history_brush_stroke();
+  [[nodiscard]] bool write_history_brush_pixel(std::int32_t x, std::int32_t y, std::uint8_t* pixel,
+                                               std::uint16_t channels, float coverage, float opacity,
+                                               bool lock_transparent_pixels,
+                                               const PaletteSnapContext* palette_snap);
   [[nodiscard]] QRect clone_brush_segment(QPoint from, QPoint to);
   [[nodiscard]] QRect clone_brush_at(QPoint point);
   void draw_pixel(Layer& layer, QPoint document_point, QColor color, bool erase);
@@ -2752,6 +2766,15 @@ private:
   std::optional<PatternResource> pattern_stamp_pattern_;
   bool pattern_stamp_aligned_{true};
   std::optional<QPoint> pattern_stamp_origin_;
+  std::shared_ptr<const Document> history_brush_source_;
+  // The source layer matching the active layer, captured at stroke start
+  // (copy-on-write pixels, so the capture is cheap and immutable).
+  struct HistoryBrushStrokeSource {
+    PixelBuffer pixels;
+    Rect bounds{};
+    bool background_extension{false};
+  };
+  std::optional<HistoryBrushStrokeSource> history_brush_stroke_source_;
   int healing_diffusion_{5};
   // Shared by Clone, Healing, Spot Healing, and Patch: checked samples the
   // merged document (the historical behavior), unchecked samples the active

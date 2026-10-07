@@ -275,6 +275,8 @@ const char* tool_action_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Clone");
     case CanvasTool::PatternStamp:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pattern Stamp");
+    case CanvasTool::HistoryBrush:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "History Brush");
     case CanvasTool::Healing:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Healing Brush");
     case CanvasTool::Smudge:
@@ -361,6 +363,8 @@ QString tool_hotkey_id(CanvasTool tool) {
       return QStringLiteral("tools.clone");
     case CanvasTool::PatternStamp:
       return QStringLiteral("tools.pattern_stamp");
+    case CanvasTool::HistoryBrush:
+      return QStringLiteral("tools.history_brush");
     case CanvasTool::Healing:
       return QStringLiteral("tools.healing");
     case CanvasTool::Smudge:
@@ -447,6 +451,9 @@ const char* tool_tooltip_detail_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to switch it between corner and smooth.");
     case CanvasTool::RotateView:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Drag to turn the view. Shift snaps to 15 degrees; Esc resets.");
+    case CanvasTool::HistoryBrush:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Paints pixels back from the history source state. Right-click a "
+             "History panel row to make it the source.");
     default:
       return nullptr;
   }
@@ -479,6 +486,9 @@ const char* tool_activation_hint_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Delete Anchor Point: click a point to remove it.");
     case CanvasTool::ConvertPoint:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Convert Point: click a point to switch it between corner and smooth.");
+    case CanvasTool::HistoryBrush:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "History Brush: paint to restore the active layer from the history source "
+             "state, the document as opened unless you right-click a History panel row to change it.");
     case CanvasTool::PatchTool:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Patch: draw around the area to fix, then drag the selection to a clean source area, or press Enter to remove the object automatically");
     case CanvasTool::Marquee:
@@ -723,6 +733,9 @@ QIcon tool_icon(CanvasTool tool) {
       break;
     case CanvasTool::PatternStamp:
       name = "tool-pattern-stamp";
+      break;
+    case CanvasTool::HistoryBrush:
+      name = "tool-history-brush";
       break;
     case CanvasTool::Healing:
       name = "tool-healing";
@@ -988,6 +1001,10 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
                         {clone_action, pattern_stamp_action},
                         QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Cycle Stamp Tools"),
                         "toolCycleStampAction", "tools.cycle.stamp", QKeySequence(Qt::SHIFT | Qt::Key_S));
+  // Photoshop pairs the History Brush with the Art History Brush in a flyout;
+  // Patchy has only the first, so it is a plain button with no Shift+Y cycle.
+  add_tool_action(tool_palette, tool_group, tr("History Brush"), CanvasTool::HistoryBrush,
+                  QKeySequence(Qt::Key_Y));
   auto* healing_menu = new QMenu(tr("Healing Tools"), tool_palette);
   healing_menu->setObjectName(QStringLiteral("healingToolMenu"));
   bind_widget_text(healing_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Healing Tools"));

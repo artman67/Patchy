@@ -9018,6 +9018,10 @@ RGB: %2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>Bianco e nero: rossi %1, gialli %2, verdi %3, cyan %4, blu %5, magenta %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pennello storia</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10573,6 +10577,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Riquadro di ritaglio riportato alla tela</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>Il pennello storia non è disponibile durante la modifica di un canale in scala di grigio</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Imposta prima un&apos;origine per il pennello storia nel pannello Storia</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>Impossibile usare il pennello storia perché lo stato della storia ha una dimensione della tela diversa</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>Impossibile usare il pennello storia perché lo stato della storia non contiene un livello corrispondente</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pennello storia</translation>
     </message>
 </context>
 <context>
@@ -18847,6 +18871,30 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>Annullato: Bianco e nero</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pennello storia</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Ridipinge i pixel dallo stato di origine della storia. Fai clic destro su una riga del pannello Storia per renderla l&apos;origine.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Pennello storia: dipingi per ripristinare il livello attivo dallo stato di origine della storia, il documento così come è stato aperto, a meno che tu non faccia clic destro su una riga del pannello Storia per cambiarlo.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Origine del pennello storia</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Imposta origine del pennello storia</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Origine del pennello storia: %1</translation>
     </message>
 </context>
 <context>

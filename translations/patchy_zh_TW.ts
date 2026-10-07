@@ -8988,6 +8988,10 @@ RGB：%2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>黑白：紅色 %1、黃色 %2、綠色 %3、青色 %4、藍色 %5、洋紅 %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>步驟記錄筆刷</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10543,6 +10547,26 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>裁切框已重設為畫布</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>編輯灰階色版時無法使用步驟記錄筆刷</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>請先在步驟記錄面板中設定步驟記錄筆刷的來源</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>無法使用步驟記錄筆刷，因為步驟記錄狀態的版面尺寸不同</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>無法使用步驟記錄筆刷，因為步驟記錄狀態中沒有對應的圖層</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>步驟記錄筆刷</translation>
     </message>
 </context>
 <context>
@@ -18791,6 +18815,30 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>已取消黑白</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>步驟記錄筆刷</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>從步驟記錄的來源狀態繪回像素。在步驟記錄面板的列上按右鍵即可將其設為來源。</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>步驟記錄筆刷：塗抹以將作用中圖層還原為步驟記錄的來源狀態，預設為開啟時的文件，在步驟記錄面板的列上按右鍵即可變更。</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>步驟記錄筆刷的來源</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>設為步驟記錄筆刷的來源</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>步驟記錄筆刷的來源：%1</translation>
     </message>
 </context>
 <context>

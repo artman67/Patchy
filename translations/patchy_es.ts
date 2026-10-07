@@ -9018,6 +9018,10 @@ RGB: %2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>Blanco y negro: rojos %1, amarillos %2, verdes %3, cianes %4, azules %5, magentas %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pincel de historia</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10573,6 +10577,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Cuadro de recorte restablecido al lienzo</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>El Pincel de historia no está disponible mientras se edita un canal en escala de grises</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Primero define un origen para el pincel de historia en el panel Historial</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>No se pudo usar el pincel de historia porque el estado de historial tiene un tamaño de lienzo distinto</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>No se pudo usar el pincel de historia porque el estado de historial no contiene una capa correspondiente</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pincel de historia</translation>
     </message>
 </context>
 <context>
@@ -18847,6 +18871,30 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>Se ha cancelado Blanco y negro</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pincel de historia</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Pinta píxeles a partir del estado de origen del historial. Haz clic derecho en una fila del panel Historial para convertirla en el origen.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Pincel de historia: pinta para restaurar la capa activa desde el estado de origen del historial, que es el documento tal como se abrió salvo que hagas clic derecho en una fila del panel Historial para cambiarlo.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Origen del Pincel de historia</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Definir origen del Pincel de historia</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Origen del Pincel de historia: %1</translation>
     </message>
 </context>
 <context>

@@ -83,6 +83,7 @@
     <file alias="tool-brush.svg">icons/tool-brush.svg</file>
     <file alias="tool-clone.svg">icons/tool-clone.svg</file>
     <file alias="tool-pattern-stamp.svg">icons/tool-pattern-stamp.svg</file>
+    <file alias="tool-history-brush.svg">icons/tool-history-brush.svg</file>
     <file alias="tool-healing.svg">icons/tool-healing.svg</file>
     <file alias="tool-spot-healing.svg">icons/tool-spot-healing.svg</file>
     <file alias="tool-patch.svg">icons/tool-patch.svg</file>

@@ -4173,7 +4173,7 @@ void MainWindow::refresh_document_info() {
     QStringList lines;
     lines << tr("Tool: %1").arg(tool_name(current_tool_));
     if (current_tool_ == CanvasTool::Brush || current_tool_ == CanvasTool::MixerBrush ||
-        current_tool_ == CanvasTool::PatternStamp ||
+        current_tool_ == CanvasTool::PatternStamp || current_tool_ == CanvasTool::HistoryBrush ||
         current_tool_ == CanvasTool::Clone ||
         current_tool_ == CanvasTool::Healing ||
         current_tool_ == CanvasTool::Smudge || current_tool_ == CanvasTool::Eraser ||
@@ -4198,7 +4198,8 @@ void MainWindow::refresh_document_info() {
           canvas_->brush_smoothing() > 0) {
         lines << tr("Smoothing: %1%").arg(canvas_->brush_smoothing());
       }
-      if (current_tool_ == CanvasTool::Brush || current_tool_ == CanvasTool::PatternStamp) {
+      if (current_tool_ == CanvasTool::Brush || current_tool_ == CanvasTool::PatternStamp ||
+          current_tool_ == CanvasTool::HistoryBrush) {
         lines << tr("Flow: %1%").arg(canvas_->brush_flow());
         if (current_tool_ == CanvasTool::Brush) {
           lines << (canvas_->brush_build_up() ? tr("Airbrush: on") : tr("Airbrush: off"));

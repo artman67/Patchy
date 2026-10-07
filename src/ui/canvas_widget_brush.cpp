@@ -856,7 +856,7 @@ void CanvasWidget::draw_brush_adjust_overlay(QPainter& painter) const {
   painter.save();
   painter.setRenderHint(QPainter::Antialiasing, true);
   if ((tool_ == CanvasTool::Brush || tool_ == CanvasTool::MixerBrush ||
-       tool_ == CanvasTool::PatternStamp ||
+       tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush ||
        tool_ == CanvasTool::Eraser) &&
       brush_tip_ != nullptr) {
     // A bitmap tip previews as its actual red-tinted footprint instead of a disc.
@@ -1223,7 +1223,9 @@ bool CanvasWidget::brush_uses_dab_stroke(const EffectiveBrushInput& brush, bool 
   // Flow must be tied to a spatial dab cadence, not to the number of mouse
   // move events delivered by the platform. Airbrush also uses this path so its
   // moving stroke and stationary timer share the same flat stamp footprint.
-  if (!erase && (tool_ == CanvasTool::Brush || tool_ == CanvasTool::PatternStamp) &&
+  if (!erase &&
+      (tool_ == CanvasTool::Brush || tool_ == CanvasTool::PatternStamp ||
+       tool_ == CanvasTool::HistoryBrush) &&
       (brush_flow_ < 100 || (tool_ == CanvasTool::Brush && brush_build_up_))) {
     return true;
   }
@@ -1854,6 +1856,18 @@ void CanvasWidget::install_brush_stroke_compositor(EditOptions& options, bool er
     return found == brush_stroke_accumulated_alpha_.end() || found->second < source_alpha - 0.0005F;
   };
   const auto* palette_snap = options.palette_snap;
+  if (!erase && tool_ == CanvasTool::HistoryBrush && history_brush_stroke_source_.has_value()) {
+    // History Brush: the brush color is irrelevant; the stroke's alpha (Opacity
+    // cap, Flow accumulation) blends the stroke-start pixel toward the history
+    // source's pixel at the same document position.
+    options.stroke_pixel_writer = [this, source_alpha, lock_transparent_pixels, palette_snap](
+                                      std::int32_t x, std::int32_t y, std::uint8_t* pixel,
+                                      std::uint16_t channels, float coverage, const EditColor&) {
+      return write_history_brush_pixel(x, y, pixel, channels, coverage, source_alpha,
+                                       lock_transparent_pixels, palette_snap);
+    };
+    return;
+  }
   options.stroke_pixel_writer = [this, secondary, lock_transparent_pixels, erase, palette_snap](
                                     std::int32_t x, std::int32_t y, std::uint8_t* pixel,
                                     std::uint16_t channels, float coverage,
@@ -1949,10 +1963,12 @@ QRect CanvasWidget::draw_brush_segment(QPointF from, QPointF to, bool erase, boo
     return draw_brush_segment_with_dabs(from, to, erase, brush, stamp_endpoint);
   }
   auto options = current_brush_edit_options(brush);
-  if (tool_ != CanvasTool::PatternStamp || brush_tip_ != nullptr) {
+  const auto static_footprint_tool =
+      tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush;
+  if (!static_footprint_tool || brush_tip_ != nullptr) {
     apply_brush_tip_to_options(options, brush.size, brush.softness);
   }
-  if (tool_ == CanvasTool::PatternStamp) {
+  if (static_footprint_tool) {
     options.brush_dynamics = {};
   }
   if (tool_ == CanvasTool::MixerBrush) {
@@ -2009,10 +2025,12 @@ QRect CanvasWidget::draw_brush_at(QPoint point, bool erase) {
     brush_stroke_distance_since_last_stamp_ = 0.0;
     return dirty;
   }
-  if (tool_ != CanvasTool::PatternStamp || brush_tip_ != nullptr) {
+  const auto static_footprint_tool =
+      tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush;
+  if (!static_footprint_tool || brush_tip_ != nullptr) {
     apply_brush_tip_to_options(options, brush.size, brush.softness);
   }
-  if (tool_ == CanvasTool::PatternStamp) {
+  if (static_footprint_tool) {
     options.brush_dynamics = {};
   }
   if (tool_ == CanvasTool::MixerBrush) {
@@ -2425,6 +2443,136 @@ bool CanvasWidget::begin_pattern_stamp_stroke(QPoint point) {
     pattern_stamp_origin_ = point - QPoint(tile.width() / 2, tile.height() / 2);
   }
   return true;
+}
+
+bool CanvasWidget::begin_history_brush_stroke() {
+  history_brush_stroke_source_.reset();
+  if (editing_grayscale_target()) {
+    report_status_error(tr("History Brush is unavailable while editing a grayscale channel"));
+    return false;
+  }
+  if (document_ == nullptr || !document_->active_layer_id().has_value()) {
+    return false;
+  }
+  if (history_brush_source_ == nullptr) {
+    report_status_error(tr("Set a history brush source in the History panel first"));
+    return false;
+  }
+  // Photoshop's rule: the source must share the canvas and hold the layer
+  // being painted. Layer ids survive every history state of a document, so the
+  // id is the correspondence.
+  const auto& source = *history_brush_source_;
+  if (source.width() != document_->width() || source.height() != document_->height()) {
+    report_status_error(
+        tr("Could not use the history brush because the history state has a different canvas size"));
+    return false;
+  }
+  const auto* source_layer = source.find_layer(*document_->active_layer_id());
+  if (source_layer == nullptr || source_layer->kind() != LayerKind::Pixel) {
+    report_status_error(tr("Could not use the history brush because the history state does not "
+                           "contain a corresponding layer"));
+    return false;
+  }
+  const auto& pixels = source_layer->pixels();
+  history_brush_stroke_source_ = HistoryBrushStrokeSource{
+      pixels, source_layer->bounds(), source_layer->name() == "Background" && !pixels.empty()};
+  return true;
+}
+
+bool CanvasWidget::write_history_brush_pixel(std::int32_t x, std::int32_t y, std::uint8_t* pixel,
+                                             std::uint16_t channels, float coverage, float opacity,
+                                             bool lock_transparent_pixels,
+                                             const PaletteSnapContext* palette_snap) {
+  if (channels < 3 || !history_brush_stroke_source_.has_value()) {
+    return false;
+  }
+  const auto snapping = palette_snap != nullptr && palette_snap->lut != nullptr && !palette_snap->lut->empty();
+  if (snapping) {
+    // Palette mode: hard coverage, then snap (the Brush's palette rule).
+    if (coverage < palette_snap->coverage_threshold) {
+      return false;
+    }
+    coverage = 1.0F;
+  }
+  const auto original = brush_stroke_original_pixel(x, y);
+  const auto locked_alpha = lock_transparent_pixels && channels >= 4;
+  if (locked_alpha && original[3] == 0) {
+    return false;
+  }
+
+  // The Brush's Flow accumulation toward the Opacity cap
+  // (write_brush_stroke_pixel_from_snapshot_blend), so overlapping dabs never
+  // restore past Opacity and a stroke's result is independent of event density.
+  opacity = std::clamp(opacity, 1.0F / 255.0F, 1.0F);
+  const auto flow = std::clamp(static_cast<float>(brush_flow_) / 100.0F, 0.01F, 1.0F);
+  const auto dab_alpha = std::clamp(opacity * flow * std::clamp(coverage, 0.0F, 1.0F), 0.0F, opacity);
+  auto& accumulated_alpha = brush_stroke_accumulated_alpha_[stroke_pixel_key(x, y)];
+  const auto amount = std::min(opacity, 1.0F - (1.0F - accumulated_alpha) * (1.0F - dab_alpha));
+  if (amount <= accumulated_alpha + 0.0005F) {
+    return false;
+  }
+  accumulated_alpha = amount;
+
+  // The source pixel at this document position: the captured layer, transparent
+  // outside it (a Background extends white, like the stroke snapshot).
+  const auto& captured = *history_brush_stroke_source_;
+  std::array<std::uint8_t, 4> source{0, 0, 0, 0};
+  if (captured.bounds.contains(x, y) && !captured.pixels.empty()) {
+    const auto* sample = captured.pixels.pixel(x - captured.bounds.x, y - captured.bounds.y);
+    const auto source_channels = captured.pixels.format().channels;
+    if (source_channels >= 3) {
+      source = {sample[0], sample[1], sample[2], source_channels >= 4 ? sample[3] : std::uint8_t{255}};
+    } else if (source_channels == 1) {
+      source = {sample[0], sample[0], sample[0], std::uint8_t{255}};
+    }
+  } else if (captured.background_extension) {
+    source = {255, 255, 255, 255};
+  }
+
+  std::array<std::uint8_t, 4> before{};
+  for (std::uint16_t channel = 0; channel < channels && channel < before.size(); ++channel) {
+    before[channel] = pixel[channel];
+  }
+  if (channels >= 4 && !locked_alpha) {
+    // Interpolate in premultiplied space, alpha included: restoring a state
+    // where the layer was transparent removes the later paint, as Photoshop does.
+    const auto original_alpha = static_cast<float>(original[3]) / 255.0F;
+    const auto source_alpha = static_cast<float>(source[3]) / 255.0F;
+    const auto out_alpha = original_alpha + (source_alpha - original_alpha) * amount;
+    if (out_alpha * 255.0F < 0.5F) {
+      pixel[0] = original[0];
+      pixel[1] = original[1];
+      pixel[2] = original[2];
+      pixel[3] = 0;
+    } else {
+      for (std::size_t channel = 0; channel < 3; ++channel) {
+        pixel[channel] = clamp_byte((static_cast<float>(original[channel]) * original_alpha * (1.0F - amount) +
+                                     static_cast<float>(source[channel]) * source_alpha * amount) /
+                                    out_alpha);
+      }
+      pixel[3] = clamp_byte(out_alpha * 255.0F);
+    }
+  } else {
+    // Opaque layers and Lock Transparent Pixels keep the destination alpha; a
+    // transparent source pixel carries no color, so it restores nothing.
+    const auto weight = amount * static_cast<float>(source[3]) / 255.0F;
+    for (std::size_t channel = 0; channel < 3; ++channel) {
+      pixel[channel] = clamp_byte(static_cast<float>(source[channel]) * weight +
+                                  static_cast<float>(original[channel]) * (1.0F - weight));
+    }
+    if (channels >= 4) {
+      pixel[3] = original[3];
+    }
+  }
+  if (snapping) {
+    patchy::snap_pixel_to_palette(pixel, channels, *palette_snap);
+  }
+  for (std::uint16_t channel = 0; channel < channels && channel < before.size(); ++channel) {
+    if (pixel[channel] != before[channel]) {
+      return true;
+    }
+  }
+  return false;
 }
 
 QRect CanvasWidget::clone_brush_at(QPoint point) {

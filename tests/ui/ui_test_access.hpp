@@ -380,6 +380,10 @@ public:
     window.open_history_state_as_new_document(state_id);
   }
 
+  static void set_history_brush_source(MainWindow& window, std::int64_t state_id) {
+    window.set_history_brush_source(state_id);
+  }
+
   static bool active_session_is_modified(MainWindow& window) {
     return window.session_is_modified(window.session());
   }

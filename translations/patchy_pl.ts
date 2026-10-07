@@ -9048,6 +9048,10 @@ RGB: %2, %3, %4</translation>
         <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
         <translation>Czarno-biały: czerwienie %1, żółcie %2, zielenie %3, cyjany %4, błękity %5, magenty %6</translation>
     </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pędzel historii</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10603,6 +10607,26 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Ramka kadrowania przywrócona do obszaru roboczego</translation>
+    </message>
+    <message>
+        <source>History Brush is unavailable while editing a grayscale channel</source>
+        <translation>Pędzel historii jest niedostępny podczas edycji kanału w skali szarości</translation>
+    </message>
+    <message>
+        <source>Set a history brush source in the History panel first</source>
+        <translation>Najpierw ustaw źródło pędzla historii w panelu Historia</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state has a different canvas size</source>
+        <translation>Nie można użyć pędzla historii, ponieważ stan historii ma inny rozmiar obszaru roboczego</translation>
+    </message>
+    <message>
+        <source>Could not use the history brush because the history state does not contain a corresponding layer</source>
+        <translation>Nie można użyć pędzla historii, ponieważ stan historii nie zawiera odpowiedniej warstwy</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pędzel historii</translation>
     </message>
 </context>
 <context>
@@ -18903,6 +18927,30 @@ Y: %2
     <message>
         <source>Cancelled Black &amp; White</source>
         <translation>Anulowano: Czarno-biały</translation>
+    </message>
+    <message>
+        <source>History Brush</source>
+        <translation>Pędzel historii</translation>
+    </message>
+    <message>
+        <source>Paints pixels back from the history source state. Right-click a History panel row to make it the source.</source>
+        <translation>Maluje piksele ze stanu źródłowego historii. Kliknij prawym przyciskiem wiersz panelu Historia, aby ustawić go jako źródło.</translation>
+    </message>
+    <message>
+        <source>History Brush: paint to restore the active layer from the history source state, the document as opened unless you right-click a History panel row to change it.</source>
+        <translation>Pędzel historii: maluj, aby przywrócić aktywną warstwę ze stanu źródłowego historii, czyli dokumentu w chwili otwarcia, chyba że zmienisz go, klikając prawym przyciskiem wiersz panelu Historia.</translation>
+    </message>
+    <message>
+        <source>Source for the History Brush</source>
+        <translation>Źródło pędzla historii</translation>
+    </message>
+    <message>
+        <source>Set History Brush Source</source>
+        <translation>Ustaw jako źródło pędzla historii</translation>
+    </message>
+    <message>
+        <source>History Brush source: %1</source>
+        <translation>Źródło pędzla historii: %1</translation>
     </message>
 </context>
 <context>
