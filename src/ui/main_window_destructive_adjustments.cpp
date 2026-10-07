@@ -1,6 +1,6 @@
 // MainWindow destructive adjustment dialogs, split out of
 // main_window_adjustments.cpp: the Levels / Curves / Hue-Saturation /
-// Color Balance / Gradient Map / Vibrance / Selective Color / Black & White / Channel Mixer dialogs that rewrite layer pixels in place. Their formerly
+// Color Balance / Gradient Map / Vibrance / Selective Color / Black & White / Channel Mixer / Photo Filter dialogs that rewrite layer pixels in place. Their formerly
 // per-dialog async preview workers now run through the shared launcher in
 // main_window_shared.{hpp,cpp} (make_destructive_adjustment_preview_state);
 // everything else is a pure function move from the pre-split code.
@@ -1504,6 +1504,160 @@ void MainWindow::channel_mixer_dialog() {
       progress.setValue(100);
     } catch (const FilterCancelled&) {
       statusBar()->showMessage(tr("Cancelled Channel Mixer"));
+      return;
+    }
+  }
+  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
+    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
+    return;
+  }
+  push_undo_snapshot(display_name);
+  layer = doc.find_layer(active_id);
+  if (layer == nullptr) {
+    return;
+  }
+  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
+  canvas_->document_changed(to_qrect(bounds));
+  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+}
+
+void MainWindow::photo_filter_dialog() {
+  auto& doc = document();
+  select_only_layer_if_none_active();
+  const auto active = doc.active_layer_id();
+  if (!active.has_value()) {
+    return;
+  }
+  auto* layer = doc.find_layer(*active);
+  if (!editable_rgb8_layer(layer)) {
+    show_status_error(tr("Select an editable RGB pixel layer"));
+    return;
+  }
+  if (layer_is_smart_object(*layer)) {
+    show_status_error(tr("Rasterize the Smart Object before applying destructive filters or adjustments"));
+    return;
+  }
+  if (layer_id_locks_image_pixels(*active)) {
+    show_status_error(tr("Layer pixels are locked."));
+    return;
+  }
+  if (!prompt_rasterize_procedural_layer(*active, tr("Photo Filter"), false)) {
+    return;
+  }
+  layer = doc.find_layer(*active);
+  if (!editable_rgb8_layer(layer)) {
+    show_status_error(tr("Select an editable RGB pixel layer"));
+    return;
+  }
+  const auto active_id = *active;
+  const auto bounds = layer->bounds();
+  auto original_pixels = std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
+  const auto selection = canvas_->selected_document_region();
+  const auto has_effect = [](const PhotoFilterSettings& settings) {
+    AdjustmentSettings adjustment;
+    adjustment.kind = AdjustmentKind::PhotoFilter;
+    adjustment.photo_filter = settings;
+    return adjustment_has_effect(adjustment);
+  };
+  DestructiveAdjustmentPreviewHooks preview_hooks;
+  preview_hooks.original_pixels = original_pixels;
+  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
+    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
+      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
+      if (canvas_ != nullptr) {
+        canvas_->document_changed(to_qrect(bounds));
+      }
+    }
+  };
+  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id, bounds](PixelBuffer result) {
+    if (window == nullptr) {
+      return;
+    }
+    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
+      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
+      if (window->canvas_ != nullptr) {
+        window->canvas_->document_changed(to_qrect(bounds));
+      }
+    }
+  };
+  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
+    if (window != nullptr && window->canvas_ != nullptr) {
+      if (active) {
+        window->canvas_->begin_preview_render();
+      } else {
+        window->canvas_->end_preview_render();
+      }
+    }
+  };
+  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
+  const auto preview_changed = [preview_state, bounds, selection, has_effect](bool enabled,
+                                                                              const PhotoFilterSettings& settings) {
+    const auto identity = !enabled || !has_effect(settings);
+    DestructiveAdjustmentPreviewRequest request;
+    request.identity = identity;
+    if (!identity) {
+      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
+        apply_photo_filter_to_pixels(pixels, bounds, selection, settings, nullptr);
+      };
+    }
+    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
+    close_async_pixel_preview(preview_state);
+    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
+      *target = original;
+      canvas_->document_changed();
+    }
+  });
+  const auto settings = request_photo_filter_settings(this, preview_changed);
+  close_async_pixel_preview(preview_state);
+  layer = doc.find_layer(active_id);
+  if (layer == nullptr) {
+    return;
+  }
+  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
+  canvas_->document_changed(to_qrect(bounds));
+  preview_cleanup.dismiss();
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Photo Filter"));
+    return;
+  }
+
+  const auto display_name = tr("Photo Filter");
+  auto final_pixels = *original_pixels;
+  if (has_effect(*settings)) {
+    if (canvas_ != nullptr) {
+      canvas_->begin_processing_operation();
+    }
+    const auto finish_processing = qScopeGuard([this] {
+      if (canvas_ != nullptr) {
+        canvas_->end_processing_operation();
+      }
+    });
+    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
+    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
+    progress.setWindowModality(Qt::WindowModal);
+    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
+    remember_dialog_position(progress);
+    progress.setValue(0);
+    try {
+      run_filter_compute_with_progress(
+          progress,
+          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
+          [this] {
+            if (canvas_ != nullptr) {
+              canvas_->tick_processing_operation();
+            }
+          },
+          [&](FilterProgress& filter_progress) {
+            apply_photo_filter_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
+          });
+      progress.setValue(100);
+    } catch (const FilterCancelled&) {
+      statusBar()->showMessage(tr("Cancelled Photo Filter"));
       return;
     }
   }

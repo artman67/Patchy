@@ -1551,6 +1551,72 @@ RgbColor apply_channel_mixer(RgbColor color, const ChannelMixerAdjustment& setti
   return RgbColor{mix(outputs[0]), mix(outputs[1]), mix(outputs[2])};
 }
 
+PhotoFilterAdjustment clamp_photo_filter(PhotoFilterAdjustment settings) {
+  settings.density = std::clamp(settings.density, kPhotoFilterDensityMin, kPhotoFilterDensityMax);
+  return settings;
+}
+
+const std::array<RgbColor, kPhotoFilterPresetCount>& photo_filter_preset_colors() noexcept {
+  // Warming Filter (85) is the value other PSD tools pair with Photoshop's default; the
+  // rest are the commonly published sRGB readings of Photoshop's presets, not yet
+  // checked against Photoshop (docs/adjustments-calibration.md, Photo Filter).
+  static constexpr std::array<RgbColor, kPhotoFilterPresetCount> kColors{{
+      {236, 138, 0},   // Warming Filter (85)
+      {250, 150, 0},   // Warming Filter (LBA)
+      {235, 177, 19},  // Warming Filter (81)
+      {0, 109, 255},   // Cooling Filter (80)
+      {0, 93, 255},    // Cooling Filter (LBB)
+      {0, 181, 255},   // Cooling Filter (82)
+      {234, 26, 26},   // Red
+      {243, 132, 23},  // Orange
+      {249, 227, 28},  // Yellow
+      {25, 201, 25},   // Green
+      {29, 203, 234},  // Cyan
+      {29, 53, 234},   // Blue
+      {155, 29, 234},  // Violet
+      {227, 24, 227},  // Magenta
+      {172, 122, 51},  // Sepia
+      {255, 0, 0},     // Deep Red
+      {0, 34, 205},    // Deep Blue
+      {0, 140, 0},     // Deep Emerald
+      {255, 213, 0},   // Deep Yellow
+      {0, 194, 177},   // Underwater
+  }};
+  return kColors;
+}
+
+std::optional<std::size_t> photo_filter_preset_index(RgbColor color) noexcept {
+  const auto& colors = photo_filter_preset_colors();
+  for (std::size_t index = 0; index < colors.size(); ++index) {
+    if (colors[index] == color) {
+      return index;
+    }
+  }
+  return std::nullopt;
+}
+
+RgbColor apply_photo_filter(RgbColor color, PhotoFilterAdjustment settings) {
+  settings = clamp_photo_filter(settings);
+  const auto density = static_cast<double>(settings.density) / 100.0;
+  // Each channel keeps (1 - density) of itself and takes density of its product
+  // with the filter color.
+  const auto channel = [density](std::uint8_t value, std::uint8_t filter) {
+    const auto transmitted = 1.0 - density + density * static_cast<double>(filter) / 255.0;
+    return static_cast<std::uint8_t>(
+        std::clamp(std::lround(static_cast<double>(value) * transmitted), 0L, 255L));
+  };
+  const RgbColor filtered{channel(color.red, settings.color.red), channel(color.green, settings.color.green),
+                          channel(color.blue, settings.color.blue)};
+  if (!settings.preserve_luminosity) {
+    return filtered;
+  }
+  // The Luminosity blend mode's set-luminosity step (with its gamut clip) puts the
+  // source's luminosity back on the filtered color.
+  const auto restored = blend_rgb({color.red, color.green, color.blue}, {filtered.red, filtered.green, filtered.blue},
+                                  BlendMode::Luminosity);
+  return RgbColor{restored[0], restored[1], restored[2]};
+}
+
 int threshold_luminance(std::uint8_t red, std::uint8_t green, std::uint8_t blue) {
   return (static_cast<int>(red) * 30 + static_cast<int>(green) * 59 + static_cast<int>(blue) * 11) / 100;
 }
@@ -1788,6 +1854,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "black_white";
     case AdjustmentKind::ChannelMixer:
       return "channel_mixer";
+    case AdjustmentKind::PhotoFilter:
+      return "photo_filter";
   }
   return "levels";
 }
@@ -1822,6 +1890,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Black & White";
     case AdjustmentKind::ChannelMixer:
       return "Channel Mixer";
+    case AdjustmentKind::PhotoFilter:
+      return "Photo Filter";
   }
   return "Adjustment";
 }
@@ -1868,6 +1938,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "channel_mixer") {
     return AdjustmentKind::ChannelMixer;
+  }
+  if (key == "photo_filter") {
+    return AdjustmentKind::PhotoFilter;
   }
   return std::nullopt;
 }
@@ -1986,6 +2059,16 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
     }
   }
   settings.channel_mixer = clamp_channel_mixer(settings.channel_mixer);
+  {
+    const auto rgb = metadata_int_or(layer, kLayerMetadataAdjustmentPhotoFilterColor, 0xEC8A00);
+    PhotoFilterAdjustment photo_filter;
+    photo_filter.color = RgbColor{static_cast<std::uint8_t>((rgb >> 16) & 0xFF),
+                                  static_cast<std::uint8_t>((rgb >> 8) & 0xFF), static_cast<std::uint8_t>(rgb & 0xFF)};
+    photo_filter.density = metadata_int_or(layer, kLayerMetadataAdjustmentPhotoFilterDensity, 25);
+    photo_filter.preserve_luminosity =
+        metadata_int_or(layer, kLayerMetadataAdjustmentPhotoFilterPreserveLuminosity, 1) != 0;
+    settings.photo_filter = clamp_photo_filter(photo_filter);
+  }
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -2151,6 +2234,13 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
       layer.metadata().erase(key);
     }
   }
+  const auto photo_filter = clamp_photo_filter(settings.photo_filter);
+  set_metadata_int(layer, kLayerMetadataAdjustmentPhotoFilterColor,
+                   (static_cast<int>(photo_filter.color.red) << 16) | (static_cast<int>(photo_filter.color.green) << 8) |
+                       static_cast<int>(photo_filter.color.blue));
+  set_metadata_int(layer, kLayerMetadataAdjustmentPhotoFilterDensity, photo_filter.density);
+  set_metadata_int(layer, kLayerMetadataAdjustmentPhotoFilterPreserveLuminosity,
+                   photo_filter.preserve_luminosity ? 1 : 0);
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -2250,10 +2340,10 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
     // Threshold compares one value: on a single gray channel that is channel-wise.
     case AdjustmentKind::Threshold:
       return settings.ink_space->is_gray();
-    // Hue/Saturation, Color Balance and Vibrance mix channels (as does Threshold on
-    // four inks); Photoshop's CMYK forms of them are not modeled, so they stay on the
-    // RGB math. So does Selective Color: in a CMYK document Photoshop corrects the
-    // real four plates (Black edits the K plate), which is not modeled.
+    // Hue/Saturation, Color Balance, Vibrance and Photo Filter mix channels (as does
+    // Threshold on four inks); Photoshop's CMYK forms of them are not modeled, so they
+    // stay on the RGB math. So does Selective Color: in a CMYK document Photoshop
+    // corrects the real four plates (Black edits the K plate), which is not modeled.
     // Black & White mixes channels too; its six weights are defined on RGB hues, and
     // a gray document's pixels are already gray, which the RGB math keeps.
     // So does Channel Mixer: Photoshop's CMYK form mixes four ink outputs (with a
@@ -2265,6 +2355,7 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
     case AdjustmentKind::SelectiveColor:
     case AdjustmentKind::BlackWhite:
     case AdjustmentKind::ChannelMixer:
+    case AdjustmentKind::PhotoFilter:
       return false;
   }
   return false;
@@ -2334,6 +2425,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return apply_black_white(color, settings.black_white);
     case AdjustmentKind::ChannelMixer:
       return apply_channel_mixer(color, settings.channel_mixer);
+    case AdjustmentKind::PhotoFilter:
+      return apply_photo_filter(color, settings.photo_filter);
   }
   return color;
 }
@@ -2373,15 +2466,17 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
   if (adjustment_runs_in_ink_space(settings)) {
     return std::nullopt;
   }
-  // Hue/Saturation and Vibrance mix channels through HSL; Threshold and Gradient
-  // Map read the mixed RGB luminance; Selective Color and Black & White weigh each
-  // pixel by its whole RGB triple; Channel Mixer sums all three channels into each
-  // output. A per-channel gray-probe LUT would be wrong for any colored pixel, so
-  // they take the per-pixel path.
+  // Hue/Saturation and Vibrance mix channels through HSL; Threshold, Gradient Map
+  // and Photo Filter's Preserve Luminosity read the mixed RGB luminance; Selective
+  // Color and Black & White weigh each pixel by its whole RGB triple; Channel Mixer
+  // sums all three channels into each output. A per-channel gray-probe LUT would be
+  // wrong for any colored pixel, so they take the per-pixel path. Photo Filter
+  // without Preserve Luminosity is a per-channel map.
   if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
       settings.kind == AdjustmentKind::GradientMap || settings.kind == AdjustmentKind::Vibrance ||
       settings.kind == AdjustmentKind::SelectiveColor || settings.kind == AdjustmentKind::BlackWhite ||
-      settings.kind == AdjustmentKind::ChannelMixer) {
+      settings.kind == AdjustmentKind::ChannelMixer ||
+      (settings.kind == AdjustmentKind::PhotoFilter && settings.photo_filter.preserve_luminosity)) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -2450,6 +2545,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return true;  // every setting removes the color
     case AdjustmentKind::ChannelMixer:
       return channel_mixer_has_effect(clamp_channel_mixer(settings.channel_mixer));
+    case AdjustmentKind::PhotoFilter:
+      return settings.photo_filter.color != RgbColor{255, 255, 255};  // white passes everything
   }
   return false;
 }

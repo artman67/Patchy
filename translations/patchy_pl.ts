@@ -9142,6 +9142,132 @@ RGB: %2, %3, %4</translation>
         <source>Channel Mixer: %1 of 3 output channels changed</source>
         <translation>Mieszanie kanałów: zmienione kanały wyjściowe: %1 z 3</translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation>Filtr ocieplający (85)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation>Filtr ocieplający (LBA)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation>Filtr ocieplający (81)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation>Filtr ochładzający (80)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation>Filtr ochładzający (LBB)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation>Filtr ochładzający (82)</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation>Czerwony</translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation>Pomarańczowy</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation>Żółty</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation>Zielony</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation>Cyjan</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation>Niebieski</translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation>Fioletowy</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation>Sepia</translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation>Głęboka czerwień</translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation>Głęboki błękit</translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation>Głęboki szmaragd</translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation>Głęboka żółć</translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation>Podwodny</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>Filtr fotograficzny</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>Gęstość</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>Filtr:</translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation>Wybierz kolor filtra</translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation>Zachowaj jasność</translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation>Kolor filtra fotograficznego</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation>Filtr fotograficzny: %1, gęstość %2%, zachowana jasność</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation>Filtr fotograficzny: %1, gęstość %2%</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19121,6 +19247,18 @@ Y: %2
     <message>
         <source>Cancelled Channel Mixer</source>
         <translation>Anulowano: Mieszanie kanałów</translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation>&amp;Filtr fotograficzny...</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>Filtr fotograficzny</translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
+        <translation>Anulowano: Filtr fotograficzny</translation>
     </message>
 </context>
 <context>

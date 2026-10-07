@@ -125,6 +125,11 @@ inline constexpr const char* kLayerMetadataAdjustmentChannelMixerRed = "patchy.a
 inline constexpr const char* kLayerMetadataAdjustmentChannelMixerGreen = "patchy.adjustment.channel_mixer.green";
 inline constexpr const char* kLayerMetadataAdjustmentChannelMixerBlue = "patchy.adjustment.channel_mixer.blue";
 inline constexpr const char* kLayerMetadataAdjustmentChannelMixerGray = "patchy.adjustment.channel_mixer.gray";
+// The filter color as 0xRRGGBB.
+inline constexpr const char* kLayerMetadataAdjustmentPhotoFilterColor = "patchy.adjustment.photo_filter.color";
+inline constexpr const char* kLayerMetadataAdjustmentPhotoFilterDensity = "patchy.adjustment.photo_filter.density";
+inline constexpr const char* kLayerMetadataAdjustmentPhotoFilterPreserveLuminosity =
+    "patchy.adjustment.photo_filter.preserve_luminosity";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastBrightness =
     "patchy.adjustment.brightness_contrast.brightness";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast =
@@ -163,7 +168,8 @@ enum class AdjustmentKind {
   Vibrance,
   SelectiveColor,
   BlackWhite,
-  ChannelMixer
+  ChannelMixer,
+  PhotoFilter
 };
 
 enum class LevelsChannel {
@@ -452,6 +458,31 @@ struct ChannelMixerAdjustment {
 // docs/adjustments-calibration.md.
 [[nodiscard]] RgbColor apply_channel_mixer(RgbColor color, const ChannelMixerAdjustment& settings);
 
+// Photoshop's Photo Filter adjustment ('phfl'): a filter color, Density 1..100 percent
+// (default 25) and Preserve Luminosity (default on). Photoshop opens on Warming
+// Filter (85). The PSD block stores only the color, never which preset chose it.
+inline constexpr int kPhotoFilterDensityMin = 1;
+inline constexpr int kPhotoFilterDensityMax = 100;
+inline constexpr RgbColor kPhotoFilterDefaultColor{236, 138, 0};
+struct PhotoFilterAdjustment {
+  RgbColor color{kPhotoFilterDefaultColor};
+  int density{25};
+  bool preserve_luminosity{true};
+};
+[[nodiscard]] PhotoFilterAdjustment clamp_photo_filter(PhotoFilterAdjustment settings);
+// Photoshop's twenty filter presets in its menu order (Warming Filter (85) first,
+// Underwater last). The UI owns the translated names; see
+// docs/adjustments-calibration.md for which colors are verified.
+inline constexpr std::size_t kPhotoFilterPresetCount = 20;
+[[nodiscard]] const std::array<RgbColor, kPhotoFilterPresetCount>& photo_filter_preset_colors() noexcept;
+// The preset whose color is exactly `color`, or nullopt for a custom color.
+[[nodiscard]] std::optional<std::size_t> photo_filter_preset_index(RgbColor color) noexcept;
+// One pixel through Photo Filter: each channel moves toward its product with the filter
+// color (a colored gel passes that fraction of each primary) by Density; Preserve
+// Luminosity then restores the source's luminosity the way the Luminosity blend mode
+// does. A white filter changes nothing.
+[[nodiscard]] RgbColor apply_photo_filter(RgbColor color, PhotoFilterAdjustment settings);
+
 // Both Photoshop algorithms are modeled. Modern mode (Photoshop's default,
 // use_legacy false) takes brightness -150..150 and contrast -50..100; legacy
 // mode takes -100..100 for both. Old Patchy documents and 'brit'-only PSDs
@@ -510,6 +541,7 @@ struct AdjustmentSettings {
   SelectiveColorAdjustment selective_color{};
   BlackWhiteAdjustment black_white{};
   ChannelMixerAdjustment channel_mixer{};
+  PhotoFilterAdjustment photo_filter{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.

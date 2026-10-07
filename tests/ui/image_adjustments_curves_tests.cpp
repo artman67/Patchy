@@ -2198,6 +2198,94 @@ void ui_channel_mixer_command_rewrites_layer_pixels() {
   CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(40, 80, 40), 3));
 }
 
+void ui_photo_filter_adjustment_layer_and_image_command() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+
+  canvas->set_primary_color(QColor(200, 200, 200));
+  use_solid_fill_settings(canvas);
+  require_action(window, "layerFillForegroundAction")->trigger();
+  QApplication::processEvents();
+
+  struct Expect {
+    int preset;
+    int density;
+    bool preserve;
+  };
+  // Drives the next Photo Filter dialog: checks the starting state, applies `set`, and
+  // returns whether the canvas showed `preview` before OK.
+  const auto run_dialog = [&](const char* action, Expect start, Expect set, QColor preview) {
+    bool saw_preview = false;
+    QTimer::singleShot(0, [&] {
+      for (auto* widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() != QStringLiteral("patchyPhotoFilterDialog")) {
+          continue;
+        }
+        auto* dialog = qobject_cast<QDialog*>(widget);
+        CHECK(dialog != nullptr);
+        auto* filter = dialog->findChild<QRadioButton*>(QStringLiteral("photoFilterFilterRadio"));
+        auto* presets = dialog->findChild<QComboBox*>(QStringLiteral("photoFilterPresetCombo"));
+        auto* density = dialog->findChild<QSpinBox*>(QStringLiteral("photoFilterDensitySpin"));
+        auto* preserve = dialog->findChild<QCheckBox*>(QStringLiteral("photoFilterPreserveLuminosityCheck"));
+        CHECK(filter != nullptr && presets != nullptr && density != nullptr && preserve != nullptr);
+        CHECK(filter->isChecked());
+        CHECK(presets->count() == 20);
+        CHECK(presets->currentIndex() == start.preset);
+        CHECK(density->value() == start.density);
+        CHECK(density->minimum() == 1 && density->maximum() == 100);
+        CHECK(preserve->isChecked() == start.preserve);
+        presets->setCurrentIndex(set.preset);
+        density->setValue(set.density);
+        preserve->setChecked(set.preserve);
+        process_events_for(150);
+        saw_preview = color_close(canvas_pixel(*canvas, QPoint(70, 70)), preview, 3);
+        save_widget_artifact(std::string("ui_photo_filter_dialog_") + action, *dialog);
+        dialog->accept();
+        return;
+      }
+      CHECK(false);
+    });
+    require_action(window, action)->trigger();
+    QApplication::processEvents();
+    return saw_preview;
+  };
+
+  // Layer > New Adjustment Layer > Photo Filter opens on Photoshop's defaults; Warming
+  // Filter (85) at 100 percent without Preserve Luminosity multiplies by the filter.
+  const auto layer_count = doc.layers().size();
+  CHECK(doc.active_layer_id().has_value());
+  const auto filled_id = doc.active_layer_id().value_or(patchy::LayerId{});
+  CHECK(run_dialog("layerNewPhotoFilterAdjustmentAction", {0, 25, true}, {0, 100, false}, QColor(185, 108, 0)));
+  CHECK(doc.layers().size() == layer_count + 1);
+  CHECK(layer_list->item(0) != nullptr && layer_list->item(0)->text() == QStringLiteral("Photo Filter"));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(185, 108, 0), 3));
+
+  // Editing reopens the stored values; Underwater (0, 194, 177) replaces the filter.
+  CHECK(run_dialog("layerEditAdjustmentAction", {0, 100, false}, {19, 100, false}, QColor(0, 152, 139)));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(0, 152, 139), 3));
+
+  // Image > Adjustments > Photo Filter rewrites the pixel layer as one undo step and adds
+  // no layer: the defaults tint gray 200 warm at the same luminosity.
+  doc.set_active_layer(filled_id);
+  patchy::ui::MainWindowTestAccess::refresh_layer_ui(window);
+  const auto undo_depth_before = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  run_dialog("imageAdjustPhotoFilterAction", {0, 25, true}, {0, 25, true}, QColor());
+  CHECK(doc.layers().size() == layer_count + 1);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth_before + 1);
+  const auto* filled = std::as_const(doc).find_layer(filled_id);
+  CHECK(filled != nullptr);
+  if (filled != nullptr) {
+    const auto* pixel = filled->pixels().pixel(70 - filled->bounds().x, 70 - filled->bounds().y);
+    CHECK(color_close(QColor(pixel[0], pixel[1], pixel[2]), QColor(216, 197, 170), 1));
+  }
+  save_widget_artifact("ui_photo_filter_adjustment_layer_and_image_command", *canvas);
+  save_widget_artifact("ui_photo_filter_adjustment_layer_row", *layer_list);
+}
+
 void ui_posterize_and_threshold_adjustment_layers_create_and_edit() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3984,6 +4072,7 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_black_white_command_rewrites_layer_pixels", ui_black_white_command_rewrites_layer_pixels},
       {"ui_channel_mixer_adjustment_layer_creates_and_edits", ui_channel_mixer_adjustment_layer_creates_and_edits},
       {"ui_channel_mixer_command_rewrites_layer_pixels", ui_channel_mixer_command_rewrites_layer_pixels},
+      {"ui_photo_filter_adjustment_layer_and_image_command", ui_photo_filter_adjustment_layer_and_image_command},
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},

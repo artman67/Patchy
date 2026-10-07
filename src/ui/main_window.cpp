@@ -13788,7 +13788,8 @@ void MainWindow::update_document_action_state() {
                            QStringLiteral("image.hue_saturation"), QStringLiteral("image.color_balance"),
                            QStringLiteral("image.gradient_map"), QStringLiteral("image.vibrance"),
                            QStringLiteral("image.selective_color"), QStringLiteral("image.black_white"),
-                           QStringLiteral("image.channel_mixer")}) {
+                           QStringLiteral("image.channel_mixer"),
+                           QStringLiteral("image.photo_filter")}) {
       set_command_enabled(id, false);
     }
     for (const auto& command : hotkey_registry_.commands()) {

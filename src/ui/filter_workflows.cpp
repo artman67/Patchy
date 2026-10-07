@@ -1262,6 +1262,25 @@ void apply_channel_mixer_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegi
   for_each_selected_row_span(pixels, bounds, selection, progress, apply_span);
 }
 
+void apply_photo_filter_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                  PhotoFilterSettings settings, const FilterProgress* progress) {
+  const auto clamped = clamp_photo_filter(settings);
+  const auto pixel_bytes = bytes_per_pixel(pixels.format());
+  const auto apply_span = [&](std::int32_t y, std::int32_t x_begin, std::int32_t x_end) {
+    auto* px = pixels.row(y).data() + static_cast<std::size_t>(x_begin) * pixel_bytes;
+    for (std::int32_t x = x_begin; x < x_end; ++x, px += pixel_bytes) {
+      const auto adjusted = apply_photo_filter(RgbColor{px[0], px[1], px[2]}, clamped);
+      px[0] = adjusted.red;
+      px[1] = adjusted.green;
+      px[2] = adjusted.blue;
+    }
+  };
+  if (apply_row_spans_in_parallel(pixels, selection, progress, apply_span)) {
+    return;
+  }
+  for_each_selected_row_span(pixels, bounds, selection, progress, apply_span);
+}
+
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress) {
   settings.cyan_red = std::clamp(settings.cyan_red, -100, 100);

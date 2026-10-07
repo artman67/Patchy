@@ -8,11 +8,13 @@
 #include "formats/acv_curves_io.hpp"
 #include "ui/blend_mode_ui.hpp"
 #include "ui/coalesced_preview_emitter.hpp"
+#include "ui/color_panel.hpp"
 #include "ui/curves_editor.hpp"
 #include "ui/curves_presets.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/measurement_units.hpp"
 #include "ui/qt_paths.hpp"
+#include "ui/theme_qss.hpp"
 #include "ui/filter_workflows_internal.hpp"
 
 #include <QAbstractItemView>
@@ -1751,6 +1753,153 @@ std::optional<ChannelMixerSettings> request_channel_mixer_settings(
                            fill_combo(monochrome);
                            load(monochrome ? stash->gray : stash->outputs[*edit_output]);
                            flush_preview();
+                         });
+      });
+}
+
+QString photo_filter_preset_name(std::size_t index) {
+  switch (index) {
+    case 0:
+      return QObject::tr("Warming Filter (85)");
+    case 1:
+      return QObject::tr("Warming Filter (LBA)");
+    case 2:
+      return QObject::tr("Warming Filter (81)");
+    case 3:
+      return QObject::tr("Cooling Filter (80)");
+    case 4:
+      return QObject::tr("Cooling Filter (LBB)");
+    case 5:
+      return QObject::tr("Cooling Filter (82)");
+    case 6:
+      return QObject::tr("Red", "photo filter");
+    case 7:
+      return QObject::tr("Orange", "photo filter");
+    case 8:
+      return QObject::tr("Yellow", "photo filter");
+    case 9:
+      return QObject::tr("Green", "photo filter");
+    case 10:
+      return QObject::tr("Cyan", "photo filter");
+    case 11:
+      return QObject::tr("Blue", "photo filter");
+    case 12:
+      return QObject::tr("Violet", "photo filter");
+    case 13:
+      return QObject::tr("Magenta", "photo filter");
+    case 14:
+      return QObject::tr("Sepia", "photo filter");
+    case 15:
+      return QObject::tr("Deep Red", "photo filter");
+    case 16:
+      return QObject::tr("Deep Blue", "photo filter");
+    case 17:
+      return QObject::tr("Deep Emerald", "photo filter");
+    case 18:
+      return QObject::tr("Deep Yellow", "photo filter");
+    case 19:
+      return QObject::tr("Underwater", "photo filter");
+    default:
+      return {};
+  }
+}
+
+std::optional<PhotoFilterSettings> request_photo_filter_settings(
+    QWidget* parent, std::function<void(bool, const PhotoFilterSettings&)> preview_changed,
+    PhotoFilterSettings initial) {
+  initial = clamp_photo_filter(initial);
+  // Photoshop's "Use" choice: a named filter from the menu, or any color from the
+  // swatch. The swatch keeps its color while the menu is in use.
+  struct Controls {
+    QRadioButton* filter{nullptr};
+    QComboBox* presets{nullptr};
+    QCheckBox* preserve_luminosity{nullptr};
+    RgbColor custom_color{};
+    bool preserve{true};
+  };
+  auto controls = std::make_shared<Controls>();
+  controls->custom_color = initial.color;
+  controls->preserve = initial.preserve_luminosity;
+  const auto initial_preset = photo_filter_preset_index(initial.color);
+
+  const auto build_settings = [controls](const std::vector<QSpinBox*>& spins) {
+    PhotoFilterSettings settings;
+    const auto use_preset = controls->filter != nullptr && controls->filter->isChecked();
+    const auto index = controls->presets != nullptr ? std::max(0, controls->presets->currentIndex()) : 0;
+    settings.color = use_preset ? photo_filter_preset_colors()[static_cast<std::size_t>(
+                                      std::min(index, static_cast<int>(kPhotoFilterPresetCount) - 1))]
+                                : controls->custom_color;
+    settings.density = spins[0]->value();
+    settings.preserve_luminosity =
+        controls->preserve_luminosity != nullptr ? controls->preserve_luminosity->isChecked() : controls->preserve;
+    return clamp_photo_filter(settings);
+  };
+
+  return request_adjustment_settings_dialog<PhotoFilterSettings>(
+      parent, QStringLiteral("patchyPhotoFilterDialog"), QObject::tr("Photo Filter"),
+      QStringLiteral("photoFilterPreviewCheck"),
+      {{QObject::tr("Density"), QStringLiteral("photoFilterDensity"), kPhotoFilterDensityMin, kPhotoFilterDensityMax,
+        initial.density, percent_suffix()}},
+      build_settings, std::move(preview_changed), {},
+      [controls, initial_preset](QDialog& dialog, QFormLayout* form, const std::vector<QSpinBox*>&,
+                                 const std::function<void()>& flush_preview) {
+        auto* filter = new QRadioButton(QObject::tr("Filter:"), &dialog);
+        filter->setObjectName(QStringLiteral("photoFilterFilterRadio"));
+        auto* presets = new QComboBox(&dialog);
+        presets->setObjectName(QStringLiteral("photoFilterPresetCombo"));
+        for (std::size_t index = 0; index < kPhotoFilterPresetCount; ++index) {
+          presets->addItem(photo_filter_preset_name(index));
+        }
+        presets->setCurrentIndex(static_cast<int>(initial_preset.value_or(0)));
+        auto* color = new QRadioButton(QObject::tr("Color:"), &dialog);
+        color->setObjectName(QStringLiteral("photoFilterColorRadio"));
+        auto* swatch = new QPushButton(&dialog);
+        swatch->setObjectName(QStringLiteral("photoFilterColorSwatch"));
+        swatch->setToolTip(QObject::tr("Choose the filter color"));
+        const auto paint_swatch = [swatch, controls] {
+          const auto value = controls->custom_color;
+          set_themed_style(*swatch, color_button_style(QColor(value.red, value.green, value.blue)));
+        };
+        paint_swatch();
+        (initial_preset.has_value() ? filter : color)->setChecked(true);
+        controls->filter = filter;
+        controls->presets = presets;
+        form->insertRow(0, filter, presets);
+        form->insertRow(1, color, swatch);
+
+        auto* preserve = new QCheckBox(QObject::tr("Preserve Luminosity"), &dialog);
+        preserve->setObjectName(QStringLiteral("photoFilterPreserveLuminosityCheck"));
+        preserve->setChecked(controls->preserve);
+        controls->preserve_luminosity = preserve;
+        form->addRow(QString(), preserve);
+
+        QObject::connect(filter, &QRadioButton::toggled, &dialog, [flush_preview](bool) { flush_preview(); });
+        QObject::connect(preserve, &QCheckBox::toggled, &dialog, [flush_preview](bool) { flush_preview(); });
+        // Picking from the menu selects Filter, as in Photoshop.
+        QObject::connect(presets, &QComboBox::currentIndexChanged, &dialog, [filter, flush_preview](int) {
+          if (filter->isChecked()) {
+            flush_preview();
+          } else {
+            filter->setChecked(true);
+          }
+        });
+        // The swatch selects Color and opens the picker, previewing live; Cancel puts
+        // the previous color back.
+        QObject::connect(swatch, &QPushButton::clicked, &dialog,
+                         [&dialog, controls, color, paint_swatch, flush_preview] {
+                           const auto original = controls->custom_color;
+                           const auto use = [controls, paint_swatch, flush_preview](QColor value) {
+                             controls->custom_color = RgbColor{static_cast<std::uint8_t>(value.red()),
+                                                               static_cast<std::uint8_t>(value.green()),
+                                                               static_cast<std::uint8_t>(value.blue())};
+                             paint_swatch();
+                             flush_preview();
+                           };
+                           color->setChecked(true);
+                           const auto chosen = request_patchy_color(
+                               &dialog, QColor(original.red, original.green, original.blue),
+                               QObject::tr("Photo Filter Color"), use);
+                           use(chosen.value_or(QColor(original.red, original.green, original.blue)));
                          });
       });
 }

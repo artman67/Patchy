@@ -322,6 +322,8 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_black_white_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("Channel Mi&xer..."), QStringLiteral("ChannelMixerAdjustment"), QStringLiteral("MIX"),
                  [this] { new_channel_mixer_adjustment_layer(); });
+  add_adjustment(QT_TR_NOOP("Photo &Filter..."), QStringLiteral("PhotoFilterAdjustment"), QStringLiteral("PF"),
+                 [this] { new_photo_filter_adjustment_layer(); });
   // No ellipsis: Invert has no settings, so no dialog opens.
   add_adjustment(QT_TR_NOOP("&Invert"), QStringLiteral("InvertAdjustment"), QStringLiteral("INV"),
                  [this] { new_invert_adjustment_layer(); });
@@ -712,6 +714,38 @@ void MainWindow::apply_channel_mixer_adjustment(const ChannelMixerSettings& mixe
     return;
   }
   create_adjustment_layer(tr("Channel Mixer"), settings);
+}
+
+void MainWindow::new_photo_filter_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](bool enabled,
+                                                                         const PhotoFilterSettings& photo_filter) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::PhotoFilter;
+    settings.photo_filter = clamp_photo_filter(photo_filter);
+    update_adjustment_layer_preview(tr("Photo Filter"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto settings = request_photo_filter_settings(this, preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Photo Filter"));
+    return;
+  }
+  apply_photo_filter_adjustment(*settings, true);
+}
+
+void MainWindow::apply_photo_filter_adjustment(const PhotoFilterSettings& photo_filter, bool allow_identity) {
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::PhotoFilter;
+  settings.photo_filter = clamp_photo_filter(photo_filter);
+  if (!allow_identity && !adjustment_has_effect(settings)) {
+    return;
+  }
+  create_adjustment_layer(tr("Photo Filter"), settings);
 }
 
 void MainWindow::new_brightness_contrast_adjustment_layer() {
@@ -1192,6 +1226,24 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->channel_mixer = clamp_channel_mixer(*result);
+      }
+      break;
+    }
+    case AdjustmentKind::PhotoFilter: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const PhotoFilterSettings& photo_filter) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.photo_filter = clamp_photo_filter(photo_filter);
+        apply_settings(settings);
+      };
+      const auto result = request_photo_filter_settings(this, preview_changed, original_settings->photo_filter);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->photo_filter = clamp_photo_filter(*result);
       }
       break;
     }
