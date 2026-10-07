@@ -103,6 +103,7 @@ bool tool_supports_off_canvas_brush_strokes(CanvasTool tool) noexcept {
     case CanvasTool::Sponge:
     case CanvasTool::BlurBrush:
     case CanvasTool::SharpenBrush:
+    case CanvasTool::ColorReplacement:
     case CanvasTool::Eraser:
       return true;
     default:
@@ -126,6 +127,7 @@ bool tool_supports_shift_click_stroke_connect(CanvasTool tool) noexcept {
     case CanvasTool::Sponge:
     case CanvasTool::BlurBrush:
     case CanvasTool::SharpenBrush:
+    case CanvasTool::ColorReplacement:
     case CanvasTool::Eraser:
       return true;
     default:
@@ -133,6 +135,8 @@ bool tool_supports_shift_click_stroke_connect(CanvasTool tool) noexcept {
   }
 }
 
+// Color Replacement rides the same stroke flow (snapshot, one undo step,
+// refusals); local_adjustment_brush_segment hands it to its own engine.
 bool is_local_adjustment_tool(CanvasTool tool) noexcept {
   switch (tool) {
     case CanvasTool::Dodge:
@@ -140,6 +144,7 @@ bool is_local_adjustment_tool(CanvasTool tool) noexcept {
     case CanvasTool::Sponge:
     case CanvasTool::BlurBrush:
     case CanvasTool::SharpenBrush:
+    case CanvasTool::ColorReplacement:
       return true;
     default:
       return false;
@@ -711,6 +716,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
       case CanvasTool::Sponge:
       case CanvasTool::BlurBrush:
       case CanvasTool::SharpenBrush:
+      case CanvasTool::ColorReplacement:
       case CanvasTool::Text:
       case CanvasTool::Pen:
       case CanvasTool::AddAnchor:
@@ -857,7 +863,9 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
 
   if (is_local_adjustment_tool(effective_tool)) {
     if (editing_grayscale_target()) {
-      report_status_error(tr("Local adjustment brushes are unavailable while editing a grayscale channel"));
+      report_status_error(effective_tool == CanvasTool::ColorReplacement
+                              ? tr("Color Replacement is unavailable while editing a grayscale channel")
+                              : tr("Local adjustment brushes are unavailable while editing a grayscale channel"));
       return;
     }
     QString label;
@@ -877,11 +885,15 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
       case CanvasTool::SharpenBrush:
         label = tr("Sharpen brush");
         break;
+      case CanvasTool::ColorReplacement:
+        label = tr("Color Replacement");
+        break;
       default:
         break;
     }
     if (begin_edit(label)) {
       clear_brush_stroke_tracking();
+      begin_color_replacement_stroke();
       if (auto* layer = active_pixel_layer(); layer != nullptr && document_->active_layer_id().has_value()) {
         ensure_brush_stroke_layer_snapshot(*document_->active_layer_id(), std::as_const(*layer));
       }
@@ -4027,6 +4039,7 @@ CanvasTool CanvasWidget::effective_tool_for_input() const noexcept {
       case CanvasTool::Sponge:
       case CanvasTool::BlurBrush:
       case CanvasTool::SharpenBrush:
+      case CanvasTool::ColorReplacement:
         return CanvasTool::Eraser;
       default:
         break;

@@ -8879,6 +8879,10 @@ Mixed selection</source>
         <source>Ratio</source>
         <translation>比率</translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>色の置き換え</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10434,6 +10438,14 @@ Mixed selection</source>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>切り抜き枠をカンバスに戻しました</translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation>グレースケールチャンネルの編集中は色の置き換えを使用できません</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>色の置き換え</translation>
     </message>
 </context>
 <context>
@@ -18602,6 +18614,90 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation>色相</translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation>彩度</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>色</translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation>輝度</translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation>サンプル:</translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation>継続</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation>1回</translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation>背景色見本</translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation>ブラシが置き換える色: 各ブラシ跡の下の色、ストローク開始位置の色、または背景色</translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation>制限:</translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation>隣接されていない</translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation>輪郭検出</translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation>隣接されていない: ブラシの下で一致するすべての色を置き換えます。隣接: 中心とつながった色だけを置き換えます。輪郭検出: さらにはっきりした輪郭で止まります</translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation>サンプルした色からどれだけ離れた色までを置き換えるか</translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation>許容値の限界付近で置き換えを弱め、境界を滑らかにします</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>色の置き換え</translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation>サンプルした色に一致するピクセルに描画色を塗り、陰影は保ちます。%ALT%+クリックで描画色を取得します。</translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation>色の置き換え: 色の上をドラッグして描画色に置き換えます。許容値は、ピクセルがサンプルした色にどれだけ近い必要があるかを決めます。</translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation>ブラシツール</translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation>ブラシツールを切り替え</translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
+        <translation>許容値: %1%</translation>
     </message>
 </context>
 <context>

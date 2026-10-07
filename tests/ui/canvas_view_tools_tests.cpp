@@ -1339,6 +1339,18 @@ void ui_tool_cycle_hotkeys_walk_each_flyout() {
   QApplication::processEvents();
   CHECK(canvas->tool() == patchy::ui::CanvasTool::Fill);
 
+  // Brush is a flyout for Color Replacement: Shift+B walks it, B returns.
+  auto* brush_button = window.findChild<QToolButton*>(QStringLiteral("brushToolButton"));
+  CHECK(brush_button != nullptr);
+  QTest::keyClick(canvas, Qt::Key_B, Qt::ShiftModifier);
+  QApplication::processEvents();
+  CHECK(canvas->tool() == patchy::ui::CanvasTool::ColorReplacement);
+  CHECK(brush_button->defaultAction() == require_action(window, "toolColorReplacementAction"));
+  QTest::keyClick(canvas, Qt::Key_B);
+  QApplication::processEvents();
+  CHECK(canvas->tool() == patchy::ui::CanvasTool::Brush);
+  CHECK(brush_button->defaultAction() == require_action(window, "toolBrushAction"));
+
   // Every flyout owns one, in the tools category, listed after a separator.
   const auto& registry = window.hotkey_registry();
   const std::pair<const char*, const char*> cycles[] = {
@@ -1347,7 +1359,7 @@ void ui_tool_cycle_hotkeys_walk_each_flyout() {
       {"toolCycleStampAction", "tools.cycle.stamp"},     {"toolCycleHealingAction", "tools.cycle.healing"},
       {"toolCycleDetailAction", "tools.cycle.detail"},   {"toolCycleToningAction", "tools.cycle.tone"},
       {"toolCyclePenAction", "tools.cycle.pen"},         {"toolCyclePathAction", "tools.cycle.path_select"},
-      {"toolCycleShapeAction", "tools.cycle.shape"},
+      {"toolCycleShapeAction", "tools.cycle.shape"},     {"toolCycleBrushAction", "tools.cycle.brush"},
   };
   for (const auto& [object_name, id] : cycles) {
     auto* action = require_action(window, object_name);
@@ -1768,6 +1780,7 @@ void ui_tool_palette_icons_render_sheet() {
       {"toolQuickSelectAction", "Quick Select"},
       {"toolCropAction", "Crop"},
       {"toolBrushAction", "Brush"},
+      {"toolColorReplacementAction", "Color Replacement"},
       {"toolCloneAction", "Clone"},
       {"toolPatternStampAction", "Pattern Stamp"},
       {"toolHealingBrushAction", "Healing Brush"},

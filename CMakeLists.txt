@@ -98,6 +98,7 @@ add_library(patchy_core
   src/core/blend_math.cpp
   src/core/brush_dynamics.cpp
   src/core/brush_tip.cpp
+  src/core/color_replacement.cpp
   src/core/contour_presets.cpp
   src/core/document.cpp
   src/core/document_channel.cpp

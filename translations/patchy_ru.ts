@@ -8939,6 +8939,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>Замена цвета</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10494,6 +10498,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Рамка кадрирования сброшена к холсту</translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation>Замена цвета недоступна при редактировании канала оттенков серого.</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>Замена цвета</translation>
     </message>
 </context>
 <context>
@@ -18714,6 +18726,90 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation>Цветовой тон</translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation>Насыщенность</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Цветность</translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation>Яркость</translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation>Проба:</translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation>Непрерывно</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation>Однократно</translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation>Образец фона</translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation>Какой цвет заменяет кисть: цвет под каждым отпечатком, цвет в начале мазка или фоновый цвет</translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation>Ограничения:</translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation>Несмежные пиксели</translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation>Выделение краев</translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation>Несмежные пиксели: заменяются все совпадения под кистью; Смежные пиксели: только связанные с ее центром; Выделение краев: замена также останавливается на резких краях</translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation>Насколько цвет пикселя может отличаться от цвета пробы, чтобы его все еще заменили</translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation>Ослаблять замену у границы допуска для плавных краев</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>Замена цвета</translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation>Рисует основным цветом по пикселям, совпадающим с цветом пробы, и сохраняет их светотень. %ALT%+щелчок берет основной цвет.</translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation>Замена цвета: рисуйте поверх цвета, чтобы заменить его основным цветом. Допуск задает, насколько пиксель должен быть близок к цвету пробы.</translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation>Инструменты кисти</translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation>Сменить инструмент кисти</translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
+        <translation>Допуск: %1%</translation>
     </message>
 </context>
 <context>

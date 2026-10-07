@@ -8909,6 +8909,10 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>Sustitución de color</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10464,6 +10468,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>Cuadro de recorte restablecido al lienzo</translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation>Sustitución de color no está disponible mientras se edita un canal en escala de grises</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>Sustitución de color</translation>
     </message>
 </context>
 <context>
@@ -18658,6 +18670,90 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation>Tono</translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation>Saturación</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Color</translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation>Luminosidad</translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation>Muestreo:</translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation>Continuo</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation>Una vez</translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation>Muestra de fondo</translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation>Qué color sustituye el pincel: el color bajo cada toque, el color donde empieza el trazo o el color de fondo</translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation>Límites:</translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation>No contiguo</translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation>Hallar bordes</translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation>No contiguo sustituye cada coincidencia bajo el pincel; Contiguo solo las conectadas con su centro; Hallar bordes además se detiene en los bordes nítidos</translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation>Cuánto puede diferir el color de un píxel del color muestreado y aun así sustituirse</translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation>Atenuar la sustitución cerca del límite de tolerancia para obtener bordes suaves</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>Sustitución de color</translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation>Pinta el color frontal sobre los píxeles que coinciden con el color muestreado y conserva su sombreado. %ALT%+clic toma el color frontal.</translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation>Sustitución de color: pinte sobre un color para sustituirlo por el color frontal. La tolerancia define cuánto debe parecerse un píxel al color muestreado.</translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation>Herramientas de pincel</translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation>Alternar herramientas de pincel</translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
+        <translation>Tolerancia: %1%</translation>
     </message>
 </context>
 <context>

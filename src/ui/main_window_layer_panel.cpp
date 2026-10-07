@@ -4107,6 +4107,10 @@ void MainWindow::refresh_document_info() {
       lines << tr("Size: %1 px").arg(canvas_->brush_size())
             << tr("Strength: %1%").arg(canvas_->local_adjustment_strength())
             << tr("Softness: %1%").arg(canvas_->brush_softness());
+    } else if (current_tool_ == CanvasTool::ColorReplacement) {
+      lines << tr("Size: %1 px").arg(canvas_->brush_size())
+            << tr("Softness: %1%").arg(canvas_->brush_softness())
+            << tr("Tolerance: %1%").arg(canvas_->color_replacement_settings().tolerance);
     } else if (current_tool_ == CanvasTool::MagicWand) {
       lines << tr("Tolerance: %1 | %2 | %3")
                    .arg(canvas_->wand_tolerance())
