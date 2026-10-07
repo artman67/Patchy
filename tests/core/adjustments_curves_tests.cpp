@@ -56,6 +56,7 @@
 #include "test_harness.hpp"
 #include "local_psd_fixtures.hpp"
 #include "synthetic_dng.hpp"
+#include "unicode_path_names.hpp"
 
 #include <algorithm>
 #include <array>
@@ -73,6 +74,7 @@
 #include <iostream>
 #include <iterator>
 #include <limits>
+#include <locale>
 #include <numeric>
 #include <optional>
 #include <span>
@@ -2334,6 +2336,271 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+// A .cube file for a grid whose node at normalized (r, g, b) holds `node(r, g, b)`,
+// red varying fastest, written with six decimals like most producers.
+std::vector<std::uint8_t> cube_bytes(int grid, const std::function<std::array<double, 3>(double, double, double)>& node,
+                                     const std::string& header = "TITLE \"test\"\n") {
+  std::ostringstream text;
+  text.imbue(std::locale::classic());
+  text << header << "LUT_3D_SIZE " << grid << "\n" << std::fixed << std::setprecision(6);
+  for (int blue = 0; blue < grid; ++blue) {
+    for (int green = 0; green < grid; ++green) {
+      for (int red = 0; red < grid; ++red) {
+        const auto scale = static_cast<double>(grid - 1);
+        const auto value = node(red / scale, green / scale, blue / scale);
+        text << value[0] << ' ' << value[1] << ' ' << value[2] << "\n";
+      }
+    }
+  }
+  const auto string = text.str();
+  return {string.begin(), string.end()};
+}
+
+std::vector<std::uint8_t> text_bytes(std::string_view text) {
+  return {text.begin(), text.end()};
+}
+
+void color_lookup_cube_tables_apply_exactly_and_reject_malformed_files() {
+  const auto identity = [](double r, double g, double b) { return std::array<double, 3>{r, g, b}; };
+  const auto same = [](patchy::RgbColor a, patchy::RgbColor b) {
+    return a.red == b.red && a.green == b.green && a.blue == b.blue;
+  };
+  // An identity table is an exact no-op on every color, with and without Dither.
+  for (const int grid : {2, 17, 33}) {
+    const auto table = patchy::parse_cube_lut(cube_bytes(grid, identity));
+    CHECK(table.has_value() && table->grid == grid && table->valid());
+    if (!table.has_value()) {
+      continue;
+    }
+    bool exact = true;
+    for (int red = 0; red < 256 && exact; red += grid == 17 ? 1 : 5) {
+      for (int green = 0; green < 256 && exact; green += 3) {
+        for (int blue = 0; blue < 256; blue += 3) {
+          const patchy::RgbColor color{static_cast<std::uint8_t>(red), static_cast<std::uint8_t>(green),
+                                       static_cast<std::uint8_t>(blue)};
+          if (!same(table->apply(color, patchy::kColorLookupRoundNearest), color) ||
+              !same(table->apply(color, patchy::color_lookup_dither_threshold(red, blue)), color)) {
+            exact = false;
+            break;
+          }
+        }
+      }
+    }
+    CHECK(exact);
+  }
+
+  // A table linear in each channel maps exactly: red and blue swapped and green inverted.
+  const auto swap = patchy::parse_cube_lut(
+      cube_bytes(5, [](double r, double g, double b) { return std::array<double, 3>{b, 1.0 - g, r}; }));
+  CHECK(swap.has_value());
+  if (swap.has_value()) {
+    CHECK(same(swap->apply({200, 100, 50}, patchy::kColorLookupRoundNearest), {50, 155, 200}));
+    CHECK(same(swap->apply({0, 255, 255}, patchy::kColorLookupRoundNearest), {255, 0, 0}));
+  }
+  // Interpolation is tetrahedral: with only the white corner lit, (200, 100, 50) gets
+  // the smallest fraction's weight, 50/255 of white. Trilinear would give 15.
+  const auto corner = patchy::parse_cube_lut(cube_bytes(2, [](double r, double g, double b) {
+    const auto lit = r * g * b;
+    return std::array<double, 3>{lit, lit, lit};
+  }));
+  CHECK(corner.has_value());
+  if (corner.has_value()) {
+    CHECK(same(corner->apply({200, 100, 50}, patchy::kColorLookupRoundNearest), {50, 50, 50}));
+    CHECK(same(corner->apply({100, 50, 200}, patchy::kColorLookupRoundNearest), {50, 50, 50}));
+  }
+  // Dither rounds a fractional output up or down by position, averaging to the true
+  // value (0.5 = 127.5); Dither off rounds to nearest. The same position always agrees.
+  {
+    patchy::ColorLookupAdjustment settings;
+    settings.data = patchy::make_color_lookup_data(cube_bytes(2, [](double, double, double) {
+      return std::array<double, 3>{0.5, 0.5, 0.5};
+    }));
+    CHECK(settings.data != nullptr);
+    settings.dither = false;
+    CHECK(same(patchy::apply_color_lookup({10, 20, 30}, settings, 3, 4), {128, 128, 128}));
+    settings.dither = true;
+    int low = 0;
+    int high = 0;
+    for (int y = 0; y < 64; ++y) {
+      for (int x = 0; x < 64; ++x) {
+        const auto out = patchy::apply_color_lookup({10, 20, 30}, settings, x, y);
+        CHECK(out.red == out.green && out.green == out.blue);  // one threshold for all channels
+        low += out.red == 127 ? 1 : 0;
+        high += out.red == 128 ? 1 : 0;
+      }
+    }
+    CHECK(low + high == 64 * 64);
+    CHECK(std::abs(static_cast<double>(high) / (64.0 * 64.0) - 0.5) < 0.05);
+    CHECK(same(patchy::apply_color_lookup({10, 20, 30}, settings, 7, 9),
+               patchy::apply_color_lookup({90, 20, 30}, settings, 7, 9)));
+  }
+
+  // Header variants producers write: comments, CRLF, a BOM, the default domain.
+  const auto variant = text_bytes(
+      "\xEF\xBB\xBF# made by hand\r\nTITLE \"x\"\r\nDOMAIN_MIN 0 0 0\r\nDOMAIN_MAX 1.0 1.0 1.0\r\n"
+      "LUT_3D_SIZE 2\r\n0 0 0\r\n1 0 0\r\n0 1 0\r\n1 1 0\r\n0 0 1\r\n1 0 1\r\n0 1 1\r\n1 1 1 # last\r\n");
+  CHECK(patchy::parse_cube_lut(variant).has_value());
+  // Malformed or unsupported files are refused without crashing.
+  const std::string rows = "0 0 0\n1 0 0\n0 1 0\n1 1 0\n0 0 1\n1 0 1\n0 1 1\n";
+  for (const auto& bad : std::vector<std::string>{
+           "",
+           rows + "1 1 1\n",                                       // no size
+           "LUT_3D_SIZE 1\n0 0 0\n",                               // below the minimum
+           "LUT_3D_SIZE 257\n" + rows,                             // above the maximum
+           "LUT_3D_SIZE 256\n0 0 0\n",                             // far more rows claimed than the file holds
+           "LUT_3D_SIZE 2.5\n" + rows + "1 1 1\n",                 // fractional size
+           "LUT_3D_SIZE 2\n" + rows,                               // a row short
+           "LUT_3D_SIZE 2\n" + rows + "1 1 1\n1 1 1\n",            // a row over
+           "LUT_3D_SIZE 2\n" + rows + "1 1 x\n",                   // not a number
+           "LUT_3D_SIZE 2\n" + rows + "1 1 nan\n",                 // not a number either
+           "LUT_3D_SIZE 2\n" + rows + "1 1\n",                     // two values
+           "LUT_3D_SIZE 2\n" + rows + "1 1 1 1\n",                 // four values
+           "LUT_1D_SIZE 2\nLUT_3D_SIZE 2\n" + rows + "1 1 1\n",    // shaper LUT
+           "DOMAIN_MAX 2 2 2\nLUT_3D_SIZE 2\n" + rows + "1 1 1\n",  // non-default domain
+           "LUT_3D_SIZE 2\n0 0 0\nTITLE \"late\"\n" + rows.substr(6) + "1 1 1\n",  // keyword inside the data
+       }) {
+    CHECK(!patchy::parse_cube_lut(text_bytes(bad)).has_value());
+  }
+  std::vector<std::uint8_t> noise(4096);
+  std::uint32_t state = 12345;
+  for (auto& byte : noise) {
+    state = state * 1664525U + 1013904223U;
+    byte = static_cast<std::uint8_t>(state >> 24U);
+  }
+  CHECK(!patchy::parse_cube_lut(noise).has_value());
+  CHECK(patchy::make_color_lookup_data(noise) == nullptr);
+
+  // Reading from a Unicode path.
+  const auto dir = patchy::test::unicode_artifact_dir(u8"color-lookup");
+  const auto path =
+      dir / patchy::test::unicode_path_piece(std::u8string(patchy::test::kUnicodeCombinedStem) + u8".cube");
+  const auto bytes = cube_bytes(3, identity);
+  {
+    std::ofstream out(path, std::ios::binary);
+    out.write(reinterpret_cast<const char*>(bytes.data()), static_cast<std::streamsize>(bytes.size()));
+  }
+  const auto loaded = patchy::read_color_lookup_file(path);
+  CHECK(loaded != nullptr && loaded->file_bytes == bytes && loaded->table.grid == 3);
+  CHECK(patchy::read_color_lookup_file(dir / "missing.cube") == nullptr);
+}
+
+void adjustment_color_lookup_psd_round_trip_embeds_the_lut() {
+  CHECK(patchy::adjustment_kind_key(patchy::AdjustmentKind::ColorLookup) == "color_lookup");
+  CHECK(patchy::adjustment_kind_from_key("color_lookup") == patchy::AdjustmentKind::ColorLookup);
+
+  patchy::AdjustmentSettings settings;
+  settings.kind = patchy::AdjustmentKind::ColorLookup;
+  CHECK(!patchy::adjustment_has_effect(settings));  // no LUT chosen yet
+  const auto lut_bytes =
+      cube_bytes(4, [](double r, double g, double b) { return std::array<double, 3>{b, 1.0 - g, r}; },
+                 "# round trip\nTITLE \"swap\"\n");
+  settings.color_lookup.data = patchy::make_color_lookup_data(lut_bytes);
+  settings.color_lookup.name = "swap.cube";
+  settings.color_lookup.dither = true;
+  CHECK(settings.color_lookup.data != nullptr);
+  CHECK(patchy::adjustment_has_effect(settings));
+  CHECK(!patchy::build_adjustment_lut(settings).has_value());  // whole-color map: per-pixel path
+
+  patchy::Document document(2, 1, patchy::PixelFormat::rgb8());
+  document.add_pixel_layer("Base", solid_rgb(2, 1, 200, 100, 50));
+  patchy::Layer layer(document.allocate_layer_id(), "Color Lookup", patchy::LayerKind::Adjustment);
+  layer.set_bounds(patchy::Rect::from_size(document.width(), document.height()));
+  patchy::configure_adjustment_layer(layer, settings);
+  document.add_layer(std::move(layer));
+
+  const auto bytes = patchy::psd::DocumentIo::write_layered_rgb8(document);
+  const auto extra = psd_layer_extra_data(bytes, 1);
+  const auto block = psd_layer_block_payload(extra, "clrL");
+  CHECK(block.has_value());
+  if (!block.has_value()) {
+    return;
+  }
+  // u16 version 1, u32 descriptor version 16, then the descriptor.
+  CHECK(block->size() > 6 && (*block)[0] == 0 && (*block)[1] == 1 && (*block)[5] == 16);
+  patchy::psd::BigEndianReader reader(std::span<const std::uint8_t>(*block).subspan(6));
+  const auto descriptor = patchy::psd::read_descriptor(reader);
+  const auto* type = patchy::psd::descriptor_value(descriptor, "lookupType");
+  CHECK(type != nullptr && type->enum_type == "colorLookupType" && type->enum_value == "3DLUT");
+  const auto* data = patchy::psd::descriptor_value(descriptor, "LUT3DFileData");
+  CHECK(data != nullptr && data->raw_value == lut_bytes);  // the file travels inside the document
+  const auto* format = patchy::psd::descriptor_value(descriptor, "LUTFormat");
+  CHECK(format != nullptr && format->enum_value == "LUTFormatCUBE");
+  const auto* name = patchy::psd::descriptor_value(descriptor, "Nm  ");
+  CHECK(name != nullptr && name->string_value == "swap.cube");
+  const auto* profile = patchy::psd::descriptor_value(descriptor, "profile");
+  // An ICC device link: 'acsp' at byte 36, class 'link' at byte 12.
+  CHECK(profile != nullptr && profile->raw_value.size() > 128 &&
+        std::string(profile->raw_value.begin() + 36, profile->raw_value.begin() + 40) == "acsp" &&
+        std::string(profile->raw_value.begin() + 12, profile->raw_value.begin() + 16) == "link");
+  CHECK(!psd_layer_block_payload(extra, "plAD").has_value());
+
+  const auto read = patchy::psd::DocumentIo::read(bytes);
+  CHECK(read.layers().size() == 2);
+  const auto restored = patchy::adjustment_settings_from_layer(read.layers()[1]);
+  CHECK(restored.has_value() && restored->kind == patchy::AdjustmentKind::ColorLookup);
+  if (!restored.has_value() || restored->color_lookup.data == nullptr) {
+    CHECK(false);
+    return;
+  }
+  CHECK(restored->color_lookup.data->file_bytes == lut_bytes);
+  CHECK(restored->color_lookup.name == "swap.cube");
+  CHECK(restored->color_lookup.dither);
+  // Red and blue swap, green inverts; a linear table is exact even with Dither on.
+  const auto flattened = patchy::Compositor{}.flatten_rgb8(read);
+  for (int x = 0; x < 2; ++x) {
+    CHECK(flattened.pixel(x, 0)[0] == 50 && flattened.pixel(x, 0)[1] == 155 && flattened.pixel(x, 0)[2] == 200);
+  }
+
+  // Resaving unedited writes the imported payload back byte for byte; turning Dither
+  // off regenerates it with the same embedded file.
+  const auto save_with_imported_block = [&](bool dither) {
+    patchy::Document imported(2, 1, patchy::PixelFormat::rgb8());
+    imported.add_pixel_layer("Base", solid_rgb(2, 1, 200, 100, 50));
+    patchy::Layer adjustment(imported.allocate_layer_id(), "Color Lookup", patchy::LayerKind::Adjustment);
+    adjustment.set_bounds(patchy::Rect::from_size(2, 1));
+    auto edited = *restored;
+    edited.color_lookup.dither = dither;
+    patchy::configure_adjustment_layer(adjustment, edited);
+    adjustment.unknown_psd_blocks().push_back(patchy::UnknownPsdBlock{"clrL", *block});
+    imported.add_layer(std::move(adjustment));
+    return patchy::psd::DocumentIo::write_layered_rgb8(imported);
+  };
+  CHECK(psd_layer_block_payload(psd_layer_extra_data(save_with_imported_block(true), 1), "clrL") == *block);
+  const auto edited = save_with_imported_block(false);
+  const auto edited_block = psd_layer_block_payload(psd_layer_extra_data(edited, 1), "clrL");
+  CHECK(edited_block.has_value() && *edited_block != *block);
+  const auto reread = patchy::adjustment_settings_from_layer(patchy::psd::DocumentIo::read(edited).layers()[1]);
+  CHECK(reread.has_value() && !reread->color_lookup.dither && reread->color_lookup.data != nullptr &&
+        reread->color_lookup.data->file_bytes == lut_bytes);
+
+  // The modes Patchy does not model (here Abstract) stay an opaque layer whose block is
+  // written back unchanged, and a truncated block never parses as an adjustment.
+  patchy::psd::DescriptorObject abstract;
+  abstract.class_id = "null";
+  patchy::psd::DescriptorValue abstract_type;
+  abstract_type.type = patchy::psd::DescriptorValue::Type::Enum;
+  abstract_type.enum_type = "colorLookupType";
+  abstract_type.enum_value = "abstractProfile";
+  abstract_type.enum_type_long_form = true;
+  abstract_type.enum_value_long_form = true;
+  abstract.values.emplace("lookupType", abstract_type);
+  abstract.key_order.push_back({"lookupType", true});
+  patchy::psd::BigEndianWriter writer;
+  writer.write_u16(1);
+  writer.write_u32(16);
+  patchy::psd::write_descriptor(writer, abstract);
+  for (const auto& payload : {writer.bytes(), std::vector<std::uint8_t>(block->begin(), block->begin() + 40)}) {
+    patchy::Document opaque(2, 1, patchy::PixelFormat::rgb8());
+    opaque.add_pixel_layer("Base", solid_rgb(2, 1, 200, 100, 50));
+    auto& lookup = opaque.add_pixel_layer("Lookup", solid_rgba(2, 1, 0, 0, 0, 0));
+    lookup.unknown_psd_blocks().push_back(patchy::UnknownPsdBlock{"clrL", payload});
+    const auto opened = patchy::psd::DocumentIo::read(patchy::psd::DocumentIo::write_layered_rgb8(opaque));
+    CHECK(opened.layers().size() == 2 && opened.layers()[1].kind() != patchy::LayerKind::Adjustment);
+    const auto resaved = patchy::psd::DocumentIo::write_layered_rgb8(opened);
+    CHECK(psd_layer_block_payload(psd_layer_extra_data(resaved, 1), "clrL") == payload);
+  }
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3084,6 +3351,9 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"psd_posterize_threshold_write_native_blocks_and_round_trip",
        psd_posterize_threshold_write_native_blocks_and_round_trip},
       {"adjustment_exposure_math_metadata_and_psd_round_trip", adjustment_exposure_math_metadata_and_psd_round_trip},
+      {"color_lookup_cube_tables_apply_exactly_and_reject_malformed_files",
+       color_lookup_cube_tables_apply_exactly_and_reject_malformed_files},
+      {"adjustment_color_lookup_psd_round_trip_embeds_the_lut", adjustment_color_lookup_psd_round_trip_embeds_the_lut},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",

@@ -8909,6 +8909,38 @@ RVB : %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapport</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Correspondance de la couleur</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>Charger une table de correspondance 3D...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>Fichier 3DLUT :</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>Charger une table de correspondance 3D</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>Table de correspondance Cube (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>Impossible de charger la table de correspondance 3D. Patchy lit les fichiers .cube 3D jusqu’à 64 Mo ; le fichier est peut-être endommagé ou non pris en charge.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Correspondance de la couleur : aucune table de correspondance 3D chargée</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Correspondance de la couleur : %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18690,18 @@ Convertis en images : %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Hauteur du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>C&amp;orrespondance de la couleur...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Correspondance de la couleur</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Correspondance de la couleur annulée</translation>
     </message>
 </context>
 <context>

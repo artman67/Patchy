@@ -630,6 +630,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(250, 225, 120);
     case AdjustmentKind::Exposure:
       return QColor(255, 170, 110);
+    case AdjustmentKind::ColorLookup:
+      return QColor(175, 150, 245);
   }
   return QColor(145, 175, 215);
 }
@@ -773,6 +775,11 @@ QString adjustment_settings_summary(const Layer& layer) {
           .arg(QLocale().toString(settings->exposure.exposure_hundredths / 100.0, 'f', 2))
           .arg(QLocale().toString(settings->exposure.offset_ten_thousandths / 10000.0, 'f', 4))
           .arg(QLocale().toString(settings->exposure.gamma_hundredths / 100.0, 'f', 2));
+    case AdjustmentKind::ColorLookup:
+      if (settings->color_lookup.data == nullptr) {
+        return QObject::tr("Color Lookup: no 3D LUT loaded");
+      }
+      return QObject::tr("Color Lookup: %1").arg(QString::fromStdString(settings->color_lookup.name));
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
@@ -1050,6 +1057,24 @@ void draw_exposure_adjustment_thumbnail_symbol(QPainter& painter, const QColor& 
   painter.drawRect(square);
 }
 
+void draw_color_lookup_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
+  // A 3 x 3 grid of shifted colors: one slice of the lookup table.
+  const std::array<QColor, 9> cells{QColor(40, 60, 120),  QColor(70, 120, 170), QColor(120, 200, 215),
+                                    QColor(150, 60, 110), QColor(185, 135, 130), QColor(215, 220, 170),
+                                    QColor(235, 90, 60),  QColor(245, 170, 80),  QColor(250, 240, 200)};
+  const QRectF square(7.0, 7.0, 14.0, 14.0);
+  const auto cell = square.width() / 3.0;
+  painter.setPen(Qt::NoPen);
+  for (std::size_t index = 0; index < cells.size(); ++index) {
+    const auto column = static_cast<double>(index % 3U);
+    const auto row = static_cast<double>(index / 3U);
+    painter.fillRect(QRectF(square.left() + column * cell, square.top() + row * cell, cell, cell), cells[index]);
+  }
+  painter.setPen(QPen(accent.lighter(120), 1.5));
+  painter.setBrush(Qt::NoBrush);
+  painter.drawRect(square);
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1280,6 +1305,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::Exposure:
           draw_exposure_adjustment_thumbnail_symbol(painter, accent);
+          break;
+        case AdjustmentKind::ColorLookup:
+          draw_color_lookup_adjustment_thumbnail_symbol(painter, accent);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);

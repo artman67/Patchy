@@ -8909,6 +8909,38 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Consulta de colores</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT...</source>
+        <translation>Cargar LUT 3D...</translation>
+    </message>
+    <message>
+        <source>3DLUT File:</source>
+        <translation>Archivo 3DLUT:</translation>
+    </message>
+    <message>
+        <source>Load 3D LUT</source>
+        <translation>Cargar LUT 3D</translation>
+    </message>
+    <message>
+        <source>Cube LUT (*.cube)</source>
+        <translation>LUT Cube (*.cube)</translation>
+    </message>
+    <message>
+        <source>The 3D LUT could not be loaded. Patchy reads 3D .cube files up to 64 MB; the file may be damaged or unsupported.</source>
+        <translation>No se pudo cargar la LUT 3D. Patchy lee archivos .cube 3D de hasta 64 MB; es posible que el archivo esté dañado o no sea compatible.</translation>
+    </message>
+    <message>
+        <source>Color Lookup: no 3D LUT loaded</source>
+        <translation>Consulta de colores: no se ha cargado ninguna LUT 3D</translation>
+    </message>
+    <message>
+        <source>Color Lookup: %1</source>
+        <translation>Consulta de colores: %1</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18690,18 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>C&amp;olor Lookup...</source>
+        <translation>C&amp;onsulta de colores...</translation>
+    </message>
+    <message>
+        <source>Color Lookup</source>
+        <translation>Consulta de colores</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Lookup</source>
+        <translation>Se ha cancelado Consulta de colores</translation>
     </message>
 </context>
 <context>

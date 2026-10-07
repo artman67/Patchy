@@ -74,6 +74,7 @@ struct ColorBalanceSettings {
 using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
+using ColorLookupSettings = ColorLookupAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 
 struct FilterControlSpec {
@@ -166,6 +167,11 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<ExposureSettings> request_exposure_settings(
     QWidget* parent, std::function<void(bool, const ExposureSettings&)> preview_changed = {},
     ExposureSettings initial = {});
+// Photoshop's Color Lookup dialog in its 3DLUT File mode: a file dropdown (None, the
+// loaded LUT, Load 3D LUT...) and Dither.
+[[nodiscard]] std::optional<ColorLookupSettings> request_color_lookup_settings(
+    QWidget* parent, std::function<void(bool, const ColorLookupSettings&)> preview_changed = {},
+    ColorLookupSettings initial = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -202,5 +208,7 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+void apply_color_lookup_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                  const ColorLookupSettings& settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

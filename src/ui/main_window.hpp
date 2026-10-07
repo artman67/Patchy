@@ -107,6 +107,7 @@ using LevelsSettings = LevelsAdjustment;
 using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
+using ColorLookupSettings = ColorLookupAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 struct ScannerAcquireResult;
 struct UpdateInfo;
@@ -1043,6 +1044,9 @@ private:
   void apply_threshold_adjustment(const ThresholdSettings& settings, bool allow_identity = false);
   void new_exposure_adjustment_layer();
   void apply_exposure_adjustment(const ExposureSettings& settings, bool allow_identity = false);
+  void new_color_lookup_adjustment_layer();
+  void apply_color_lookup_adjustment(const ColorLookupSettings& settings, bool allow_identity = false);
+  void color_lookup_dialog();
   void new_brightness_contrast_adjustment_layer();
   void apply_brightness_contrast_adjustment(const BrightnessContrastSettings& settings,
                                             bool allow_identity = false);

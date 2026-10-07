@@ -1337,6 +1337,15 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   register_hotkey(color_balance_action, "image.color_balance", QKeySequence(Qt::CTRL | Qt::Key_B));
   connect(color_balance_action, &QAction::triggered, this, [this] { color_balance_dialog(); });
   register_document_action(color_balance_action);
+  // Photoshop lists Color Lookup after Channel Mixer, at the end of the color group,
+  // and gives it no shortcut.
+  auto* color_lookup_action = adjustments_menu->addAction(tr("C&olor Lookup..."));
+  bind_action_text(color_lookup_action, QT_TR_NOOP("C&olor Lookup..."));
+  color_lookup_action->setObjectName(QStringLiteral("imageAdjustColorLookupAction"));
+  color_lookup_action->setIcon(simple_icon(QStringLiteral("LUT")));
+  register_hotkey(color_lookup_action, "image.color_lookup");
+  connect(color_lookup_action, &QAction::triggered, this, [this] { color_lookup_dialog(); });
+  register_document_action(color_lookup_action);
   add_adjustment_action(QT_TR_NOOP("&Desaturate"), QStringLiteral("imageAdjustDesaturateAction"),
                         QStringLiteral("patchy.filters.desaturate"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_U));

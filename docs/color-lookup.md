@@ -1,0 +1,34 @@
+# Color Lookup
+
+Photoshop's Color Lookup adjustment in its 3DLUT File mode: `AdjustmentKind::ColorLookup`. Table, parser and registry in `core/color_lookup.{hpp,cpp}`; settings, metadata and rendering hooks in `core/adjustment_layer.*`; the `clrL` codec in `psd/psd_adjustments.cpp`; the ICC device link in `color/color_management.cpp`; dialog in `ui/adjustment_dialogs.cpp`. Not calibrated against Photoshop (none was available); every Photoshop-facing fact below that is not pinned by a Patchy test is unverified.
+
+## Behavior
+
+- Entry points: Layer > New Adjustment Layer > Color Lookup..., the Layers panel adjustment button, editing the layer, and Image > Adjustments > Color Lookup... (destructive: active RGB pixel layer, selection-aware, one undo step, `apply_color_lookup_to_pixels`). The destructive command equals a Color Lookup layer with the same settings, Dither included.
+- Dialog: 3DLUT File dropdown (None, the loaded file, Load 3D LUT...), Dither (default on), Preview. A layer with no LUT is allowed and has no effect, as in Photoshop. No presets ship: Adobe's bundled LUTs are copyrighted, and Patchy generates none.
+- Omitted: the Abstract and Device Link modes (ICC profiles), .3dl, .look and .csp files, the Data Order and Table Order controls, and File > Export > Color Lookup Tables.
+- Interpolation is tetrahedral, in integer math: the cell splits into six tetrahedra along its gray diagonal, fractions are 1/255 steps (`v * (N-1)` divided by 255), nodes are 16-bit, and the output byte is `(sum + rounding) / 65535`. Grays read only diagonal nodes, so a table that keeps neutrals neutral keeps them exactly. An identity table is a byte-exact no-op with or without Dither (pinned on grids 2, 17 and 33).
+- Dither: the rounding offset is a splitmix64 hash of the pixel's document position mapped onto 128..65407 (one offset for all three channels; Dither off uses 32767, round to nearest). The bounds keep any node within half a 16-bit step on its byte. Every compositor passes document coordinates (`apply_adjustment_to_color(color, settings, x, y)`); callers without a position use (0, 0), which only matters for Dither. Photoshop's own dither pattern is unknown.
+- Ink space: Color Lookup does not take part. CMYK and grayscale documents run the RGB table (Photoshop offers only the profile modes in CMYK; unverified).
+- `.cube` parsing (`parse_cube_lut`, untrusted input): optional BOM, `#` comments, CRLF, TITLE and unknown keywords before the data; `LUT_3D_SIZE` 2..256 (the Cube specification's range); `DOMAIN_MIN`/`DOMAIN_MAX`/`LUT_3D_INPUT_RANGE` only at their 0..1 default; exactly N^3 rows of three numbers, red fastest. Refused: 1D and shaper LUTs, other domains, missing, extra or non-numeric rows, a keyword inside the data, files over 64 MiB, and a size the file cannot hold (checked before allocating). Values clamp to 0..1. Numbers go through a locale-free parser.
+- Storage: a LUT is `ColorLookupData` (file bytes plus the parsed table) in a process registry keyed by an FNV-1a id (`cube-<16 hex>`); layer metadata holds only the id, the file name and Dither (`patchy.adjustment.color_lookup.*`). `configure_adjustment_layer` registers the table, so the id always resolves in the running process; entries live until exit. Undo snapshots copy only the metadata strings, though an imported layer also keeps its original `clrL` bytes for byte-for-byte resave.
+
+## PSD `clrL`
+
+Layout per Adobe's [PSD specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/): u16 version 1, u32 descriptor version 16, a descriptor. The specification gives no item keys; these are Photoshop's Action Manager names as public PSD libraries record them: `lookupType` (enum `colorLookupType`: `3DLUT`, `abstractProfile`, `deviceLinkProfile`), `Nm  ` (TEXT), `Dthr` (bool), `profile` (tdta, ICC), `LUTFormat` (enum `LUTFormatType`: `LUTFormatCUBE`, `LUTFormat3DL`, `LUTFormatLOOK`), `dataOrder` and `tableOrder` (enum `colorLookupOrder`: `rgbOrder`, `bgrOrder`), `LUT3DFileData` (tdta, the LUT file) and `LUT3DFileName` (TEXT).
+
+- Write: all nine items in that order. `profile` is an lcms2 RGB-to-RGB device link (ICC 4.4, identity A curves, the 16-bit table as CLUT, identity B curves; omitted above 255 nodes per axis, the ICC grid limit, which the 64 MiB cap already excludes). `dataOrder` rgbOrder and `tableOrder` bgrOrder are believed to be Photoshop's defaults for a loaded .cube (unverified). `Nm  ` and `LUT3DFileName` carry the file name only, never a local path. No LUT: only `lookupType`, `Nm  ` (empty) and `Dthr`.
+- Read: a 3DLUT block (or one without `lookupType`) whose `LUT3DFileData` parses as .cube becomes an editable layer; no file data and no profile is an empty Color Lookup layer. Abstract, Device Link, .3dl/.look data, a profile without its file, or a malformed block stay on the opaque path (empty pixel layer, block written back unchanged).
+- An unedited imported block is written back byte for byte. An edit regenerates it from the imported descriptor, keeping its other items and Photoshop's own `profile` while the LUT is unchanged.
+- Pinned by `adjustment_color_lookup_psd_round_trip_embeds_the_lut` (embedded file, profile header, reread render, byte-for-byte resave, Abstract and truncated blocks stay opaque) and `color_lookup_cube_tables_apply_exactly_and_reject_malformed_files`. UI: `ui_color_lookup_adjustment_layer_and_image_command`.
+- Owed: Photoshop opening a Patchy `clrL` (no warning, an editable Color Lookup layer, matching render); whether Photoshop renders from `profile` or `LUT3DFileData`; its Dither default, order enums, interpolation and dither; a Photoshop-saved fixture.
+
+## Patent note (October 2026)
+
+Claim text read on Google Patents.
+
+- Tetrahedral interpolation of 3D color tables: Dainippon Screen US 4275413 (filed 1979) expired 1998.
+- HP US 11288558 (to 2038-10-31): every independent claim drives a printer or printhead from one lookup-table node chosen per pixel, the interpolation weights acting as selection probabilities. Patchy blends all four nodes and dithers only the rounding of the blended value for display; no node is selected and nothing drives a printer.
+- ATI US 10424269 (to 2036-12-22): vertices addressed by the m most significant bits of the input plus an adjustment p, 2^m + 1 + 4p nodes per axis. Patchy indexes any grid by integer division of `v * (N-1)`; no bit-field addressing.
+- ATI US 11100889 (to 2039-02-28): a display controller interpolating from three cube vertices plus a stored interior (centroid) mapping. Patchy's tetrahedra use four cube corners and store no interior points.
+- Binding: keep a uniform-grid table, corner-only tetrahedral (or trilinear) interpolation and a position-hash rounding dither. Stored interior points, most-significant-bit addressing with variable node counts, or per-pixel node selection need a new check.

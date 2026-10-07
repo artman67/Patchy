@@ -123,6 +123,15 @@ constexpr std::array<char, 4> kPhotoshopThresholdBlockKey{'t', 'h', 'r', 's'};
 // big-endian float32, then 2 zero pad bytes (psd-tools' exposure_rgb.psd, saved
 // by Photoshop: 00 01 | 40 01 EB 85 | 3D 9E B8 52 | 3F C2 8F 5C | 00 00).
 constexpr std::array<char, 4> kPhotoshopExposureBlockKey{'e', 'x', 'p', 'A'};
+// Color Lookup is a u16 version (1), a u32 descriptor version (16) and a 'null'
+// descriptor (Adobe's PSD specification gives only that wrapper:
+// https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/). Its items are
+// Photoshop's Action Manager names: lookupType (enum colorLookupType: 3DLUT,
+// abstractProfile, deviceLinkProfile), 'Nm  ' (TEXT), 'Dthr' (bool), profile (tdta, an
+// ICC profile), LUTFormat (enum LUTFormatType: LUTFormatCUBE, LUTFormat3DL,
+// LUTFormatLOOK), dataOrder and tableOrder (enum colorLookupOrder: rgbOrder,
+// bgrOrder), LUT3DFileData (tdta, the LUT file's bytes) and LUT3DFileName (TEXT).
+constexpr std::array<char, 4> kPhotoshopColorLookupBlockKey{'c', 'l', 'r', 'L'};
 // Brightness/Contrast: legacy-mode PS 2026 writes ONLY the 8-byte 'brit'
 // (brightness i16, contrast i16, mean u16 = 127, lab u8 = 0, pad u8 = 0);
 // modern mode writes an all-zero 'brit' plus a 'CgEd' descriptor (u32 version
@@ -567,6 +576,11 @@ std::vector<std::uint8_t> photoshop_threshold_payload(const ThresholdAdjustment&
 std::optional<AdjustmentSettings> parse_photoshop_exposure_adjustment(std::span<const std::uint8_t> payload);
 std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& settings,
                                                      const UnknownPsdBlock* original);
+// 3DLUT mode with .cube data (or no LUT yet) only; the profile modes and .3dl/.look
+// data return nullopt and stay on the opaque, byte-preserved path.
+std::optional<AdjustmentSettings> parse_photoshop_color_lookup_adjustment(std::span<const std::uint8_t> payload);
+std::vector<std::uint8_t> photoshop_color_lookup_payload(const ColorLookupAdjustment& settings,
+                                                         const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_brightness_contrast_adjustment(
     std::span<const std::uint8_t> payload);
 struct BrightnessContrastDescriptorParse {
