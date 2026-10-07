@@ -7,6 +7,7 @@
 #include "core/gradient_presets.hpp"
 #include "filters/filter_engine.hpp"
 #include "filters/filter_registry.hpp"
+#include "filters/shadows_highlights.hpp"
 #include "filters/smart_filter_recipe_mapping.hpp"
 #include "filters/smart_filter_renderer.hpp"
 #include "formats/acv_curves_io.hpp"
@@ -2337,6 +2338,180 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+// Shadows/Highlights test images: RGBA8 from a per-pixel color function.
+patchy::PixelBuffer shadows_highlights_image(std::int32_t width, std::int32_t height,
+                                             const std::function<std::array<std::uint8_t, 4>(int, int)>& color_at) {
+  patchy::PixelBuffer pixels(width, height, patchy::PixelFormat::rgba8());
+  for (std::int32_t y = 0; y < height; ++y) {
+    for (std::int32_t x = 0; x < width; ++x) {
+      const auto color = color_at(x, y);
+      std::copy(color.begin(), color.end(), pixels.pixel(x, y));
+    }
+  }
+  return pixels;
+}
+
+// Left half dark (gray, then a dark orange), right half bright, with a black and a white
+// column so the default 0.01 % clips find real extremes and stay identity, and one fully
+// transparent column carrying stray RGB.
+patchy::PixelBuffer shadows_highlights_split_image(bool with_extremes) {
+  return shadows_highlights_image(200, 40, [with_extremes](int x, int) -> std::array<std::uint8_t, 4> {
+    if (with_extremes && x < 4) {
+      return {0, 0, 0, 255};
+    }
+    if (with_extremes && x >= 196) {
+      return {255, 255, 255, 255};
+    }
+    if (x == 150) {
+      return {10, 200, 30, 0};
+    }
+    if (x < 50) {
+      return {40, 40, 40, 255};
+    }
+    if (x < 100) {
+      return {80, 50, 30, 255};
+    }
+    return {220, 220, 220, 255};
+  });
+}
+
+std::array<std::uint8_t, 4> shadows_highlights_pixel(const patchy::PixelBuffer& pixels, int x, int y) {
+  const auto* px = pixels.pixel(x, y);
+  return {px[0], px[1], px[2], px[3]};
+}
+
+void shadows_highlights_defaults_lift_shadows_and_zero_amounts_are_identity() {
+  const patchy::ShadowsHighlightsSettings defaults;
+  CHECK(defaults.shadows.amount == 35 && defaults.shadows.tone == 50 && defaults.shadows.radius == 30);
+  CHECK(defaults.highlights.amount == 0 && defaults.highlights.tone == 50 && defaults.highlights.radius == 30);
+  CHECK(defaults.color_correction == 20 && defaults.midtone_contrast == 0);
+  CHECK(defaults.black_clip_hundredths == 1 && defaults.white_clip_hundredths == 1);
+  CHECK(patchy::shadows_highlights_has_effect(defaults));
+
+  const auto original = shadows_highlights_split_image(true);
+  auto adjusted = original;
+  patchy::apply_shadows_highlights(adjusted, defaults);
+  // The dark gray rises and stays neutral; the dark orange rises and keeps its hue order.
+  const auto gray = shadows_highlights_pixel(adjusted, 25, 20);
+  CHECK(gray[0] > 60 && gray[0] == gray[1] && gray[1] == gray[2]);
+  const auto orange = shadows_highlights_pixel(adjusted, 60, 20);
+  CHECK(orange[0] > 80 && orange[0] > orange[1] && orange[1] > orange[2]);
+  // Bright areas, the extremes, and transparent pixels keep their exact bytes.
+  CHECK(shadows_highlights_pixel(adjusted, 180, 20) == shadows_highlights_pixel(original, 180, 20));
+  CHECK(shadows_highlights_pixel(adjusted, 1, 20) == shadows_highlights_pixel(original, 1, 20));
+  CHECK(shadows_highlights_pixel(adjusted, 198, 20) == shadows_highlights_pixel(original, 198, 20));
+  CHECK(shadows_highlights_pixel(adjusted, 150, 20) == shadows_highlights_pixel(original, 150, 20));
+
+  // Zero Amounts (or a zero Tone) with Midtone 0 change no byte, whatever the clips say.
+  const auto unchanged = [&](patchy::ShadowsHighlightsSettings settings) {
+    auto pixels = original;
+    patchy::apply_shadows_highlights(pixels, settings);
+    return !patchy::shadows_highlights_has_effect(settings) &&
+           std::equal(pixels.data().begin(), pixels.data().end(), original.data().begin());
+  };
+  auto zero = defaults;
+  zero.shadows.amount = 0;
+  zero.black_clip_hundredths = 5000;
+  zero.white_clip_hundredths = 5000;
+  CHECK(unchanged(zero));
+  auto no_tone = defaults;
+  no_tone.shadows.tone = 0;
+  CHECK(unchanged(no_tone));
+
+  // Black Clip re-anchors the lifted shadows: without true blacks the darkest lifted
+  // tone maps back to 0, while Black Clip 0 keeps the plain lift.
+  const auto hazy = shadows_highlights_split_image(false);
+  const auto darkest_visible = [](const patchy::PixelBuffer& pixels) {
+    int darkest = 255;
+    for (std::int32_t x = 0; x < pixels.width(); ++x) {
+      const auto pixel = shadows_highlights_pixel(pixels, x, 0);
+      if (pixel[3] != 0) {
+        darkest = std::min({darkest, int{pixel[0]}, int{pixel[1]}, int{pixel[2]}});
+      }
+    }
+    return darkest;
+  };
+  CHECK(darkest_visible(hazy) == 30);
+  auto clipped = hazy;
+  patchy::apply_shadows_highlights(clipped, defaults);
+  CHECK(darkest_visible(clipped) == 0);
+  auto unclipped_settings = defaults;
+  unclipped_settings.black_clip_hundredths = 0;
+  auto unclipped = hazy;
+  patchy::apply_shadows_highlights(unclipped, unclipped_settings);
+  CHECK(shadows_highlights_pixel(unclipped, 25, 20)[0] > 60);
+  CHECK(shadows_highlights_pixel(clipped, 25, 20)[0] < shadows_highlights_pixel(unclipped, 25, 20)[0]);
+}
+
+void shadows_highlights_controls_are_monotonic() {
+  const auto original = shadows_highlights_split_image(true);
+  const auto render = [&](const patchy::PixelBuffer& source, patchy::ShadowsHighlightsSettings settings, int x,
+                          int y) {
+    settings.black_clip_hundredths = 0;
+    settings.white_clip_hundredths = 0;
+    auto pixels = source;
+    patchy::apply_shadows_highlights(pixels, settings);
+    return shadows_highlights_pixel(pixels, x, y);
+  };
+
+  // Shadows Amount and Tone: more of either lifts the dark gray further; a Tone narrower
+  // than its neighborhood's brightness leaves it alone.
+  patchy::ShadowsHighlightsSettings settings;
+  int previous = 40;
+  for (const auto amount : {20, 50, 100}) {
+    settings.shadows.amount = amount;
+    const auto value = render(original, settings, 25, 20)[0];
+    CHECK(value > previous);
+    previous = value;
+  }
+  settings = {};
+  settings.shadows.tone = 10;
+  CHECK(render(original, settings, 25, 20)[0] == 40);
+  previous = 40;
+  for (const auto tone : {30, 60, 100}) {
+    settings.shadows.tone = tone;
+    const auto value = render(original, settings, 25, 20)[0];
+    CHECK(value > previous);
+    previous = value;
+  }
+
+  // Radius: a small dark spot in a bright field is its own neighborhood at radius 0 and is
+  // lifted most; growing radii pull in the bright surround until the spot is left alone.
+  const auto spot = shadows_highlights_image(120, 120, [](int x, int y) -> std::array<std::uint8_t, 4> {
+    const bool inside = x >= 57 && x < 63 && y >= 57 && y < 63;
+    return inside ? std::array<std::uint8_t, 4>{30, 30, 30, 255} : std::array<std::uint8_t, 4>{200, 200, 200, 255};
+  });
+  settings = {};
+  std::vector<int> lifted;
+  for (const auto radius : {0, 2, 4, 8, 60}) {
+    settings.shadows.radius = radius;
+    lifted.push_back(render(spot, settings, 60, 60)[0]);
+  }
+  CHECK(lifted.front() > 45 && lifted.back() == 30);
+  CHECK(std::is_sorted(lifted.rbegin(), lifted.rend()));
+
+  // Highlights darken the bright side and leave the dark side alone.
+  settings = {};
+  settings.shadows.amount = 0;
+  settings.highlights.amount = 50;
+  CHECK(render(original, settings, 180, 20)[0] < 210);
+  CHECK(render(original, settings, 25, 20)[0] == 40);
+  CHECK(render(original, settings, 198, 20)[0] == 255);
+
+  // Color scales the lifted orange's chroma; Midtone spreads tones away from 50 %.
+  settings = {};
+  settings.color_correction = 0;
+  const auto plain = render(original, settings, 60, 20);
+  settings.color_correction = 100;
+  const auto vivid = render(original, settings, 60, 20);
+  CHECK(vivid[0] - vivid[2] > plain[0] - plain[2]);
+  settings = {};
+  settings.shadows.amount = 0;
+  settings.midtone_contrast = 100;
+  CHECK(render(original, settings, 25, 20)[0] < 40);
+  CHECK(render(original, settings, 180, 20)[0] > 220);
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3018,6 +3193,9 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"curves_control_points_normalize_and_build_composed_luts",
        curves_control_points_normalize_and_build_composed_luts},
       {"curves_lut_matches_photoshop_2026_calibration", curves_lut_matches_photoshop_2026_calibration},
+      {"shadows_highlights_defaults_lift_shadows_and_zero_amounts_are_identity",
+       shadows_highlights_defaults_lift_shadows_and_zero_amounts_are_identity},
+      {"shadows_highlights_controls_are_monotonic", shadows_highlights_controls_are_monotonic},
       {"curves_eyedroppers_rebuild_neutral_component_curves",
        curves_eyedroppers_rebuild_neutral_component_curves},
       {"acv_v4_reads_photoshop_rgb_order_and_writes_canonical_bytes",

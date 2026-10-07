@@ -8909,6 +8909,47 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Verhältnis</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Tiefen/Lichter</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Stärke:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Tonbreite:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Radius:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Anpassungen</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Mitteltöne:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Schwarz beschneiden:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Weiß beschneiden:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Als Standard speichern</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Weitere Optionen einblenden</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18699,18 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Höhe des Zuschneiderahmens</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>&amp;Tiefen/Lichter...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Tiefen/Lichter</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Tiefen/Lichter abgebrochen</translation>
     </message>
 </context>
 <context>

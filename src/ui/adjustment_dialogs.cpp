@@ -10,7 +10,9 @@
 #include "ui/coalesced_preview_emitter.hpp"
 #include "ui/curves_editor.hpp"
 #include "ui/curves_presets.hpp"
+#include "ui/app_settings.hpp"
 #include "ui/dialog_utils.hpp"
+#include "ui/measurement_units.hpp"
 #include "ui/qt_paths.hpp"
 #include "ui/filter_workflows_internal.hpp"
 
@@ -23,6 +25,7 @@
 #include <QDialogButtonBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QGroupBox>
 #include <QFileInfo>
 #include <QHBoxLayout>
 #include <QIcon>
@@ -52,6 +55,7 @@
 #include <cstdint>
 #include <filesystem>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -1525,6 +1529,197 @@ std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
                            flush_preview();
                          });
       });
+}
+
+namespace {
+
+// Persisted keys (compatibility contracts): the Save Defaults values and the
+// Show More Options state.
+QString shadows_highlights_key(const char* name) {
+  return QStringLiteral("shadowsHighlights/") + QLatin1String(name);
+}
+
+ShadowsHighlightsSettings stored_shadows_highlights_defaults() {
+  auto settings = app_settings();
+  ShadowsHighlightsSettings value;
+  const auto read = [&settings](const char* name, int fallback) {
+    return settings.value(shadows_highlights_key(name), fallback).toInt();
+  };
+  value.shadows.amount = read("shadowsAmount", value.shadows.amount);
+  value.shadows.tone = read("shadowsTone", value.shadows.tone);
+  value.shadows.radius = read("shadowsRadius", value.shadows.radius);
+  value.highlights.amount = read("highlightsAmount", value.highlights.amount);
+  value.highlights.tone = read("highlightsTone", value.highlights.tone);
+  value.highlights.radius = read("highlightsRadius", value.highlights.radius);
+  value.color_correction = read("color", value.color_correction);
+  value.midtone_contrast = read("midtone", value.midtone_contrast);
+  value.black_clip_hundredths = read("blackClip", value.black_clip_hundredths);
+  value.white_clip_hundredths = read("whiteClip", value.white_clip_hundredths);
+  return clamp_shadows_highlights(value);
+}
+
+void store_shadows_highlights_defaults(const ShadowsHighlightsSettings& value) {
+  auto settings = app_settings();
+  settings.setValue(shadows_highlights_key("shadowsAmount"), value.shadows.amount);
+  settings.setValue(shadows_highlights_key("shadowsTone"), value.shadows.tone);
+  settings.setValue(shadows_highlights_key("shadowsRadius"), value.shadows.radius);
+  settings.setValue(shadows_highlights_key("highlightsAmount"), value.highlights.amount);
+  settings.setValue(shadows_highlights_key("highlightsTone"), value.highlights.tone);
+  settings.setValue(shadows_highlights_key("highlightsRadius"), value.highlights.radius);
+  settings.setValue(shadows_highlights_key("color"), value.color_correction);
+  settings.setValue(shadows_highlights_key("midtone"), value.midtone_contrast);
+  settings.setValue(shadows_highlights_key("blackClip"), value.black_clip_hundredths);
+  settings.setValue(shadows_highlights_key("whiteClip"), value.white_clip_hundredths);
+}
+
+}  // namespace
+
+std::optional<ShadowsHighlightsSettings> request_shadows_highlights_settings(
+    QWidget* parent, std::function<void(bool, const ShadowsHighlightsSettings&)> preview_changed) {
+  const auto initial = stored_shadows_highlights_defaults();
+  QDialog dialog(parent);
+  dialog.setObjectName(QStringLiteral("patchyShadowsHighlightsDialog"));
+  dialog.setWindowTitle(QObject::tr("Shadows/Highlights"));
+  auto* layout = new QVBoxLayout(&dialog);
+  // Shrinks back when Show More Options hides rows.
+  layout->setSizeConstraint(QLayout::SetFixedSize);
+
+  struct RangeRows {
+    QFormLayout* form{nullptr};
+    QSpinBox* amount{nullptr};
+    QSpinBox* tone{nullptr};
+    QSpinBox* radius{nullptr};
+  };
+  // Photoshop's layout: a Shadows and a Highlights group whose Tone and Radius
+  // rows appear only with Show More Options.
+  const auto add_range = [&dialog, layout](const QString& title, const QString& prefix,
+                                           const ShadowsHighlightsRange& value) {
+    auto* group = new QGroupBox(title, &dialog);
+    group->setObjectName(prefix + QStringLiteral("Group"));
+    RangeRows rows;
+    rows.form = new QFormLayout(group);
+    rows.amount = add_dialog_slider_spin_row(rows.form, group, QObject::tr("Amount:"), prefix + QStringLiteral("AmountSlider"),
+                                             prefix + QStringLiteral("AmountSpin"), 0, 100, value.amount,
+                                             percent_suffix());
+    rows.tone = add_dialog_slider_spin_row(rows.form, group, QObject::tr("Tone:"), prefix + QStringLiteral("ToneSlider"),
+                                           prefix + QStringLiteral("ToneSpin"), 0, 100, value.tone, percent_suffix());
+    rows.radius = add_dialog_slider_spin_row(rows.form, group, QObject::tr("Radius:"),
+                                             prefix + QStringLiteral("RadiusSlider"),
+                                             prefix + QStringLiteral("RadiusSpin"), 0, kShadowsHighlightsMaxRadius,
+                                             value.radius, pixel_suffix(), 72, -1, false,
+                                             std::numeric_limits<int>::max(), SliderCurve::FineLowEnd);
+    layout->addWidget(group);
+    return rows;
+  };
+  const auto shadows = add_range(QObject::tr("Shadows"), QStringLiteral("shadowsHighlightsShadows"), initial.shadows);
+  const auto highlights =
+      add_range(QObject::tr("Highlights"), QStringLiteral("shadowsHighlightsHighlights"), initial.highlights);
+
+  auto* adjustments = new QGroupBox(QObject::tr("Adjustments", "Shadows/Highlights dialog group"), &dialog);
+  adjustments->setObjectName(QStringLiteral("shadowsHighlightsAdjustmentsGroup"));
+  auto* adjustments_form = new QFormLayout(adjustments);
+  auto* color = add_dialog_slider_spin_row(adjustments_form, adjustments, QObject::tr("Color:"),
+                                           QStringLiteral("shadowsHighlightsColorSlider"),
+                                           QStringLiteral("shadowsHighlightsColorSpin"), -100, 100,
+                                           initial.color_correction);
+  auto* midtone = add_dialog_slider_spin_row(adjustments_form, adjustments, QObject::tr("Midtone:"),
+                                             QStringLiteral("shadowsHighlightsMidtoneSlider"),
+                                             QStringLiteral("shadowsHighlightsMidtoneSpin"), -100, 100,
+                                             initial.midtone_contrast);
+  const auto add_clip = [&dialog, adjustments_form](const QString& label, const QString& object_name, int hundredths) {
+    auto* spin = new QDoubleSpinBox(&dialog);
+    spin->setObjectName(object_name);
+    spin->setDecimals(2);
+    spin->setRange(0.0, kShadowsHighlightsMaxClipHundredths / 100.0);
+    spin->setSingleStep(0.01);
+    spin->setSuffix(percent_suffix());
+    spin->setValue(hundredths / 100.0);
+    configure_dialog_spinbox(spin, 72);
+    adjustments_form->addRow(label, spin);
+    return spin;
+  };
+  auto* black_clip = add_clip(QObject::tr("Black Clip:"), QStringLiteral("shadowsHighlightsBlackClipSpin"),
+                              initial.black_clip_hundredths);
+  auto* white_clip = add_clip(QObject::tr("White Clip:"), QStringLiteral("shadowsHighlightsWhiteClipSpin"),
+                              initial.white_clip_hundredths);
+  layout->addWidget(adjustments);
+
+  auto* save_defaults = new QPushButton(QObject::tr("Save Defaults"), &dialog);
+  save_defaults->setObjectName(QStringLiteral("shadowsHighlightsSaveDefaultsButton"));
+  save_defaults->setAutoDefault(false);
+  layout->addWidget(save_defaults, 0, Qt::AlignLeft);
+
+  auto* more_options = new QCheckBox(QObject::tr("Show More Options"), &dialog);
+  more_options->setObjectName(QStringLiteral("shadowsHighlightsMoreOptionsCheck"));
+  more_options->setChecked(app_settings().value(shadows_highlights_key("showMoreOptions"), false).toBool());
+  layout->addWidget(more_options);
+  auto* preview = new QCheckBox(QObject::tr("Preview"), &dialog);
+  preview->setObjectName(QStringLiteral("shadowsHighlightsPreviewCheck"));
+  preview->setChecked(true);
+  layout->addWidget(preview);
+
+  const auto show_more = [=](bool expanded) {
+    for (const auto& rows : {shadows, highlights}) {
+      // The form field is the slider + spin row widget that owns each spin box.
+      rows.form->setRowVisible(rows.tone->parentWidget(), expanded);
+      rows.form->setRowVisible(rows.radius->parentWidget(), expanded);
+    }
+    adjustments->setVisible(expanded);
+    save_defaults->setVisible(expanded);
+  };
+  show_more(more_options->isChecked());
+
+  const auto build_settings = [=] {
+    ShadowsHighlightsSettings settings;
+    settings.shadows = {shadows.amount->value(), shadows.tone->value(), shadows.radius->value()};
+    settings.highlights = {highlights.amount->value(), highlights.tone->value(), highlights.radius->value()};
+    settings.color_correction = color->value();
+    settings.midtone_contrast = midtone->value();
+    settings.black_clip_hundredths = static_cast<int>(std::lround(black_clip->value() * 100.0));
+    settings.white_clip_hundredths = static_cast<int>(std::lround(white_clip->value() * 100.0));
+    return clamp_shadows_highlights(settings);
+  };
+
+  CoalescedPreviewEmitter<AdjustmentPreviewRequest<ShadowsHighlightsSettings>> preview_emitter(
+      dialog, [&](const AdjustmentPreviewRequest<ShadowsHighlightsSettings>& request) {
+        if (preview_changed) {
+          preview_changed(request.enabled, request.settings);
+        }
+      });
+  const auto preview_request = [&] {
+    return AdjustmentPreviewRequest<ShadowsHighlightsSettings>{preview->isChecked(), build_settings()};
+  };
+  for (auto* spin : {shadows.amount, shadows.tone, shadows.radius, highlights.amount, highlights.tone,
+                     highlights.radius, color, midtone}) {
+    QObject::connect(spin, qOverload<int>(&QSpinBox::valueChanged), &dialog,
+                     [&](int) { preview_emitter.schedule(preview_request()); });
+  }
+  for (auto* spin : {black_clip, white_clip}) {
+    QObject::connect(spin, qOverload<double>(&QDoubleSpinBox::valueChanged), &dialog,
+                     [&](double) { preview_emitter.schedule(preview_request()); });
+  }
+  QObject::connect(preview, &QCheckBox::toggled, &dialog, [&](bool) { preview_emitter.flush(preview_request()); });
+  QObject::connect(more_options, &QCheckBox::toggled, &dialog, [show_more](bool expanded) {
+    show_more(expanded);
+    app_settings().setValue(shadows_highlights_key("showMoreOptions"), expanded);
+  });
+  QObject::connect(save_defaults, &QPushButton::clicked, &dialog,
+                   [&build_settings] { store_shadows_highlights_defaults(build_settings()); });
+
+  auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+  layout->addWidget(buttons);
+  QObject::connect(buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+  QObject::connect(buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+  QTimer::singleShot(0, &dialog, [&] {
+    if (dialog.isVisible()) {
+      preview_emitter.flush(preview_request());
+    }
+  });
+  if (run_non_modal_dialog(dialog) != QDialog::Accepted) {
+    return std::nullopt;
+  }
+  return build_settings();
 }
 
 }  // namespace patchy::ui

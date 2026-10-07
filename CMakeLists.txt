@@ -386,6 +386,8 @@ add_library(patchy_filters
   src/filters/filter_registry.cpp
   src/filters/filter_support.hpp
   src/filters/rgba_filter_staging.hpp
+  src/filters/shadows_highlights.cpp
+  src/filters/shadows_highlights.hpp
   src/filters/smart_filter_recipe_mapping.cpp
   src/filters/smart_filter_renderer.cpp
 )

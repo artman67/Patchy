@@ -8909,6 +8909,47 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporção</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Sombras/Realces</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Intensidade:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Tom:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Raio:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Ajustes</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Meios-tons:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Corte de preto:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Corte de branco:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Salvar como padrão</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Mostrar mais opções</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18699,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Altura da caixa de corte</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>&amp;Sombras/Realces...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Sombras/Realces</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Sombras/Realces cancelado</translation>
     </message>
 </context>
 <context>
