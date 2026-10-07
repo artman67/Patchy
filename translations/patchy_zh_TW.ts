@@ -8915,6 +8915,63 @@ RGB：%2, %3, %4</translation>
         <source>Vibrance: vibrance %1, saturation %2</source>
         <translation>自然飽和度：自然飽和度 %1、飽和度 %2</translation>
     </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>青色</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>洋紅</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>黃色</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>黑色</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>選取顏色</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>白色</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>中間色</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>黑色</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>顏色:</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>相對</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>絕對</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>選取顏色：絕對，已調整 %1/9 種顏色</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>選取顏色：相對，已調整 %1/9 種顏色</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18694,6 +18751,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Vibrance</source>
         <translation>已取消自然飽和度</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>選取顏色(&amp;S)...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>選取顏色</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>已取消選取顏色</translation>
     </message>
 </context>
 <context>

@@ -36,6 +36,7 @@
 #include "ui/curves_editor.hpp"
 #include "ui/curves_presets.hpp"
 #include "ui/filter_workflows.hpp"
+#include "ui/measurement_units.hpp"
 #include "ui/filter_look_library.hpp"
 #include "ui/font_picker.hpp"
 #include "ui/gradient_stops_editor.hpp"
@@ -1885,6 +1886,109 @@ void ui_vibrance_adjustment_layer_and_image_command() {
   save_widget_artifact("ui_vibrance_adjustment_layer_and_image_command", *canvas);
 }
 
+void ui_selective_color_adjustment_layer_creates_and_edits() {
+  patchy::Document document(140, 100, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Background", solid_pixels(140, 100, patchy::PixelFormat::rgba8(), QColor(200, 80, 80)));
+  patchy::ui::MainWindow window;
+  window.add_document_session(std::move(document), QStringLiteral("Selective Color"));
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+
+  // Create: the dialog opens on Reds in Relative mode. +100% cyan doubles the red
+  // channel's cyan ink at the reds weight (200 -> 174); Absolute adds full ink (-> 80).
+  // Switching colors keeps each color's sliders.
+  QColor relative_preview;
+  QColor absolute_preview;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchySelectiveColorDialog"));
+    CHECK(dialog != nullptr);
+    auto* colors = dialog->findChild<QComboBox*>(QStringLiteral("selectiveColorColorsCombo"));
+    auto* cyan = dialog->findChild<QSpinBox*>(QStringLiteral("selectiveColorCyanSpin"));
+    auto* relative = dialog->findChild<QRadioButton*>(QStringLiteral("selectiveColorRelativeRadio"));
+    auto* absolute = dialog->findChild<QRadioButton*>(QStringLiteral("selectiveColorAbsoluteRadio"));
+    CHECK(colors != nullptr && cyan != nullptr && relative != nullptr && absolute != nullptr);
+    CHECK(colors->count() == 9);
+    CHECK(colors->currentIndex() == 0);
+    CHECK(relative->isChecked());
+    CHECK(cyan->value() == 0);
+    CHECK(cyan->suffix() == patchy::ui::percent_suffix());
+    cyan->setValue(100);
+    process_events_for(160);
+    relative_preview = canvas_pixel(*canvas, QPoint(70, 50));
+    absolute->setChecked(true);
+    process_events_for(160);
+    absolute_preview = canvas_pixel(*canvas, QPoint(70, 50));
+    colors->setCurrentIndex(1);
+    CHECK(cyan->value() == 0);
+    colors->setCurrentIndex(0);
+    CHECK(cyan->value() == 100);
+    dialog->grab().save(QStringLiteral("test-artifacts/ui_selective_color_dialog.png"));
+    dialog->accept();
+  });
+  require_action(window, "layerNewSelectiveColorAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(color_close(relative_preview, QColor(174, 80, 80), 3));
+  CHECK(color_close(absolute_preview, QColor(80, 80, 80), 3));
+  CHECK(layer_list->item(0) != nullptr);
+  CHECK(layer_list->item(0)->text() == QStringLiteral("Selective Color"));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(80, 80, 80), 3));
+
+  // Edit: the dialog reopens with the stored values; clearing cyan restores the red.
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchySelectiveColorDialog"));
+    CHECK(dialog != nullptr);
+    auto* cyan = dialog->findChild<QSpinBox*>(QStringLiteral("selectiveColorCyanSpin"));
+    auto* absolute = dialog->findChild<QRadioButton*>(QStringLiteral("selectiveColorAbsoluteRadio"));
+    CHECK(cyan != nullptr && absolute != nullptr);
+    CHECK(cyan->value() == 100);
+    CHECK(absolute->isChecked());
+    cyan->setValue(0);
+    process_events_for(120);
+    dialog->accept();
+  });
+  require_action(window, "layerEditAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(200, 80, 80), 3));
+}
+
+void ui_selective_color_command_rewrites_layer_pixels() {
+  patchy::Document document(140, 100, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Background", solid_pixels(140, 100, patchy::PixelFormat::rgba8(), QColor(200, 80, 80)));
+  patchy::ui::MainWindow window;
+  window.add_document_session(std::move(document), QStringLiteral("Selective Color Command"));
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+  const auto layer_count = layer_list->count();
+
+  // Image > Adjustments > Selective Color edits the pixels in place (no new layer),
+  // with the same math as the adjustment layer.
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchySelectiveColorDialog"));
+    CHECK(dialog != nullptr);
+    auto* cyan = dialog->findChild<QSpinBox*>(QStringLiteral("selectiveColorCyanSpin"));
+    auto* absolute = dialog->findChild<QRadioButton*>(QStringLiteral("selectiveColorAbsoluteRadio"));
+    CHECK(cyan != nullptr && absolute != nullptr);
+    absolute->setChecked(true);
+    cyan->setValue(100);
+    process_events_for(160);
+    dialog->accept();
+  });
+  require_action(window, "imageAdjustSelectiveColorAction")->trigger();
+  QApplication::processEvents();
+  CHECK(layer_list->count() == layer_count);
+  const auto& document_after = patchy::ui::MainWindowTestAccess::document(window);
+  CHECK(document_after.active_layer_id().has_value());
+  const auto* active = document_after.find_layer(*document_after.active_layer_id());
+  CHECK(active != nullptr && active->kind() == patchy::LayerKind::Pixel);
+  const auto* pixel = std::as_const(*active).pixels().pixel(70, 50);
+  CHECK(pixel[0] == 80 && pixel[1] == 80 && pixel[2] == 80);
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(80, 80, 80), 3));
+}
+
 void ui_posterize_and_threshold_adjustment_layers_create_and_edit() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3664,6 +3768,9 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
        ui_posterize_and_threshold_adjustment_layers_create_and_edit},
       {"ui_exposure_adjustment_layer_creates_and_edits", ui_exposure_adjustment_layer_creates_and_edits},
       {"ui_vibrance_adjustment_layer_and_image_command", ui_vibrance_adjustment_layer_and_image_command},
+      {"ui_selective_color_adjustment_layer_creates_and_edits",
+       ui_selective_color_adjustment_layer_creates_and_edits},
+      {"ui_selective_color_command_rewrites_layer_pixels", ui_selective_color_command_rewrites_layer_pixels},
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},

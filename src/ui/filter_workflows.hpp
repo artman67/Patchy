@@ -77,6 +77,7 @@ using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
 using VibranceSettings = VibranceAdjustment;
+using SelectiveColorSettings = SelectiveColorAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 using GradientMapSettings = GradientMapAdjustment;
 
@@ -173,6 +174,9 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<VibranceSettings> request_vibrance_settings(
     QWidget* parent, std::function<void(bool, const VibranceSettings&)> preview_changed = {},
     VibranceSettings initial = {});
+[[nodiscard]] std::optional<SelectiveColorSettings> request_selective_color_settings(
+    QWidget* parent, std::function<void(bool, const SelectiveColorSettings&)> preview_changed = {},
+    SelectiveColorSettings initial = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -222,5 +226,10 @@ void apply_gradient_map_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegio
                                   const GradientMapSettings& settings, const FilterProgress* progress = nullptr);
 void apply_vibrance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection, VibranceSettings settings,
                               const FilterProgress* progress = nullptr);
+// The destructive Selective Color: the adjustment layer's core math, so the result
+// equals a Selective Color layer over the same pixels.
+void apply_selective_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                     const SelectiveColorSettings& settings,
+                                     const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

@@ -634,6 +634,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(240, 150, 190);
     case AdjustmentKind::Vibrance:
       return QColor(240, 125, 200);
+    case AdjustmentKind::SelectiveColor:
+      return QColor(120, 215, 230);
   }
   return QColor(145, 175, 215);
 }
@@ -781,6 +783,15 @@ QString adjustment_settings_summary(const Layer& layer) {
       return QObject::tr("Vibrance: vibrance %1, saturation %2")
           .arg(settings->vibrance.vibrance)
           .arg(settings->vibrance.saturation);
+    case AdjustmentKind::SelectiveColor: {
+      const auto& corrections = settings->selective_color.corrections;
+      const auto adjusted = std::count_if(corrections.begin(), corrections.end(),
+                                          [](const SelectiveColorCorrection& entry) { return entry.has_effect(); });
+      return (settings->selective_color.absolute
+                  ? QObject::tr("Selective Color: absolute, %1 of 9 colors adjusted")
+                  : QObject::tr("Selective Color: relative, %1 of 9 colors adjusted"))
+          .arg(adjusted);
+    }
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
@@ -1078,6 +1089,21 @@ void draw_vibrance_adjustment_thumbnail_symbol(QPainter& painter, const QColor& 
   painter.drawPath(triangle);
 }
 
+void draw_selective_color_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
+  // Four overlapping ink dots, cyan, magenta, yellow and black: the plates the
+  // adjustment's sliders correct.
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  painter.setPen(QPen(accent.darker(160), 1));
+  const std::array<std::pair<QPointF, QColor>, 4> inks{{{QPointF(10.5, 10.5), QColor(0, 190, 235)},
+                                                        {QPointF(17.5, 10.5), QColor(230, 40, 150)},
+                                                        {QPointF(10.5, 17.5), QColor(250, 225, 40)},
+                                                        {QPointF(17.5, 17.5), QColor(28, 30, 34)}}};
+  for (const auto& [center, color] : inks) {
+    painter.setBrush(color);
+    painter.drawEllipse(center, 4.6, 4.6);
+  }
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1329,6 +1355,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::Vibrance:
           draw_vibrance_adjustment_thumbnail_symbol(painter, accent);
+          break;
+        case AdjustmentKind::SelectiveColor:
+          draw_selective_color_adjustment_thumbnail_symbol(painter, accent);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);

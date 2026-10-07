@@ -8975,6 +8975,63 @@ RGB: %2, %3, %4</translation>
         <source>Vibrance: vibrance %1, saturation %2</source>
         <translation>Сочность: сочность %1, насыщенность %2</translation>
     </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>Голубой</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>Пурпурный</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>Желтый</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>Черный</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Выборочная коррекция цвета</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>Белые</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>Нейтральные</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>Черные</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>Цвета:</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>Относительный</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>Абсолютный</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>Выборочная коррекция цвета: абсолютный, изменено цветов: %1 из 9</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>Выборочная коррекция цвета: относительный, изменено цветов: %1 из 9</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18806,6 +18863,18 @@ Y: %2
     <message>
         <source>Cancelled Vibrance</source>
         <translation>Отменена сочность</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>&amp;Выборочная коррекция цвета...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>Выборочная коррекция цвета</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>Отмененная выборочная коррекция цвета</translation>
     </message>
 </context>
 <context>

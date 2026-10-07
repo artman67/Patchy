@@ -8934,6 +8934,63 @@ RGB: %2, %3, %4</source>
         <source>Vibrance: vibrance %1, saturation %2</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18699,6 +18756,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Cancelled Vibrance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

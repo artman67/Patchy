@@ -148,6 +148,8 @@ QString localized_adjustment_display_name(AdjustmentKind kind) {
       return QObject::tr("Gradient Map");
     case AdjustmentKind::Vibrance:
       return QObject::tr("Vibrance");
+    case AdjustmentKind::SelectiveColor:
+      return QObject::tr("Selective Color");
   }
   return QObject::tr("Adjustment");
 }

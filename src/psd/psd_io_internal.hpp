@@ -128,6 +128,11 @@ constexpr std::array<char, 4> kPhotoshopExposureBlockKey{'e', 'x', 'p', 'A'};
 // Adobe's PSD specification names the key and the descriptor wrapper only:
 // https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 constexpr std::array<char, 4> kPhotoshopVibranceBlockKey{'v', 'i', 'b', 'A'};
+// Selective Color is 84 bytes: u16 version (1), u16 method (0 relative, 1 absolute),
+// then ten records of four i16 percentages (cyan, magenta, yellow, black). The first
+// record is reserved and zero; the other nine follow the Colors menu (reds through
+// blacks). Layout from Adobe's published PSD specification ("Selective Color").
+constexpr std::array<char, 4> kPhotoshopSelectiveColorBlockKey{'s', 'e', 'l', 'c'};
 // Brightness/Contrast: legacy-mode PS 2026 writes ONLY the 8-byte 'brit'
 // (brightness i16, contrast i16, mean u16 = 127, lab u8 = 0, pad u8 = 0);
 // modern mode writes an all-zero 'brit' plus a 'CgEd' descriptor (u32 version
@@ -577,6 +582,10 @@ std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& s
 std::optional<AdjustmentSettings> parse_photoshop_vibrance_adjustment(std::span<const std::uint8_t> payload);
 std::vector<std::uint8_t> photoshop_vibrance_payload(const VibranceAdjustment& settings,
                                                      const UnknownPsdBlock* original);
+std::optional<AdjustmentSettings> parse_photoshop_selective_color_adjustment(
+    std::span<const std::uint8_t> payload);
+std::vector<std::uint8_t> photoshop_selective_color_payload(const SelectiveColorAdjustment& settings,
+                                                            const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_brightness_contrast_adjustment(
     std::span<const std::uint8_t> payload);
 struct BrightnessContrastDescriptorParse {

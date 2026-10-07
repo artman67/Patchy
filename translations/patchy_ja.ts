@@ -8915,6 +8915,63 @@ Mixed selection</source>
         <source>Vibrance: vibrance %1, saturation %2</source>
         <translation>自然な彩度: 自然な彩度 %1、彩度 %2</translation>
     </message>
+    <message>
+        <source>Cyan</source>
+        <comment>ink</comment>
+        <translation>シアン</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>ink</comment>
+        <translation>マゼンタ</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>ink</comment>
+        <translation>イエロー</translation>
+    </message>
+    <message>
+        <source>Black</source>
+        <comment>ink</comment>
+        <translation>ブラック</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>特定色域の選択</translation>
+    </message>
+    <message>
+        <source>Whites</source>
+        <translation>ホワイト系</translation>
+    </message>
+    <message>
+        <source>Neutrals</source>
+        <translation>ニュートラル系</translation>
+    </message>
+    <message>
+        <source>Blacks</source>
+        <translation>ブラック系</translation>
+    </message>
+    <message>
+        <source>Colors:</source>
+        <comment>selective color family</comment>
+        <translation>カラー:</translation>
+    </message>
+    <message>
+        <source>Relative</source>
+        <translation>相対値</translation>
+    </message>
+    <message>
+        <source>Absolute</source>
+        <translation>絶対値</translation>
+    </message>
+    <message>
+        <source>Selective Color: absolute, %1 of 9 colors adjusted</source>
+        <translation>特定色域の選択: 絶対値、9 色中 %1 色を調整</translation>
+    </message>
+    <message>
+        <source>Selective Color: relative, %1 of 9 colors adjusted</source>
+        <translation>特定色域の選択: 相対値、9 色中 %1 色を調整</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18694,6 +18751,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Vibrance</source>
         <translation>自然な彩度をキャンセルしました</translation>
+    </message>
+    <message>
+        <source>&amp;Selective Color...</source>
+        <translation>特定色域の選択(&amp;S)...</translation>
+    </message>
+    <message>
+        <source>Selective Color</source>
+        <translation>特定色域の選択</translation>
+    </message>
+    <message>
+        <source>Cancelled Selective Color</source>
+        <translation>特定色域の選択をキャンセルしました</translation>
     </message>
 </context>
 <context>

@@ -108,6 +108,7 @@ using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
 using VibranceSettings = VibranceAdjustment;
+using SelectiveColorSettings = SelectiveColorAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 struct ScannerAcquireResult;
 struct UpdateInfo;
@@ -1047,6 +1048,9 @@ private:
   void new_vibrance_adjustment_layer();
   void apply_vibrance_adjustment(const VibranceSettings& settings, bool allow_identity = false);
   void vibrance_dialog();
+  void new_selective_color_adjustment_layer();
+  void selective_color_dialog();
+  void apply_selective_color_adjustment(const SelectiveColorSettings& settings, bool allow_identity = false);
   void new_brightness_contrast_adjustment_layer();
   void apply_brightness_contrast_adjustment(const BrightnessContrastSettings& settings,
                                             bool allow_identity = false);

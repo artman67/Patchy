@@ -1,6 +1,6 @@
 # Adjustment calibration vs Photoshop
 
-Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, Hue/Saturation, and the still-uncalibrated Gradient Map. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
+Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, Hue/Saturation, Exposure, and the still-uncalibrated Gradient Map and Selective Color. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
 Conventions: "PS" = Adobe Photoshop 2026/27.8, the installed ground truth; every rule is pinned by PS COM captures unless noted. Fixtures named `photoshop-*` live in `test-fixtures/psd/`; `local-test-fixtures/` is machine-local. The COM workflow lives in [ps-compat.md](ps-compat.md).
 
 ## Brightness/Contrast legacy calibration (July 2026)
@@ -58,6 +58,18 @@ Fitted against Photoshop's renders of psd-tools' `adjustments/levels_rgb.psd` an
 - Image > Adjustments > Vibrance... rewrites the active pixel layer through the same function (`apply_vibrance_to_pixels`), equal to a Vibrance layer with the same settings. CMYK and grayscale documents keep the RGB math, like Hue/Saturation.
 - Patent note (2026-10-06, claim text on Google Patents). Apple US 8638338 (to 2032-03-22): claims 1, 8, 12, 16 and 21 need one control that adjusts colors inside a color sub-region (skin) by their deviation from a reference color and colors outside it UNIFORMLY; claim 25 needs a region selector and one control that adjusts one pixel set uniformly and another non-uniformly. Its continuation US 9639965 (to 2028-09-29): claims 1 and 8 adjust a pixel inside a color sub-region by its deviation from the NEAREST of several reference colors there and other pixels to a different degree; claim 14 the same with one or more selected reference colors. Adobe US 8406482 (to 2031-05-03): a skin mask from a trained model refined by image-specific skin and non-skin models. Patchy's Vibrance is one formula of each pixel's own saturation for every color: no color sub-region, no reference or skin color, no hue term, no image statistics, so no pixel set is adjusted uniformly and nothing is measured against a reference color. The Saturation slider is the long-standing uniform scale with the usual gamut cap, the same as Hue/Saturation's master slider. Kodak US 6771311 and Jasc US 6868179 (automatic saturation from image statistics or hue/lightness tables) expired in 2023. Binding rule: [legal-constraints.md](legal-constraints.md).
 
+## Selective Color (NOT calibrated; open item)
+
+Added without Photoshop access (October 2026); nothing below is pinned by a PS capture. `AdjustmentKind::SelectiveColor`, Photoshop's `selc` block, laid out per the [Adobe Photoshop File Formats Specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/) ("Selective Color"): u16 version 1, u16 method (0 Relative, 1 Absolute), then ten 8-byte records of i16 cyan, magenta, yellow, black percentages (-100..100); the first record is reserved (written zero), the rest run reds, yellows, greens, cyans, blues, magentas, whites, neutrals, blacks. 84 bytes. An unedited import re-emits byte for byte, reserved record included; an edit regenerates. New layers are Relative with all corrections 0; the dialog opens on Reds. PS's Preset menu is not modeled.
+
+- Weights (`selective_color_weights`, 8-bit inputs, always summing to 1): Reds `max(0, R - max(G, B)) / 255` (Greens, Blues alike); Yellows `max(0, min(R, G) - B) / 255` (Cyans lack R, Magentas lack G); Whites `max(0, 2 min - 255) / 255`; Blacks `max(0, 255 - 2 max) / 255`; Neutrals `(510 - |2 max - 255| - |2 min - 255|) / 510`. Equal corrections on all nine colors therefore act globally.
+- Correction (`apply_selective_color`): a channel's ink is `1 - v` (cyan for R, magenta for G, yellow for B). Per color, `gain = (1 + plate) (1 + black) - 1`; the ink change is `weight * gain * ink` (Relative) or `weight * gain` (Absolute), summed over the nine colors against the original pixel, then `out = 255 * clamp(v - change)`, rounded. Relative cannot move pure white, as Adobe's help states.
+- Basis: Adobe's documented Relative/Absolute definitions (percentage of the existing ink vs of full ink). The chroma/tone weight split and the compounding black term are the shape open reimplementations use (FFmpeg's `selectivecolor` filter documents the same model); Photoshop's real weights and gain are unmeasured.
+- No CMYK ink space: a `selc` layer from a CMYK document renders on the RGB math. Photoshop corrects that document's four plates (Black edits K); unmodeled.
+- The Image > Adjustments command runs the same function (`apply_selective_color_to_pixels`), so it equals a Selective Color layer over the same pixels.
+- Probes owed (PS COM): hue sweeps at full and half saturation and a gray ramp under +100 cyan and +100 black in each method (weights, gain, rounding); the cyan -100 / black +100 cross term; summed vs chained colors; a CMYK document; and warning-free opening of a Patchy-written `selc` (unverified).
+- Patent check (2026-10-06, Google Patents claim text): selective color correction of separations is expired prior art (Hell US 4649423; Agfa US 6058207, priority 1995). Nearest active Adobe filings: US 11223744 (to 2037; claim 1 weights an adjustment by a user-drawn region mask combined with a generated range mask) and US 7586499 (to 2027; a 2D color-spectrum control with a superimposed gain control). Patchy's correction is a global point operation from each pixel's own RGB with fixed family weights and plain sliders; the only spatial input is the generic adjustment-layer mask, the 1990s architecture this codebase already ships for Hue/Saturation bands. Binding line in [legal-constraints.md](legal-constraints.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -81,7 +93,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance, Vibrance and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Vibrance, Selective Color and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

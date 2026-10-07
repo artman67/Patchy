@@ -841,6 +841,54 @@ std::vector<std::uint8_t> photoshop_vibrance_payload(const VibranceAdjustment& s
   return writer.bytes();
 }
 
+std::optional<AdjustmentSettings> parse_photoshop_selective_color_adjustment(
+    std::span<const std::uint8_t> payload) {
+  constexpr std::size_t kRecordCount = kSelectiveColorRangeCount + 1U;
+  if (payload.size() < 4U + kRecordCount * 8U) {
+    return std::nullopt;
+  }
+  BigEndianReader reader(payload);
+  if (reader.read_u16() != 1) {
+    return std::nullopt;
+  }
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::SelectiveColor;
+  settings.selective_color.absolute = reader.read_u16() != 0;
+  // The first record is reserved: skipped on read, written as zeros.
+  reader.skip(8);
+  for (auto& correction : settings.selective_color.corrections) {
+    correction.cyan = read_i16(reader);
+    correction.magenta = read_i16(reader);
+    correction.yellow = read_i16(reader);
+    correction.black = read_i16(reader);
+  }
+  settings.selective_color = clamp_selective_color(settings.selective_color);
+  return settings;
+}
+
+std::vector<std::uint8_t> photoshop_selective_color_payload(const SelectiveColorAdjustment& settings,
+                                                            const UnknownPsdBlock* original) {
+  const auto clamped = clamp_selective_color(settings);
+  if (original != nullptr) {
+    // Unedited imported payloads re-emit byte-for-byte, reserved record included.
+    const auto parsed = parse_photoshop_selective_color_adjustment(original->payload);
+    if (parsed.has_value() && parsed->selective_color == clamped) {
+      return original->payload;
+    }
+  }
+  BigEndianWriter writer;
+  writer.write_u16(1);
+  writer.write_u16(clamped.absolute ? 1 : 0);
+  writer.write_u64(0);  // the reserved first record
+  for (const auto& correction : clamped.corrections) {
+    write_i16(writer, correction.cyan);
+    write_i16(writer, correction.magenta);
+    write_i16(writer, correction.yellow);
+    write_i16(writer, correction.black);
+  }
+  return writer.bytes();
+}
+
 std::optional<AdjustmentSettings> parse_photoshop_threshold_adjustment(std::span<const std::uint8_t> payload) {
   if (payload.size() < 2) {
     return std::nullopt;
