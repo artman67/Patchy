@@ -8939,6 +8939,22 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>Черно-белое</translation>
+    </message>
+    <message>
+        <source>Tint</source>
+        <translation>Тонирование</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, tint hue %7, tint saturation %8</source>
+        <translation>Черно-белое: красные %1, желтые %2, зелёные %3, голубые %4, синие %5, пурпурные %6, цветовой тон тонирования %7, насыщенность тонирования %8</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
+        <translation>Черно-белое: красные %1, желтые %2, зелёные %3, голубые %4, синие %5, пурпурные %6</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18730,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Blac&amp;k &amp;&amp; White...</source>
+        <translation>&amp;Черно-белое...</translation>
+    </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>Черно-белое</translation>
+    </message>
+    <message>
+        <source>Cancelled Black &amp; White</source>
+        <translation>Отменено черно-белое</translation>
     </message>
 </context>
 <context>

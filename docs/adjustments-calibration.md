@@ -1,6 +1,6 @@
 # Adjustment calibration vs Photoshop
 
-Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, and Hue/Saturation. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
+Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, Hue/Saturation, Exposure, and the still-uncalibrated Black & White. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
 Conventions: "PS" = Adobe Photoshop 2026/27.8, the installed ground truth; every rule is pinned by PS COM captures unless noted. Fixtures named `photoshop-*` live in `test-fixtures/psd/`; `local-test-fixtures/` is machine-local. The COM workflow lives in [ps-compat.md](ps-compat.md).
 
 ## Brightness/Contrast legacy calibration (July 2026)
@@ -48,6 +48,18 @@ Fitted against Photoshop's renders of psd-tools' `adjustments/levels_rgb.psd` an
 - Refuted: the piecewise sRGB curve in place of the plain 2.2 power (up to 7/255 off at +2 stops).
 - Unprobed: Grayscale and CMYK documents (Photoshop adjusts in the document's space; Patchy converts to sRGB on open first) and 16/32-bit sources.
 
+## Black & White (NOT calibrated; open item)
+
+Added without Photoshop access (October 2026); nothing below is pinned by a PS capture. `AdjustmentKind::BlackWhite`, Photoshop's `blwh` block: u32 descriptor version 16, then a `null` descriptor. Adobe's [PSD specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/) names only the key and the wrapper; the items are Photoshop's Action Manager names: integer weights `Rd  `, `Yllw`, `Grn `, `Cyn `, `Bl  `, `Mgnt` (percent, -200..300), `useTint` (stringID bool), `tintColor` (stringID, an `RGBC` object of `Rd  `/`Grn `/`Bl  ` doubles), plus Photoshop's preset items (`bwPresetKind`, `blackAndWhitePresetFileName`). A missing weight reads as Photoshop's default (40, 60, 40, 60, 20, 80), a `doub` weight rounds, a non-RGBC tint color keeps the default tint. An unedited import re-emits byte for byte; an edit patches the imported descriptor in place (item order, preset items and an unedited tint color kept); a fresh layer writes the six weights, `useTint` and `tintColor` only (no preset items: what Photoshop shows for an absent preset kind is unverified).
+
+- Gray (`black_white_gray`, 8-bit integer math): with `max >= mid >= min` channels, `gray = min + (mid - min) * secondary% + (max - mid) * primary%`, rounded half up, clamped to 0..255. Primary = the largest channel's color (Reds, Greens, Blues), secondary = the pair of the two largest (Yellows R+G, Cyans G+B, Magentas R+B); ties fall on a zero-width share, so the choice cannot matter. Grays keep their value; defaults give pure red 102, yellow 153, blue 51. This is the decomposition open reimplementations of Photoshop's dialog use; Photoshop's actual rounding, working space and curve shape are unmeasured.
+- Tint (`apply_black_white`): the tint color laid over the gray in Color blend mode (`blend_rgb`, the PDF set_lum path), so luminosity stays the gray's and black and white stay put. Patchy's Hue/Saturation map to the color as HSB with brightness 100% (`black_white_tint_color`); read back, hue is the hexcone hue and Saturation the channel spread in percent (`black_white_tint_from_color`), the only two things the Color blend uses. Defaults: Tint off, Hue 35, Saturation 25 (Photoshop's dialog defaults as commonly documented; not checked against Photoshop here). Photoshop's own Hue/Saturation to `tintColor` mapping and its tint math are unmeasured, so a Photoshop file's tint shows different dialog numbers in Patchy and may render a different strength.
+- Not modeled: Auto, the Preset menu (Photoshop's presets are Adobe data, not reproduced), and click-and-drag on the image to move a slider; see the patent note.
+- No ink space: B&W mixes channels, so CMYK and grayscale documents keep the RGB math (a gray document's pixels are already gray and only the tint changes them).
+- Image > Adjustments > Black & White... (Alt+Shift+Ctrl+B) rewrites the active pixel layer through the same function (`apply_black_white_to_pixels`), equal to a B&W layer with the same settings. Layer > New Adjustment Layer > Black & White... adds the layer.
+- Probes owed (PS COM): a hue wheel at full and half saturation and a gray ramp at the defaults and at single-slider extremes (-200, 300); the tint at several Hue/Saturation pairs over a gray ramp, with the `tintColor` Photoshop stores for each; warning-free opening of a Patchy-written `blwh` and the preset label Photoshop shows for it (unverified).
+- Patent check (2026-10-06, claim text from the USPTO full-text PDFs; Google Patents was rate-limited). Adobe US 7706606 (filed 2006-11-01, 825 days term adjustment, to about 2029-02): claim 1 determines color clusters from the image's pixels and gives each color-space point a gray from a weighted average of target differences to the clusters, the image-adaptive conversion an Auto button would be; omitted. Adobe US 7920739 (filed 2006-12-13, 1119 days adjustment, to about 2030-01): claims 1 and 12 select a color adjuster from the color of an area the user picks on the (grayscale) image; the on-image drag is omitted. Apple US 9092893 (continuation of US 8971617, priority 2012-03-06): a single control value mapped along a parameterized color-space path to the weights; Patchy has six independent sliders, the arrangement that patent describes as prior art. Binding rule: [legal-constraints.md](legal-constraints.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -71,7 +83,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Black & White and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

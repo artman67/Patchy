@@ -8879,6 +8879,22 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>흑백</translation>
+    </message>
+    <message>
+        <source>Tint</source>
+        <translation>착색</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, tint hue %7, tint saturation %8</source>
+        <translation>흑백: 빨강 계열 %1, 노랑 계열 %2, 녹색 계열 %3, 청록 계열 %4, 파랑 계열 %5, 마젠타 계열 %6, 착색 색조 %7, 착색 채도 %8</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
+        <translation>흑백: 빨강 계열 %1, 노랑 계열 %2, 녹색 계열 %3, 청록 계열 %4, 파랑 계열 %5, 마젠타 계열 %6</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18618,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Blac&amp;k &amp;&amp; White...</source>
+        <translation>흑백(&amp;K)...</translation>
+    </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>흑백</translation>
+    </message>
+    <message>
+        <source>Cancelled Black &amp; White</source>
+        <translation>취소된 흑백</translation>
     </message>
 </context>
 <context>

@@ -74,6 +74,7 @@ struct ColorBalanceSettings {
 using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
+using BlackWhiteSettings = BlackWhiteAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 
 struct FilterControlSpec {
@@ -166,6 +167,9 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<ExposureSettings> request_exposure_settings(
     QWidget* parent, std::function<void(bool, const ExposureSettings&)> preview_changed = {},
     ExposureSettings initial = {});
+[[nodiscard]] std::optional<BlackWhiteSettings> request_black_white_settings(
+    QWidget* parent, std::function<void(bool, const BlackWhiteSettings&)> preview_changed = {},
+    BlackWhiteSettings initial = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -202,5 +206,9 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+// The destructive Black & White: the adjustment layer's core math, so the result
+// equals a Black & White layer over the same pixels.
+void apply_black_white_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                 const BlackWhiteSettings& settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

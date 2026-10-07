@@ -2337,6 +2337,155 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+void adjustment_black_white_math_metadata_and_psd_round_trip() {
+  CHECK(patchy::adjustment_kind_key(patchy::AdjustmentKind::BlackWhite) == "black_white");
+  CHECK(patchy::adjustment_kind_from_key("black_white") == patchy::AdjustmentKind::BlackWhite);
+  CHECK(patchy::adjustment_display_name(patchy::AdjustmentKind::BlackWhite) == "Black & White");
+
+  // Photoshop's defaults: a primary takes its own weight, a secondary its pair's, a
+  // mixed color splits into gray floor + secondary share + primary share, and grays
+  // keep their value.
+  patchy::BlackWhiteAdjustment defaults;
+  const auto gray = [](patchy::RgbColor color, const patchy::BlackWhiteAdjustment& settings) {
+    return patchy::black_white_gray(color, settings.weights);
+  };
+  CHECK(gray({255, 0, 0}, defaults) == 102);
+  CHECK(gray({255, 255, 0}, defaults) == 153);
+  CHECK(gray({0, 0, 255}, defaults) == 51);
+  CHECK(gray({255, 0, 255}, defaults) == 204);
+  CHECK(gray({200, 100, 50}, defaults) == 120);  // 50 + 50 * 60% + 100 * 40%
+  CHECK(gray({77, 77, 77}, defaults) == 77);
+  auto extreme = defaults;
+  extreme.weights[static_cast<std::size_t>(patchy::BlackWhiteColor::Reds)] = 300;
+  CHECK(gray({255, 0, 0}, extreme) == 255);
+  extreme.weights[static_cast<std::size_t>(patchy::BlackWhiteColor::Reds)] = -200;
+  CHECK(gray({255, 0, 0}, extreme) == 0);
+  CHECK(patchy::clamp_black_white(patchy::BlackWhiteAdjustment{{500, -500, 0, 0, 0, 0}, true, 400, -3}) ==
+        (patchy::BlackWhiteAdjustment{{300, -200, 0, 0, 0, 0}, true, 360, 0}));
+
+  // Tint: the HSB color of hue/saturation, laid over the gray in Color mode. Black and
+  // white stay put; a mid gray keeps its luminosity and turns warm.
+  CHECK(patchy::black_white_tint_color(0, 100) == (patchy::RgbColor{255, 0, 0}));
+  CHECK(patchy::black_white_tint_color(35, 25) == (patchy::RgbColor{255, 228, 191}));
+  int hue = 0;
+  int saturation = 0;
+  patchy::black_white_tint_from_color(255.0, 228.0, 191.0, hue, saturation);
+  CHECK(hue == 35 && saturation == 25);
+  auto tinted = defaults;
+  tinted.tint = true;
+  CHECK(patchy::apply_black_white({255, 255, 255}, tinted) == (patchy::RgbColor{255, 255, 255}));
+  CHECK(patchy::apply_black_white({0, 0, 0}, tinted) == (patchy::RgbColor{0, 0, 0}));
+  const auto mid = patchy::apply_black_white({128, 128, 128}, tinted);
+  CHECK(mid.red > mid.green && mid.green > mid.blue);
+  CHECK(std::abs((30 * mid.red + 59 * mid.green + 11 * mid.blue + 50) / 100 - 128) <= 1);
+
+  patchy::AdjustmentSettings settings;
+  settings.kind = patchy::AdjustmentKind::BlackWhite;
+  CHECK(patchy::adjustment_has_effect(settings));
+  CHECK(!patchy::build_adjustment_lut(settings).has_value());
+  CHECK(patchy::apply_adjustment_to_color({255, 0, 0}, settings) == (patchy::RgbColor{102, 102, 102}));
+
+  // Native 'blwh': descriptor version 16, integer weights, useTint, RGBC tintColor.
+  settings.black_white.weights[static_cast<std::size_t>(patchy::BlackWhiteColor::Reds)] = 55;
+  settings.black_white.tint = true;
+  settings.black_white.tint_hue = 200;
+  settings.black_white.tint_saturation = 40;
+  patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
+  document.add_pixel_layer("Base", solid_rgb(1, 1, 255, 0, 0));
+  patchy::Layer layer(document.allocate_layer_id(), "Black & White", patchy::LayerKind::Adjustment);
+  layer.set_bounds(patchy::Rect::from_size(document.width(), document.height()));
+  patchy::configure_adjustment_layer(layer, settings);
+  document.add_layer(std::move(layer));
+  const auto bytes = patchy::psd::DocumentIo::write_layered_rgb8(document);
+  const auto block = psd_layer_block_payload(psd_layer_extra_data(bytes, 1), "blwh");
+  CHECK(block.has_value());
+  patchy::psd::BigEndianReader block_reader(*block);
+  CHECK(block_reader.read_u32() == 16U);
+  const auto written = patchy::psd::read_descriptor(block_reader);
+  const auto* reds = patchy::psd::descriptor_value(written, "Rd  ");
+  CHECK(reds != nullptr && reds->type == patchy::psd::DescriptorValue::Type::Integer && reds->integer_value == 55);
+  CHECK(patchy::psd::descriptor_bool(written, "useTint", false));
+  const auto* tint_color = patchy::psd::descriptor_object(written, "tintColor");
+  CHECK(tint_color != nullptr && tint_color->class_id == "RGBC");
+  const auto read = patchy::psd::DocumentIo::read(bytes);
+  CHECK(read.layers().size() == 2);
+  const auto restored = patchy::adjustment_settings_from_layer(read.layers()[1]);
+  CHECK(restored.has_value() && restored->kind == patchy::AdjustmentKind::BlackWhite);
+  CHECK(restored->black_white == settings.black_white);
+  const auto flattened = patchy::Compositor{}.flatten_rgb8(read);
+  const auto expected = patchy::apply_black_white({255, 0, 0}, settings.black_white);
+  CHECK(flattened.pixel(0, 0)[0] == expected.red && flattened.pixel(0, 0)[2] == expected.blue);
+
+  // A Photoshop-shaped block (preset items, a tint color off Patchy's grid) re-emits
+  // byte for byte while unedited; an edit patches the weights and keeps the rest.
+  patchy::psd::DescriptorObject photoshop;
+  photoshop.class_id = "null";
+  const auto add = [&photoshop](const std::string& key, bool long_form, patchy::psd::DescriptorValue value) {
+    photoshop.values.emplace(key, std::move(value));
+    photoshop.key_order.push_back({key, long_form});
+  };
+  const auto integer = [](int number) {
+    patchy::psd::DescriptorValue value;
+    value.type = patchy::psd::DescriptorValue::Type::Integer;
+    value.integer_value = number;
+    return value;
+  };
+  for (const auto& [key, weight] : {std::pair<const char*, int>{"Rd  ", 40}, {"Yllw", 60}, {"Grn ", 40},
+                                    {"Cyn ", 60}, {"Bl  ", 20}, {"Mgnt", 80}}) {
+    add(key, false, integer(weight));
+  }
+  patchy::psd::DescriptorValue use_tint;
+  use_tint.type = patchy::psd::DescriptorValue::Type::Bool;
+  add("useTint", true, use_tint);
+  auto color = std::make_shared<patchy::psd::DescriptorObject>();
+  color->class_id = "RGBC";
+  for (const auto& [key, channel] : {std::pair<const char*, double>{"Rd  ", 225.000458}, {"Grn ", 211.000671},
+                                     {"Bl  ", 179.001160}}) {
+    patchy::psd::DescriptorValue component;
+    component.type = patchy::psd::DescriptorValue::Type::Double;
+    component.double_value = channel;
+    color->values.emplace(key, component);
+    color->key_order.push_back({key, false});
+  }
+  patchy::psd::DescriptorValue color_value;
+  color_value.type = patchy::psd::DescriptorValue::Type::Object;
+  color_value.object_value = color;
+  add("tintColor", true, color_value);
+  add("bwPresetKind", true, integer(1));
+  patchy::psd::BigEndianWriter photoshop_writer;
+  photoshop_writer.write_u32(16);
+  patchy::psd::write_descriptor(photoshop_writer, photoshop);
+  const auto photoshop_payload = photoshop_writer.bytes();
+
+  auto imported = read;
+  auto& imported_layer = imported.layers()[1];
+  patchy::AdjustmentSettings imported_settings;
+  imported_settings.kind = patchy::AdjustmentKind::BlackWhite;
+  patchy::black_white_tint_from_color(225.000458, 211.000671, 179.001160, imported_settings.black_white.tint_hue,
+                                      imported_settings.black_white.tint_saturation);
+  patchy::configure_adjustment_layer(imported_layer, imported_settings);
+  imported_layer.unknown_psd_blocks().clear();
+  imported_layer.unknown_psd_blocks().push_back(patchy::UnknownPsdBlock{"blwh", photoshop_payload});
+  const auto unedited = psd_layer_block_payload(
+      psd_layer_extra_data(patchy::psd::DocumentIo::write_layered_rgb8(imported), 1), "blwh");
+  // Tagged blocks pad to an even length, so the odd-length payload reads back with one zero byte.
+  CHECK(unedited.has_value() && unedited->size() == photoshop_payload.size() + 1U && unedited->back() == 0 &&
+        std::equal(photoshop_payload.begin(), photoshop_payload.end(), unedited->begin()));
+  imported_settings.black_white.weights[0] = 70;
+  patchy::configure_adjustment_layer(imported_layer, imported_settings);
+  const auto edited = psd_layer_block_payload(
+      psd_layer_extra_data(patchy::psd::DocumentIo::write_layered_rgb8(imported), 1), "blwh");
+  CHECK(edited.has_value());
+  patchy::psd::BigEndianReader edited_reader(*edited);
+  CHECK(edited_reader.read_u32() == 16U);
+  const auto patched = patchy::psd::read_descriptor(edited_reader);
+  CHECK(patched.key_order.size() == photoshop.key_order.size());
+  CHECK(patchy::psd::descriptor_value(patched, "Rd  ")->integer_value == 70);
+  CHECK(patchy::psd::descriptor_value(patched, "bwPresetKind") != nullptr);
+  const auto* kept_color = patchy::psd::descriptor_object(patched, "tintColor");
+  CHECK(kept_color != nullptr && patchy::psd::descriptor_number(*kept_color, "Rd  ") == 225.000458);
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3087,6 +3236,8 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"psd_posterize_threshold_write_native_blocks_and_round_trip",
        psd_posterize_threshold_write_native_blocks_and_round_trip},
       {"adjustment_exposure_math_metadata_and_psd_round_trip", adjustment_exposure_math_metadata_and_psd_round_trip},
+      {"adjustment_black_white_math_metadata_and_psd_round_trip",
+       adjustment_black_white_math_metadata_and_psd_round_trip},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",
