@@ -9275,6 +9275,47 @@ RGB: %2, %3, %4</translation>
         <source>Photo Filter: %1, density %2%</source>
         <translation>포토 필터: %1, 밀도 %2%</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>그림자/하이라이트</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>양:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>톤:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>반지름:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>조정</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>중간톤:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>검정 클리핑:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>흰색 클리핑:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>기본값으로 저장</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>추가 옵션 표시</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19230,6 +19271,18 @@ Y: %2
     <message>
         <source>Cancelled Match Color</source>
         <translation>취소된 색상 일치</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>그림자/하이라이트(&amp;W)...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>그림자/하이라이트</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>취소된 그림자/하이라이트</translation>
     </message>
 </context>
 <context>

@@ -4,6 +4,7 @@
 #include "core/layer.hpp"
 #include "core/match_color.hpp"
 #include "filters/filter_registry.hpp"
+#include "filters/shadows_highlights.hpp"
 #include "ui/canvas_widget.hpp"
 #include "ui/curves_editor.hpp"
 
@@ -82,6 +83,7 @@ using SelectiveColorSettings = SelectiveColorAdjustment;
 using BlackWhiteSettings = BlackWhiteAdjustment;
 using ChannelMixerSettings = ChannelMixerAdjustment;
 using PhotoFilterSettings = PhotoFilterAdjustment;
+using ShadowsHighlightsSettings = ::patchy::ShadowsHighlightsSettings;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 using GradientMapSettings = GradientMapAdjustment;
 
@@ -193,6 +195,9 @@ using FilterCancelled = ::patchy::FilterCancelled;
 // The translated name of Photoshop's Photo Filter preset at `index`
 // (photo_filter_preset_colors() order).
 [[nodiscard]] QString photo_filter_preset_name(std::size_t index);
+// Opens with the saved defaults (Save Defaults) or Photoshop's factory values.
+[[nodiscard]] std::optional<ShadowsHighlightsSettings> request_shadows_highlights_settings(
+    QWidget* parent, std::function<void(bool, const ShadowsHighlightsSettings&)> preview_changed = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -262,5 +267,9 @@ void apply_photo_filter_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegio
 // Applies a resolved Match Color map (core/match_color.hpp) inside the selection.
 void apply_match_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                  const MatchColorTransform& transform, const FilterProgress* progress = nullptr);
+// Neighborhoods read the whole layer; only selected pixels change.
+void apply_shadows_highlights_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                        const ShadowsHighlightsSettings& settings,
+                                        const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

@@ -9335,6 +9335,47 @@ RGB: %2, %3, %4</translation>
         <source>Photo Filter: %1, density %2%</source>
         <translation>Filtr fotograficzny: %1, gęstość %2%</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Cienie/Światła</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Wartość:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Ton:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Promień:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Dopasowania</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Półtony:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Przycięcie czerni:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Przycięcie bieli:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Zapisz jako domyślne</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Pokaż więcej opcji</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19342,6 +19383,18 @@ Y: %2
     <message>
         <source>Cancelled Match Color</source>
         <translation>Anulowano: Dopasuj kolor</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>&amp;Cienie/Światła...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Cienie/Światła</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Anulowano: Cienie/Światła</translation>
     </message>
 </context>
 <context>

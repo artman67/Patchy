@@ -9305,6 +9305,47 @@ RVB : %2, %3, %4</translation>
         <source>Photo Filter: %1, density %2%</source>
         <translation>Filtre photo : %1, densité %2 %</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Tons foncés/Tons clairs</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Quantité :</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Ton :</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Rayon :</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Réglages</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Tons moyens :</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Écrêtage du noir :</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Écrêtage du blanc :</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Enregistrer par défaut</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Afficher plus d'options</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19286,6 +19327,18 @@ Convertis en images : %1.</translation>
     <message>
         <source>Cancelled Match Color</source>
         <translation>Correspondance de la couleur annulée</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>Tons &amp;foncés/Tons clairs...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Tons foncés/Tons clairs</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Tons foncés/Tons clairs annulé</translation>
     </message>
 </context>
 <context>

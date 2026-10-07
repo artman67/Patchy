@@ -9305,6 +9305,47 @@ RGB: %2, %3, %4</translation>
         <source>Photo Filter: %1, density %2%</source>
         <translation>Filtro fotografico: %1, densità %2%</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Ombre/Luci</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Fattore:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Tono:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Raggio:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Regolazioni</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Mezzitoni:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Taglio nero:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Taglio bianco:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Salva come predefiniti</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Mostra più opzioni</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19286,6 +19327,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Cancelled Match Color</source>
         <translation>Annullato: Corrispondenza colore</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>O&amp;mbre/Luci...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Ombre/Luci</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Annullato: Ombre/Luci</translation>
     </message>
 </context>
 <context>

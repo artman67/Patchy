@@ -2586,6 +2586,102 @@ void ui_brightness_contrast_adjustment_layer_creates_and_edits() {
   CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(0, 0, 0), 6));
 }
 
+void ui_shadows_highlights_lifts_selected_shadows_as_one_undo_step() {
+  auto stored = patchy::ui::app_settings();
+  stored.remove(QStringLiteral("shadowsHighlights"));
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+
+  canvas->set_primary_color(QColor(50, 50, 50));
+  use_solid_fill_settings(canvas);
+  require_action(window, "layerFillForegroundAction")->trigger();
+  QApplication::processEvents();
+  require_action_by_text(window, QStringLiteral("Marquee"))->trigger();
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(20, 20)),
+       canvas->widget_position_for_document_point(QPoint(120, 120)));
+  QApplication::processEvents();
+  const auto layer_count = doc.layers().size();
+  const auto undo_depth = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+
+  // Runs `body` on the next Shadows/Highlights dialog, then accepts or cancels it.
+  const auto run_dialog = [&](bool accept, const std::function<void(QDialog&)>& body) {
+    QTimer::singleShot(0, [&] {
+      for (auto* widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() == QStringLiteral("patchyShadowsHighlightsDialog")) {
+          auto* dialog = qobject_cast<QDialog*>(widget);
+          CHECK(dialog != nullptr);
+          if (dialog != nullptr) {
+            body(*dialog);
+            accept ? dialog->accept() : dialog->reject();
+          }
+          return;
+        }
+      }
+      CHECK(false);
+    });
+    require_action(window, "imageAdjustShadowsHighlightsAction")->trigger();
+    QApplication::processEvents();
+  };
+  const auto spin = [](QDialog& dialog, const char* name) {
+    auto* found = dialog.findChild<QSpinBox*>(QString::fromLatin1(name));
+    CHECK(found != nullptr);
+    return found;
+  };
+
+  run_dialog(true, [&](QDialog& dialog) {
+    // The basic view shows only the two Amounts at Photoshop's defaults.
+    auto* more = dialog.findChild<QCheckBox*>(QStringLiteral("shadowsHighlightsMoreOptionsCheck"));
+    auto* adjustments = dialog.findChild<QGroupBox*>(QStringLiteral("shadowsHighlightsAdjustmentsGroup"));
+    auto* black_clip = dialog.findChild<QDoubleSpinBox*>(QStringLiteral("shadowsHighlightsBlackClipSpin"));
+    CHECK(more != nullptr && adjustments != nullptr && black_clip != nullptr);
+    CHECK(spin(dialog, "shadowsHighlightsShadowsAmountSpin")->value() == 35);
+    CHECK(spin(dialog, "shadowsHighlightsHighlightsAmountSpin")->value() == 0);
+    CHECK(!more->isChecked() && !adjustments->isVisible());
+    CHECK(!spin(dialog, "shadowsHighlightsShadowsToneSpin")->isVisible());
+    more->setChecked(true);
+    CHECK(adjustments->isVisible() && spin(dialog, "shadowsHighlightsShadowsRadiusSpin")->isVisible());
+    CHECK(spin(dialog, "shadowsHighlightsShadowsRadiusSpin")->value() == 30);
+    process_events_for(50);
+    save_widget_artifact("ui_shadows_highlights_dialog", dialog);
+    // A flat layer is its own darkest tone; the default 0.01 % Black Clip would pin it
+    // back to black, so turn it off to see the plain lift.
+    CHECK(std::abs(black_clip->value() - 0.01) < 1e-9);
+    black_clip->setValue(0.0);
+    process_events_for(400);
+    CHECK(canvas_pixel(*canvas, QPoint(70, 70)).red() > 62);
+    CHECK(canvas_pixel(*canvas, QPoint(200, 70)) == QColor(50, 50, 50));
+  });
+  const auto lifted = canvas_pixel(*canvas, QPoint(70, 70));
+  CHECK(lifted.red() > 62 && lifted.red() == lifted.green() && lifted.green() == lifted.blue());
+  CHECK(canvas_pixel(*canvas, QPoint(200, 70)) == QColor(50, 50, 50));
+  CHECK(doc.layers().size() == layer_count);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth + 1);
+  save_widget_artifact("ui_shadows_highlights_selection", *canvas);
+  patchy::ui::MainWindowTestAccess::undo(window);
+  QApplication::processEvents();
+  CHECK(canvas_pixel(*canvas, QPoint(70, 70)) == QColor(50, 50, 50));
+
+  // Save Defaults persists the values the next dialog opens with (and Show More Options
+  // stays open); Cancel leaves the pixels and history alone.
+  run_dialog(false, [&](QDialog& dialog) {
+    auto* more = dialog.findChild<QCheckBox*>(QStringLiteral("shadowsHighlightsMoreOptionsCheck"));
+    CHECK(more != nullptr && more->isChecked());
+    spin(dialog, "shadowsHighlightsShadowsAmountSpin")->setValue(60);
+    auto* save = dialog.findChild<QPushButton*>(QStringLiteral("shadowsHighlightsSaveDefaultsButton"));
+    CHECK(save != nullptr);
+    if (save != nullptr) {
+      save->click();
+    }
+    process_events_for(150);
+  });
+  CHECK(canvas_pixel(*canvas, QPoint(70, 70)) == QColor(50, 50, 50));
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth);
+  run_dialog(false, [&](QDialog& dialog) { CHECK(spin(dialog, "shadowsHighlightsShadowsAmountSpin")->value() == 60); });
+  stored.remove(QStringLiteral("shadowsHighlights"));
+}
+
 void ui_levels_dialog_remaps_selected_tonal_range() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -4177,6 +4273,8 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},
+      {"ui_shadows_highlights_lifts_selected_shadows_as_one_undo_step",
+       ui_shadows_highlights_lifts_selected_shadows_as_one_undo_step},
       {"ui_curves_dialog_remaps_midtones_in_selection", ui_curves_dialog_remaps_midtones_in_selection},
       {"ui_curves_editor_points_channels_keyboard_auto_and_reset",
        ui_curves_editor_points_channels_keyboard_auto_and_reset},

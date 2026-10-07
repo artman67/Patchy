@@ -1049,6 +1049,7 @@ private:
   void apply_hue_saturation_adjustment(const HueSaturationSettings& hue_saturation, bool allow_identity = false);
   void new_color_balance_adjustment_layer();
   void color_balance_dialog();
+  void shadows_highlights_dialog();
   void apply_color_balance_adjustment(int cyan_red, int magenta_green, int yellow_blue,
                                       bool allow_identity = false);
   void match_color_dialog();

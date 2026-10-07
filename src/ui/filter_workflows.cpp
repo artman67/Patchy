@@ -1281,6 +1281,20 @@ void apply_photo_filter_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegio
   for_each_selected_row_span(pixels, bounds, selection, progress, apply_span);
 }
 
+void apply_shadows_highlights_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                        const ShadowsHighlightsSettings& settings, const FilterProgress* progress) {
+  if (selection.isEmpty()) {
+    apply_shadows_highlights(pixels, settings, progress);
+    return;
+  }
+  if (layer_selection_region(selection, bounds).isEmpty()) {
+    return;
+  }
+  const auto original = pixels;
+  apply_shadows_highlights(pixels, settings, progress);
+  restore_pixels_outside_selection(pixels, original, selection, bounds);
+}
+
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress) {
   settings.cyan_red = std::clamp(settings.cyan_red, -100, 100);

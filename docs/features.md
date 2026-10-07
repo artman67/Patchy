@@ -49,6 +49,7 @@
 - Reads and writes a wide range of formats: PSD/PSB, [PDF](#pdf-documents), PNG, JPEG, TIFF, WebP, BMP, TGA, GIF, PCX, Amiga IFF/LBM, Windows icons and cursors (ICO/CUR), Aseprite files, JPEG XR (.jxr, on Windows), Proton SDK textures (.rttex), and SVG (opens as editable shape layers, exports with vectors preserved)
 - Imports Affinity documents as layered files: the current .af format, Affinity 2 .afphoto/.afdesign/.afpub, and most Affinity 1.x-era files, bringing across rasters, groups, masks, clipping, blend modes, editable text layers, vector shapes, adjustment layers, layer effects, and placed images (which become embedded Smart Objects)
 - Opens camera raw files (CR2/CR3/NEF/ARW/RAF/DNG and more) through a 16-bit develop dialog with a Natural rendering profile, ISO-based noise reduction, and per-photo settings saved beside the original, and HEIC/HEIF photos through platform codecs
+- Shadows/Highlights (Image > Adjustments) brightens dark areas and tames bright ones based on their surroundings, with Photoshop's basic and expanded controls and a live preview
 - Opens HDR screenshots saved as JPEG XR (.jxr), the format NVIDIA's in-game capture uses, tone mapping the high dynamic range down to 8-bit so highlights keep their detail instead of clipping to white
 
 ## PDF documents

@@ -9275,6 +9275,47 @@ Mixed selection</source>
         <source>Photo Filter: %1, density %2%</source>
         <translation>レンズフィルター: %1、適用量 %2%</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>シャドウ・ハイライト</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>量:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>階調:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>半径:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>調整</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>中間調:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>黒のクリップ:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>白のクリップ:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>初期設定として保存</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>詳細オプションを表示</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19230,6 +19271,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Match Color</source>
         <translation>カラーの適用をキャンセルしました</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>シャドウ・ハイライト(&amp;W)...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>シャドウ・ハイライト</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>シャドウ・ハイライトをキャンセルしました</translation>
     </message>
 </context>
 <context>
