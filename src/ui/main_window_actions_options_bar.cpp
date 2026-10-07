@@ -495,6 +495,69 @@ void MainWindow::sync_mixer_combination_combo() {
   mixer_combination_combo_->setCurrentIndex(selection);
 }
 
+void MainWindow::set_paint_symmetry(patchy::PaintSymmetryMode mode, int segments) {
+  current_paint_symmetry_mode_ = mode;
+  current_paint_symmetry_segments_ = patchy::clamp_paint_symmetry_segments(
+      patchy::paint_symmetry_uses_segments(mode) ? mode : patchy::PaintSymmetryMode::Radial, segments);
+  apply_paint_symmetry_to_canvas(canvas_);
+  sync_paint_symmetry_controls();
+}
+
+void MainWindow::apply_paint_symmetry_to_canvas(CanvasWidget* canvas) {
+  if (canvas == nullptr) {
+    return;
+  }
+  canvas->set_paint_symmetry(current_paint_symmetry_mode_, current_paint_symmetry_segments_);
+  canvas->set_paint_symmetry_visible(current_paint_symmetry_visible_);
+}
+
+void MainWindow::sync_paint_symmetry_controls() {
+  const auto mode_index = static_cast<std::size_t>(current_paint_symmetry_mode_);
+  for (std::size_t index = 0; index < paint_symmetry_mode_actions_.size(); ++index) {
+    if (auto* action = paint_symmetry_mode_actions_[index]; action != nullptr) {
+      const QSignalBlocker blocker(action);
+      action->setChecked(index == mode_index);
+    }
+  }
+  const auto active = current_paint_symmetry_mode_ != patchy::PaintSymmetryMode::Off;
+  if (paint_symmetry_transform_action_ != nullptr) {
+    paint_symmetry_transform_action_->setEnabled(active);
+  }
+  if (paint_symmetry_reset_action_ != nullptr) {
+    paint_symmetry_reset_action_->setEnabled(active);
+  }
+  if (paint_symmetry_hide_action_ != nullptr) {
+    const QSignalBlocker blocker(paint_symmetry_hide_action_);
+    paint_symmetry_hide_action_->setChecked(!current_paint_symmetry_visible_);
+  }
+  if (paint_symmetry_button_ != nullptr &&
+      paint_symmetry_button_->property("symmetryActive").toBool() != active) {
+    // The accent outline marks a live symmetry, like the Dynamics button's.
+    paint_symmetry_button_->setProperty("symmetryActive", active);
+    paint_symmetry_button_->style()->unpolish(paint_symmetry_button_);
+    paint_symmetry_button_->style()->polish(paint_symmetry_button_);
+  }
+}
+
+void MainWindow::request_paint_symmetry_segments(patchy::PaintSymmetryMode mode) {
+  // Photoshop asks for the segment count each time Radial or Mandala is chosen.
+  QInputDialog input(this);
+  input.setObjectName(QStringLiteral("paintSymmetrySegmentsDialog"));
+  input.setWindowTitle(mode == patchy::PaintSymmetryMode::Mandala ? tr("Mandala Symmetry")
+                                                                 : tr("Radial Symmetry"));
+  input.setLabelText(tr("Segment count:"));
+  input.setInputMode(QInputDialog::IntInput);
+  input.setIntRange(patchy::kPaintSymmetryMinSegments,
+                    mode == patchy::PaintSymmetryMode::Mandala ? patchy::kPaintSymmetryMaxMandalaSegments
+                                                               : patchy::kPaintSymmetryMaxRadialSegments);
+  input.setIntValue(patchy::clamp_paint_symmetry_segments(mode, current_paint_symmetry_segments_));
+  if (exec_dialog(input) == QDialog::Accepted) {
+    set_paint_symmetry(mode, input.intValue());
+  } else {
+    sync_paint_symmetry_controls();  // a cancelled prompt keeps the previous check
+  }
+}
+
 void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   // The startup-defaults donor canvas resolved by create_actions() (see the
   // comment there); a local alias keeps the moved body identical.
@@ -1811,6 +1874,83 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   bind_widget_text(brush_smoothing_label, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Smooth:"));
   add_option_widget(brush_smoothing, smoothing_tools);
   add_option_widget(brush_smoothing_options_button_, smoothing_tools);
+
+  // Paint Symmetry: Photoshop's butterfly button closes the Brush, Mixer
+  // Brush, and Eraser rows. Its menu picks the symmetry, moves or rotates its
+  // axes on the canvas, and hides the guide (docs/paint-symmetry.md).
+  paint_symmetry_button_ = new QToolButton(toolbar);
+  paint_symmetry_button_->setObjectName(QStringLiteral("paintSymmetryButton"));
+  paint_symmetry_button_->setIcon(paint_symmetry_icon());
+  paint_symmetry_button_->setIconSize(QSize(16, 16));
+  paint_symmetry_button_->setProperty("optionsBarMenuButton", true);
+  paint_symmetry_button_->setFocusPolicy(Qt::NoFocus);
+  bind_tooltip(paint_symmetry_button_, QT_TR_NOOP("Paint symmetry"));
+  paint_symmetry_button_->setPopupMode(QToolButton::InstantPopup);
+  {
+    auto* menu = new QMenu(paint_symmetry_button_);
+    menu->setObjectName(QStringLiteral("paintSymmetryMenu"));
+    auto* group = new QActionGroup(menu);
+    group->setExclusive(true);
+    struct ModeEntry {
+      patchy::PaintSymmetryMode mode;
+      const char* source;
+    };
+    const ModeEntry entries[] = {
+        {patchy::PaintSymmetryMode::Off, QT_TR_NOOP("Symmetry Off")},
+        {patchy::PaintSymmetryMode::Vertical, QT_TR_NOOP("Vertical")},
+        {patchy::PaintSymmetryMode::Horizontal, QT_TR_NOOP("Horizontal")},
+        {patchy::PaintSymmetryMode::DualAxis, QT_TR_NOOP("Dual Axis")},
+        {patchy::PaintSymmetryMode::Diagonal, QT_TR_NOOP("Diagonal")},
+        {patchy::PaintSymmetryMode::Radial, QT_TR_NOOP("Radial...")},
+        {patchy::PaintSymmetryMode::Mandala, QT_TR_NOOP("Mandala...")},
+    };
+    for (const auto& entry : entries) {
+      auto* action = menu->addAction(tr(entry.source));
+      bind_action_text(action, entry.source);
+      action->setCheckable(true);
+      group->addAction(action);
+      paint_symmetry_mode_actions_[static_cast<std::size_t>(entry.mode)] = action;
+      const auto mode = entry.mode;
+      connect(action, &QAction::triggered, this, [this, mode] {
+        if (patchy::paint_symmetry_uses_segments(mode)) {
+          request_paint_symmetry_segments(mode);
+        } else {
+          set_paint_symmetry(mode, current_paint_symmetry_segments_);
+        }
+      });
+      if (entry.mode == patchy::PaintSymmetryMode::Off) {
+        menu->addSeparator();
+      }
+    }
+    menu->addSeparator();
+    paint_symmetry_transform_action_ = menu->addAction(tr("Transform Symmetry"));
+    bind_action_text(paint_symmetry_transform_action_, QT_TR_NOOP("Transform Symmetry"));
+    connect(paint_symmetry_transform_action_, &QAction::triggered, this, [this] {
+      if (canvas_ == nullptr) {
+        return;
+      }
+      canvas_->begin_paint_symmetry_transform();
+      canvas_->setFocus(Qt::OtherFocusReason);
+      statusBar()->showMessage(tr("Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels."));
+    });
+    paint_symmetry_reset_action_ = menu->addAction(tr("Reset Symmetry"));
+    bind_action_text(paint_symmetry_reset_action_, QT_TR_NOOP("Reset Symmetry"));
+    connect(paint_symmetry_reset_action_, &QAction::triggered, this, [this] {
+      if (canvas_ != nullptr) {
+        canvas_->reset_paint_symmetry_placement();
+      }
+    });
+    paint_symmetry_hide_action_ = menu->addAction(tr("Hide Symmetry"));
+    bind_action_text(paint_symmetry_hide_action_, QT_TR_NOOP("Hide Symmetry"));
+    paint_symmetry_hide_action_->setCheckable(true);
+    connect(paint_symmetry_hide_action_, &QAction::toggled, this, [this](bool hidden) {
+      current_paint_symmetry_visible_ = !hidden;
+      apply_paint_symmetry_to_canvas(canvas_);
+    });
+    paint_symmetry_button_->setMenu(menu);
+  }
+  add_option_widget(paint_symmetry_button_, smoothing_tools);
+  sync_paint_symmetry_controls();
 
   connect(brush_softness, &QSpinBox::valueChanged, brush_softness_slider, &QSlider::setValue);
   connect(brush_softness_slider, &QSlider::valueChanged, brush_softness, &QSpinBox::setValue);

@@ -18659,6 +18659,58 @@ Convertido en imágenes: %1.</translation>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>Simetría de mandala</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>Simetría radial</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>Número de segmentos:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>Simetría de pintura</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>Simetría desactivada</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>Doble eje</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>Diagonal</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>Radial...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>Mandala...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>Transformar simetría</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>Restaurar simetría</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>Ocultar simetría</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>Arrastre el centro para mover la simetría o arrastre en otro lugar para girarla (Mayús ajusta el ángulo). Enter aplica, Esc cancela.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

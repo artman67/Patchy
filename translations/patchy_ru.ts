@@ -18715,6 +18715,58 @@ Y: %2
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>Симметрия «Мандала»</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>Радиальная симметрия</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>Число сегментов:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>Симметрия рисования</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>Симметрия выключена</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>Две оси</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>Диагональ</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>Радиальная...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>Мандала...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>Трансформировать симметрию</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>Сбросить симметрию</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>Скрыть симметрию</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>Перетащите центр, чтобы переместить симметрию, или перетащите в другом месте, чтобы повернуть её (Shift привязывает угол). Enter применяет изменения, Esc отменяет.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

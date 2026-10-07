@@ -961,7 +961,7 @@ void mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero() {
   patchy::MixerBrushState tip_state;
   patchy::begin_mixer_brush_stroke(tip_state);
   options.dab_primary_provider = [&tip_state, &document, layer_id](
-                                     double x, double y, const patchy::EditColor& loaded_color) {
+                                     double x, double y, const patchy::EditColor& loaded_color, std::size_t) {
     const auto* layer = document.find_layer(layer_id);
     patchy::EditColor sample{0, 0, 0, 0};
     const auto sx = static_cast<std::int32_t>(x);
@@ -1866,6 +1866,154 @@ void stroke_stabilizer_pass_through_and_leash_geometry() {
   CHECK(held.y == held_output.y);
 }
 
+void paint_symmetry_transforms_place_mirrors_and_rotations() {
+  using patchy::PaintSymmetryMode;
+  const auto mapped = [](const patchy::SymmetryTransform& copy, double x, double y) {
+    return std::pair<double, double>{copy.map_x(x, y), copy.map_y(x, y)};
+  };
+  const auto vertical = patchy::paint_symmetry_transforms(PaintSymmetryMode::Vertical, 0, 31.5, 23.5);
+  CHECK(vertical.size() == 1U);
+  CHECK((mapped(vertical[0], 10.0, 5.0) == std::pair<double, double>{53.0, 5.0}));
+  const auto horizontal = patchy::paint_symmetry_transforms(PaintSymmetryMode::Horizontal, 0, 31.5, 23.5);
+  CHECK((mapped(horizontal[0], 10.0, 5.0) == std::pair<double, double>{10.0, 42.0}));
+  const auto dual = patchy::paint_symmetry_transforms(PaintSymmetryMode::DualAxis, 0, 31.5, 23.5);
+  CHECK(dual.size() == 3U);
+  CHECK((mapped(dual[2], 10.0, 5.0) == std::pair<double, double>{53.0, 42.0}));
+  // Diagonal mirrors across the axis rising to the right (y points down).
+  const auto diagonal = patchy::paint_symmetry_transforms(PaintSymmetryMode::Diagonal, 0, 0.0, 0.0);
+  CHECK((mapped(diagonal[0], 3.0, 1.0) == std::pair<double, double>{-1.0, -3.0}));
+  // Quarter turns are exact (no 1e-16 residue), clockwise on screen.
+  const auto radial = patchy::paint_symmetry_transforms(PaintSymmetryMode::Radial, 4, 0.0, 0.0);
+  CHECK(radial.size() == 3U);
+  CHECK((mapped(radial[0], 5.0, 0.0) == std::pair<double, double>{0.0, 5.0}));
+  CHECK((mapped(radial[1], 5.0, 0.0) == std::pair<double, double>{-5.0, 0.0}));
+  // Mandala is the dihedral group: N - 1 rotations plus N mirrors, all rigid.
+  const auto mandala = patchy::paint_symmetry_transforms(PaintSymmetryMode::Mandala, 6, 7.0, 9.0);
+  CHECK(mandala.size() == 11U);
+  for (const auto& copy : mandala) {
+    CHECK(std::abs(copy.xx * copy.xx + copy.yx * copy.yx - 1.0) < 1e-12);
+    CHECK(std::abs(copy.xx * copy.xy + copy.yx * copy.yy) < 1e-12);
+    const auto center = mapped(copy, 7.0, 9.0);
+    CHECK(std::abs(center.first - 7.0) < 1e-9 && std::abs(center.second - 9.0) < 1e-9);
+  }
+  // Rotating the whole symmetry a quarter turn makes the vertical axis horizontal.
+  const auto turned = patchy::paint_symmetry_transforms(PaintSymmetryMode::Vertical, 0, 31.5, 23.5, 90.0);
+  const auto turned_point = mapped(turned[0], 10.0, 5.0);
+  CHECK(std::abs(turned_point.first - 10.0) < 1e-9 && std::abs(turned_point.second - 42.0) < 1e-9);
+  CHECK(patchy::paint_symmetry_transforms(PaintSymmetryMode::Off, 6, 0.0, 0.0).empty());
+  CHECK(patchy::clamp_paint_symmetry_segments(PaintSymmetryMode::Mandala, 12) == 10);
+  CHECK(patchy::clamp_paint_symmetry_segments(PaintSymmetryMode::Radial, 1) == 2);
+  // A point on the axis (or the radial center) is repeated by every copy.
+  CHECK(patchy::paint_symmetry_copy_repeats_point(vertical, 0, 31.5, 7.0));
+  CHECK(!patchy::paint_symmetry_copy_repeats_point(vertical, 0, 30.5, 7.0));
+  CHECK(patchy::paint_symmetry_copy_repeats_segment(vertical, 0, 30.0, 4.0, 33.0, 4.0));
+  for (std::size_t index = 0; index < mandala.size(); ++index) {
+    CHECK(patchy::paint_symmetry_copy_repeats_point(mandala, index, 7.0, 9.0));
+  }
+}
+
+void tool_paint_symmetry_mirrors_every_footprint_exactly() {
+  // 64 px wide: the guide at x = 32 is the engine axis x = 31.5, so pixel x mirrors to 63 - x.
+  const auto vertical = patchy::paint_symmetry_transforms(patchy::PaintSymmetryMode::Vertical, 0, 31.5, 23.5);
+  const auto expect_mirrored = [](const patchy::Document& document, patchy::LayerId layer, const char* label) {
+    const auto& pixels = std::as_const(*document.find_layer(layer)).pixels();
+    int painted = 0;
+    bool mirrored = true;
+    for (std::int32_t y = 0; y < pixels.height(); ++y) {
+      for (std::int32_t x = 0; x < pixels.width(); ++x) {
+        const auto* left = pixels.pixel(x, y);
+        const auto* right = pixels.pixel(pixels.width() - 1 - x, y);
+        mirrored = mirrored && std::equal(left, left + 4, right);
+        painted += left[3] > 0 ? 1 : 0;
+      }
+    }
+    if (!mirrored) {
+      std::cerr << "  footprint not mirrored: " << label << '\n';
+    }
+    CHECK(mirrored);
+    CHECK(painted > 0);
+  };
+
+  {  // Soft procedural capsule.
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(20, 40, 200);
+    options.brush_size = 9;
+    options.brush_softness = 60;
+    options.symmetry = vertical;
+    CHECK(!patchy::paint_brush_segment(document, layer, 5.3, 10.7, 20.2, 30.1, options, false).empty());
+    expect_mirrored(document, layer, "soft capsule");
+  }
+  {  // One-pixel line: the copy maps each visited pixel.
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 1;
+    options.symmetry = vertical;
+    CHECK(!patchy::paint_brush_segment(document, layer, 3.4, 2.2, 17.8, 40.6, options, false).empty());
+    expect_mirrored(document, layer, "one-pixel line");
+  }
+  {  // Hard pixel-snapped square at a sub-pixel position.
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 6;
+    options.brush_shape = patchy::BrushShape::Square;
+    options.symmetry = vertical;
+    CHECK(!patchy::paint_brush_dab(document, layer, 10.3, 12.6, options, false).empty());
+    expect_mirrored(document, layer, "square dab");
+  }
+  {  // Asymmetric tip with angle jitter and scatter: the copy is the exact mirror image,
+     // jitter included, because dynamics are computed once and placed twice.
+    patchy::BrushTip half_bar;
+    half_bar.width = 9;
+    half_bar.height = 9;
+    half_bar.mask.assign(81, 0);
+    for (std::int32_t x = 0; x < 4; ++x) {
+      half_bar.mask[4U * 9U + static_cast<std::size_t>(x)] = 255;
+      half_bar.mask[2U * 9U + static_cast<std::size_t>(x)] = 128;
+    }
+    const auto scaled = patchy::make_scaled_brush_tip(patchy::build_brush_tip_mips(half_bar), 9);
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(200, 30, 30);
+    options.brush_size = 9;
+    options.brush_tip = &scaled;
+    options.brush_dynamics.angle_jitter = 0.4;
+    options.brush_dynamics.scatter = 0.5;
+    options.brush_dynamics.seed = 7;
+    options.symmetry = vertical;
+    patchy::BrushTipStrokeState state;
+    CHECK(!patchy::paint_brush_segment(document, layer, 8.0, 8.0, 24.0, 36.0, options, false, state).empty());
+    expect_mirrored(document, layer, "tip with dynamics");
+  }
+}
+
+void tool_paint_symmetry_never_double_stamps_on_the_axis() {
+  // A copy that lands where the stroke already painted is skipped, so a dab or a segment on the
+  // axis (or at the radial center) paints exactly what it paints without symmetry.
+  const auto paint = [](const std::vector<patchy::SymmetryTransform>& symmetry, bool segment) {
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 15;
+    options.brush_softness = 80;
+    options.symmetry = symmetry;
+    if (segment) {
+      CHECK(!patchy::paint_brush_segment(document, layer, 31.5, 6.0, 31.5, 40.0, options, false).empty());
+    } else {
+      CHECK(!patchy::paint_brush_dab(document, layer, 31.5, 23.5, options, false).empty());
+    }
+    const auto data = std::as_const(*document.find_layer(layer)).pixels().data();
+    return std::vector<std::uint8_t>(data.begin(), data.end());
+  };
+  const auto vertical = patchy::paint_symmetry_transforms(patchy::PaintSymmetryMode::Vertical, 0, 31.5, 23.5);
+  const auto mandala = patchy::paint_symmetry_transforms(patchy::PaintSymmetryMode::Mandala, 6, 31.5, 23.5);
+  CHECK(paint(vertical, true) == paint({}, true));
+  CHECK(paint(vertical, false) == paint({}, false));
+  CHECK(paint(mandala, false) == paint({}, false));
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_engine_tests() {
@@ -1917,5 +2065,9 @@ std::vector<patchy::test::TestCase> brush_engine_tests() {
       {"tool_brush_tip_erases_and_respects_gates", tool_brush_tip_erases_and_respects_gates},
       {"brush_tip_softening_feathers_edges", brush_tip_softening_feathers_edges},
       {"tool_brush_tip_large_stamp_stroke_is_fast", tool_brush_tip_large_stamp_stroke_is_fast},
+      {"paint_symmetry_transforms_place_mirrors_and_rotations",
+       paint_symmetry_transforms_place_mirrors_and_rotations},
+      {"tool_paint_symmetry_mirrors_every_footprint_exactly", tool_paint_symmetry_mirrors_every_footprint_exactly},
+      {"tool_paint_symmetry_never_double_stamps_on_the_axis", tool_paint_symmetry_never_double_stamps_on_the_axis},
   };
 }

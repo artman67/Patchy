@@ -82,6 +82,10 @@ Patent review (July 15, 2026): this is the classic flat-stamp behavior Adobe doc
 
 The Mixer Brush's limited continuous-pickup engine, its Photoshop calibration record, Sample All Layers, the Useful Combinations dropdown, and the shared Brush/Mixer/Eraser stroke Smoothing stabilizer live in [mixer.md](mixer.md).
 
+## Paint Symmetry
+
+Mirrored and radial painting for the Brush, Mixer Brush, and Eraser (the options-bar butterfly menu, `EditOptions::symmetry`, Transform Symmetry, and the patent boundary) lives in [paint-symmetry.md](paint-symmetry.md).
+
 ## Healing family
 
 The Healing Brush, Spot Healing, the Patch tool, and the shared retouch Sample All Layers option live in [healing.md](healing.md), together with their binding legal envelope (classic user-directed frequency separation only; the shared `healing_sample` math is promoted to `canvas_widget_shared.cpp`).

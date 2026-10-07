@@ -18603,6 +18603,58 @@ Y: %2
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>만다라 대칭</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>방사형 대칭</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>세그먼트 수:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>페인트 대칭</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>대칭 끄기</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>이중 축</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>대각선</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>방사형...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>만다라...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>대칭 변형</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>대칭 초기화</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>대칭 숨기기</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>중심을 드래그하면 대칭이 이동하고 다른 곳을 드래그하면 회전합니다(Shift는 각도 맞춤). Enter가 적용되고 Esc는 취소됩니다.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

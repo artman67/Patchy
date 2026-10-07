@@ -198,6 +198,10 @@ public:
   [[nodiscard]] StyleLibrary& style_library();
   void set_active_brush_tip(const QString& tip_id, bool announce, bool apply_tool_settings = true);
   void define_brush_tip_from_selection();
+  // Paint Symmetry (docs/paint-symmetry.md): the options-bar butterfly menu's
+  // entry point. Mode, segments and guide visibility are session tool state
+  // pushed to every document's canvas; nothing is persisted.
+  void set_paint_symmetry(patchy::PaintSymmetryMode mode, int segments);
   [[nodiscard]] QImage capture_brush_tip_define_source() const;
   // Profiling stress test, CLI entry (`patchy --stress-test=<preset>`): defers the
   // run until the event loop starts, writes the report, and exits the application
@@ -1711,6 +1715,9 @@ private:
   void retranslate_brush_preset_combo();
   void retranslate_mixer_combination_combo();
   void sync_mixer_combination_combo();
+  void sync_paint_symmetry_controls();
+  void apply_paint_symmetry_to_canvas(CanvasWidget* canvas);
+  void request_paint_symmetry_segments(patchy::PaintSymmetryMode mode);
   void refresh_options_bar();
   void register_document_action(QAction* action);
   // Forget an action that a menu rebuild is about to delete.
@@ -1992,6 +1999,13 @@ private:
   QAction* brush_smoothing_catch_up_action_{nullptr};
   QAction* brush_smoothing_catch_up_end_action_{nullptr};
   QAction* brush_smoothing_zoom_adjust_action_{nullptr};
+  // The Paint Symmetry button, its mode actions (indexed by PaintSymmetryMode)
+  // and the guide commands.
+  QToolButton* paint_symmetry_button_{nullptr};
+  std::array<QAction*, 7> paint_symmetry_mode_actions_{};
+  QAction* paint_symmetry_transform_action_{nullptr};
+  QAction* paint_symmetry_reset_action_{nullptr};
+  QAction* paint_symmetry_hide_action_{nullptr};
   QCheckBox* patch_transparent_check_{nullptr};
   QComboBox* pattern_stamp_pattern_combo_{nullptr};
   QCheckBox* pattern_stamp_aligned_check_{nullptr};
@@ -2294,6 +2308,10 @@ private:
   bool current_brush_smoothing_catch_up_{true};
   bool current_brush_smoothing_catch_up_end_{true};
   bool current_brush_smoothing_zoom_adjust_{true};
+  // Paint Symmetry mirrors; session-only, every launch starts with Symmetry Off.
+  patchy::PaintSymmetryMode current_paint_symmetry_mode_{patchy::PaintSymmetryMode::Off};
+  int current_paint_symmetry_segments_{patchy::kPaintSymmetryDefaultSegments};
+  bool current_paint_symmetry_visible_{true};
   // Combine mode per selection tool (indexed by CanvasWidget::selection_tool_index),
   // persisted across documents; each selection tool keeps its own mode.
   std::array<CanvasWidget::SelectionMode, CanvasWidget::kSelectionToolCount> selection_modes_{

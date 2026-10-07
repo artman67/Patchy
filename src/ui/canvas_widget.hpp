@@ -540,6 +540,30 @@ public:
   [[nodiscard]] bool brush_smoothing_catch_up_end() const noexcept;
   void set_brush_smoothing_zoom_adjust(bool enabled) noexcept;
   [[nodiscard]] bool brush_smoothing_zoom_adjust() const noexcept;
+  // Paint Symmetry (docs/paint-symmetry.md; canvas_widget_symmetry.cpp). Mode,
+  // segments and guide visibility are application-wide tool state mirrored from
+  // the options bar; the center and rotation belong to this canvas's document.
+  // Brush, Mixer Brush, and Eraser strokes replicate through it; native script
+  // strokes never do.
+  [[nodiscard]] static bool tool_uses_paint_symmetry(CanvasTool tool) noexcept;
+  void set_paint_symmetry(patchy::PaintSymmetryMode mode, int segments);
+  [[nodiscard]] patchy::PaintSymmetryMode paint_symmetry_mode() const noexcept;
+  [[nodiscard]] int paint_symmetry_segments() const noexcept;
+  void set_paint_symmetry_visible(bool visible);
+  [[nodiscard]] bool paint_symmetry_visible() const noexcept;
+  // Document coordinates on pixel edges (the default is the canvas center),
+  // snapped to half pixels; kept as a fraction of the canvas across resizes.
+  [[nodiscard]] QPointF paint_symmetry_center() const;
+  void set_paint_symmetry_center(QPointF document_point);
+  [[nodiscard]] double paint_symmetry_angle_degrees() const noexcept;
+  void set_paint_symmetry_angle_degrees(double degrees);
+  void reset_paint_symmetry_placement();
+  // Transform Symmetry: left-drags move the center (near it) or rotate the
+  // axes (elsewhere, Shift snaps to 15 degrees) instead of painting, until
+  // Enter, Escape (reverts), Symmetry Off, or a tool change.
+  void begin_paint_symmetry_transform();
+  void end_paint_symmetry_transform(bool commit);
+  [[nodiscard]] bool paint_symmetry_transform_active() const noexcept;
   // Bitmap brush tip for Brush, Mixer Brush, Pattern Stamp, and Eraser;
   // null tip = procedural round/soft brush.
   // The id is an opaque library key kept here so the options bar and settings stay in sync.
@@ -1674,6 +1698,16 @@ private:
   [[nodiscard]] QRect stroke_leash_overlay_rect() const;
   void invalidate_stroke_leash_overlay();
   void draw_stroke_leash_overlay(QPainter& painter) const;
+  // Paint Symmetry internals (canvas_widget_symmetry.cpp).
+  [[nodiscard]] std::vector<patchy::SymmetryTransform> paint_symmetry_copies() const;
+  [[nodiscard]] patchy::MixerBrushState& mixer_brush_state_for_copy(std::size_t copy_index);
+  [[nodiscard]] bool paint_symmetry_guide_shown() const noexcept;
+  void draw_paint_symmetry_guide(QPainter& painter) const;
+  void update_paint_symmetry_transform_cursor(QPoint widget_position);
+  bool handle_paint_symmetry_transform_press(QMouseEvent* event);
+  bool handle_paint_symmetry_transform_move(QMouseEvent* event);
+  bool handle_paint_symmetry_transform_release(QMouseEvent* event);
+  bool handle_paint_symmetry_transform_key(QKeyEvent* event);
   [[nodiscard]] QRect advance_smoothed_brush_stroke(QPointF document_point, bool erase);
   [[nodiscard]] QRect finish_smoothed_brush_stroke(QPointF document_point, bool erase);
   [[nodiscard]] QRect draw_smoothed_brush_curve(QPointF start, QPointF control, QPointF end, bool erase,
@@ -1727,6 +1761,10 @@ private:
   [[nodiscard]] QRect draw_brush_at(QPoint point, bool erase);
   [[nodiscard]] QRect draw_airbrush_dab(QPointF point);
   [[nodiscard]] QRect draw_mask_brush_segment(QPointF from, QPointF to, bool erase);
+  // One placement of a mask segment: the stroke itself (copy null) or a Paint
+  // Symmetry copy whose already-mapped endpoints evaluate the original footprint.
+  [[nodiscard]] QRect draw_mask_brush_segment_copy(QPointF from, QPointF to, bool erase,
+                                                   const patchy::SymmetryTransform* copy);
   [[nodiscard]] QRect draw_mask_brush_segment(QPoint from, QPoint to, bool erase);
   [[nodiscard]] QRect draw_mask_brush_at(QPoint point, bool erase);
   [[nodiscard]] QRect smudge_brush_segment(QPoint from, QPoint to);
@@ -2349,6 +2387,22 @@ private:
   static constexpr int kStrokeStabilizerTimerIntervalMs = 16;
   static constexpr double kStrokeStabilizerTickSeconds = 0.016;
   patchy::MixerBrushState mixer_brush_state_{};
+  // Pickup state of each Paint Symmetry copy (index i = copy i + 1), started
+  // lazily per stroke; see mixer_brush_state_for_copy().
+  std::vector<patchy::MixerBrushState> mixer_symmetry_states_;
+  patchy::PaintSymmetryMode paint_symmetry_mode_{patchy::PaintSymmetryMode::Off};
+  int paint_symmetry_segments_{patchy::kPaintSymmetryDefaultSegments};
+  bool paint_symmetry_visible_{true};
+  QPointF paint_symmetry_center_fraction_{0.5, 0.5};
+  double paint_symmetry_angle_degrees_{0.0};
+  bool paint_symmetry_transforming_{false};
+  enum class PaintSymmetryDrag { None, Move, Rotate };
+  PaintSymmetryDrag paint_symmetry_drag_{PaintSymmetryDrag::None};
+  QPointF paint_symmetry_drag_offset_{};
+  double paint_symmetry_drag_start_pointer_degrees_{0.0};
+  double paint_symmetry_drag_start_angle_degrees_{0.0};
+  QPointF paint_symmetry_saved_center_fraction_{0.5, 0.5};
+  double paint_symmetry_saved_angle_degrees_{0.0};
   // Merged-document snapshot captured at mixer stroke start while Sample All
   // Layers is on; null when off. See begin_mixer_brush_stroke().
   QImage mixer_composite_snapshot_;
