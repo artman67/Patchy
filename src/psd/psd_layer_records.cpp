@@ -171,7 +171,7 @@ bool should_skip_layer_block(const EncodedLayer& encoded, const UnknownPsdBlock&
       (block.key == "levl" || block.key == "curv" || block.key == "hue2" || block.key == "nvrt" ||
        block.key == "post" || block.key == "thrs" || block.key == "brit" || block.key == "blnc" ||
        block.key == "expA" || block.key == "grdm" || block.key == "vibA" || block.key == "selc" ||
-       block.key == "blwh")) {
+       block.key == "blwh" || block.key == "mixr")) {
     return true;
   }
   // The Brightness/Contrast emitter owns 'CgEd' (preserved, regenerated, or
@@ -959,6 +959,12 @@ void write_layer_record(BigEndianWriter& writer, const EncodedLayer& encoded, bo
       write_additional_layer_block(
           extra, kPhotoshopBlackWhiteBlockKey,
           photoshop_black_white_payload(settings->black_white, find_layer_block(*encoded.layer, "blwh")),
+          large_document);
+    }
+    if (settings.has_value() && settings->kind == AdjustmentKind::ChannelMixer) {
+      write_additional_layer_block(
+          extra, kPhotoshopChannelMixerBlockKey,
+          photoshop_channel_mixer_payload(settings->channel_mixer, find_layer_block(*encoded.layer, "mixr")),
           large_document);
     }
     if (settings.has_value() && settings->kind == AdjustmentKind::BrightnessContrast) {

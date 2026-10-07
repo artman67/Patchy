@@ -1364,6 +1364,14 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   register_hotkey(black_white_action, "image.black_white", QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_B));
   connect(black_white_action, &QAction::triggered, this, [this] { black_white_dialog(); });
   register_document_action(black_white_action);
+  // Photoshop lists Channel Mixer in the color group after Color Balance, without a shortcut.
+  auto* channel_mixer_action = adjustments_menu->addAction(tr("Channel Mi&xer..."));
+  bind_action_text(channel_mixer_action, QT_TR_NOOP("Channel Mi&xer..."));
+  channel_mixer_action->setObjectName(QStringLiteral("imageAdjustChannelMixerAction"));
+  channel_mixer_action->setIcon(simple_icon(QStringLiteral("MIX")));
+  register_hotkey(channel_mixer_action, "image.channel_mixer");
+  connect(channel_mixer_action, &QAction::triggered, this, [this] { channel_mixer_dialog(); });
+  register_document_action(channel_mixer_action);
   add_adjustment_action(QT_TR_NOOP("&Desaturate"), QStringLiteral("imageAdjustDesaturateAction"),
                         QStringLiteral("patchy.filters.desaturate"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_U));

@@ -9109,6 +9109,39 @@ RGB: %2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>Odwróć</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Stała</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Mieszanie kanałów</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Kanał wyjściowy:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Kanały źródłowe:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Razem:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Monochromatyczny</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Mieszanie kanałów: monochromatyczny, czerwony %1, zielony %2, niebieski %3, stała %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Mieszanie kanałów: zmienione kanały wyjściowe: %1 z 3</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19076,6 +19109,18 @@ Y: %2
     <message>
         <source>Hide Symmetry</source>
         <translation>Ukryj symetrię</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>&amp;Mieszanie kanałów...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Mieszanie kanałów</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Anulowano: Mieszanie kanałów</translation>
     </message>
 </context>
 <context>

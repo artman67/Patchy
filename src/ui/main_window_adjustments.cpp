@@ -320,6 +320,8 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_color_balance_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("Blac&k && White..."), QStringLiteral("BlackWhiteAdjustment"), QStringLiteral("BW"),
                  [this] { new_black_white_adjustment_layer(); });
+  add_adjustment(QT_TR_NOOP("Channel Mi&xer..."), QStringLiteral("ChannelMixerAdjustment"), QStringLiteral("MIX"),
+                 [this] { new_channel_mixer_adjustment_layer(); });
   // No ellipsis: Invert has no settings, so no dialog opens.
   add_adjustment(QT_TR_NOOP("&Invert"), QStringLiteral("InvertAdjustment"), QStringLiteral("INV"),
                  [this] { new_invert_adjustment_layer(); });
@@ -678,6 +680,38 @@ void MainWindow::apply_black_white_adjustment(const BlackWhiteSettings& black_wh
   settings.kind = AdjustmentKind::BlackWhite;
   settings.black_white = clamp_black_white(black_white);
   create_adjustment_layer(tr("Black & White"), settings);
+}
+
+void MainWindow::new_channel_mixer_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](bool enabled,
+                                                                         const ChannelMixerSettings& mixer) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::ChannelMixer;
+    settings.channel_mixer = clamp_channel_mixer(mixer);
+    update_adjustment_layer_preview(tr("Channel Mixer"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto settings = request_channel_mixer_settings(this, preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Channel Mixer"));
+    return;
+  }
+  apply_channel_mixer_adjustment(*settings, true);
+}
+
+void MainWindow::apply_channel_mixer_adjustment(const ChannelMixerSettings& mixer, bool allow_identity) {
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::ChannelMixer;
+  settings.channel_mixer = clamp_channel_mixer(mixer);
+  if (!allow_identity && !adjustment_has_effect(settings)) {
+    return;
+  }
+  create_adjustment_layer(tr("Channel Mixer"), settings);
 }
 
 void MainWindow::new_brightness_contrast_adjustment_layer() {
@@ -1140,6 +1174,24 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->black_white = clamp_black_white(*result);
+      }
+      break;
+    }
+    case AdjustmentKind::ChannelMixer: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const ChannelMixerSettings& mixer) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.channel_mixer = clamp_channel_mixer(mixer);
+        apply_settings(settings);
+      };
+      const auto result = request_channel_mixer_settings(this, preview_changed, original_settings->channel_mixer);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->channel_mixer = clamp_channel_mixer(*result);
       }
       break;
     }

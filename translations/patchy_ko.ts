@@ -9049,6 +9049,39 @@ RGB: %2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>반전</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>상수</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>채널 혼합</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>출력 채널:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>소스 채널:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>합계:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>단색</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>채널 혼합: 단색, 빨강 %1, 녹색 %2, 파랑 %3, 상수 %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>채널 혼합: 출력 채널 3개 중 %1개 변경됨</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18964,6 +18997,18 @@ Y: %2
     <message>
         <source>Hide Symmetry</source>
         <translation>대칭 숨기기</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>채널 혼합(&amp;X)...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>채널 혼합</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>취소된 채널 혼합</translation>
     </message>
 </context>
 <context>

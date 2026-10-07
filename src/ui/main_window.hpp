@@ -110,6 +110,7 @@ using ExposureSettings = ExposureAdjustment;
 using VibranceSettings = VibranceAdjustment;
 using SelectiveColorSettings = SelectiveColorAdjustment;
 using BlackWhiteSettings = BlackWhiteAdjustment;
+using ChannelMixerSettings = ChannelMixerAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 struct ScannerAcquireResult;
 struct UpdateInfo;
@@ -1065,6 +1066,9 @@ private:
   void new_black_white_adjustment_layer();
   void black_white_dialog();
   void apply_black_white_adjustment(const BlackWhiteSettings& settings);
+  void new_channel_mixer_adjustment_layer();
+  void channel_mixer_dialog();
+  void apply_channel_mixer_adjustment(const ChannelMixerSettings& settings, bool allow_identity = false);
   void new_brightness_contrast_adjustment_layer();
   void apply_brightness_contrast_adjustment(const BrightnessContrastSettings& settings,
                                             bool allow_identity = false);

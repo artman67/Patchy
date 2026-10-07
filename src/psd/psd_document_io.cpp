@@ -794,6 +794,10 @@ std::vector<Layer> read_layer_info_records(BigEndianReader& layer_reader, std::i
         if (auto parsed = parse_photoshop_black_white_adjustment(block.payload); parsed.has_value()) {
           native_adjustment_settings = parsed;
         }
+      } else if (block.key == "mixr") {
+        if (auto parsed = parse_photoshop_channel_mixer_adjustment(block.payload); parsed.has_value()) {
+          native_adjustment_settings = parsed;
+        }
       } else if (block.key == "blnc") {
         if (auto parsed = parse_photoshop_color_balance_adjustment(block.payload); parsed.has_value()) {
           native_adjustment_settings = parsed;

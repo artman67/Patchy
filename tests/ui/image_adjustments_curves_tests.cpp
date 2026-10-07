@@ -2080,6 +2080,124 @@ void ui_black_white_command_rewrites_layer_pixels() {
   CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(128, 128, 128), 3));
 }
 
+void ui_channel_mixer_adjustment_layer_creates_and_edits() {
+  patchy::Document document(140, 100, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Background", solid_pixels(140, 100, patchy::PixelFormat::rgba8(), QColor(200, 80, 80)));
+  patchy::ui::MainWindow window;
+  window.add_document_session(std::move(document), QStringLiteral("Channel Mixer"));
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+
+  // Create: the dialog opens on the Red output at the identity. Adding 100% blue to
+  // red pushes Total past 100% (warning shown) and red to 200 + 80. Switching outputs
+  // keeps each mix; Monochrome swaps in one Gray output at 40/40/20.
+  QColor mixed_preview;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyChannelMixerDialog"));
+    CHECK(dialog != nullptr);
+    auto* output = dialog->findChild<QComboBox*>(QStringLiteral("channelMixerOutputCombo"));
+    auto* red = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerRedSpin"));
+    auto* blue = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerBlueSpin"));
+    auto* constant = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerConstantSpin"));
+    auto* total = dialog->findChild<QLabel*>(QStringLiteral("channelMixerTotalLabel"));
+    auto* warning = dialog->findChild<QLabel*>(QStringLiteral("channelMixerTotalWarning"));
+    auto* monochrome = dialog->findChild<QCheckBox*>(QStringLiteral("channelMixerMonochromeCheck"));
+    CHECK(output != nullptr && red != nullptr && blue != nullptr && constant != nullptr && total != nullptr &&
+          warning != nullptr && monochrome != nullptr);
+    CHECK(output->count() == 3 && output->currentIndex() == 0);
+    CHECK(red->value() == 100 && blue->value() == 0 && constant->value() == 0);
+    CHECK(red->minimum() == -200 && red->maximum() == 200);
+    CHECK(red->suffix() == patchy::ui::percent_suffix());
+    CHECK(!monochrome->isChecked());
+    CHECK(total->text() == QStringLiteral("+100") + patchy::ui::percent_suffix());
+    CHECK(warning->isHidden());
+    blue->setValue(100);
+    process_events_for(160);
+    mixed_preview = canvas_pixel(*canvas, QPoint(70, 50));
+    CHECK(total->text() == QStringLiteral("+200") + patchy::ui::percent_suffix());
+    CHECK(!warning->isHidden());
+    dialog->grab().save(QStringLiteral("test-artifacts/ui_channel_mixer_dialog.png"));
+    output->setCurrentIndex(2);
+    CHECK(blue->value() == 100 && red->value() == 0);
+    CHECK(warning->isHidden());
+    output->setCurrentIndex(0);
+    CHECK(blue->value() == 100 && red->value() == 100);
+    monochrome->setChecked(true);
+    CHECK(output->count() == 1 && !output->isEnabled());
+    CHECK(red->value() == 40 && blue->value() == 20);
+    process_events_for(160);
+    dialog->accept();
+  });
+  require_action(window, "layerNewChannelMixerAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(color_close(mixed_preview, QColor(255, 80, 80), 3));
+  CHECK(layer_list->item(0) != nullptr);
+  CHECK(layer_list->item(0)->text() == QStringLiteral("Channel Mixer"));
+  // 40% of 200 + 40% of 80 + 20% of 80.
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(128, 128, 128), 3));
+
+  // Edit: the dialog reopens in Monochrome. Clearing it leaves every output on the gray
+  // mix (Photoshop's hand-tint start), so the image stays gray until an output changes.
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyChannelMixerDialog"));
+    CHECK(dialog != nullptr);
+    auto* output = dialog->findChild<QComboBox*>(QStringLiteral("channelMixerOutputCombo"));
+    auto* red = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerRedSpin"));
+    auto* constant = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerConstantSpin"));
+    auto* monochrome = dialog->findChild<QCheckBox*>(QStringLiteral("channelMixerMonochromeCheck"));
+    CHECK(output != nullptr && red != nullptr && constant != nullptr && monochrome != nullptr);
+    CHECK(monochrome->isChecked() && output->count() == 1);
+    monochrome->setChecked(false);
+    CHECK(output->count() == 3 && output->isEnabled() && output->currentIndex() == 0);
+    CHECK(red->value() == 40);
+    output->setCurrentIndex(2);
+    constant->setValue(20);  // blue output + 51
+    process_events_for(120);
+    dialog->accept();
+  });
+  require_action(window, "layerEditAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(128, 128, 179), 3));
+}
+
+void ui_channel_mixer_command_rewrites_layer_pixels() {
+  patchy::Document document(140, 100, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Background", solid_pixels(140, 100, patchy::PixelFormat::rgba8(), QColor(200, 80, 40)));
+  patchy::ui::MainWindow window;
+  window.add_document_session(std::move(document), QStringLiteral("Channel Mixer Command"));
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+  const auto layer_count = layer_list->count();
+
+  // Image > Adjustments > Channel Mixer edits the pixels in place (no new layer), with
+  // the same math as the adjustment layer: red takes the blue channel.
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyChannelMixerDialog"));
+    CHECK(dialog != nullptr);
+    auto* red = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerRedSpin"));
+    auto* blue = dialog->findChild<QSpinBox*>(QStringLiteral("channelMixerBlueSpin"));
+    CHECK(red != nullptr && blue != nullptr);
+    red->setValue(0);
+    blue->setValue(100);
+    process_events_for(160);
+    dialog->accept();
+  });
+  require_action(window, "imageAdjustChannelMixerAction")->trigger();
+  QApplication::processEvents();
+  CHECK(layer_list->count() == layer_count);
+  const auto& document_after = patchy::ui::MainWindowTestAccess::document(window);
+  CHECK(document_after.active_layer_id().has_value());
+  const auto* active = document_after.find_layer(*document_after.active_layer_id());
+  CHECK(active != nullptr && active->kind() == patchy::LayerKind::Pixel);
+  const auto* pixel = std::as_const(*active).pixels().pixel(70, 50);
+  CHECK(pixel[0] == 40 && pixel[1] == 80 && pixel[2] == 40);
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(40, 80, 40), 3));
+}
+
 void ui_posterize_and_threshold_adjustment_layers_create_and_edit() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3864,6 +3982,8 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_selective_color_command_rewrites_layer_pixels", ui_selective_color_command_rewrites_layer_pixels},
       {"ui_black_white_adjustment_layer_creates_and_edits", ui_black_white_adjustment_layer_creates_and_edits},
       {"ui_black_white_command_rewrites_layer_pixels", ui_black_white_command_rewrites_layer_pixels},
+      {"ui_channel_mixer_adjustment_layer_creates_and_edits", ui_channel_mixer_adjustment_layer_creates_and_edits},
+      {"ui_channel_mixer_command_rewrites_layer_pixels", ui_channel_mixer_command_rewrites_layer_pixels},
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},

@@ -638,6 +638,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(120, 215, 230);
     case AdjustmentKind::BlackWhite:
       return QColor(175, 180, 188);
+    case AdjustmentKind::ChannelMixer:
+      return QColor(150, 200, 140);
   }
   return QColor(145, 175, 215);
 }
@@ -815,6 +817,22 @@ QString adjustment_settings_summary(const Layer& layer) {
                         .arg(weights[3])
                         .arg(weights[4])
                         .arg(weights[5]));
+    }
+    case AdjustmentKind::ChannelMixer: {
+      const auto& mixer = settings->channel_mixer;
+      if (mixer.monochrome) {
+        return QObject::tr("Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4")
+            .arg(mixer.gray.red)
+            .arg(mixer.gray.green)
+            .arg(mixer.gray.blue)
+            .arg(mixer.gray.constant);
+      }
+      const ChannelMixerAdjustment identity;
+      int changed = 0;
+      for (std::size_t index = 0; index < mixer.outputs.size(); ++index) {
+        changed += mixer.outputs[index] != identity.outputs[index] ? 1 : 0;
+      }
+      return QObject::tr("Channel Mixer: %1 of 3 output channels changed").arg(changed);
     }
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
@@ -1149,6 +1167,26 @@ void draw_black_white_adjustment_thumbnail_symbol(QPainter& painter, const Black
   painter.drawEllipse(disc);
 }
 
+void draw_channel_mixer_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
+  // Red, green and blue source dots feeding one output: the mix.
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  const QPointF output(19.0, 14.0);
+  const std::array<std::pair<QPointF, QColor>, 3> sources{{{QPointF(9.0, 8.5), QColor(235, 70, 70)},
+                                                           {QPointF(9.0, 14.0), QColor(80, 200, 95)},
+                                                           {QPointF(9.0, 19.5), QColor(75, 130, 240)}}};
+  painter.setPen(QPen(accent, 1.2));
+  for (const auto& source : sources) {
+    painter.drawLine(source.first, output);
+  }
+  painter.setPen(QPen(accent.darker(160), 1));
+  for (const auto& [center, color] : sources) {
+    painter.setBrush(color);
+    painter.drawEllipse(center, 2.8, 2.8);
+  }
+  painter.setBrush(QColor(238, 243, 248));
+  painter.drawEllipse(output, 3.6, 3.6);
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1406,6 +1444,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::BlackWhite:
           draw_black_white_adjustment_thumbnail_symbol(painter, settings->black_white, accent);
+          break;
+        case AdjustmentKind::ChannelMixer:
+          draw_channel_mixer_adjustment_thumbnail_symbol(painter, accent);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);

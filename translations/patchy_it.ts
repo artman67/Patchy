@@ -9079,6 +9079,39 @@ RGB: %2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>Inverti</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Costante</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Miscelatore canale</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Canale di output:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Canali di origine:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Totale:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Monocromatico</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Miscelatore canale: monocromatico, rosso %1, verde %2, blu %3, costante %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Miscelatore canale: %1 di 3 canali di output modificati</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19020,6 +19053,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Hide Symmetry</source>
         <translation>Nascondi simmetria</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>&amp;Miscelatore canale...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Miscelatore canale</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Annullato: Miscelatore canale</translation>
     </message>
 </context>
 <context>

@@ -824,7 +824,8 @@ void ui_compatibility_report_pins_native_vs_private_adjustment_kinds() {
         patchy::AdjustmentKind::ColorBalance, patchy::AdjustmentKind::Invert, patchy::AdjustmentKind::Posterize,
         patchy::AdjustmentKind::Threshold, patchy::AdjustmentKind::BrightnessContrast,
         patchy::AdjustmentKind::GradientMap, patchy::AdjustmentKind::Vibrance,
-        patchy::AdjustmentKind::SelectiveColor, patchy::AdjustmentKind::BlackWhite}) {
+        patchy::AdjustmentKind::SelectiveColor, patchy::AdjustmentKind::BlackWhite,
+        patchy::AdjustmentKind::ChannelMixer}) {
     CHECK(adjustment_warnings(kind).isEmpty());
   }
 

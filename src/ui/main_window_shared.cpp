@@ -152,6 +152,8 @@ QString localized_adjustment_display_name(AdjustmentKind kind) {
       return QObject::tr("Selective Color");
     case AdjustmentKind::BlackWhite:
       return QObject::tr("Black & White");
+    case AdjustmentKind::ChannelMixer:
+      return QObject::tr("Channel Mixer");
   }
   return QObject::tr("Adjustment");
 }

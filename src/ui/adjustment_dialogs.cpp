@@ -31,6 +31,7 @@
 #include <QLinearGradient>
 #include <QListView>
 #include <QListWidget>
+#include <QLocale>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -43,6 +44,7 @@
 #include <QSlider>
 #include <QSizePolicy>
 #include <QSpinBox>
+#include <QStyle>
 #include <QTimer>
 #include <QValidator>
 #include <QVBoxLayout>
@@ -1619,6 +1621,137 @@ std::optional<BlackWhiteSettings> request_black_white_settings(
           enable_tint_rows(tint);
           flush_preview();
         });
+      });
+}
+
+std::optional<ChannelMixerSettings> request_channel_mixer_settings(
+    QWidget* parent, std::function<void(bool, const ChannelMixerSettings&)> preview_changed,
+    ChannelMixerSettings initial) {
+  initial = clamp_channel_mixer(initial);
+  // The four sliders edit the mix the Output Channel combo selects (Photoshop opens on
+  // Red), or the one Gray mix while Monochrome is ticked; the other mixes wait in the
+  // stash so switching round-trips them.
+  auto stash = std::make_shared<ChannelMixerSettings>(initial);
+  auto edit_output = std::make_shared<std::size_t>(0);
+  auto monochrome_check = std::make_shared<QCheckBox*>(nullptr);
+
+  const auto rows_for = [](const ChannelMixerChannel& channel) {
+    return std::vector<SliderRowSpec>{
+        {QObject::tr("Red"), QStringLiteral("channelMixerRed"), -kChannelMixerRange, kChannelMixerRange, channel.red,
+         percent_suffix()},
+        {QObject::tr("Green"), QStringLiteral("channelMixerGreen"), -kChannelMixerRange, kChannelMixerRange,
+         channel.green, percent_suffix()},
+        {QObject::tr("Blue"), QStringLiteral("channelMixerBlue"), -kChannelMixerRange, kChannelMixerRange,
+         channel.blue, percent_suffix()},
+        {QObject::tr("Constant", "channel mixer"), QStringLiteral("channelMixerConstant"), -kChannelMixerRange,
+         kChannelMixerRange, channel.constant, percent_suffix()}};
+  };
+  const auto capture = [](const std::vector<QSpinBox*>& spins) {
+    return ChannelMixerChannel{spins[0]->value(), spins[1]->value(), spins[2]->value(), spins[3]->value()};
+  };
+
+  const auto build_settings = [stash, edit_output, monochrome_check, capture](const std::vector<QSpinBox*>& spins) {
+    auto settings = *stash;
+    settings.monochrome = *monochrome_check != nullptr && (*monochrome_check)->isChecked();
+    (settings.monochrome ? settings.gray : settings.outputs[*edit_output]) = capture(spins);
+    return clamp_channel_mixer(settings);
+  };
+
+  return request_adjustment_settings_dialog<ChannelMixerSettings>(
+      parent, QStringLiteral("patchyChannelMixerDialog"), QObject::tr("Channel Mixer"),
+      QStringLiteral("channelMixerPreviewCheck"),
+      rows_for(initial.monochrome ? initial.gray : initial.outputs[0]), build_settings, std::move(preview_changed),
+      {},
+      [stash, edit_output, monochrome_check, rows_for, capture](QDialog& dialog, QFormLayout* form,
+                                                               const std::vector<QSpinBox*>& spins,
+                                                               const std::function<void()>& flush_preview) {
+        auto* combo = new QComboBox(&dialog);
+        combo->setObjectName(QStringLiteral("channelMixerOutputCombo"));
+        form->insertRow(0, QObject::tr("Output Channel:"), combo);
+        form->insertRow(1, new QLabel(QObject::tr("Source Channels:"), &dialog));
+
+        // Total: the three source percentages, with Photoshop's warning icon past 100%.
+        auto* total_row = new QHBoxLayout();
+        auto* total = new QLabel(&dialog);
+        total->setObjectName(QStringLiteral("channelMixerTotalLabel"));
+        auto* warning = new QLabel(&dialog);
+        warning->setObjectName(QStringLiteral("channelMixerTotalWarning"));
+        const auto icon_side = dialog.style()->pixelMetric(QStyle::PM_SmallIconSize, nullptr, &dialog);
+        warning->setPixmap(
+            dialog.style()->standardIcon(QStyle::SP_MessageBoxWarning, nullptr, &dialog).pixmap(icon_side, icon_side));
+        total_row->addWidget(total);
+        total_row->addWidget(warning);
+        total_row->addStretch(1);
+        form->insertRow(5, QObject::tr("Total:"), total_row);
+        const auto update_total = [total, warning, spins] {
+          const auto sum = spins[0]->value() + spins[1]->value() + spins[2]->value();
+          total->setText((sum > 0 ? QStringLiteral("+") : QString()) + QLocale().toString(sum) + percent_suffix());
+          warning->setVisible(sum > 100);
+        };
+        for (std::size_t index = 0; index < 3U; ++index) {
+          QObject::connect(spins[index], qOverload<int>(&QSpinBox::valueChanged), &dialog,
+                           [update_total](int) { update_total(); });
+        }
+        update_total();
+
+        auto* check = new QCheckBox(QObject::tr("Monochrome"), &dialog);
+        check->setObjectName(QStringLiteral("channelMixerMonochromeCheck"));
+        check->setChecked(stash->monochrome);
+        *monochrome_check = check;
+        form->addRow(QString(), check);
+
+        // Monochrome has one output, Gray; otherwise Red, Green and Blue.
+        const auto fill_combo = [combo, edit_output](bool monochrome) {
+          const QSignalBlocker block(combo);
+          combo->clear();
+          if (monochrome) {
+            combo->addItem(QObject::tr("Gray"));
+          } else {
+            combo->addItems({QObject::tr("Red"), QObject::tr("Green"), QObject::tr("Blue")});
+            combo->setCurrentIndex(static_cast<int>(*edit_output));
+          }
+          combo->setEnabled(!monochrome);
+        };
+        const auto load = [&dialog, spins, rows_for, update_total](const ChannelMixerChannel& channel) {
+          const auto rows = rows_for(channel);
+          for (std::size_t row = 0; row < spins.size() && row < rows.size(); ++row) {
+            if (auto* slider = dialog.findChild<QSlider*>(rows[row].object_prefix + QStringLiteral("Slider"));
+                slider != nullptr) {
+              const QSignalBlocker block_slider(slider);
+              slider->setValue(rows[row].value);
+            }
+            const QSignalBlocker block_spin(spins[row]);
+            spins[row]->setValue(rows[row].value);
+          }
+          update_total();
+        };
+        fill_combo(stash->monochrome);
+
+        QObject::connect(combo, &QComboBox::currentIndexChanged, &dialog,
+                         [stash, edit_output, spins, capture, load, flush_preview](int index) {
+                           if (index < 0) {
+                             return;
+                           }
+                           stash->outputs[*edit_output] = capture(spins);
+                           *edit_output = static_cast<std::size_t>(std::clamp(index, 0, 2));
+                           load(stash->outputs[*edit_output]);
+                           flush_preview();
+                         });
+        QObject::connect(check, &QCheckBox::toggled, &dialog,
+                         [stash, edit_output, spins, capture, fill_combo, load, flush_preview](bool monochrome) {
+                           // Stash the outgoing mix. Clearing Monochrome leaves every
+                           // output on the gray mix, as Photoshop does, ready to tint.
+                           if (monochrome) {
+                             stash->outputs[*edit_output] = capture(spins);
+                           } else {
+                             stash->gray = capture(spins);
+                             stash->outputs.fill(stash->gray);
+                             *edit_output = 0;
+                           }
+                           fill_combo(monochrome);
+                           load(monochrome ? stash->gray : stash->outputs[*edit_output]);
+                           flush_preview();
+                         });
       });
 }
 

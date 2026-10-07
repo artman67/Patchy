@@ -140,6 +140,12 @@ constexpr std::array<char, 4> kPhotoshopSelectiveColorBlockKey{'s', 'e', 'l', 'c
 // specification names the key and the descriptor wrapper only:
 // https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/
 constexpr std::array<char, 4> kPhotoshopBlackWhiteBlockKey{'b', 'l', 'w', 'h'};
+// Channel Mixer, per Adobe's published PSD specification ("Channel Mixer"): u16
+// version (1), u16 monochrome, then 10-byte records of five i16 percentages (red or
+// cyan, green or magenta, blue or yellow, black, constant), one per output channel.
+// Patchy writes four records (red, green, blue, a zero black output; 44 bytes);
+// monochrome keeps the Gray mix in the first. Photoshop verification is owed.
+constexpr std::array<char, 4> kPhotoshopChannelMixerBlockKey{'m', 'i', 'x', 'r'};
 // Brightness/Contrast: legacy-mode PS 2026 writes ONLY the 8-byte 'brit'
 // (brightness i16, contrast i16, mean u16 = 127, lab u8 = 0, pad u8 = 0);
 // modern mode writes an all-zero 'brit' plus a 'CgEd' descriptor (u32 version
@@ -596,6 +602,9 @@ std::vector<std::uint8_t> photoshop_selective_color_payload(const SelectiveColor
 std::optional<AdjustmentSettings> parse_photoshop_black_white_adjustment(std::span<const std::uint8_t> payload);
 std::vector<std::uint8_t> photoshop_black_white_payload(const BlackWhiteAdjustment& settings,
                                                         const UnknownPsdBlock* original);
+std::optional<AdjustmentSettings> parse_photoshop_channel_mixer_adjustment(std::span<const std::uint8_t> payload);
+std::vector<std::uint8_t> photoshop_channel_mixer_payload(const ChannelMixerAdjustment& settings,
+                                                          const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_brightness_contrast_adjustment(
     std::span<const std::uint8_t> payload);
 struct BrightnessContrastDescriptorParse {

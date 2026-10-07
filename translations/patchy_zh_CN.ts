@@ -9049,6 +9049,39 @@ RGB：%2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>反相</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>常数</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>通道混合器</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>输出通道:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>源通道:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>总计:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>单色</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>通道混合器：单色，红 %1，绿 %2，蓝 %3，常数 %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>通道混合器：已更改 %1/3 个输出通道</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18964,6 +18997,18 @@ Baked into images: %1.</source>
     <message>
         <source>Hide Symmetry</source>
         <translation>隐藏对称</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>通道混合器(&amp;X)...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>通道混合器</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>已取消通道混合器</translation>
     </message>
 </context>
 <context>

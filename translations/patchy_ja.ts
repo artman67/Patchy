@@ -9049,6 +9049,39 @@ Mixed selection</source>
         <comment>Color Range: invert the selection</comment>
         <translation>反転</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>定数</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>チャンネルミキサー</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>出力先チャンネル:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>ソースチャンネル:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>合計:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>モノクロ</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>チャンネルミキサー: モノクロ、レッド %1、グリーン %2、ブルー %3、定数 %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>チャンネルミキサー: 出力先チャンネル 3 個中 %1 個を変更</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18964,6 +18997,18 @@ Baked into images: %1.</source>
     <message>
         <source>Hide Symmetry</source>
         <translation>対称を隠す</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>チャンネルミキサー(&amp;X)...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>チャンネルミキサー</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>チャンネルミキサーをキャンセルしました</translation>
     </message>
 </context>
 <context>
