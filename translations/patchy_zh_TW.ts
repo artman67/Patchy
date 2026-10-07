@@ -9372,6 +9372,10 @@ RGB：%2, %3, %4</translation>
         <source>Result:</source>
         <translation>結果:</translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>顏色取代</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10947,6 +10951,14 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>History Brush</source>
         <translation>步驟記錄筆刷</translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation>編輯灰階色版時無法使用顏色取代</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>顏色取代</translation>
     </message>
 </context>
 <context>
@@ -19363,6 +19375,90 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Replace Color</source>
         <translation>已取消取代顏色</translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation>色相</translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation>飽和度</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>顏色</translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation>明度</translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation>取樣:</translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation>連續</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation>一次</translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation>背景色票</translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation>筆刷取代的顏色: 每個筆跡下的顏色、筆畫起點的顏色或背景色</translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation>限制:</translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation>不連續的</translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation>尋找邊緣</translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation>不連續的會取代筆刷下所有相符的顏色；連續的只取代與中心相連的顏色；尋找邊緣還會在清晰邊緣處停止</translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation>像素顏色與取樣顏色相差多少仍會被取代</translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation>在容許度邊界附近逐漸減弱取代，使邊緣平滑</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>顏色取代</translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation>以前景色繪製與取樣顏色相符的像素，並保留其明暗。按住 %ALT% 點按可擷取前景色。</translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation>顏色取代: 在某種顏色上繪製，將其取代為前景色。容許度決定像素與取樣顏色需要多接近。</translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation>筆刷工具</translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation>循環切換筆刷工具</translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
+        <translation>容許度：%1%</translation>
     </message>
 </context>
 <context>

@@ -9391,6 +9391,10 @@ RGB: %2, %3, %4</source>
         <source>Result:</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10965,6 +10969,14 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>History Brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -19368,6 +19380,90 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Cancelled Replace Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

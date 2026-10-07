@@ -1303,6 +1303,8 @@ void ui_photoshop_shortcuts_are_registered() {
   CHECK(require_action_by_text(window, QStringLiteral("Lasso"))->shortcut() == QKeySequence(Qt::Key_L));
   CHECK(require_action_by_text(window, QStringLiteral("Magic Wand"))->shortcut() == QKeySequence(Qt::Key_W));
   CHECK(require_action_by_text(window, QStringLiteral("Brush"))->shortcut() == QKeySequence(Qt::Key_B));
+  CHECK(require_action(window, "toolColorReplacementAction")->shortcut().isEmpty());
+  CHECK(require_action(window, "toolCycleBrushAction")->shortcut() == QKeySequence(Qt::SHIFT | Qt::Key_B));
   CHECK(require_action_by_text(window, QStringLiteral("Clone"))->shortcut() == QKeySequence(Qt::Key_S));
   CHECK(require_action_by_text(window, QStringLiteral("Pattern Stamp"))->shortcut().isEmpty());
   CHECK(require_action(window, "toolCycleStampAction")->shortcut() == QKeySequence(Qt::SHIFT | Qt::Key_S));

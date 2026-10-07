@@ -15,7 +15,7 @@
 
 ## Painting, selections, and retouching
 
-- Common raster editing tools, including Brush with Flow and timed Airbrush buildup, Healing Brush, Spot Healing, Patch, Clone Stamp, History Brush, Remove Object, Dodge, Burn, Sponge, Blur, Sharpen, Smudge, Eraser, selections, transforms, gradients, and shapes
+- Common raster editing tools, including Brush with Flow and timed Airbrush buildup, Healing Brush, Spot Healing, Patch, Clone Stamp, History Brush, Remove Object, Color Replacement, Dodge, Burn, Sponge, Blur, Sharpen, Smudge, Eraser, selections, transforms, gradients, and shapes
 - Brush tip libraries with Photoshop .abr import, custom tips from selections, spacing, angle, roundness, texture, dual-brush effects, wet edges, and dynamics for size, opacity, flow, scatter, and color. Supported dynamics can respond to pen pressure, tilt, rotation, or stroke direction
 - Mixer Brush with Wet, Load, Mix, Flow, and Sample All Layers controls, plus stroke smoothing with pulled-string and catch-up options
 - Paint Symmetry for the Brush, Mixer Brush, and Eraser: Vertical, Horizontal, Dual Axis, Diagonal, Radial, and Mandala, with a movable, rotatable guide

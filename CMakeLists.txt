@@ -101,6 +101,7 @@ add_library(patchy_core
   src/core/brush_tip.cpp
   src/core/color_range.cpp
   src/core/replace_color.cpp
+  src/core/color_replacement.cpp
   src/core/contour_presets.cpp
   src/core/document.cpp
   src/core/document_channel.cpp

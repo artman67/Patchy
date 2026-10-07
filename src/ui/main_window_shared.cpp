@@ -682,6 +682,8 @@ QString tool_name(CanvasTool tool) {
       return QObject::tr("Convert Point");
     case CanvasTool::RotateView:
       return QObject::tr("Rotate View");
+    case CanvasTool::ColorReplacement:
+      return QObject::tr("Color Replacement");
   }
   return QObject::tr("Tool");
 }

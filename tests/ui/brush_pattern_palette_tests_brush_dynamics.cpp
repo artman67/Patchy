@@ -401,7 +401,7 @@ void ui_brush_tip_picker_keeps_options_bar_height() {
   for (const char* tool : {"Move", "Marquee", "Lasso", "Magic Wand", "Clone", "Pattern Stamp",
                            "History Brush",
                            "Healing Brush", "Smudge",
-                           "Mixer Brush",
+                           "Mixer Brush", "Color Replacement",
                            "Dodge", "Burn", "Sponge", "Fill", "Gradient", "Line", "Rect",
                            "Zoom", "Brush", "Eraser"}) {
     require_action_by_text(window, QString::fromLatin1(tool))->trigger();

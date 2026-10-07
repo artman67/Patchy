@@ -868,6 +868,15 @@ bool CanvasWidget::sponge_vibrance() const noexcept {
   return sponge_vibrance_;
 }
 
+void CanvasWidget::set_color_replacement_settings(const ColorReplacementSettings& settings) noexcept {
+  color_replacement_settings_ = settings;
+  color_replacement_settings_.tolerance = std::clamp(settings.tolerance, 1, 100);
+}
+
+const ColorReplacementSettings& CanvasWidget::color_replacement_settings() const noexcept {
+  return color_replacement_settings_;
+}
+
 void CanvasWidget::set_show_transform_controls(bool enabled) noexcept {
   const auto old_transform_controls_rect = move_transform_controls_rect();
   show_transform_controls_ = enabled;

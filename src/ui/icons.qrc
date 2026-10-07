@@ -81,6 +81,7 @@
     <file alias="tool-wand.svg">icons/tool-wand.svg</file>
     <file alias="tool-quick-select.svg">icons/tool-quick-select.svg</file>
     <file alias="tool-brush.svg">icons/tool-brush.svg</file>
+    <file alias="tool-color-replacement.svg">icons/tool-color-replacement.svg</file>
     <file alias="tool-clone.svg">icons/tool-clone.svg</file>
     <file alias="tool-pattern-stamp.svg">icons/tool-pattern-stamp.svg</file>
     <file alias="tool-history-brush.svg">icons/tool-history-brush.svg</file>

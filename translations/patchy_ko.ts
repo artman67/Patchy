@@ -9372,6 +9372,10 @@ RGB: %2, %3, %4</translation>
         <source>Result:</source>
         <translation>결과:</translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>색상 대체</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10947,6 +10951,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>History Brush</source>
         <translation>작업 내역 브러시</translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation>회색조 채널을 편집하는 동안 색상 대체를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>색상 대체</translation>
     </message>
 </context>
 <context>
@@ -19363,6 +19375,90 @@ Y: %2
     <message>
         <source>Cancelled Replace Color</source>
         <translation>취소된 색상 대체</translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation>색조</translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation>채도</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>색상</translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation>광도</translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation>샘플링:</translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation>연속</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation>한 번</translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation>배경 색상 견본</translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation>브러시가 대체할 색상: 각 브러시 자국 아래의 색상, 스트로크 시작 지점의 색상 또는 배경색</translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation>제한:</translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation>불연속</translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation>가장자리 찾기</translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation>불연속은 브러시 아래에서 일치하는 모든 색상을 대체하고, 연속은 중심에 연결된 색상만 대체하며, 가장자리 찾기는 뚜렷한 가장자리에서도 멈춥니다.</translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation>샘플링한 색상과 다른 색의 픽셀을 어디까지 대체할지 정하는 허용 범위</translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation>허용치 한계 근처에서 대체를 서서히 줄여 가장자리를 부드럽게 합니다.</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>색상 대체</translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation>샘플링한 색상과 일치하는 픽셀에 전경색을 칠하고 음영은 유지합니다. %ALT%+클릭하면 전경색을 선택합니다.</translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation>색상 대체: 색상 위를 칠해 전경색으로 대체합니다. 허용치는 픽셀이 샘플링한 색상과 얼마나 가까워야 하는지 정합니다.</translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation>브러시 도구</translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation>브러시 도구 전환</translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
+        <translation>허용치: %1%</translation>
     </message>
 </context>
 <context>

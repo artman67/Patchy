@@ -670,6 +670,7 @@ bool tool_uses_alt_left_for_color_pick(CanvasTool tool) noexcept {
     case CanvasTool::PatternStamp:
     case CanvasTool::HistoryBrush:
     case CanvasTool::Smudge:
+    case CanvasTool::ColorReplacement:
     case CanvasTool::Eraser:
     case CanvasTool::Gradient:
     case CanvasTool::Line:
@@ -702,6 +703,7 @@ bool tool_supports_brush_adjust_drag(CanvasTool tool) noexcept {
     case CanvasTool::Sponge:
     case CanvasTool::BlurBrush:
     case CanvasTool::SharpenBrush:
+    case CanvasTool::ColorReplacement:
     case CanvasTool::Eraser:
     case CanvasTool::Line:
     case CanvasTool::Rectangle:
@@ -727,6 +729,7 @@ bool tool_uses_brush_footprint_cursor(CanvasTool tool) noexcept {
     case CanvasTool::Sponge:
     case CanvasTool::BlurBrush:
     case CanvasTool::SharpenBrush:
+    case CanvasTool::ColorReplacement:
     case CanvasTool::Eraser:
       return true;
     default:

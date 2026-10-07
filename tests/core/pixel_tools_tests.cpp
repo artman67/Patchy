@@ -47,6 +47,7 @@
 #include "core/pattern_presets.hpp"
 #include "core/style_contour.hpp"
 #include "core/style_presets.hpp"
+#include "core/color_replacement.hpp"
 #include "core/pixel_tools.hpp"
 #include "core/quick_select.hpp"
 #include "render/compositor.hpp"
@@ -1088,6 +1089,62 @@ void tool_paint_pixel_block_native_blend_selection_and_palette() {
   CHECK(std::as_const(*layer).pixels().pixel(21, 10)[0] == 255);
   CHECK(std::as_const(*layer).pixels().pixel(21, 10)[3] == 255);
 }
+
+// Color Replacement (docs/color-replacement.md): only pixels within the
+// tolerance of the sample change, and Color mode keeps their luminosity.
+void tool_color_replacement_matches_within_tolerance_and_keeps_luminosity() {
+  using patchy::ColorReplacementMode;
+  CHECK(patchy::color_replacement_tolerance_levels(30) == 77);
+  const patchy::ColorReplacementRgb sample{100, 100, 100};
+  CHECK(patchy::color_replacement_match({177, 100, 100}, sample, 30, false) == 1.0F);
+  CHECK(patchy::color_replacement_match({178, 100, 100}, sample, 30, false) == 0.0F);
+  // Anti-alias fades the last quarter of the tolerance and never reaches past it.
+  CHECK(patchy::color_replacement_match({100, 23, 100}, sample, 30, true) > 0.0F);
+  CHECK(patchy::color_replacement_match({100, 23, 100}, sample, 30, true) < 0.1F);
+  CHECK(patchy::color_replacement_match({100, 100, 22}, sample, 30, true) == 0.0F);
+  CHECK(patchy::color_replacement_match({150, 100, 100}, sample, 30, true) == 1.0F);
+
+  const auto luminosity = [](patchy::ColorReplacementRgb color) {
+    return 0.3 * color[0] + 0.59 * color[1] + 0.11 * color[2];
+  };
+  const patchy::ColorReplacementRgb red{200, 40, 40};
+  const patchy::ColorReplacementRgb green{40, 180, 60};
+  const auto colored = patchy::color_replacement_color(red, green, ColorReplacementMode::Color);
+  CHECK(std::abs(luminosity(colored) - luminosity(red)) <= 1.0);
+  CHECK(colored[1] > colored[0] && colored[1] > colored[2]);
+  const auto hued = patchy::color_replacement_color(red, green, ColorReplacementMode::Hue);
+  CHECK(std::abs(luminosity(hued) - luminosity(red)) <= 1.0);
+  const auto lit = patchy::color_replacement_color(red, green, ColorReplacementMode::Luminosity);
+  CHECK(std::abs(luminosity(lit) - luminosity(green)) <= 1.0);
+  CHECK(lit[0] > lit[1]);
+  // Saturation cannot give a neutral gray a hue.
+  const auto gray = patchy::color_replacement_color({128, 128, 128}, green, ColorReplacementMode::Saturation);
+  CHECK(gray[0] == gray[1] && gray[1] == gray[2]);
+}
+
+void tool_color_replacement_limits_follow_connectivity_and_edges() {
+  using patchy::ColorReplacementLimits;
+  const patchy::ColorReplacementRgb a{100, 100, 100};
+  const patchy::ColorReplacementRgb far{250, 10, 10};
+  const patchy::ColorReplacementRgb near{150, 100, 100};  // within 30%, but a hard step from a
+  patchy::ColorReplacementSettings settings;
+  settings.anti_alias = false;
+  const auto run = [&](const std::vector<patchy::ColorReplacementRgb>& row, std::vector<float> weights,
+                       ColorReplacementLimits limits) {
+    settings.limits = limits;
+    patchy::color_replacement_dab_weights(row, weights, static_cast<int>(row.size()), 1, 0, 0, a, settings);
+    return weights;
+  };
+  const std::vector<patchy::ColorReplacementRgb> split{a, a, far, a, a};
+  CHECK((run(split, {1, 1, 1, 1, 1}, ColorReplacementLimits::Discontiguous) == std::vector<float>{1, 1, 0, 1, 1}));
+  CHECK((run(split, {1, 1, 1, 1, 1}, ColorReplacementLimits::Contiguous) == std::vector<float>{1, 1, 0, 0, 0}));
+  // Cells outside the brush (weight 0) break connectivity too.
+  const std::vector<patchy::ColorReplacementRgb> plain{a, a, a, a};
+  CHECK((run(plain, {1, 0.5F, 0, 1}, ColorReplacementLimits::Contiguous) == std::vector<float>{1, 0.5F, 0, 0}));
+  const std::vector<patchy::ColorReplacementRgb> stepped{a, a, near, near};
+  CHECK((run(stepped, {1, 1, 1, 1}, ColorReplacementLimits::Contiguous) == std::vector<float>{1, 1, 1, 1}));
+  CHECK((run(stepped, {1, 1, 1, 1}, ColorReplacementLimits::FindEdges) == std::vector<float>{1, 1, 0, 0}));
+}
 }
 std::vector<patchy::test::TestCase> pixel_tools_tests() {
   return {
@@ -1138,5 +1195,9 @@ std::vector<patchy::test::TestCase> pixel_tools_tests() {
        tool_clear_rgb_selection_converts_only_when_pixels_change},
       {"tool_write_paths_digest_baseline", tool_write_paths_digest_baseline},
       {"tool_paint_pixel_block_native_blend_selection_and_palette", tool_paint_pixel_block_native_blend_selection_and_palette},
+      {"tool_color_replacement_matches_within_tolerance_and_keeps_luminosity",
+       tool_color_replacement_matches_within_tolerance_and_keeps_luminosity},
+      {"tool_color_replacement_limits_follow_connectivity_and_edges",
+       tool_color_replacement_limits_follow_connectivity_and_edges},
   };
 }
