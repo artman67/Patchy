@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>符合色彩</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>目標影像</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>套用調整時忽略選取範圍</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>影像選項</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>明度</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>色彩強度</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>淡化</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>中和</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>影像統計</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>使用來源中的選取範圍計算色彩</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>使用目標中的選取範圍計算調整</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>無</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>來源:</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>圖層:</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>預視</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>合併</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Patchy raster image editor.</source>
@@ -18602,6 +18669,22 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁切框高度</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>符合色彩(&amp;M)...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>符合色彩</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>目標: %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>已取消符合色彩</translation>
     </message>
 </context>
 <context>

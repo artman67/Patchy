@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>Correspondance de la couleur</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>Image de destination</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>Ignorer la sélection lors de l&apos;application du réglage</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>Options d&apos;image</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>Luminance</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>Intensité des couleurs</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>Estompage</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>Neutraliser</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>Statistiques de l&apos;image</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>Utiliser la sélection de la source pour calculer les couleurs</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>Utiliser la sélection de la cible pour calculer le réglage</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Aucune</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>Source :</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>Calque :</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>Aperçu</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>Fusionné</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Patchy raster image editor.</source>
@@ -18658,6 +18725,22 @@ Convertis en images : %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Hauteur du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>&amp;Correspondance de la couleur...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>Correspondance de la couleur</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>Cible : %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>Correspondance de la couleur annulée</translation>
     </message>
 </context>
 <context>
