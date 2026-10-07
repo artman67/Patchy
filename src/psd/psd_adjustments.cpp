@@ -889,6 +889,130 @@ std::vector<std::uint8_t> photoshop_selective_color_payload(const SelectiveColor
   return writer.bytes();
 }
 
+namespace {
+
+// The six weight items in the dialog's order (Reds through Magentas), as charIDs.
+constexpr std::array<const char*, kBlackWhiteColorCount> kBlackWhiteWeightKeys{"Rd  ", "Yllw", "Grn ",
+                                                                               "Cyn ", "Bl  ", "Mgnt"};
+
+std::optional<DescriptorObject> read_black_white_descriptor(std::span<const std::uint8_t> payload) {
+  if (payload.size() < 4) {
+    return std::nullopt;
+  }
+  try {
+    BigEndianReader reader(payload);
+    if (reader.read_u32() != 16) {
+      return std::nullopt;
+    }
+    return read_descriptor(reader);
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
+BlackWhiteAdjustment black_white_from_descriptor(const DescriptorObject& descriptor) {
+  // A missing item keeps Photoshop's default; a 'doub' item rounds.
+  BlackWhiteAdjustment settings;
+  for (std::size_t index = 0; index < kBlackWhiteColorCount; ++index) {
+    const auto* value = descriptor_value(descriptor, kBlackWhiteWeightKeys[index]);
+    if (value != nullptr && value->type == DescriptorValue::Type::Integer) {
+      settings.weights[index] = value->integer_value;
+    } else if (value != nullptr && value->type == DescriptorValue::Type::Double &&
+               std::isfinite(value->double_value)) {
+      settings.weights[index] = static_cast<int>(std::lround(std::clamp(
+          value->double_value, static_cast<double>(kBlackWhiteWeightMin), static_cast<double>(kBlackWhiteWeightMax))));
+    }
+  }
+  settings.tint = descriptor_bool(descriptor, "useTint", false);
+  if (const auto* color = descriptor_object(descriptor, "tintColor"); color != nullptr && color->class_id == "RGBC") {
+    const auto channel = [color](std::string_view key) {
+      const auto value = descriptor_number(*color, key, 0.0);
+      return std::isfinite(value) ? std::clamp(value, 0.0, 255.0) : 0.0;
+    };
+    black_white_tint_from_color(channel("Rd  "), channel("Grn "), channel("Bl  "), settings.tint_hue,
+                                settings.tint_saturation);
+  }
+  return clamp_black_white(settings);
+}
+
+// Replaces an item in place (keeping its position and id form) or appends it.
+void set_descriptor_item(DescriptorObject& descriptor, const std::string& key, bool long_form,
+                         DescriptorValue value) {
+  if (const auto found = descriptor.values.find(key); found != descriptor.values.end()) {
+    found->second = std::move(value);
+    return;
+  }
+  descriptor.values.emplace(key, std::move(value));
+  descriptor.key_order.push_back({key, long_form});
+}
+
+}  // namespace
+
+std::optional<AdjustmentSettings> parse_photoshop_black_white_adjustment(std::span<const std::uint8_t> payload) {
+  const auto descriptor = read_black_white_descriptor(payload);
+  if (!descriptor.has_value()) {
+    return std::nullopt;
+  }
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::BlackWhite;
+  settings.black_white = black_white_from_descriptor(*descriptor);
+  return settings;
+}
+
+std::vector<std::uint8_t> photoshop_black_white_payload(const BlackWhiteAdjustment& settings,
+                                                        const UnknownPsdBlock* original) {
+  const auto clamped = clamp_black_white(settings);
+  DescriptorObject descriptor;
+  descriptor.name = "";
+  descriptor.class_id = "null";
+  std::optional<BlackWhiteAdjustment> imported;
+  if (original != nullptr) {
+    if (auto parsed = read_black_white_descriptor(original->payload); parsed.has_value()) {
+      imported = black_white_from_descriptor(*parsed);
+      if (*imported == clamped) {
+        return original->payload;  // unedited: byte-identical round trip
+      }
+      // An edit patches the imported descriptor, so Photoshop's other items (the
+      // preset choice) and the item order stay as they were.
+      descriptor = std::move(*parsed);
+    }
+  }
+  for (std::size_t index = 0; index < kBlackWhiteColorCount; ++index) {
+    DescriptorValue weight;
+    weight.type = DescriptorValue::Type::Integer;
+    weight.integer_value = clamped.weights[index];
+    set_descriptor_item(descriptor, kBlackWhiteWeightKeys[index], false, std::move(weight));
+  }
+  DescriptorValue use_tint;
+  use_tint.type = DescriptorValue::Type::Bool;
+  use_tint.bool_value = clamped.tint;
+  set_descriptor_item(descriptor, "useTint", true, std::move(use_tint));
+  // An imported tint color whose hue and saturation were not edited stays exact.
+  if (!imported.has_value() || imported->tint_hue != clamped.tint_hue ||
+      imported->tint_saturation != clamped.tint_saturation) {
+    const auto tint = black_white_tint_color(clamped.tint_hue, clamped.tint_saturation);
+    auto color = std::make_shared<DescriptorObject>();
+    color->name = "";
+    color->class_id = "RGBC";
+    for (const auto& [key, channel] : {std::pair<const char*, std::uint8_t>{"Rd  ", tint.red},
+                                       std::pair<const char*, std::uint8_t>{"Grn ", tint.green},
+                                       std::pair<const char*, std::uint8_t>{"Bl  ", tint.blue}}) {
+      DescriptorValue component;
+      component.type = DescriptorValue::Type::Double;
+      component.double_value = static_cast<double>(channel);
+      set_descriptor_item(*color, key, false, std::move(component));
+    }
+    DescriptorValue tint_color;
+    tint_color.type = DescriptorValue::Type::Object;
+    tint_color.object_value = std::move(color);
+    set_descriptor_item(descriptor, "tintColor", true, std::move(tint_color));
+  }
+  BigEndianWriter writer;
+  writer.write_u32(16);
+  write_descriptor(writer, descriptor);
+  return writer.bytes();
+}
+
 std::optional<AdjustmentSettings> parse_photoshop_threshold_adjustment(std::span<const std::uint8_t> payload) {
   if (payload.size() < 2) {
     return std::nullopt;

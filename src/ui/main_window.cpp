@@ -13787,7 +13787,7 @@ void MainWindow::update_document_action_state() {
                            QStringLiteral("image.levels"), QStringLiteral("image.curves"),
                            QStringLiteral("image.hue_saturation"), QStringLiteral("image.color_balance"),
                            QStringLiteral("image.gradient_map"), QStringLiteral("image.vibrance"),
-                           QStringLiteral("image.selective_color")}) {
+                           QStringLiteral("image.selective_color"), QStringLiteral("image.black_white")}) {
       set_command_enabled(id, false);
     }
     for (const auto& command : hotkey_registry_.commands()) {

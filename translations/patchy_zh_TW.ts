@@ -8972,6 +8972,22 @@ RGB：%2, %3, %4</translation>
         <source>Selective Color: relative, %1 of 9 colors adjusted</source>
         <translation>選取顏色：相對，已調整 %1/9 種顏色</translation>
     </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>黑白</translation>
+    </message>
+    <message>
+        <source>Tint</source>
+        <translation>色調</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, tint hue %7, tint saturation %8</source>
+        <translation>黑白：紅色 %1、黃色 %2、綠色 %3、青色 %4、藍色 %5、洋紅 %6、色調色相 %7、色調飽和度 %8</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
+        <translation>黑白：紅色 %1、黃色 %2、綠色 %3、青色 %4、藍色 %5、洋紅 %6</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18763,6 +18779,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Selective Color</source>
         <translation>已取消選取顏色</translation>
+    </message>
+    <message>
+        <source>Blac&amp;k &amp;&amp; White...</source>
+        <translation>黑白(&amp;K)...</translation>
+    </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>黑白</translation>
+    </message>
+    <message>
+        <source>Cancelled Black &amp; White</source>
+        <translation>已取消黑白</translation>
     </message>
 </context>
 <context>

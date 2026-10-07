@@ -1989,6 +1989,97 @@ void ui_selective_color_command_rewrites_layer_pixels() {
   CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(80, 80, 80), 3));
 }
 
+void ui_black_white_adjustment_layer_creates_and_edits() {
+  patchy::Document document(140, 100, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Background", solid_pixels(140, 100, patchy::PixelFormat::rgba8(), QColor(200, 80, 80)));
+  patchy::ui::MainWindow window;
+  window.add_document_session(std::move(document), QStringLiteral("Black & White"));
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+
+  // Create: Photoshop's defaults (Reds 40%) take (200, 80, 80) to 80 + 120 * 40% = 128;
+  // Reds 100% gives 200. Tint starts off with its Hue and Saturation disabled.
+  QColor default_preview;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyBlackWhiteDialog"));
+    CHECK(dialog != nullptr);
+    auto* reds = dialog->findChild<QSpinBox*>(QStringLiteral("blackWhiteRedsSpin"));
+    auto* magentas = dialog->findChild<QSpinBox*>(QStringLiteral("blackWhiteMagentasSpin"));
+    auto* tint = dialog->findChild<QCheckBox*>(QStringLiteral("blackWhiteTintCheck"));
+    auto* hue = dialog->findChild<QSpinBox*>(QStringLiteral("blackWhiteTintHueSpin"));
+    CHECK(reds != nullptr && magentas != nullptr && tint != nullptr && hue != nullptr);
+    CHECK(reds->value() == 40 && magentas->value() == 80);
+    CHECK(reds->minimum() == -200 && reds->maximum() == 300);
+    CHECK(!tint->isChecked() && !hue->isEnabled() && hue->value() == 35);
+    process_events_for(160);
+    default_preview = canvas_pixel(*canvas, QPoint(70, 50));
+    reds->setValue(100);
+    process_events_for(160);
+    dialog->grab().save(QStringLiteral("test-artifacts/ui_black_white_dialog.png"));
+    dialog->accept();
+  });
+  require_action(window, "layerNewBlackWhiteAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(color_close(default_preview, QColor(128, 128, 128), 3));
+  CHECK(layer_list->item(0) != nullptr);
+  CHECK(layer_list->item(0)->text() == QStringLiteral("Black & White"));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(200, 200, 200), 3));
+
+  // Edit: the dialog reopens with the stored weights; Tint warms the gray and keeps
+  // its luminosity (Hue 35, Saturation 25 over gray 200 is about (223, 196, 159)).
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyBlackWhiteDialog"));
+    CHECK(dialog != nullptr);
+    auto* reds = dialog->findChild<QSpinBox*>(QStringLiteral("blackWhiteRedsSpin"));
+    auto* tint = dialog->findChild<QCheckBox*>(QStringLiteral("blackWhiteTintCheck"));
+    auto* hue = dialog->findChild<QSpinBox*>(QStringLiteral("blackWhiteTintHueSpin"));
+    CHECK(reds != nullptr && tint != nullptr && hue != nullptr);
+    CHECK(reds->value() == 100);
+    tint->setChecked(true);
+    CHECK(hue->isEnabled());
+    process_events_for(160);
+    dialog->accept();
+  });
+  require_action(window, "layerEditAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(223, 196, 159), 3));
+}
+
+void ui_black_white_command_rewrites_layer_pixels() {
+  patchy::Document document(140, 100, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Background", solid_pixels(140, 100, patchy::PixelFormat::rgba8(), QColor(200, 80, 80)));
+  patchy::ui::MainWindow window;
+  window.add_document_session(std::move(document), QStringLiteral("Black & White Command"));
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+  const auto layer_count = layer_list->count();
+
+  // Image > Adjustments > Black & White (Alt+Shift+Ctrl+B) edits the pixels in place
+  // with the adjustment layer's math; no layer is added.
+  auto* action = require_action(window, "imageAdjustBlackWhiteAction");
+  CHECK(action->shortcut() == QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_B));
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyBlackWhiteDialog"));
+    CHECK(dialog != nullptr);
+    process_events_for(160);
+    dialog->accept();
+  });
+  action->trigger();
+  QApplication::processEvents();
+  CHECK(layer_list->count() == layer_count);
+  const auto& document_after = patchy::ui::MainWindowTestAccess::document(window);
+  CHECK(document_after.active_layer_id().has_value());
+  const auto* active = document_after.find_layer(*document_after.active_layer_id());
+  CHECK(active != nullptr && active->kind() == patchy::LayerKind::Pixel);
+  const auto* pixel = std::as_const(*active).pixels().pixel(70, 50);
+  CHECK(pixel[0] == 128 && pixel[1] == 128 && pixel[2] == 128 && pixel[3] == 255);
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 50)), QColor(128, 128, 128), 3));
+}
+
 void ui_posterize_and_threshold_adjustment_layers_create_and_edit() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3771,6 +3862,8 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_selective_color_adjustment_layer_creates_and_edits",
        ui_selective_color_adjustment_layer_creates_and_edits},
       {"ui_selective_color_command_rewrites_layer_pixels", ui_selective_color_command_rewrites_layer_pixels},
+      {"ui_black_white_adjustment_layer_creates_and_edits", ui_black_white_adjustment_layer_creates_and_edits},
+      {"ui_black_white_command_rewrites_layer_pixels", ui_black_white_command_rewrites_layer_pixels},
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},

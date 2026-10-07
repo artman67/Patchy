@@ -1345,6 +1345,13 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   register_hotkey(color_balance_action, "image.color_balance", QKeySequence(Qt::CTRL | Qt::Key_B));
   connect(color_balance_action, &QAction::triggered, this, [this] { color_balance_dialog(); });
   register_document_action(color_balance_action);
+  auto* black_white_action = adjustments_menu->addAction(tr("Blac&k && White..."));
+  bind_action_text(black_white_action, QT_TR_NOOP("Blac&k && White..."));
+  black_white_action->setObjectName(QStringLiteral("imageAdjustBlackWhiteAction"));
+  black_white_action->setIcon(simple_icon(QStringLiteral("BW")));
+  register_hotkey(black_white_action, "image.black_white", QKeySequence(Qt::CTRL | Qt::ALT | Qt::SHIFT | Qt::Key_B));
+  connect(black_white_action, &QAction::triggered, this, [this] { black_white_dialog(); });
+  register_document_action(black_white_action);
   add_adjustment_action(QT_TR_NOOP("&Desaturate"), QStringLiteral("imageAdjustDesaturateAction"),
                         QStringLiteral("patchy.filters.desaturate"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_U));

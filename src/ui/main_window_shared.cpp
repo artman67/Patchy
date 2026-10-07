@@ -150,6 +150,8 @@ QString localized_adjustment_display_name(AdjustmentKind kind) {
       return QObject::tr("Vibrance");
     case AdjustmentKind::SelectiveColor:
       return QObject::tr("Selective Color");
+    case AdjustmentKind::BlackWhite:
+      return QObject::tr("Black & White");
   }
   return QObject::tr("Adjustment");
 }

@@ -9002,6 +9002,22 @@ RGB: %2, %3, %4</translation>
         <source>Selective Color: relative, %1 of 9 colors adjusted</source>
         <translation>Correzione colore selettiva: relativo, %1 colori su 9 regolati</translation>
     </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>Bianco e nero</translation>
+    </message>
+    <message>
+        <source>Tint</source>
+        <translation>Viraggio</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, tint hue %7, tint saturation %8</source>
+        <translation>Bianco e nero: rossi %1, gialli %2, verdi %3, cyan %4, blu %5, magenta %6, tonalità viraggio %7, saturazione viraggio %8</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
+        <translation>Bianco e nero: rossi %1, gialli %2, verdi %3, cyan %4, blu %5, magenta %6</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18819,6 +18835,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Cancelled Selective Color</source>
         <translation>Annullato: Correzione colore selettiva</translation>
+    </message>
+    <message>
+        <source>Blac&amp;k &amp;&amp; White...</source>
+        <translation>Bianco e &amp;nero...</translation>
+    </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>Bianco e nero</translation>
+    </message>
+    <message>
+        <source>Cancelled Black &amp; White</source>
+        <translation>Annullato: Bianco e nero</translation>
     </message>
 </context>
 <context>

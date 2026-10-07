@@ -109,6 +109,7 @@ using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
 using VibranceSettings = VibranceAdjustment;
 using SelectiveColorSettings = SelectiveColorAdjustment;
+using BlackWhiteSettings = BlackWhiteAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 struct ScannerAcquireResult;
 struct UpdateInfo;
@@ -1051,6 +1052,9 @@ private:
   void new_selective_color_adjustment_layer();
   void selective_color_dialog();
   void apply_selective_color_adjustment(const SelectiveColorSettings& settings, bool allow_identity = false);
+  void new_black_white_adjustment_layer();
+  void black_white_dialog();
+  void apply_black_white_adjustment(const BlackWhiteSettings& settings);
   void new_brightness_contrast_adjustment_layer();
   void apply_brightness_contrast_adjustment(const BrightnessContrastSettings& settings,
                                             bool allow_identity = false);

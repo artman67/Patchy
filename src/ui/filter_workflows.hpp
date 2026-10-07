@@ -78,6 +78,7 @@ using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
 using VibranceSettings = VibranceAdjustment;
 using SelectiveColorSettings = SelectiveColorAdjustment;
+using BlackWhiteSettings = BlackWhiteAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 using GradientMapSettings = GradientMapAdjustment;
 
@@ -177,6 +178,9 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<SelectiveColorSettings> request_selective_color_settings(
     QWidget* parent, std::function<void(bool, const SelectiveColorSettings&)> preview_changed = {},
     SelectiveColorSettings initial = {});
+[[nodiscard]] std::optional<BlackWhiteSettings> request_black_white_settings(
+    QWidget* parent, std::function<void(bool, const BlackWhiteSettings&)> preview_changed = {},
+    BlackWhiteSettings initial = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -231,5 +235,9 @@ void apply_vibrance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& s
 void apply_selective_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                      const SelectiveColorSettings& settings,
                                      const FilterProgress* progress = nullptr);
+// The destructive Black & White: the adjustment layer's core math, so the result
+// equals a Black & White layer over the same pixels.
+void apply_black_white_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                 const BlackWhiteSettings& settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

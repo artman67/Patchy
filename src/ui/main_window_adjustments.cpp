@@ -318,6 +318,8 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_hue_saturation_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("Color &Balance..."), QStringLiteral("ColorBalanceAdjustment"), QStringLiteral("CB"),
                  [this] { new_color_balance_adjustment_layer(); });
+  add_adjustment(QT_TR_NOOP("Blac&k && White..."), QStringLiteral("BlackWhiteAdjustment"), QStringLiteral("BW"),
+                 [this] { new_black_white_adjustment_layer(); });
   // No ellipsis: Invert has no settings, so no dialog opens.
   add_adjustment(QT_TR_NOOP("&Invert"), QStringLiteral("InvertAdjustment"), QStringLiteral("INV"),
                  [this] { new_invert_adjustment_layer(); });
@@ -646,6 +648,36 @@ void MainWindow::apply_selective_color_adjustment(const SelectiveColorSettings& 
     return;
   }
   create_adjustment_layer(tr("Selective Color"), settings);
+}
+
+void MainWindow::new_black_white_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](bool enabled,
+                                                                         const BlackWhiteSettings& black_white) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::BlackWhite;
+    settings.black_white = clamp_black_white(black_white);
+    update_adjustment_layer_preview(tr("Black & White"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto settings = request_black_white_settings(this, preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Black & White"));
+    return;
+  }
+  apply_black_white_adjustment(*settings);
+}
+
+void MainWindow::apply_black_white_adjustment(const BlackWhiteSettings& black_white) {
+  // No identity check: every Black & White setting removes the color.
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::BlackWhite;
+  settings.black_white = clamp_black_white(black_white);
+  create_adjustment_layer(tr("Black & White"), settings);
 }
 
 void MainWindow::new_brightness_contrast_adjustment_layer() {
@@ -1090,6 +1122,24 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->selective_color = clamp_selective_color(*result);
+      }
+      break;
+    }
+    case AdjustmentKind::BlackWhite: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const BlackWhiteSettings& black_white) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.black_white = clamp_black_white(black_white);
+        apply_settings(settings);
+      };
+      const auto result = request_black_white_settings(this, preview_changed, original_settings->black_white);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->black_white = clamp_black_white(*result);
       }
       break;
     }

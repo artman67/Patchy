@@ -9032,6 +9032,22 @@ RGB: %2, %3, %4</translation>
         <source>Selective Color: relative, %1 of 9 colors adjusted</source>
         <translation>Kolor selektywny: metoda względna, dostosowane kolory: %1 z 9</translation>
     </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>Czarno-biały</translation>
+    </message>
+    <message>
+        <source>Tint</source>
+        <translation>Tonowanie</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6, tint hue %7, tint saturation %8</source>
+        <translation>Czarno-biały: czerwienie %1, żółcie %2, zielenie %3, cyjany %4, błękity %5, magenty %6, barwa tonowania %7, nasycenie tonowania %8</translation>
+    </message>
+    <message>
+        <source>Black &amp; White: reds %1, yellows %2, greens %3, cyans %4, blues %5, magentas %6</source>
+        <translation>Czarno-biały: czerwienie %1, żółcie %2, zielenie %3, cyjany %4, błękity %5, magenty %6</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18875,6 +18891,18 @@ Y: %2
     <message>
         <source>Cancelled Selective Color</source>
         <translation>Anulowano: Kolor selektywny</translation>
+    </message>
+    <message>
+        <source>Blac&amp;k &amp;&amp; White...</source>
+        <translation>C&amp;zarno-biały...</translation>
+    </message>
+    <message>
+        <source>Black &amp; White</source>
+        <translation>Czarno-biały</translation>
+    </message>
+    <message>
+        <source>Cancelled Black &amp; White</source>
+        <translation>Anulowano: Czarno-biały</translation>
     </message>
 </context>
 <context>
