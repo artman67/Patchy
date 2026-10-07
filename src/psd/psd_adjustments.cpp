@@ -777,6 +777,67 @@ std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& s
   return writer.bytes();
 }
 
+std::optional<AdjustmentSettings> parse_photoshop_channel_mixer_adjustment(std::span<const std::uint8_t> payload) {
+  // Version, monochrome, then the red, green and blue output records; a fourth (CMYK
+  // black output) record and any tail are not modeled.
+  constexpr std::size_t kModeledRecords = 3;
+  if (payload.size() < 4U + kModeledRecords * 10U) {
+    return std::nullopt;
+  }
+  BigEndianReader reader(payload);
+  if (reader.read_u16() != 1) {
+    return std::nullopt;
+  }
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::ChannelMixer;
+  auto& mixer = settings.channel_mixer;
+  mixer.monochrome = reader.read_u16() != 0;
+  for (auto& output : mixer.outputs) {
+    output.red = read_i16(reader);
+    output.green = read_i16(reader);
+    output.blue = read_i16(reader);
+    reader.skip(2);  // the black source, CMYK only
+    output.constant = read_i16(reader);
+  }
+  // A monochrome mixer keeps its Gray mix in the first record.
+  if (mixer.monochrome) {
+    mixer.gray = mixer.outputs[0];
+  }
+  mixer = clamp_channel_mixer(mixer);
+  return settings;
+}
+
+std::vector<std::uint8_t> photoshop_channel_mixer_payload(const ChannelMixerAdjustment& settings,
+                                                          const UnknownPsdBlock* original) {
+  const auto clamped = clamp_channel_mixer(settings);
+  if (original != nullptr) {
+    // Unedited imported payloads re-emit byte-for-byte, CMYK black data included.
+    // The Gray mix of a color mixer never reaches the file, so it cannot mark an edit
+    // (a monochrome mixer's outputs are its gray).
+    const auto parsed = parse_photoshop_channel_mixer_adjustment(original->payload);
+    if (parsed.has_value() && parsed->channel_mixer.monochrome == clamped.monochrome &&
+        parsed->channel_mixer.outputs == clamped.outputs) {
+      return original->payload;
+    }
+  }
+  BigEndianWriter writer;
+  writer.write_u16(1);
+  writer.write_u16(clamped.monochrome ? 1 : 0);
+  // A monochrome mixer's outputs all equal its Gray mix (clamp_channel_mixer), so
+  // the first record carries the gray either way.
+  for (const auto& output : clamped.outputs) {
+    write_i16(writer, output.red);
+    write_i16(writer, output.green);
+    write_i16(writer, output.blue);
+    write_i16(writer, 0);
+    write_i16(writer, output.constant);
+  }
+  // The black output record, unused in RGB.
+  writer.write_u64(0);
+  writer.write_u16(0);
+  return writer.bytes();
+}
+
 std::optional<AdjustmentSettings> parse_photoshop_threshold_adjustment(std::span<const std::uint8_t> payload) {
   if (payload.size() < 2) {
     return std::nullopt;

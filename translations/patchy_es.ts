@@ -8909,6 +8909,39 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Constante</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Mezclador de canales</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Canal de salida:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Canales de origen:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Total:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Monocromo</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Mezclador de canales: monocromo, rojo %1, verde %2, azul %3, constante %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Mezclador de canales: %1 de 3 canales de salida modificados</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18691,18 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>&amp;Mezclador de canales...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Mezclador de canales</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Se ha cancelado Mezclador de canales</translation>
     </message>
 </context>
 <context>

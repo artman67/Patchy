@@ -8879,6 +8879,39 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>常數</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>色版混合器</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>輸出色版:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>來源色版:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>總計:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>單色</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>色版混合器：單色、紅 %1、綠 %2、藍 %3、常數 %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>色版混合器：已變更 %1/3 個輸出色版</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18635,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁切框高度</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>色版混合器(&amp;X)...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>色版混合器</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>已取消色版混合器</translation>
     </message>
 </context>
 <context>

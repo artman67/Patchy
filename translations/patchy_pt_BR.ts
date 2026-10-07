@@ -8909,6 +8909,39 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporção</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Constante</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Misturador de canais</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Canal de saída:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Canais de origem:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Total:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Monocromático</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Misturador de canais: monocromático, vermelho %1, verde %2, azul %3, constante %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Misturador de canais: %1 de 3 canais de saída alterados</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18691,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Altura da caixa de corte</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>&amp;Misturador de canais...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Misturador de canais</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Misturador de canais cancelado</translation>
     </message>
 </context>
 <context>

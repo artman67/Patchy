@@ -8909,6 +8909,39 @@ RVB : %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Rapport</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Constante</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Mélangeur de couches</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Couche de sortie :</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Couches source :</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Total :</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Monochrome</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Mélangeur de couches : monochrome, rouge %1, vert %2, bleu %3, constante %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Mélangeur de couches : %1 couche(s) de sortie sur 3 modifiée(s)</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18691,18 @@ Convertis en images : %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Hauteur du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>&amp;Mélangeur de couches...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Mélangeur de couches</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Mélangeur de couches annulé</translation>
     </message>
 </context>
 <context>

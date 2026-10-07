@@ -8909,6 +8909,39 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Verhältnis</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Konstante</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Kanalmixer</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Ausgabekanal:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Ausgangskanäle:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Gesamt:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Monochrom</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Kanalmixer: monochrom, Rot %1, Grün %2, Blau %3, Konstante %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Kanalmixer: %1 von 3 Ausgabekanälen geändert</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18691,18 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Höhe des Zuschneiderahmens</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>Kanal&amp;mixer...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Kanalmixer</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Kanalmixer abgebrochen</translation>
     </message>
 </context>
 <context>

@@ -8939,6 +8939,39 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation>Константа</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Микширование каналов</translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation>Выходной канал:</translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation>Исходные каналы:</translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation>Всего:</translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation>Монохромный</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation>Микширование каналов: монохромный, красный %1, зеленый %2, синий %3, константа %4</translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation>Микширование каналов: изменено выходных каналов: %1 из 3</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18747,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation>&amp;Микширование каналов...</translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation>Микширование каналов</translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
+        <translation>Отмененное микширование каналов</translation>
     </message>
 </context>
 <context>
