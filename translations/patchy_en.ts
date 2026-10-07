@@ -9367,6 +9367,30 @@ RGB: %2, %3, %4</source>
         <source>Color Lookup: %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19332,6 +19356,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Cancelled Color Lookup</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -100,6 +100,7 @@ add_library(patchy_core
   src/core/brush_dynamics.cpp
   src/core/brush_tip.cpp
   src/core/color_range.cpp
+  src/core/replace_color.cpp
   src/core/contour_presets.cpp
   src/core/document.cpp
   src/core/document_channel.cpp
@@ -981,6 +982,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/color_panel.hpp
       src/ui/color_range_dialog.hpp
       src/ui/color_range_dialog.cpp
+      src/ui/replace_color_dialog.hpp
+      src/ui/replace_color_dialog.cpp
       src/ui/default_brush_tips.hpp
       src/ui/default_brush_tips.cpp
       src/ui/color_panel.cpp

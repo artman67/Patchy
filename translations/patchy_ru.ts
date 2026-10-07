@@ -9408,6 +9408,30 @@ RGB: %2, %3, %4</translation>
         <source>Color Lookup: %1</source>
         <translation>Поиск цвета: %1</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Заменить цвет</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Цвет образца</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Просмотр замены цвета</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Замена</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Итоговый цвет</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Результат:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19439,6 +19463,18 @@ Y: %2
     <message>
         <source>Cancelled Color Lookup</source>
         <translation>Поиск цвета отменен</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>&amp;Заменить цвет...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Заменить цвет</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Отмененная замена цвета</translation>
     </message>
 </context>
 <context>

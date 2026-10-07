@@ -9348,6 +9348,30 @@ RGB: %2, %3, %4</translation>
         <source>Color Lookup: %1</source>
         <translation>색상 검색: %1</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>색상 대체</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>샘플링된 색상</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>색상 대체 미리 보기</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>대체</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>결과 색상</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>결과:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19327,6 +19351,18 @@ Y: %2
     <message>
         <source>Cancelled Color Lookup</source>
         <translation>취소된 색상 검색</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>색상 대체(&amp;E)...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>색상 대체</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>취소된 색상 대체</translation>
     </message>
 </context>
 <context>

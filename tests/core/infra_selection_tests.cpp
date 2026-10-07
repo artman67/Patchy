@@ -2,6 +2,7 @@
 #include "core/adjustment_layer.hpp"
 #include "core/blend_math.hpp"
 #include "core/color_range.hpp"
+#include "core/replace_color.hpp"
 #include "core/document.hpp"
 #include "core/layer_metadata.hpp"
 #include "core/layer_tree.hpp"
@@ -69,6 +70,7 @@
 #include <cctype>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <exception>
@@ -1388,6 +1390,90 @@ void color_range_mask_weights_alpha_and_combines_with_selection() {
   CHECK((combined(patchy::ColorRangeCombine::Subtract, true) == std::vector<std::uint8_t>{0, 0, 0, 0}));
 }
 
+// Image > Adjustments > Replace Color (docs/replace-color.md): the Color Range score
+// weights a Hue/Saturation master shift. Same green-offset distances as above.
+void replace_color_weights_hue_saturation_shift_by_sampled_score() {
+  patchy::ReplaceColorSettings settings;
+  settings.range.added = {{100, 150, 200}};
+  settings.hue = 120;
+  const auto full_shift = [&settings](patchy::RgbColor color) {
+    patchy::AdjustmentSettings hue_saturation;
+    hue_saturation.kind = patchy::AdjustmentKind::HueSaturation;
+    hue_saturation.hue_saturation.hue_shift = settings.hue;
+    return patchy::apply_adjustment_to_color(color, hue_saturation);
+  };
+  // The sample (with partial alpha), a pixel halfway down the ramp, one beyond
+  // Fuzziness 40, and an unrelated color.
+  std::array<std::uint8_t, 16> pixels{100, 150, 200, 77, 100, 195, 200, 255, 100, 230, 200, 255, 220, 60, 40, 255};
+  const auto run = [&] {
+    auto result = pixels;
+    patchy::apply_replace_color_span(result.data(), 4, 4, settings);
+    return result;
+  };
+  const auto color_at = [](const std::array<std::uint8_t, 16>& rgba, int index) {
+    const auto offset = static_cast<std::size_t>(index) * 4;
+    return patchy::RgbColor{rgba[offset], rgba[offset + 1], rgba[offset + 2]};
+  };
+  auto result = run();
+  const auto sample_shift = full_shift(color_at(pixels, 0));
+  CHECK(sample_shift != color_at(pixels, 0));
+  CHECK(color_at(result, 0) == sample_shift);
+  CHECK(result[3] == 77);  // alpha kept, and it does not weaken the score
+  CHECK(patchy::replace_color_full_shift(color_at(pixels, 0), settings) == sample_shift);
+  // Halfway down the ramp: every channel lands near the midpoint of the shift.
+  const auto ramp_from = color_at(pixels, 1);
+  const auto ramp_to = full_shift(ramp_from);
+  const auto ramp = color_at(result, 1);
+  CHECK(std::abs(2 * ramp.red - ramp_from.red - ramp_to.red) <= 2);
+  CHECK(std::abs(2 * ramp.green - ramp_from.green - ramp_to.green) <= 2);
+  CHECK(std::abs(2 * ramp.blue - ramp_from.blue - ramp_to.blue) <= 2);
+  CHECK(ramp != ramp_from);
+  CHECK(color_at(result, 2) == color_at(pixels, 2));
+  CHECK(color_at(result, 3) == color_at(pixels, 3));
+
+  // A wider Fuzziness reaches the third pixel fully (distance 53, inside the 60 plateau).
+  settings.range.fuzziness = 120;
+  result = run();
+  CHECK(color_at(result, 2) == full_shift(color_at(pixels, 2)));
+  CHECK(color_at(result, 3) == color_at(pixels, 3));
+
+  // All sliders at zero, or no sample, change nothing.
+  settings.hue = 0;
+  CHECK(!patchy::replace_color_has_effect(settings));
+  CHECK(run() == pixels);
+  settings.hue = 120;
+  settings.range.added.clear();
+  CHECK(!patchy::replace_color_has_effect(settings));
+  CHECK(run() == pixels);
+}
+
+void replace_color_add_and_subtract_samples() {
+  patchy::ReplaceColorSettings settings;
+  settings.saturation = -100;
+  const patchy::ColorRangeColor blue{100, 150, 200};
+  const patchy::ColorRangeColor red{220, 60, 40};
+  std::array<std::uint8_t, 8> pixels{100, 150, 200, 255, 220, 60, 40, 255};
+  const auto changed = [&](int index) {
+    auto result = pixels;
+    patchy::apply_replace_color_span(result.data(), 2, 4, settings);
+    const auto offset = static_cast<std::size_t>(index) * 4;
+    return !std::equal(result.begin() + offset, result.begin() + offset + 3, pixels.begin() + offset);
+  };
+  patchy::apply_color_range_sample(settings.range, blue, patchy::ColorRangeSampleAction::Replace);
+  CHECK(changed(0) && !changed(1));
+  patchy::apply_color_range_sample(settings.range, red, patchy::ColorRangeSampleAction::Add);
+  CHECK(changed(0) && changed(1));
+  // Subtract takes red back out of the added samples and removes its neighbourhood.
+  patchy::apply_color_range_sample(settings.range, red, patchy::ColorRangeSampleAction::Subtract);
+  CHECK((settings.range.added == std::vector<patchy::ColorRangeColor>{blue}));
+  CHECK((settings.range.subtracted == std::vector<patchy::ColorRangeColor>{red}));
+  CHECK(changed(0) && !changed(1));
+  // The plain eyedropper starts over.
+  patchy::apply_color_range_sample(settings.range, red, patchy::ColorRangeSampleAction::Replace);
+  CHECK(settings.range.subtracted.empty());
+  CHECK(!changed(0) && changed(1));
+}
+
 // main() decides the Qt platform before the QApplication exists, from a raw argv
 // scan; this pins the scan's contract (exact token, "--" ends it) so the
 // QCommandLineParser definition of --headless and the early scan cannot drift.
@@ -1436,6 +1522,9 @@ std::vector<patchy::test::TestCase> infra_selection_tests() {
       {"color_range_color_families_and_tonal_ranges", color_range_color_families_and_tonal_ranges},
       {"color_range_mask_weights_alpha_and_combines_with_selection",
        color_range_mask_weights_alpha_and_combines_with_selection},
+      {"replace_color_weights_hue_saturation_shift_by_sampled_score",
+       replace_color_weights_hue_saturation_shift_by_sampled_score},
+      {"replace_color_add_and_subtract_samples", replace_color_add_and_subtract_samples},
       {"spot_heal_source_map_is_coherent_and_outside", spot_heal_source_map_is_coherent_and_outside},
       {"spot_heal_source_map_stays_in_canvas_at_edges", spot_heal_source_map_stays_in_canvas_at_edges},
       {"spot_heal_source_map_attempt_cycles_valid_candidates",

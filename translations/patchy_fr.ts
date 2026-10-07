@@ -9378,6 +9378,30 @@ RVB : %2, %3, %4</translation>
         <source>Color Lookup: %1</source>
         <translation>Correspondance de la couleur : %1</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Couleur échantillonnée</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Aperçu du remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Remplacement</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Couleur résultante</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Résultat :</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19383,6 +19407,18 @@ Convertis en images : %1.</translation>
     <message>
         <source>Cancelled Color Lookup</source>
         <translation>Correspondance de la couleur annulée</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>Re&amp;mplacement de couleur...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Remplacement de couleur annulé</translation>
     </message>
 </context>
 <context>

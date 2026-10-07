@@ -9348,6 +9348,30 @@ RGB：%2, %3, %4</translation>
         <source>Color Lookup: %1</source>
         <translation>顏色查詢：%1</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>取代顏色</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>取樣的顏色</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>取代顏色預視</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>取代</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>結果顏色</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>結果:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19327,6 +19351,18 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Color Lookup</source>
         <translation>已取消顏色查詢</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>取代顏色(&amp;E)...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>取代顏色</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>已取消取代顏色</translation>
     </message>
 </context>
 <context>

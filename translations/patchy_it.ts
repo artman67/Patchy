@@ -9378,6 +9378,30 @@ RGB: %2, %3, %4</translation>
         <source>Color Lookup: %1</source>
         <translation>Ricerca colore: %1</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Sostituisci colore</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Colore campionato</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Anteprima Sostituisci colore</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Sostituzione</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Colore risultante</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Risultato:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -19383,6 +19407,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Cancelled Color Lookup</source>
         <translation>Annullato: Ricerca colore</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>Sostit&amp;uisci colore...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Sostituisci colore</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Annullato: Sostituisci colore</translation>
     </message>
 </context>
 <context>

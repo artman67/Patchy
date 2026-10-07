@@ -49,7 +49,7 @@ A `FilterInvocation` stores filter ID, schema version, named parameters, and cap
 
 ## Categories and UI contracts
 
-Nine catalog filters carry `FilterCategory::Adjustment` and surface under Image > Adjustments: Invert, Brightness/Contrast, Grayscale (no direct action yet), Desaturate, Auto Tone, Auto Contrast, Auto Color, Threshold, Posterize. The dialog adjustments (Levels, Curves, Hue/Saturation, Color Balance, Vibrance, Channel Mixer, Photo Filter, [Match Color](match-color.md), [Shadows/Highlights](shadows-highlights.md), Color Lookup) are not catalog filters; see [adjustments-calibration.md](adjustments-calibration.md).
+Nine catalog filters carry `FilterCategory::Adjustment` and surface under Image > Adjustments: Invert, Brightness/Contrast, Grayscale (no direct action yet), Desaturate, Auto Tone, Auto Contrast, Auto Color, Threshold, Posterize. The dialog adjustments (Levels, Curves, Hue/Saturation, Color Balance, Vibrance, Channel Mixer, Photo Filter, [Match Color](match-color.md), [Shadows/Highlights](shadows-highlights.md), Color Lookup, Replace Color) are not catalog filters; see [adjustments-calibration.md](adjustments-calibration.md).
 
 The gallery exposes the other 32 effects in the fixed catalog and category order below (labels translated, never locale-sorted). An effect's ID suffix is its lowercased label with underscores ("&" becomes "and"), except where given in parentheses:
 

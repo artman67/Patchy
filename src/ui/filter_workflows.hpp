@@ -3,6 +3,7 @@
 #include "core/adjustment_layer.hpp"
 #include "core/layer.hpp"
 #include "core/match_color.hpp"
+#include "core/replace_color.hpp"
 #include "filters/filter_registry.hpp"
 #include "filters/shadows_highlights.hpp"
 #include "ui/canvas_widget.hpp"
@@ -279,5 +280,8 @@ void apply_shadows_highlights_to_pixels(PixelBuffer& pixels, Rect bounds, const 
                                         const FilterProgress* progress = nullptr);
 void apply_color_lookup_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                   const ColorLookupSettings& settings, const FilterProgress* progress = nullptr);
+// Image > Adjustments > Replace Color on 8-bit RGBA pixels (docs/replace-color.md).
+void apply_replace_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                   const ReplaceColorSettings& settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

@@ -4319,6 +4319,145 @@ void ui_color_balance_dialog_adjusts_selected_pixels() {
   save_widget_artifact("ui_color_balance_selection", *canvas);
 }
 
+// Image > Adjustments > Replace Color (docs/replace-color.md). The strip's green is 45
+// above the red sample, a weighted distance of 30: half weight at Fuzziness 40.
+void ui_replace_color_samples_previews_and_commits_one_undo_step() {
+  patchy::ui::app_settings().remove(QStringLiteral("tools/replaceColorFuzziness"));
+  patchy::Document source(240, 160, patchy::PixelFormat::rgba8());
+  auto art = solid_pixels(240, 160, patchy::PixelFormat::rgba8(), QColor(Qt::white));
+  fill_pixel_rect(art, QRect(20, 20, 80, 120), QColor(200, 40, 40));
+  fill_pixel_rect(art, QRect(100, 20, 20, 120), QColor(200, 85, 40));
+  fill_pixel_rect(art, QRect(140, 20, 80, 120), QColor(40, 60, 200));
+  source.add_pixel_layer("Art", std::move(art));
+  patchy::ui::MainWindow window;
+  show_window(window);
+  window.add_document_session(std::move(source), QStringLiteral("Replace Color"));
+  QApplication::processEvents();
+  auto* canvas = require_canvas(window);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+  canvas->set_tool(patchy::ui::CanvasTool::Brush);
+  canvas->set_primary_color(QColor(10, 200, 10));
+  const auto layer_color = [&doc](QPoint point) {
+    const auto& layer = std::as_const(doc).layers().front();
+    const auto* pixel = layer.pixels().pixel(point.x() - layer.bounds().x, point.y() - layer.bounds().y);
+    return QColor(pixel[0], pixel[1], pixel[2]);
+  };
+  const auto shifted = [](QColor color) {
+    patchy::AdjustmentSettings settings;
+    settings.kind = patchy::AdjustmentKind::HueSaturation;
+    settings.hue_saturation.hue_shift = 120;
+    const auto result = patchy::apply_adjustment_to_color(
+        patchy::RgbColor{static_cast<std::uint8_t>(color.red()), static_cast<std::uint8_t>(color.green()),
+                         static_cast<std::uint8_t>(color.blue())},
+        settings);
+    return QColor(result.red, result.green, result.blue);
+  };
+  const auto click = [](QWidget& widget, QPoint position, Qt::KeyboardModifiers modifiers) {
+    send_mouse(widget, QEvent::MouseButtonPress, position, Qt::LeftButton, Qt::LeftButton, modifiers);
+    send_mouse(widget, QEvent::MouseButtonRelease, position, Qt::LeftButton, Qt::NoButton, modifiers);
+    QApplication::processEvents();
+  };
+  const auto swatch_color = [](QDialog& dialog, const char* name) {
+    auto* swatch = dialog.findChild<QWidget*>(QString::fromLatin1(name));
+    CHECK(swatch != nullptr);
+    return swatch == nullptr ? QColor()
+                             : swatch->grab().toImage().pixelColor(swatch->width() / 2, swatch->height() / 2);
+  };
+  const QColor red(200, 40, 40);
+  const QColor blue(40, 60, 200);
+  const auto undo_before = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+
+  // Eyedropper on the canvas, Shift-click in the preview box adds blue, Alt-click on the
+  // canvas takes it out again; the canvas previews live under the edit lock.
+  bool inspected = false;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyReplaceColorDialog"));
+    CHECK(dialog != nullptr);
+    auto* fuzziness = dialog->findChild<QSpinBox*>(QStringLiteral("replaceColorFuzzinessSpin"));
+    auto* hue = dialog->findChild<QSpinBox*>(QStringLiteral("replaceColorHueSpin"));
+    auto* preview = dialog->findChild<QWidget*>(QStringLiteral("replaceColorPreview"));
+    CHECK(fuzziness != nullptr && hue != nullptr && preview != nullptr);
+    CHECK(fuzziness->value() == patchy::kColorRangeDefaultFuzziness);
+    CHECK(hue->minimum() == -180 && hue->maximum() == 180 && hue->value() == 0);
+    CHECK(canvas->has_transient_read_interaction());
+    CHECK(canvas->edit_locked());
+    CHECK(color_close(swatch_color(*dialog, "replaceColorSampleSwatch"), QColor(10, 200, 10), 1));
+
+    click(*canvas, canvas->widget_position_for_document_point(QPoint(50, 80)), Qt::NoModifier);
+    CHECK(color_close(swatch_color(*dialog, "replaceColorSampleSwatch"), red, 1));
+    const QPoint preview_origin((preview->width() - 240) / 2, (preview->height() - 160) / 2);
+    click(*preview, preview_origin + QPoint(180, 80), Qt::ShiftModifier);
+    hue->setValue(120);
+    process_events_for(200);
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(50, 80)), shifted(red), 2));
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(180, 80)), shifted(blue), 2));
+    CHECK(color_close(swatch_color(*dialog, "replaceColorResultSwatch"), shifted(red), 1));
+    click(*canvas, canvas->widget_position_for_document_point(QPoint(180, 80)), Qt::AltModifier);
+    process_events_for(200);
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(180, 80)), blue, 2));
+    CHECK(color_close(canvas_pixel(*canvas, QPoint(5, 5)), QColor(Qt::white), 1));
+    save_widget_artifact("ui_replace_color_dialog", *dialog);
+    save_widget_artifact("ui_replace_color_canvas_preview", *canvas);
+    inspected = true;
+    auto* buttons = dialog->findChild<QDialogButtonBox*>();
+    CHECK(buttons != nullptr);
+    buttons->button(QDialogButtonBox::Ok)->click();
+  });
+  require_action(window, "imageAdjustReplaceColorAction")->trigger();
+  QApplication::processEvents();
+  CHECK(inspected);
+  CHECK(!canvas->has_transient_read_interaction());
+  CHECK(!canvas->edit_locked());
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_before + 1);
+  CHECK(layer_color(QPoint(50, 80)) == shifted(red));
+  const auto strip = layer_color(QPoint(110, 80));
+  CHECK(strip != QColor(200, 85, 40) && strip != shifted(QColor(200, 85, 40)));
+  CHECK(layer_color(QPoint(180, 80)) == blue);
+  CHECK(layer_color(QPoint(5, 5)) == QColor(Qt::white));
+  require_action_by_text(window, QStringLiteral("Undo"))->trigger();
+  QApplication::processEvents();
+  CHECK(layer_color(QPoint(50, 80)) == red);
+
+  // With a selection over the right part of the red block, only that part changes;
+  // Cancel leaves the layer and the history alone.
+  patchy::PixelBuffer right_part(240, 160, patchy::PixelFormat::gray8());
+  right_part.clear(0);
+  for (std::int32_t y = 0; y < 160; ++y) {
+    auto row = right_part.row(y);
+    std::fill(row.begin() + 60, row.end(), std::uint8_t{255});
+  }
+  canvas->replace_selection_from_grayscale(right_part, QStringLiteral("Setup"));
+  const auto run = [&](bool accept) {
+    bool driven = false;
+    QTimer::singleShot(0, [&] {
+      auto* dialog = find_top_level_dialog(QStringLiteral("patchyReplaceColorDialog"));
+      CHECK(dialog != nullptr);
+      auto* hue = dialog->findChild<QSpinBox*>(QStringLiteral("replaceColorHueSpin"));
+      CHECK(hue != nullptr);
+      click(*canvas, canvas->widget_position_for_document_point(QPoint(80, 80)), Qt::NoModifier);
+      hue->setValue(120);
+      process_events_for(200);
+      driven = true;
+      auto* buttons = dialog->findChild<QDialogButtonBox*>();
+      CHECK(buttons != nullptr);
+      buttons->button(accept ? QDialogButtonBox::Ok : QDialogButtonBox::Cancel)->click();
+    });
+    require_action(window, "imageAdjustReplaceColorAction")->trigger();
+    QApplication::processEvents();
+    CHECK(driven);
+  };
+  const auto undo_with_selection = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  run(false);
+  CHECK(layer_color(QPoint(80, 80)) == red);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_with_selection);
+  run(true);
+  CHECK(layer_color(QPoint(80, 80)) == shifted(red));
+  CHECK(layer_color(QPoint(40, 80)) == red);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_with_selection + 1);
+  save_widget_artifact("ui_replace_color_in_selection", *canvas);
+  patchy::ui::app_settings().remove(QStringLiteral("tools/replaceColorFuzziness"));
+}
+
 }  // namespace
 
 
@@ -4375,6 +4514,8 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_image_adjustments_respect_active_selection", ui_image_adjustments_respect_active_selection},
       {"ui_match_color_matches_another_document_inside_selection",
        ui_match_color_matches_another_document_inside_selection},
+      {"ui_replace_color_samples_previews_and_commits_one_undo_step",
+       ui_replace_color_samples_previews_and_commits_one_undo_step},
       {"ui_direct_pixel_previews_preserve_floating_layer_bounds",
        ui_direct_pixel_previews_preserve_floating_layer_bounds},
       {"ui_levels_dialog_adjusts_selected_color_channel_on_transparent_layer",

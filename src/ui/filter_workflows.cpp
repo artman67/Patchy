@@ -1295,6 +1295,24 @@ void apply_shadows_highlights_to_pixels(PixelBuffer& pixels, Rect bounds, const 
   restore_pixels_outside_selection(pixels, original, selection, bounds);
 }
 
+void apply_replace_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                   const ReplaceColorSettings& settings, const FilterProgress* progress) {
+  // The per-pixel function is pure, so the strip fan-out is byte-identical to the
+  // sequential walk. A selection limits the pixels like every destructive adjustment.
+  if (!replace_color_has_effect(settings)) {
+    return;
+  }
+  const auto pixel_bytes = bytes_per_pixel(pixels.format());
+  const auto apply_span = [&](std::int32_t y, std::int32_t x_begin, std::int32_t x_end) {
+    apply_replace_color_span(pixels.row(y).data() + static_cast<std::size_t>(x_begin) * pixel_bytes, x_end - x_begin,
+                             pixel_bytes, settings);
+  };
+  if (apply_row_spans_in_parallel(pixels, selection, progress, apply_span)) {
+    return;
+  }
+  for_each_selected_row_span(pixels, bounds, selection, progress, apply_span);
+}
+
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress) {
   settings.cyan_red = std::clamp(settings.cyan_red, -100, 100);
