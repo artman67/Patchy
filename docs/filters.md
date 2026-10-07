@@ -49,7 +49,7 @@ A `FilterInvocation` stores filter ID, schema version, named parameters, and cap
 
 ## Categories and UI contracts
 
-Nine catalog filters carry `FilterCategory::Adjustment` and surface under Image > Adjustments: Invert, Brightness/Contrast, Grayscale (no direct action yet), Desaturate, Auto Tone, Auto Contrast, Auto Color, Threshold, Posterize. The four dialog adjustments (Levels, Curves, Hue/Saturation, Color Balance) are not catalog filters; see [adjustments-calibration.md](adjustments-calibration.md).
+Nine catalog filters carry `FilterCategory::Adjustment` and surface under Image > Adjustments: Invert, Brightness/Contrast, Grayscale (no direct action yet), Desaturate, Auto Tone, Auto Contrast, Auto Color, Threshold, Posterize. The dialog adjustments (Levels, Curves, Hue/Saturation, Color Balance, Photo Filter) are not catalog filters; see [adjustments-calibration.md](adjustments-calibration.md).
 
 The gallery exposes the other 32 effects in the fixed catalog and category order below (labels translated, never locale-sorted). An effect's ID suffix is its lowercased label with underscores ("&" becomes "and"), except where given in parentheses:
 
@@ -71,7 +71,7 @@ Liquify is a top-level Filter menu action under Filter Gallery, outside this cat
 
 ## Text and shape layer gate
 
-Text (`layer_is_text`) and shape (`layer_is_vector_shape`) layers re-create their pixels from source data, so a destructive pixel edit would vanish on the next edit. Every destructive entry point routes through `MainWindow::prompt_rasterize_procedural_layer` first: direct catalog filter actions (Image > Adjustments included), the Filter Gallery, Liquify, and the destructive Levels/Curves/Hue/Saturation/Color Balance dialogs. Legacy plug-ins keep their older hard refusal; smart objects are untouched (docs/smart-objects.md).
+Text (`layer_is_text`) and shape (`layer_is_vector_shape`) layers re-create their pixels from source data, so a destructive pixel edit would vanish on the next edit. Every destructive entry point routes through `MainWindow::prompt_rasterize_procedural_layer` first: direct catalog filter actions (Image > Adjustments included), the Filter Gallery, Liquify, and the destructive adjustment dialogs. Legacy plug-ins keep their older hard refusal; smart objects are untouched (docs/smart-objects.md).
 
 The prompt (`rasterizeOrConvertMessageBox`) offers Convert To Smart Object (AcceptRole, the default when present), Rasterize (DestructiveRole), and Cancel. Convert appears only when the follow-on path can succeed: a direct filter needs a native Smart Filter mapping (`native_smart_filter_kind_for`), the gallery always qualifies, and both need the document under the 64-megapixel editable-mask cap; Liquify and the adjustment dialogs refuse smart objects and never offer it. Rasterize commits its own "Rasterize layer" undo step first and persists even when the follow-on dialog is cancelled (Photoshop behavior). Convert runs the standard Convert to Smart Object step on that layer and re-enters the smart-object routing. Cancel reports "Cancelled %1" and leaves the layer untouched. The gate commits any active inline text edit first; CLI automation keeps the plug-in path's status refusal instead of a blocking prompt. Coverage: `ui_filter*_on_*_layer_*`, `ui_levels_on_text_layer_*`.
 

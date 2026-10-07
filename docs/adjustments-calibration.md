@@ -48,6 +48,18 @@ Fitted against Photoshop's renders of psd-tools' `adjustments/levels_rgb.psd` an
 - Refuted: the piecewise sRGB curve in place of the plain 2.2 power (up to 7/255 off at +2 stops).
 - Unprobed: Grayscale and CMYK documents (Photoshop adjusts in the document's space; Patchy converts to sRGB on open first) and 16/32-bit sources.
 
+## Photo Filter (October 2026)
+
+`AdjustmentKind::PhotoFilter`, Photoshop's `phfl` block, laid out per Adobe's [PSD specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/) ("Photo Filter"): u16 version (2 or 3), the color, u32 density percent, u8 Preserve Luminosity. Defaults: Warming Filter (85), Density 25 (1..100), Preserve Luminosity on. Image > Adjustments > Photo Filter... (after Color Balance, no shortcut) and Layer > New Adjustment Layer share one dialog (Filter menu or Color swatch, Density, Preserve Luminosity); the destructive command runs `apply_photo_filter_to_pixels`, equal to a layer with the same settings.
+
+- Writer: version 2 with an RGB color structure (space 0, components x257, fourth 0), then 3 zero pad bytes (20 bytes). Every field is spec-defined; ag-psd writes the same shape. An unedited imported block is written back byte for byte.
+- Reader: version 2 color spaces RGB, CMYK (naive ink mix) and Lab; other spaces leave the layer unparsed. Version 3's color is three i32 the spec calls "XYZ"; Patchy reads them as Lab x100, as other PSD readers do, which no Photoshop file has confirmed (an out-of-range triple leaves the layer unparsed). A version 3 Photoshop file may therefore show a wrong filter color until it is checked; an unedited save keeps its bytes.
+- Math (`apply_photo_filter`): each channel `c * (1 - d + d * f/255)` for filter channel f and density d, rounded; with Preserve Luminosity the result then takes the source's luminosity through the Luminosity blend mode's set-luminosity and gamut clip (`blend_rgb`). Without it the adjustment is per channel and builds a LUT; with it, per pixel. A white filter changes nothing.
+- Uncalibrated: written from Adobe's description (a colored lens filter; Density sets the amount; Preserve Luminosity keeps the image from darkening) with no Photoshop render to fit. The multiply model, the blend toward it and the luminosity weights (0.3/0.59/0.11) are Patchy's choices; Photoshop may work in Lab or another space.
+- Presets: Warming Filter (85) is (236, 138, 0), the value other PSD tools pair with Photoshop's default. The other 19 colors in `photo_filter_preset_colors()` are commonly published sRGB readings of Photoshop's presets, approximated and unverified. The block stores only the color; the dialog shows Filter when the color EXACTLY equals a preset, otherwise Color.
+- Owed: Photoshop has not opened a Patchy-written `phfl` (warning-free open, editable layer, same color) and no Photoshop file has pinned the version 3 color or the math. psd-tools' adjustment corpus is the calibration route, as for Exposure.
+- Patent note (2026-10-07, claim text read). Wertheim US 9378563 (filed 2014-02-18, 110 days term adjustment, to about 2034-06 if maintained) multiplies each pixel's RGB by a filter's transmission, but its only independent claim needs a diagnostic image for a color vision disorder, trying filters until the image is acceptable to that person, and correlating the change to the CLOSEST filter in a database. Patchy has no diagnostic image or person and matches a preset only by exact equality for display. The multiply-and-luminosity design is the Multiply and Luminosity blend modes (PDF 1.4, 2001) and Photoshop CS (2003) behavior; Adobe's adjustment-layer patent US 5974198 and the luminance-filter patent US 6731797 have expired. Binding rule: [legal-constraints.md](legal-constraints.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -71,7 +83,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Photo Filter and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

@@ -8909,6 +8909,132 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation>Filtro cálido (85)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation>Filtro cálido (LBA)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation>Filtro cálido (81)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation>Filtro frío (80)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation>Filtro frío (LBB)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation>Filtro frío (82)</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation>Rojo</translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation>Naranja</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation>Amarillo</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation>Verde</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation>Cian</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation>Azul</translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation>Violeta</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation>Magenta</translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation>Sepia</translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation>Rojo intenso</translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation>Azul intenso</translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation>Esmeralda intenso</translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation>Amarillo intenso</translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation>Subacuático</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>Filtro de fotografía</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>Densidad</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>Filtro:</translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation>Elegir el color del filtro</translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation>Conservar luminosidad</translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation>Color del filtro de fotografía</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation>Filtro de fotografía: %1, densidad %2%, conservar luminosidad</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation>Filtro de fotografía: %1, densidad %2%</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18784,18 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation>&amp;Filtro de fotografía...</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>Filtro de fotografía</translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
+        <translation>Se ha cancelado Filtro de fotografía</translation>
     </message>
 </context>
 <context>
