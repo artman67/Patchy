@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>Подобрать цвет</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>Целевое изображение</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>Игнорировать выделение при применении коррекции</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>Параметры изображения</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>Яркость</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>Интенсивность цвета</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>Ослабление</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>Нейтрализовать</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>Статистика изображения</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>Использовать выделение в источнике для расчета цветов</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>Использовать выделение в целевом изображении для расчета коррекции</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>Нет</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>Источник:</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>Слой:</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>Просмотр</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>Объединенные</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Patchy raster image editor.</source>
@@ -18714,6 +18781,22 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>&amp;Подобрать цвет...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>Подобрать цвет</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>Цель: %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>Отменен подбор цвета</translation>
     </message>
 </context>
 <context>

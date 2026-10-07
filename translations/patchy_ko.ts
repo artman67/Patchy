@@ -274,6 +274,73 @@
     </message>
 </context>
 <context>
+    <name>MatchColorDialog</name>
+    <message>
+        <source>Match Color</source>
+        <translation>색상 일치</translation>
+    </message>
+    <message>
+        <source>Destination Image</source>
+        <translation>대상 이미지</translation>
+    </message>
+    <message>
+        <source>Ignore Selection when Applying Adjustment</source>
+        <translation>조정 적용 시 선택 영역 무시</translation>
+    </message>
+    <message>
+        <source>Image Options</source>
+        <translation>이미지 옵션</translation>
+    </message>
+    <message>
+        <source>Luminance</source>
+        <translation>광도</translation>
+    </message>
+    <message>
+        <source>Color Intensity</source>
+        <translation>색상 강도</translation>
+    </message>
+    <message>
+        <source>Fade</source>
+        <translation>페이드</translation>
+    </message>
+    <message>
+        <source>Neutralize</source>
+        <translation>중화</translation>
+    </message>
+    <message>
+        <source>Image Statistics</source>
+        <translation>이미지 통계</translation>
+    </message>
+    <message>
+        <source>Use Selection in Source to Calculate Colors</source>
+        <translation>소스의 선택 영역을 사용하여 색상 계산</translation>
+    </message>
+    <message>
+        <source>Use Selection in Target to Calculate Adjustment</source>
+        <translation>대상의 선택 영역을 사용하여 조정 계산</translation>
+    </message>
+    <message>
+        <source>None</source>
+        <translation>없음</translation>
+    </message>
+    <message>
+        <source>Source:</source>
+        <translation>소스:</translation>
+    </message>
+    <message>
+        <source>Layer:</source>
+        <translation>레이어:</translation>
+    </message>
+    <message>
+        <source>Preview</source>
+        <translation>미리 보기</translation>
+    </message>
+    <message>
+        <source>Merged</source>
+        <translation>병합됨</translation>
+    </message>
+</context>
+<context>
     <name>QObject</name>
     <message>
         <source>Patchy raster image editor.</source>
@@ -18602,6 +18669,22 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>&amp;Match Color...</source>
+        <translation>색상 일치(&amp;M)...</translation>
+    </message>
+    <message>
+        <source>Match Color</source>
+        <translation>색상 일치</translation>
+    </message>
+    <message>
+        <source>Target: %1 (%2, RGB/8)</source>
+        <translation>대상: %1 (%2, RGB/8)</translation>
+    </message>
+    <message>
+        <source>Cancelled Match Color</source>
+        <translation>취소된 색상 일치</translation>
     </message>
 </context>
 <context>

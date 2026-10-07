@@ -2,6 +2,7 @@
 
 #include "core/adjustment_layer.hpp"
 #include "core/layer.hpp"
+#include "core/match_color.hpp"
 #include "filters/filter_registry.hpp"
 #include "ui/canvas_widget.hpp"
 #include "ui/curves_editor.hpp"
@@ -202,5 +203,8 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+// Applies a resolved Match Color map (core/match_color.hpp) inside the selection.
+void apply_match_color_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                 const MatchColorTransform& transform, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui
