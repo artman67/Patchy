@@ -8937,6 +8937,14 @@ RGB: %2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>Verlaufsumsetzung: %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Dynamik</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Dynamik: Dynamik %1, Sättigung %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18734,6 +18742,14 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>Verlaufsumsetzung abgebrochen</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Dynamik...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Dynamik abgebrochen</translation>
     </message>
 </context>
 <context>

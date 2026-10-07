@@ -778,6 +778,69 @@ std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& s
   return writer.bytes();
 }
 
+std::optional<AdjustmentSettings> parse_photoshop_vibrance_adjustment(std::span<const std::uint8_t> payload) {
+  if (payload.size() < 4) {
+    return std::nullopt;
+  }
+  try {
+    BigEndianReader reader(payload);
+    if (reader.read_u32() != 16) {
+      return std::nullopt;
+    }
+    const auto descriptor = read_descriptor(reader);
+    // A missing key reads as 0, Photoshop's default for both sliders.
+    const auto slider = [&descriptor](std::string_view key) {
+      const auto* value = descriptor_value(descriptor, key);
+      if (value == nullptr) {
+        return 0;
+      }
+      if (value->type == DescriptorValue::Type::Integer) {
+        return std::clamp(value->integer_value, -kVibranceRange, kVibranceRange);
+      }
+      if (value->type == DescriptorValue::Type::Double && std::isfinite(value->double_value)) {
+        return static_cast<int>(std::lround(std::clamp(value->double_value, static_cast<double>(-kVibranceRange),
+                                                       static_cast<double>(kVibranceRange))));
+      }
+      return 0;
+    };
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::Vibrance;
+    settings.vibrance = VibranceAdjustment{slider("vibrance"), slider("Strt")};
+    return settings;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
+std::vector<std::uint8_t> photoshop_vibrance_payload(const VibranceAdjustment& settings,
+                                                     const UnknownPsdBlock* original) {
+  const auto clamped = clamp_vibrance(settings);
+  if (original != nullptr) {
+    // Unedited imported payloads re-emit byte-for-byte.
+    const auto parsed = parse_photoshop_vibrance_adjustment(original->payload);
+    if (parsed.has_value() && parsed->vibrance.vibrance == clamped.vibrance &&
+        parsed->vibrance.saturation == clamped.saturation) {
+      return original->payload;
+    }
+  }
+  DescriptorObject descriptor;
+  descriptor.name = "";
+  descriptor.class_id = "null";
+  const auto add_integer = [&descriptor](const std::string& key, bool long_form, int value) {
+    DescriptorValue entry;
+    entry.type = DescriptorValue::Type::Integer;
+    entry.integer_value = value;
+    descriptor.values.emplace(key, std::move(entry));
+    descriptor.key_order.push_back({key, long_form});
+  };
+  add_integer("vibrance", true, clamped.vibrance);
+  add_integer("Strt", false, clamped.saturation);
+  BigEndianWriter writer;
+  writer.write_u32(16);
+  write_descriptor(writer, descriptor);
+  return writer.bytes();
+}
+
 std::optional<AdjustmentSettings> parse_photoshop_threshold_adjustment(std::span<const std::uint8_t> payload) {
   if (payload.size() < 2) {
     return std::nullopt;

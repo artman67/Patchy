@@ -8907,6 +8907,14 @@ RGB：%2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>渐变映射：%1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>自然饱和度</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>自然饱和度：自然饱和度 %1，饱和度 %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18678,6 +18686,14 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>已取消渐变映射</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>自然饱和度(&amp;V)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>已取消自然饱和度</translation>
     </message>
 </context>
 <context>

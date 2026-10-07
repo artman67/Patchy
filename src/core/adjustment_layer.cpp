@@ -1198,6 +1198,37 @@ std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment setti
   return static_cast<std::uint8_t>(std::clamp(std::lround(encoded * 255.0), 0L, 255L));
 }
 
+VibranceAdjustment clamp_vibrance(VibranceAdjustment settings) {
+  settings.vibrance = std::clamp(settings.vibrance, -kVibranceRange, kVibranceRange);
+  settings.saturation = std::clamp(settings.saturation, -kVibranceRange, kVibranceRange);
+  return settings;
+}
+
+RgbColor apply_vibrance(RgbColor color, VibranceAdjustment settings) {
+  settings = clamp_vibrance(settings);
+  const auto maximum = static_cast<double>(std::max({color.red, color.green, color.blue}));
+  const auto minimum = static_cast<double>(std::min({color.red, color.green, color.blue}));
+  // HSL saturation: the chroma over the most this lightness allows.
+  const auto chroma = maximum - minimum;
+  const auto chroma_limit = 255.0 - std::abs(maximum + minimum - 255.0);
+  if ((settings.vibrance == 0 && settings.saturation == 0) || chroma <= 0.0 || chroma_limit <= 0.0) {
+    return color;  // neutrals carry no hue to saturate
+  }
+  const auto saturation = std::min(1.0, chroma / chroma_limit);
+  // Vibrance: exponent 2 at +100 roughly doubles a muted color and leaves full
+  // saturation at 1; exponent 1/2 at -100 halves a muted color the same way.
+  const auto exponent = std::pow(2.0, static_cast<double>(settings.vibrance) / 100.0);
+  const auto vibrant = 1.0 - std::pow(1.0 - saturation, exponent);
+  const auto target = std::min(1.0, vibrant * (1.0 + static_cast<double>(settings.saturation) / 100.0));
+  const auto scale = target / saturation;
+  const auto lightness = (maximum + minimum) / 2.0;
+  const auto channel = [lightness, scale](std::uint8_t value) {
+    const auto scaled = lightness + (static_cast<double>(value) - lightness) * scale;
+    return static_cast<std::uint8_t>(std::clamp(std::lround(scaled), 0L, 255L));
+  };
+  return RgbColor{channel(color.red), channel(color.green), channel(color.blue)};
+}
+
 int threshold_luminance(std::uint8_t red, std::uint8_t green, std::uint8_t blue) {
   return (static_cast<int>(red) * 30 + static_cast<int>(green) * 59 + static_cast<int>(blue) * 11) / 100;
 }
@@ -1427,6 +1458,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "exposure";
     case AdjustmentKind::GradientMap:
       return "gradient_map";
+    case AdjustmentKind::Vibrance:
+      return "vibrance";
   }
   return "levels";
 }
@@ -1453,6 +1486,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Exposure";
     case AdjustmentKind::GradientMap:
       return "Gradient Map";
+    case AdjustmentKind::Vibrance:
+      return "Vibrance";
   }
   return "Adjustment";
 }
@@ -1487,6 +1522,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "gradient_map") {
     return AdjustmentKind::GradientMap;
+  }
+  if (key == "vibrance") {
+    return AdjustmentKind::Vibrance;
   }
   return std::nullopt;
 }
@@ -1573,6 +1611,9 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureValue, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureOffset, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureGamma, 100)});
+  settings.vibrance = clamp_vibrance(VibranceAdjustment{
+      metadata_int_or(layer, kLayerMetadataAdjustmentVibranceVibrance, 0),
+      metadata_int_or(layer, kLayerMetadataAdjustmentVibranceSaturation, 0)});
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -1687,6 +1728,9 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureValue, exposure.exposure_hundredths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureOffset, exposure.offset_ten_thousandths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureGamma, exposure.gamma_hundredths);
+  const auto vibrance = clamp_vibrance(settings.vibrance);
+  set_metadata_int(layer, kLayerMetadataAdjustmentVibranceVibrance, vibrance.vibrance);
+  set_metadata_int(layer, kLayerMetadataAdjustmentVibranceSaturation, vibrance.saturation);
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -1786,11 +1830,13 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
     // Threshold compares one value: on a single gray channel that is channel-wise.
     case AdjustmentKind::Threshold:
       return settings.ink_space->is_gray();
-    // Hue/Saturation and Color Balance mix channels (as does Threshold on four inks);
-    // Photoshop's CMYK forms of them are not modeled, so they stay on the RGB math.
+    // Hue/Saturation, Color Balance and Vibrance mix channels (as does Threshold on
+    // four inks); Photoshop's CMYK forms of them are not modeled, so they stay on the
+    // RGB math.
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
     case AdjustmentKind::GradientMap:
+    case AdjustmentKind::Vibrance:
       return false;
   }
   return false;
@@ -1852,6 +1898,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
                       exposure_channel_value(color.blue, settings.exposure)};
     case AdjustmentKind::GradientMap:
       return apply_gradient_map(color, settings.gradient_map, x, y, true);
+    case AdjustmentKind::Vibrance:
+      return apply_vibrance(color, settings.vibrance);
   }
   return color;
 }
@@ -1891,11 +1939,11 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
   if (adjustment_runs_in_ink_space(settings)) {
     return std::nullopt;
   }
-  // Hue/Saturation mixes channels through HSL; Threshold and Gradient Map read
-  // the mixed RGB luminance, so a per-channel gray-probe LUT would be wrong for
-  // any colored pixel. They take the per-pixel path.
+  // Hue/Saturation and Vibrance mix channels through HSL; Threshold and Gradient
+  // Map read the mixed RGB luminance, so a per-channel gray-probe LUT would be
+  // wrong for any colored pixel. They take the per-pixel path.
   if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
-      settings.kind == AdjustmentKind::GradientMap) {
+      settings.kind == AdjustmentKind::GradientMap || settings.kind == AdjustmentKind::Vibrance) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -1954,6 +2002,10 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
     }
     case AdjustmentKind::GradientMap:
       return true;  // recolors by design; no gradient is a reliable identity
+    case AdjustmentKind::Vibrance: {
+      const auto vibrance = clamp_vibrance(settings.vibrance);
+      return vibrance.vibrance != 0 || vibrance.saturation != 0;
+    }
   }
   return false;
 }

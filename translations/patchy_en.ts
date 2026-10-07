@@ -8926,6 +8926,14 @@ RGB: %2, %3, %4</source>
         <source>Gradient Map: %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18683,6 +18691,14 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Cancelled Gradient Map</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

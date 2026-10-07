@@ -1810,6 +1810,81 @@ void ui_exposure_adjustment_layer_creates_and_edits() {
   CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(100, 100, 100), 6));
 }
 
+void ui_vibrance_adjustment_layer_and_image_command() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+
+  canvas->set_primary_color(QColor(150, 100, 100));
+  use_solid_fill_settings(canvas);
+  require_action(window, "layerFillForegroundAction")->trigger();
+  QApplication::processEvents();
+
+  // Drives the next Vibrance dialog: checks its starting values, sets new ones, and
+  // returns whether the canvas showed `preview` before OK.
+  const auto run_dialog = [&](const char* action, int start_vibrance, int start_saturation, int vibrance,
+                              int saturation, QColor preview) {
+    bool saw_preview = false;
+    QTimer::singleShot(0, [&] {
+      for (auto* widget : QApplication::topLevelWidgets()) {
+        if (widget->objectName() != QStringLiteral("patchyVibranceDialog")) {
+          continue;
+        }
+        auto* dialog = qobject_cast<QDialog*>(widget);
+        CHECK(dialog != nullptr);
+        auto* vibrance_spin = dialog->findChild<QSpinBox*>(QStringLiteral("vibranceVibranceSpin"));
+        auto* saturation_spin = dialog->findChild<QSpinBox*>(QStringLiteral("vibranceSaturationSpin"));
+        CHECK(vibrance_spin != nullptr && saturation_spin != nullptr);
+        CHECK(vibrance_spin->value() == start_vibrance);
+        CHECK(saturation_spin->value() == start_saturation);
+        CHECK(vibrance_spin->minimum() == -100 && vibrance_spin->maximum() == 100);
+        vibrance_spin->setValue(vibrance);
+        saturation_spin->setValue(saturation);
+        process_events_for(150);
+        saw_preview = color_close(canvas_pixel(*canvas, QPoint(70, 70)), preview, 3);
+        dialog->accept();
+        return;
+      }
+      CHECK(false);
+    });
+    require_action(window, action)->trigger();
+    QApplication::processEvents();
+    return saw_preview;
+  };
+
+  // Layer > New Adjustment Layer > Vibrance: Saturation +100 doubles HSL saturation.
+  const auto layer_count = doc.layers().size();
+  CHECK(doc.active_layer_id().has_value());
+  const auto filled_id = doc.active_layer_id().value_or(patchy::LayerId{});
+  CHECK(run_dialog("layerNewVibranceAdjustmentAction", 0, 0, 0, 100, QColor(175, 75, 75)));
+  CHECK(doc.layers().size() == layer_count + 1);
+  CHECK(layer_list->item(0) != nullptr && layer_list->item(0)->text() == QStringLiteral("Vibrance"));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(175, 75, 75), 3));
+
+  // Editing reopens the stored values.
+  CHECK(run_dialog("layerEditAdjustmentAction", 0, 100, 100, 0, QColor(170, 80, 80)));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(170, 80, 80), 3));
+
+  // Image > Adjustments > Vibrance rewrites the pixel layer as one undo step and adds
+  // no layer; the gray it leaves passes through the Vibrance layer unchanged.
+  doc.set_active_layer(filled_id);
+  patchy::ui::MainWindowTestAccess::refresh_layer_ui(window);
+  const auto undo_depth_before = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  CHECK(run_dialog("imageAdjustVibranceAction", 0, 0, 0, -100, QColor(125, 125, 125)));
+  CHECK(doc.layers().size() == layer_count + 1);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth_before + 1);
+  const auto* filled = std::as_const(doc).find_layer(filled_id);
+  CHECK(filled != nullptr);
+  if (filled != nullptr) {
+    const auto* pixel = filled->pixels().pixel(70 - filled->bounds().x, 70 - filled->bounds().y);
+    CHECK(pixel[0] == 125 && pixel[1] == 125 && pixel[2] == 125);
+  }
+  save_widget_artifact("ui_vibrance_adjustment_layer_and_image_command", *canvas);
+}
+
 void ui_posterize_and_threshold_adjustment_layers_create_and_edit() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3588,6 +3663,7 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_posterize_and_threshold_adjustment_layers_create_and_edit",
        ui_posterize_and_threshold_adjustment_layers_create_and_edit},
       {"ui_exposure_adjustment_layer_creates_and_edits", ui_exposure_adjustment_layer_creates_and_edits},
+      {"ui_vibrance_adjustment_layer_and_image_command", ui_vibrance_adjustment_layer_and_image_command},
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},

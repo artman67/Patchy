@@ -8907,6 +8907,14 @@ Mixed selection</source>
         <source>Gradient Map: %1</source>
         <translation>グラデーションマップ: %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>自然な彩度</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>自然な彩度: 自然な彩度 %1、彩度 %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18678,6 +18686,14 @@ Baked into images: %1.</source>
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>グラデーションマップをキャンセルしました</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>自然な彩度(&amp;V)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>自然な彩度をキャンセルしました</translation>
     </message>
 </context>
 <context>

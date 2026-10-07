@@ -8937,6 +8937,14 @@ RGB: %2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>Mapa de degradado: %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Intensidad</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Intensidad: intensidad %1, saturación %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18734,6 +18742,14 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>Se ha cancelado Mapa de degradado</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Intensidad...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Se ha cancelado Intensidad</translation>
     </message>
 </context>
 <context>

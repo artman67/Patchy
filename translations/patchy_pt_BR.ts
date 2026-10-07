@@ -8937,6 +8937,14 @@ RGB: %2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>Mapa de degradê: %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Vibração</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Vibração: vibração %1, saturação %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18734,6 +18742,14 @@ Y: %2
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>Mapa de degradê cancelado</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Vibração...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Vibração cancelada</translation>
     </message>
 </context>
 <context>

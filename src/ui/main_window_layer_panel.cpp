@@ -632,6 +632,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(255, 170, 110);
     case AdjustmentKind::GradientMap:
       return QColor(240, 150, 190);
+    case AdjustmentKind::Vibrance:
+      return QColor(240, 125, 200);
   }
   return QColor(145, 175, 215);
 }
@@ -775,6 +777,10 @@ QString adjustment_settings_summary(const Layer& layer) {
           .arg(QLocale().toString(settings->exposure.exposure_hundredths / 100.0, 'f', 2))
           .arg(QLocale().toString(settings->exposure.offset_ten_thousandths / 10000.0, 'f', 4))
           .arg(QLocale().toString(settings->exposure.gamma_hundredths / 100.0, 'f', 2));
+    case AdjustmentKind::Vibrance:
+      return QObject::tr("Vibrance: vibrance %1, saturation %2")
+          .arg(settings->vibrance.vibrance)
+          .arg(settings->vibrance.saturation);
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
@@ -1055,6 +1061,23 @@ void draw_exposure_adjustment_thumbnail_symbol(QPainter& painter, const QColor& 
   painter.drawRect(square);
 }
 
+void draw_vibrance_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
+  // A downward triangle shading from gray to a vivid color: muted colors gain the
+  // most, the way Photoshop's own Vibrance glyph is a "V".
+  QPainterPath triangle;
+  triangle.moveTo(6.0, 8.0);
+  triangle.lineTo(22.0, 8.0);
+  triangle.lineTo(14.0, 21.0);
+  triangle.closeSubpath();
+  QLinearGradient gradient(QPointF(6.0, 14.0), QPointF(22.0, 14.0));
+  gradient.setColorAt(0.0, QColor(150, 150, 156));
+  gradient.setColorAt(1.0, QColor(235, 60, 175));
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  painter.setPen(QPen(accent.lighter(120), 1.4, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin));
+  painter.setBrush(gradient);
+  painter.drawPath(triangle);
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1303,6 +1326,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::Exposure:
           draw_exposure_adjustment_thumbnail_symbol(painter, accent);
+          break;
+        case AdjustmentKind::Vibrance:
+          draw_vibrance_adjustment_thumbnail_symbol(painter, accent);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);

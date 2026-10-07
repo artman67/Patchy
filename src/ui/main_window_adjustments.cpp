@@ -311,6 +311,9 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_levels_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("&Curves..."), QStringLiteral("CurvesAdjustment"), QStringLiteral("CRV"),
                  [this] { new_curves_adjustment_layer(); });
+  // Photoshop lists Vibrance directly before Hue/Saturation.
+  add_adjustment(QT_TR_NOOP("&Vibrance..."), QStringLiteral("VibranceAdjustment"), QStringLiteral("VIB"),
+                 [this] { new_vibrance_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("&Hue/Saturation..."), QStringLiteral("HueSaturationAdjustment"), QStringLiteral("HSL"),
                  [this] { new_hue_saturation_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("Color &Balance..."), QStringLiteral("ColorBalanceAdjustment"), QStringLiteral("CB"),
@@ -576,6 +579,38 @@ void MainWindow::apply_exposure_adjustment(const ExposureSettings& exposure, boo
     return;
   }
   create_adjustment_layer(tr("Exposure"), settings);
+}
+
+void MainWindow::new_vibrance_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](bool enabled,
+                                                                         const VibranceSettings& vibrance) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::Vibrance;
+    settings.vibrance = clamp_vibrance(vibrance);
+    update_adjustment_layer_preview(tr("Vibrance"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto settings = request_vibrance_settings(this, preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Vibrance"));
+    return;
+  }
+  apply_vibrance_adjustment(*settings, true);
+}
+
+void MainWindow::apply_vibrance_adjustment(const VibranceSettings& vibrance, bool allow_identity) {
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::Vibrance;
+  settings.vibrance = clamp_vibrance(vibrance);
+  if (!allow_identity && !adjustment_has_effect(settings)) {
+    return;
+  }
+  create_adjustment_layer(tr("Vibrance"), settings);
 }
 
 void MainWindow::new_brightness_contrast_adjustment_layer() {
@@ -983,6 +1018,24 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->gradient_map = *result;
+      }
+      break;
+    }
+    case AdjustmentKind::Vibrance: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const VibranceSettings& vibrance) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.vibrance = clamp_vibrance(vibrance);
+        apply_settings(settings);
+      };
+      const auto result = request_vibrance_settings(this, preview_changed, original_settings->vibrance);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->vibrance = clamp_vibrance(*result);
       }
       break;
     }

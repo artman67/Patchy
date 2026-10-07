@@ -146,6 +146,8 @@ QString localized_adjustment_display_name(AdjustmentKind kind) {
       return QObject::tr("Exposure");
     case AdjustmentKind::GradientMap:
       return QObject::tr("Gradient Map");
+    case AdjustmentKind::Vibrance:
+      return QObject::tr("Vibrance");
   }
   return QObject::tr("Adjustment");
 }

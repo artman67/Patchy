@@ -13786,7 +13786,7 @@ void MainWindow::update_document_action_state() {
                            QStringLiteral("tools.smudge"), QStringLiteral("tools.type"),
                            QStringLiteral("image.levels"), QStringLiteral("image.curves"),
                            QStringLiteral("image.hue_saturation"), QStringLiteral("image.color_balance"),
-                           QStringLiteral("image.gradient_map")}) {
+                           QStringLiteral("image.gradient_map"), QStringLiteral("image.vibrance")}) {
       set_command_enabled(id, false);
     }
     for (const auto& command : hotkey_registry_.commands()) {

@@ -8937,6 +8937,14 @@ RGB: %2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>Mappa sfumatura: %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Vividezza</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Vividezza: vividezza %1, saturazione %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18734,6 +18742,14 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>Annullato: Mappa sfumatura</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Vividezza...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Annullato: Vividezza</translation>
     </message>
 </context>
 <context>

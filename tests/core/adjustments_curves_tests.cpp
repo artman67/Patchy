@@ -2290,6 +2290,103 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+void adjustment_vibrance_math_metadata_and_psd_round_trip() {
+  CHECK(patchy::adjustment_kind_key(patchy::AdjustmentKind::Vibrance) == "vibrance");
+  CHECK(patchy::adjustment_kind_from_key("vibrance") == patchy::AdjustmentKind::Vibrance);
+  CHECK(patchy::adjustment_display_name(patchy::AdjustmentKind::Vibrance) == "Vibrance");
+
+  patchy::AdjustmentSettings vibrance;
+  vibrance.kind = patchy::AdjustmentKind::Vibrance;
+  CHECK(!patchy::adjustment_has_effect(vibrance));
+  CHECK(!patchy::build_adjustment_lut(vibrance).has_value());  // mixes channels: per-pixel path
+
+  const auto apply = [](patchy::RgbColor color, int vibrance_value, int saturation) {
+    return patchy::apply_vibrance(color, patchy::VibranceAdjustment{vibrance_value, saturation});
+  };
+  const auto same = [](patchy::RgbColor a, patchy::RgbColor b) {
+    return a.red == b.red && a.green == b.green && a.blue == b.blue;
+  };
+  // Grays carry no hue and never change; full saturation never moves under Vibrance.
+  CHECK(same(apply({128, 128, 128}, 100, 100), {128, 128, 128}));
+  CHECK(same(apply({255, 0, 0}, 100, 0), {255, 0, 0}));
+  CHECK(same(apply({255, 0, 0}, -100, 0), {255, 0, 0}));
+  // HSL saturation 0.2 at lightness 125: Saturation +100 doubles it, -100 is gray.
+  CHECK(same(apply({150, 100, 100}, 0, 100), {175, 75, 75}));
+  CHECK(same(apply({150, 100, 100}, 0, -100), {125, 125, 125}));
+  // Vibrance maps s to 1 - (1 - s)^(2^(v/100)): 0.2 -> 0.36 at +100, 0.1056 at -100.
+  CHECK(same(apply({150, 100, 100}, 100, 0), {170, 80, 80}));
+  CHECK(same(apply({150, 100, 100}, -100, 0), {138, 112, 112}));
+  // A muted color gains relatively more than a strong one of the same hue and lightness.
+  const auto chroma = [](patchy::RgbColor color) {
+    return static_cast<double>(std::max({color.red, color.green, color.blue}) -
+                               std::min({color.red, color.green, color.blue}));
+  };
+  const patchy::RgbColor muted{140, 110, 110};
+  const patchy::RgbColor strong{220, 30, 30};
+  CHECK(chroma(apply(muted, 60, 0)) / chroma(muted) > chroma(apply(strong, 60, 0)) / chroma(strong) + 0.2);
+  // Out-of-range values clamp to Photoshop's slider range.
+  const auto clamped = patchy::clamp_vibrance(patchy::VibranceAdjustment{500, -500});
+  CHECK(clamped.vibrance == 100);
+  CHECK(clamped.saturation == -100);
+
+  vibrance.vibrance = patchy::VibranceAdjustment{35, -20};
+  CHECK(patchy::adjustment_has_effect(vibrance));
+  patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
+  document.add_pixel_layer("Base", solid_rgb(1, 1, 150, 100, 100));
+  patchy::Layer layer(document.allocate_layer_id(), "Vibrance", patchy::LayerKind::Adjustment);
+  layer.set_bounds(patchy::Rect::from_size(document.width(), document.height()));
+  patchy::configure_adjustment_layer(layer, vibrance);
+  document.add_layer(std::move(layer));
+
+  const auto bytes = patchy::psd::DocumentIo::write_layered_rgb8(document);
+  const auto extra = psd_layer_extra_data(bytes, 1);
+  const auto block = psd_layer_block_payload(extra, "vibA");
+  CHECK(block.has_value());
+  // Descriptor version 16, an unnamed 'null' descriptor, 'vibrance' (stringID) = 35,
+  // 'Strt' (charID) = -20, both 'long'.
+  const std::vector<std::uint8_t> expected_block{
+      0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 'n', 'u', 'l', 'l',
+      0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x08, 'v', 'i', 'b', 'r', 'a', 'n', 'c', 'e', 'l', 'o', 'n', 'g',
+      0x00, 0x00, 0x00, 0x23, 0x00, 0x00, 0x00, 0x00, 'S', 't', 'r', 't', 'l', 'o', 'n', 'g', 0xFF, 0xFF, 0xFF, 0xEC};
+  CHECK(block.has_value() && *block == expected_block);
+  CHECK(!psd_layer_block_payload(extra, "plAD").has_value());
+
+  const auto read = patchy::psd::DocumentIo::read(bytes);
+  CHECK(read.layers().size() == 2);
+  const auto restored = patchy::adjustment_settings_from_layer(read.layers()[1]);
+  CHECK(restored.has_value());
+  CHECK(restored->kind == patchy::AdjustmentKind::Vibrance);
+  CHECK(restored->vibrance.vibrance == 35);
+  CHECK(restored->vibrance.saturation == -20);
+  const auto expected_pixel = apply({150, 100, 100}, 35, -20);
+  const auto flattened = patchy::Compositor{}.flatten_rgb8(read);
+  CHECK(flattened.pixel(0, 0)[0] == expected_pixel.red);
+  CHECK(flattened.pixel(0, 0)[1] == expected_pixel.green);
+  CHECK(flattened.pixel(0, 0)[2] == expected_pixel.blue);
+
+  // A payload with an absent key reads it as 0 and, unedited, is written back byte for
+  // byte; an edit regenerates it.
+  std::vector<std::uint8_t> vibrance_only(expected_block.begin(), expected_block.begin() + 42);
+  vibrance_only[21] = 0x01;  // one item: 'vibrance' = 35
+  const auto save_with_imported_block = [&](patchy::VibranceAdjustment settings) {
+    patchy::Document imported(1, 1, patchy::PixelFormat::rgb8());
+    imported.add_pixel_layer("Base", solid_rgb(1, 1, 150, 100, 100));
+    patchy::Layer adjustment(imported.allocate_layer_id(), "Vibrance", patchy::LayerKind::Adjustment);
+    adjustment.set_bounds(patchy::Rect::from_size(1, 1));
+    vibrance.vibrance = settings;
+    patchy::configure_adjustment_layer(adjustment, vibrance);
+    adjustment.unknown_psd_blocks().push_back(patchy::UnknownPsdBlock{"vibA", vibrance_only});
+    imported.add_layer(std::move(adjustment));
+    return patchy::psd::DocumentIo::write_layered_rgb8(imported);
+  };
+  const auto unedited = save_with_imported_block(patchy::VibranceAdjustment{35, 0});
+  CHECK(psd_layer_block_payload(psd_layer_extra_data(unedited, 1), "vibA") == vibrance_only);
+  const auto reread = patchy::adjustment_settings_from_layer(patchy::psd::DocumentIo::read(unedited).layers()[1]);
+  CHECK(reread.has_value() && reread->vibrance.vibrance == 35 && reread->vibrance.saturation == 0);
+  const auto edited = save_with_imported_block(patchy::VibranceAdjustment{36, 0});
+  CHECK(psd_layer_block_payload(psd_layer_extra_data(edited, 1), "vibA") != vibrance_only);
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3040,6 +3137,7 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"psd_posterize_threshold_write_native_blocks_and_round_trip",
        psd_posterize_threshold_write_native_blocks_and_round_trip},
       {"adjustment_exposure_math_metadata_and_psd_round_trip", adjustment_exposure_math_metadata_and_psd_round_trip},
+      {"adjustment_vibrance_math_metadata_and_psd_round_trip", adjustment_vibrance_math_metadata_and_psd_round_trip},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",

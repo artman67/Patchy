@@ -1325,6 +1325,14 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   register_hotkey(curves_action, "image.curves", QKeySequence(Qt::CTRL | Qt::Key_M));
   connect(curves_action, &QAction::triggered, this, [this] { curves_dialog(); });
   register_document_action(curves_action);
+  // Photoshop lists Vibrance directly before Hue/Saturation and gives it no shortcut.
+  auto* vibrance_action = adjustments_menu->addAction(tr("&Vibrance..."));
+  bind_action_text(vibrance_action, QT_TR_NOOP("&Vibrance..."));
+  vibrance_action->setObjectName(QStringLiteral("imageAdjustVibranceAction"));
+  vibrance_action->setIcon(simple_icon(QStringLiteral("VIB")));
+  register_hotkey(vibrance_action, "image.vibrance");
+  connect(vibrance_action, &QAction::triggered, this, [this] { vibrance_dialog(); });
+  register_document_action(vibrance_action);
   auto* hue_saturation_action = adjustments_menu->addAction(tr("&Hue/Saturation..."));
   hue_saturation_action->setObjectName(QStringLiteral("imageAdjustHueSaturationAction"));
   hue_saturation_action->setIcon(simple_icon(QStringLiteral("HSL")));

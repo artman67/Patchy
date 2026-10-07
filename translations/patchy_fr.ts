@@ -8937,6 +8937,14 @@ RVB : %2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>Courbe de transfert de dégradé : %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>Vibrance</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>Vibrance : vibrance %1, saturation %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18734,6 +18742,14 @@ Convertis en images : %1.</translation>
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>Courbe de transfert de dégradé annulée</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>&amp;Vibrance...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>Vibrance annulée</translation>
     </message>
 </context>
 <context>

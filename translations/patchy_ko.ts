@@ -8907,6 +8907,14 @@ RGB: %2, %3, %4</translation>
         <source>Gradient Map: %1</source>
         <translation>그레이디언트 맵: %1</translation>
     </message>
+    <message>
+        <source>Vibrance</source>
+        <translation>생동감</translation>
+    </message>
+    <message>
+        <source>Vibrance: vibrance %1, saturation %2</source>
+        <translation>생동감: 생동감 %1, 채도 %2</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18678,6 +18686,14 @@ Y: %2
     <message>
         <source>Cancelled Gradient Map</source>
         <translation>취소된 그레이디언트 맵</translation>
+    </message>
+    <message>
+        <source>&amp;Vibrance...</source>
+        <translation>생동감(&amp;V)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Vibrance</source>
+        <translation>취소된 생동감</translation>
     </message>
 </context>
 <context>
