@@ -283,6 +283,10 @@ struct ThemePalette {
   // canvas (docs/alignment.md). Magenta like Photoshop's Smart Guides; drawn
   // over artwork, so Light restates it instead of flipping it.
   QColor canvas_snap_guide;
+  // The Paint Symmetry guide: the mirror axes or radial spokes drawn over the
+  // canvas while a symmetry is on (docs/paint-symmetry.md). Drawn over
+  // artwork, so Light restates it instead of flipping it.
+  QColor paint_symmetry_guide;
 
   // Scroll bars. The canvas track slaves to the canvas backdrop rather than the
   // window surface: it is document-window chrome sitting against the pasteboard,

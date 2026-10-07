@@ -951,6 +951,7 @@ void CanvasWidget::clear_brush_stroke_tracking() noexcept {
   brush_stroke_last_stamp_position_.reset();
   brush_stroke_distance_since_last_stamp_ = 0.0;
   mixer_brush_state_ = {};
+  mixer_symmetry_states_.clear();
   mixer_composite_snapshot_ = QImage();
   brush_tip_stroke_state_ = {};
   stroke_dynamics_seed_ = brush_dynamics_test_seed_.has_value()
@@ -1705,6 +1706,7 @@ QRect CanvasWidget::finalize_pending_wet_edges(QRect dirty) {
 
 void CanvasWidget::begin_mixer_brush_stroke() {
   patchy::begin_mixer_brush_stroke(mixer_brush_state_);
+  mixer_symmetry_states_.clear();
   // Sample All Layers: one merged-document snapshot per stroke, captured at
   // stroke start like the retouch tools' retouch_source_snapshot(). The pickup
   // feed then reads this snapshot instead of the active-layer snapshot; still
@@ -1793,10 +1795,10 @@ void CanvasWidget::install_brush_stroke_compositor(EditOptions& options, bool er
   if (!erase && tool_ == CanvasTool::MixerBrush) {
     const auto brush_size = options.brush_size;
     options.dab_primary_provider =
-        [this, brush_size](double x, double y, const EditColor& loaded_color) {
+        [this, brush_size](double x, double y, const EditColor& loaded_color, std::size_t copy) {
           const auto picked = sample_mixer_pickup(x, y, brush_size);
-          return patchy::mixer_brush_dab_color(mixer_brush_state_, x, y, brush_size, loaded_color,
-                                               picked, mixer_wet_, mixer_load_, mixer_mix_);
+          return patchy::mixer_brush_dab_color(mixer_brush_state_for_copy(copy), x, y, brush_size,
+                                               loaded_color, picked, mixer_wet_, mixer_load_, mixer_mix_);
         };
   }
 
@@ -1946,8 +1948,10 @@ CanvasWidget::EffectiveBrushInput CanvasWidget::effective_brush_input() const no
 
 EditOptions CanvasWidget::current_brush_edit_options(const EffectiveBrushInput& brush) const {
   const auto opacity = tool_ == CanvasTool::MixerBrush ? 100 : brush.opacity;
-  return edit_options(primary_color_, secondary_color_, brush.size, opacity, brush.softness, fill_shapes_,
-                      active_layer_locks_transparent_pixels(), *this, brush.roundness, brush.angle_degrees);
+  auto options = edit_options(primary_color_, secondary_color_, brush.size, opacity, brush.softness, fill_shapes_,
+                              active_layer_locks_transparent_pixels(), *this, brush.roundness, brush.angle_degrees);
+  options.symmetry = paint_symmetry_copies();
+  return options;
 }
 
 QRect CanvasWidget::draw_brush_segment(QPointF from, QPointF to, bool erase, bool stamp_endpoint) {
@@ -2079,6 +2083,30 @@ QRect CanvasWidget::draw_airbrush_dab(QPointF point) {
 }
 
 QRect CanvasWidget::draw_mask_brush_segment(QPointF from, QPointF to, bool erase) {
+  auto dirty = draw_mask_brush_segment_copy(from, to, erase, nullptr);
+  const auto copies = paint_symmetry_copies();
+  const auto one_pixel = std::max(1, effective_brush_input().size) / 2 == 0;
+  for (std::size_t index = 0; index < copies.size(); ++index) {
+    if (patchy::paint_symmetry_copy_repeats_segment(copies, index, from.x(), from.y(), to.x(), to.y())) {
+      continue;
+    }
+    const auto& copy = copies[index];
+    // A one-pixel mask line maps its end pixels (as the core engine does), so
+    // the copy lands on the mirrored pixels rather than one pixel off.
+    const auto map = [&copy, one_pixel](QPointF point) {
+      if (one_pixel) {
+        point = QPointF(std::floor(point.x()), std::floor(point.y()));
+      }
+      const auto mapped = QPointF(copy.map_x(point.x(), point.y()), copy.map_y(point.x(), point.y()));
+      return one_pixel ? QPointF(std::round(mapped.x()), std::round(mapped.y())) : mapped;
+    };
+    dirty = united_dirty_rect(dirty, draw_mask_brush_segment_copy(map(from), map(to), erase, &copy));
+  }
+  return dirty;
+}
+
+QRect CanvasWidget::draw_mask_brush_segment_copy(QPointF from, QPointF to, bool erase,
+                                                 const patchy::SymmetryTransform* copy) {
   if (document_ == nullptr) {
     return {};
   }
@@ -2170,8 +2198,13 @@ QRect CanvasWidget::draw_mask_brush_segment(QPointF from, QPointF to, bool erase
                            0.0, 1.0);
       const auto closest_x = from.x() + dx * along;
       const auto closest_y = from.y() + dy * along;
-      const auto distance_x = static_cast<double>(x) - closest_x;
-      const auto distance_y = static_cast<double>(y) - closest_y;
+      auto distance_x = static_cast<double>(x) - closest_x;
+      auto distance_y = static_cast<double>(y) - closest_y;
+      if (copy != nullptr) {
+        const auto copy_x = distance_x;
+        distance_x = copy->unmap_offset_x(copy_x, distance_y);
+        distance_y = copy->unmap_offset_y(copy_x, distance_y);
+      }
       auto coverage = brush_shape_coverage(distance_x, distance_y, radius, brush.softness, brush.roundness,
                                            brush.angle_degrees);
       if (selection_clips_grayscale_edits()) {

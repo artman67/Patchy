@@ -9064,15 +9064,15 @@ RVB : %2, %3, %4</translation>
     </message>
     <message>
         <source>Eyedropper: click the image to sample a color</source>
-        <translation>Pipette : cliquez sur l'image pour échantillonner une couleur</translation>
+        <translation>Pipette : cliquez sur l&apos;image pour échantillonner une couleur</translation>
     </message>
     <message>
         <source>Add to Sample (Shift-click)</source>
-        <translation>Ajouter à l'échantillon (Shift-clic)</translation>
+        <translation>Ajouter à l&apos;échantillon (Shift-clic)</translation>
     </message>
     <message>
         <source>Subtract from Sample (%ALT%-click)</source>
-        <translation>Soustraire de l'échantillon (%ALT%-clic)</translation>
+        <translation>Soustraire de l&apos;échantillon (%ALT%-clic)</translation>
     </message>
     <message>
         <source>Invert</source>
@@ -18967,7 +18967,59 @@ Convertis en images : %1.</translation>
     </message>
     <message>
         <source>Color Range selected no pixels</source>
-        <translation>La plage de couleurs n'a sélectionné aucun pixel</translation>
+        <translation>La plage de couleurs n&apos;a sélectionné aucun pixel</translation>
+    </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>Symétrie mandala</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>Symétrie radiale</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>Nombre de segments :</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>Symétrie de peinture</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>Symétrie désactivée</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>Double axe</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>Diagonale</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>Radiale...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>Mandala...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>Transformer la symétrie</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>Faites glisser le centre pour déplacer la symétrie, ou faites glisser ailleurs pour la faire pivoter (Maj aimante l&apos;angle). Enter applique, Esc annule.</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>Réinitialiser la symétrie</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>Masquer la symétrie</translation>
     </message>
 </context>
 <context>

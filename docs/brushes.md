@@ -86,6 +86,10 @@ The Mixer Brush's limited continuous-pickup engine, its Photoshop calibration re
 
 The History Brush (Y) rides this engine like Pattern Stamp, painting from a history state instead of a tile. Its source model, refusal rules, blend, and patent note live in [history-brush.md](history-brush.md).
 
+## Paint Symmetry
+
+Mirrored and radial painting for the Brush, Mixer Brush, and Eraser (the options-bar butterfly menu, `EditOptions::symmetry`, Transform Symmetry, and the patent boundary) lives in [paint-symmetry.md](paint-symmetry.md).
+
 ## Healing family
 
 The Healing Brush, Spot Healing, the Patch tool, and the shared retouch Sample All Layers option live in [healing.md](healing.md), together with their binding legal envelope (classic user-directed frequency separation only; the shared `healing_sample` math is promoted to `canvas_widget_shared.cpp`).

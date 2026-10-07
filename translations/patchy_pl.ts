@@ -19025,6 +19025,58 @@ Y: %2
         <source>Color Range selected no pixels</source>
         <translation>Zakres koloru nie zaznaczył żadnych pikseli</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>Symetria mandali</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>Symetria promienista</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>Liczba segmentów:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>Symetria malowania</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>Symetria wyłączona</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>Dwie osie</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>Ukośna</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>Promienista...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>Mandala...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>Przekształć symetrię</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>Przeciągnij środek, aby przesunąć symetrię, lub przeciągnij w innym miejscu, aby ją obrócić (Shift przyciąga kąt). Enter zatwierdza, Esc anuluje.</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>Przywróć symetrię</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>Ukryj symetrię</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

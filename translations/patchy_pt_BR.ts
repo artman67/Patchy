@@ -18969,6 +18969,58 @@ Y: %2
         <source>Color Range selected no pixels</source>
         <translation>Intervalo de cores não selecionou nenhum pixel</translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation>Simetria de mandala</translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation>Simetria radial</translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation>Número de segmentos:</translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation>Simetria de pintura</translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation>Simetria desativada</translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation>Eixo duplo</translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation>Diagonal</translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation>Radial...</translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation>Mandala...</translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation>Transformar simetria</translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation>Arraste o centro para mover a simetria ou arraste em outro lugar para girá-la (Shift ajusta o ângulo). Enter aplica; Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation>Redefinir simetria</translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation>Ocultar simetria</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

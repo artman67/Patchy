@@ -463,6 +463,9 @@ void CanvasWidget::set_tool(CanvasTool tool) {
     clear_move_hover_outline();
     mixer_brush_state_ = {};
     rotating_view_ = false;
+    if (!tool_uses_paint_symmetry(tool)) {
+      end_paint_symmetry_transform(true);  // tool switches commit, like a path transform
+    }
   }
   tool_ = tool;
   // Each selection tool keeps its own combine mode; surface this tool's stored

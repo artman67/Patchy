@@ -36,6 +36,9 @@ QIcon up_direction_arrow_icon(int direction);
 // Layer > Arrange > Align glyphs (also the Move tool's options-bar buttons):
 // an anchor line with two bars of different length pushed against it.
 QIcon align_edge_icon(AlignEdge edge);
+// The options-bar Paint Symmetry button: a butterfly whose body is the mirror
+// axis (an original glyph; Photoshop's button shows a butterfly too).
+QIcon paint_symmetry_icon();
 
 // A one-off procedural mark: a glyph outside the shared icon vocabulary, drawn by
 // the caller against an `authored_size` square area with the ink handed to it.

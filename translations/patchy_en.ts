@@ -18919,6 +18919,58 @@ Baked into images: %1.</source>
         <source>Color Range selected no pixels</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Mandala Symmetry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radial Symmetry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Segment count:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Paint symmetry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Symmetry Off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dual Axis</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Diagonal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radial...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mandala...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Transform Symmetry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag the center to move the symmetry or drag elsewhere to rotate it (Shift snaps). Enter applies, Esc cancels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset Symmetry</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hide Symmetry</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

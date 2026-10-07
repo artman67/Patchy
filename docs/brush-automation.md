@@ -25,6 +25,8 @@ manual deletion, locking or document closure fails cleanly on resume. See
 [automation-feedback.md](automation-feedback.md) for history and API lifetime rules.
 Focus loss during a native script stroke skips manual gesture cleanup: zoom-field
 focus or switching windows must not reset its coverage, spacing, or Mixer pickup.
+The artist's Paint Symmetry never replicates native script strokes; a script that
+wants mirrored paint sends the copies itself (see [paint-symmetry.md](paint-symmetry.md)).
 
 Brush dynamics follow the engine's existing JSON vocabulary. Sidecar parsing
 remains tolerant for compatibility; API validation is strict before conversion.

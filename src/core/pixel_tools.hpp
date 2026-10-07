@@ -2,10 +2,12 @@
 
 #include "core/brush_tip.hpp"
 #include "core/document.hpp"
+#include "core/paint_symmetry.hpp"
 #include "core/palette.hpp"
 #include "core/rect_utils.hpp"
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <optional>
@@ -57,7 +59,14 @@ struct EditOptions {
   std::function<bool(std::int32_t, std::int32_t)> stroke_pixel_gate;
   // Optional per-dab color source. Called exactly once for each spatial dab, before any of that
   // dab's pixels are written. The returned alpha participates in the ordinary opacity/Flow cap.
-  std::function<EditColor(double, double, const EditColor&)> dab_primary_provider;
+  // Paint Symmetry calls it once per painted copy with that copy's center; the last argument is
+  // the copy index (0 = the stroke itself, i + 1 = symmetry[i]).
+  std::function<EditColor(double, double, const EditColor&, std::size_t)> dab_primary_provider;
+  // Paint Symmetry copies (docs/paint-symmetry.md). Every dab and segment painted with these
+  // options is repeated through each placement, sharing the same per-pixel stroke writer, gate and
+  // observer. A copy whose dab center or segment coincides with an earlier one is skipped so the
+  // axis never double-stamps. Empty = the historical single-stroke path, bit for bit.
+  std::vector<SymmetryTransform> symmetry;
   // Observes the final per-pixel coverage before the stroke writer's alpha gate. The canvas uses
   // this to build one union mask for Wet Edges, so interior stamp boundaries never become edges.
   std::function<void(std::int32_t, std::int32_t, float, const EditColor&)>
