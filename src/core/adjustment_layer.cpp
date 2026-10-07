@@ -1111,6 +1111,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "brightness_contrast";
     case AdjustmentKind::Exposure:
       return "exposure";
+    case AdjustmentKind::ColorLookup:
+      return "color_lookup";
   }
   return "levels";
 }
@@ -1135,6 +1137,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Brightness/Contrast";
     case AdjustmentKind::Exposure:
       return "Exposure";
+    case AdjustmentKind::ColorLookup:
+      return "Color Lookup";
   }
   return "Adjustment";
 }
@@ -1166,6 +1170,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "exposure") {
     return AdjustmentKind::Exposure;
+  }
+  if (key == "color_lookup") {
+    return AdjustmentKind::ColorLookup;
   }
   return std::nullopt;
 }
@@ -1252,6 +1259,10 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureValue, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureOffset, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureGamma, 100)});
+  settings.color_lookup.data =
+      find_color_lookup(metadata_string_or(layer, kLayerMetadataAdjustmentColorLookupId, {}));
+  settings.color_lookup.name = std::string(metadata_string_or(layer, kLayerMetadataAdjustmentColorLookupName, {}));
+  settings.color_lookup.dither = metadata_int_or(layer, kLayerMetadataAdjustmentColorLookupDither, 1) != 0;
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -1362,6 +1373,13 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureValue, exposure.exposure_hundredths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureOffset, exposure.offset_ten_thousandths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureGamma, exposure.gamma_hundredths);
+  // The table lives in the process registry; registering here guarantees the id the
+  // metadata names can be found again.
+  register_color_lookup(settings.color_lookup.data);
+  set_metadata_string(layer, kLayerMetadataAdjustmentColorLookupId,
+                      settings.color_lookup.data != nullptr ? settings.color_lookup.data->id : std::string());
+  set_metadata_string(layer, kLayerMetadataAdjustmentColorLookupName, settings.color_lookup.name);
+  set_metadata_int(layer, kLayerMetadataAdjustmentColorLookupDither, settings.color_lookup.dither ? 1 : 0);
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -1399,7 +1417,7 @@ bool same_ink_adjustment(const AdjustmentSettings& a, const AdjustmentSettings& 
          a.exposure.gamma_hundredths == b.exposure.gamma_hundredths;
 }
 
-RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings);
+RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings, std::int32_t x, std::int32_t y);
 
 void build_ink_adjustment_tables(InkAdjustmentTables& tables, const AdjustmentSettings& settings) {
   tables.settings = settings;
@@ -1412,8 +1430,8 @@ void build_ink_adjustment_tables(InkAdjustmentTables& tables, const AdjustmentSe
   black_settings.curves.red = settings.curves.black_ink;
   for (int value = 0; value < 256; ++value) {
     const auto probe = static_cast<std::uint8_t>(value);
-    const auto adjusted = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, rgb_settings);
-    const auto black = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, black_settings);
+    const auto adjusted = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, rgb_settings, 0, 0);
+    const auto black = apply_adjustment_on_rgb(RgbColor{probe, probe, probe}, black_settings, 0, 0);
     tables.ink[0][static_cast<std::size_t>(value)] = adjusted.red;
     tables.ink[1][static_cast<std::size_t>(value)] = adjusted.green;
     tables.ink[2][static_cast<std::size_t>(value)] = adjusted.blue;
@@ -1458,23 +1476,39 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
       return settings.ink_space->is_gray();
     // Hue/Saturation and Color Balance mix channels (as does Threshold on four inks);
     // Photoshop's CMYK forms of them are not modeled, so they stay on the RGB math.
+    // A Color Lookup 3D LUT is an RGB table by definition (Photoshop offers only its
+    // ICC profile modes in CMYK).
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
+    case AdjustmentKind::ColorLookup:
       return false;
   }
   return false;
 }
 
+RgbColor apply_color_lookup(RgbColor color, const ColorLookupAdjustment& settings, std::int32_t x, std::int32_t y) {
+  if (settings.data == nullptr || !settings.data->table.valid()) {
+    return color;
+  }
+  return settings.data->table.apply(
+      color, settings.dither ? color_lookup_dither_threshold(x, y) : kColorLookupRoundNearest);
+}
+
 RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings) {
+  return apply_adjustment_to_color(color, settings, 0, 0);
+}
+
+RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings, std::int32_t x,
+                                   std::int32_t y) {
   if (adjustment_runs_in_ink_space(settings)) {
     return apply_adjustment_in_ink_space(color, settings);
   }
-  return apply_adjustment_on_rgb(color, settings);
+  return apply_adjustment_on_rgb(color, settings, x, y);
 }
 
 namespace {
 
-RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings) {
+RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& settings, std::int32_t x, std::int32_t y) {
   switch (settings.kind) {
     case AdjustmentKind::Levels:
       return apply_levels(color, settings.levels);
@@ -1511,6 +1545,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return RgbColor{exposure_channel_value(color.red, settings.exposure),
                       exposure_channel_value(color.green, settings.exposure),
                       exposure_channel_value(color.blue, settings.exposure)};
+    case AdjustmentKind::ColorLookup:
+      return apply_color_lookup(color, settings.color_lookup, x, y);
   }
   return color;
 }
@@ -1531,7 +1567,7 @@ void apply_adjustment_to_pixels(PixelBuffer& pixels, const AdjustmentSettings& s
         px[1] = lut->green[px[1]];
         px[2] = lut->blue[px[2]];
       } else {
-        const auto adjusted = apply_adjustment_to_color(RgbColor{px[0], px[1], px[2]}, settings);
+        const auto adjusted = apply_adjustment_to_color(RgbColor{px[0], px[1], px[2]}, settings, x, y);
         px[0] = adjusted.red;
         px[1] = adjusted.green;
         px[2] = adjusted.blue;
@@ -1546,9 +1582,10 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
     return std::nullopt;
   }
   // Hue/Saturation mixes channels through HSL; Threshold compares the mixed
-  // RGB luminance, so a per-channel gray-probe LUT would be wrong for any
-  // colored pixel. Both take the per-pixel path.
-  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold) {
+  // RGB luminance, and a Color Lookup table maps whole colors, so a per-channel
+  // gray-probe LUT would be wrong for any colored pixel. All take the per-pixel path.
+  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
+      settings.kind == AdjustmentKind::ColorLookup) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -1605,6 +1642,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return exposure.exposure_hundredths != 0 || exposure.offset_ten_thousandths != 0 ||
              exposure.gamma_hundredths != 100;
     }
+    case AdjustmentKind::ColorLookup:
+      return settings.color_lookup.data != nullptr && settings.color_lookup.data->table.valid();
   }
   return false;
 }

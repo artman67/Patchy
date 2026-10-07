@@ -2459,7 +2459,7 @@ void composite_adjustment_layer(Target& destination, const Layer& layer, Rect cl
       }
       if (has_blend_if) {
         const auto underlying = destination.sample_color(x, y);
-        auto adjusted = apply_adjustment_to_color(underlying.color, *settings);
+        auto adjusted = apply_adjustment_to_color(underlying.color, *settings, x, y);
         if (lut.has_value()) {
           adjusted = RgbColor{lut->red[underlying.color.red], lut->green[underlying.color.green],
                               lut->blue[underlying.color.blue]};
@@ -3437,7 +3437,8 @@ public:
       return;
     }
     auto* dst = rgb_.data() + index * 3U;
-    const auto adjusted = apply_adjustment_to_color(RgbColor{dst[0], dst[1], dst[2]}, settings);
+    const auto adjusted =
+        apply_adjustment_to_color(RgbColor{dst[0], dst[1], dst[2]}, settings, x + rect_.x, y + rect_.y);
     dst[0] = clamp_byte(static_cast<float>(adjusted.red) * amount + static_cast<float>(dst[0]) * (1.0F - amount));
     dst[1] = clamp_byte(static_cast<float>(adjusted.green) * amount + static_cast<float>(dst[1]) * (1.0F - amount));
     dst[2] = clamp_byte(static_cast<float>(adjusted.blue) * amount + static_cast<float>(dst[2]) * (1.0F - amount));

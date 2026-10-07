@@ -315,6 +315,9 @@ void MainWindow::populate_new_adjustment_layer_menu(QMenu* menu, const QString& 
                  [this] { new_hue_saturation_adjustment_layer(); });
   add_adjustment(QT_TR_NOOP("Color &Balance..."), QStringLiteral("ColorBalanceAdjustment"), QStringLiteral("CB"),
                  [this] { new_color_balance_adjustment_layer(); });
+  // Photoshop ends the color group with Color Lookup (after Channel Mixer).
+  add_adjustment(QT_TR_NOOP("C&olor Lookup..."), QStringLiteral("ColorLookupAdjustment"), QStringLiteral("LUT"),
+                 [this] { new_color_lookup_adjustment_layer(); });
   // No ellipsis: Invert has no settings, so no dialog opens.
   add_adjustment(QT_TR_NOOP("&Invert"), QStringLiteral("InvertAdjustment"), QStringLiteral("INV"),
                  [this] { new_invert_adjustment_layer(); });
@@ -574,6 +577,39 @@ void MainWindow::apply_exposure_adjustment(const ExposureSettings& exposure, boo
     return;
   }
   create_adjustment_layer(tr("Exposure"), settings);
+}
+
+void MainWindow::new_color_lookup_adjustment_layer() {
+  std::optional<LayerId> preview_id;
+  const auto restore_active_layer = document().active_layer_id();
+  const auto preview_changed = [this, &preview_id, restore_active_layer](bool enabled,
+                                                                         const ColorLookupSettings& color_lookup) {
+    AdjustmentSettings settings;
+    settings.kind = AdjustmentKind::ColorLookup;
+    settings.color_lookup = color_lookup;
+    update_adjustment_layer_preview(tr("Color Lookup"), settings, enabled, preview_id, restore_active_layer);
+  };
+
+  auto preview_edit_lock = lock_preview_dialog_edits();
+  const auto settings = request_color_lookup_settings(this, preview_changed);
+  remove_adjustment_layer_preview(preview_id, restore_active_layer);
+  preview_edit_lock.release();
+  if (!settings.has_value()) {
+    statusBar()->showMessage(tr("Cancelled Color Lookup"));
+    return;
+  }
+  // Like Photoshop, a layer with no LUT chosen yet is allowed; it has no effect.
+  apply_color_lookup_adjustment(*settings, true);
+}
+
+void MainWindow::apply_color_lookup_adjustment(const ColorLookupSettings& color_lookup, bool allow_identity) {
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::ColorLookup;
+  settings.color_lookup = color_lookup;
+  if (!allow_identity && !adjustment_has_effect(settings)) {
+    return;
+  }
+  create_adjustment_layer(tr("Color Lookup"), settings);
 }
 
 void MainWindow::new_brightness_contrast_adjustment_layer() {
@@ -919,6 +955,24 @@ void MainWindow::edit_active_adjustment_layer() {
       if (result.has_value()) {
         accepted_settings = *original_settings;
         accepted_settings->exposure = clamp_exposure(*result);
+      }
+      break;
+    }
+    case AdjustmentKind::ColorLookup: {
+      const auto preview_changed = [apply_settings, restore_original_layer, original_settings](
+                                       bool enabled, const ColorLookupSettings& color_lookup) {
+        if (!enabled) {
+          restore_original_layer();
+          return;
+        }
+        auto settings = *original_settings;
+        settings.color_lookup = color_lookup;
+        apply_settings(settings);
+      };
+      const auto result = request_color_lookup_settings(this, preview_changed, original_settings->color_lookup);
+      if (result.has_value()) {
+        accepted_settings = *original_settings;
+        accepted_settings->color_lookup = *result;
       }
       break;
     }

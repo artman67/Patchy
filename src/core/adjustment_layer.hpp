@@ -1,5 +1,6 @@
 #pragma once
 
+#include "core/color_lookup.hpp"
 #include "core/ink_space.hpp"
 #include "core/layer.hpp"
 
@@ -100,6 +101,11 @@ inline constexpr const char* kLayerMetadataAdjustmentThresholdLevel = "patchy.ad
 inline constexpr const char* kLayerMetadataAdjustmentExposureValue = "patchy.adjustment.exposure.value";
 inline constexpr const char* kLayerMetadataAdjustmentExposureOffset = "patchy.adjustment.exposure.offset";
 inline constexpr const char* kLayerMetadataAdjustmentExposureGamma = "patchy.adjustment.exposure.gamma";
+// Color Lookup: the LUT's registry id (see core/color_lookup.hpp), the file name shown
+// in the dialog and written to the PSD, and the Dither option (1/0).
+inline constexpr const char* kLayerMetadataAdjustmentColorLookupId = "patchy.adjustment.color_lookup.id";
+inline constexpr const char* kLayerMetadataAdjustmentColorLookupName = "patchy.adjustment.color_lookup.name";
+inline constexpr const char* kLayerMetadataAdjustmentColorLookupDither = "patchy.adjustment.color_lookup.dither";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastBrightness =
     "patchy.adjustment.brightness_contrast.brightness";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast =
@@ -118,7 +124,8 @@ enum class AdjustmentKind {
   Posterize,
   Threshold,
   BrightnessContrast,
-  Exposure
+  Exposure,
+  ColorLookup
 };
 
 enum class LevelsChannel {
@@ -273,6 +280,18 @@ struct ExposureAdjustment {
 // render of psd-tools' exposure_rgb.psd on all four of its setting triples.
 [[nodiscard]] std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment settings);
 
+// Photoshop's Color Lookup adjustment ('clrL') in its 3DLUT File mode. No table means
+// no LUT chosen yet: the layer has no effect. Dither defaults on, as in Photoshop.
+struct ColorLookupAdjustment {
+  std::shared_ptr<const ColorLookupData> data;
+  std::string name;
+  bool dither{true};
+};
+// One pixel through the table. Dither rounds with a per-position threshold instead
+// of to nearest, so (x, y) must be the pixel's document position.
+[[nodiscard]] RgbColor apply_color_lookup(RgbColor color, const ColorLookupAdjustment& settings, std::int32_t x,
+                                          std::int32_t y);
+
 // Both Photoshop algorithms are modeled. Modern mode (Photoshop's default,
 // use_legacy false) takes brightness -150..150 and contrast -50..100; legacy
 // mode takes -100..100 for both. Old Patchy documents and 'brit'-only PSDs
@@ -299,6 +318,7 @@ struct AdjustmentSettings {
   ThresholdAdjustment threshold{};
   BrightnessContrastAdjustment brightness_contrast{};
   ExposureAdjustment exposure{};
+  ColorLookupAdjustment color_lookup{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.
@@ -360,6 +380,11 @@ void set_curve_points_for_channel(CurvesAdjustment& curves, CurvesChannel channe
 [[nodiscard]] std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& layer);
 void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings);
 [[nodiscard]] RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings);
+// The same at document pixel (x, y). Only Color Lookup's Dither reads the position;
+// renderers pass it so a dithered layer matches across every compositing path.
+[[nodiscard]] RgbColor apply_adjustment_to_color(RgbColor color, const AdjustmentSettings& settings, std::int32_t x,
+                                                 std::int32_t y);
+// Positions (for Color Lookup's Dither) are the buffer's own coordinates.
 void apply_adjustment_to_pixels(PixelBuffer& pixels, const AdjustmentSettings& settings);
 [[nodiscard]] bool adjustment_has_effect(const AdjustmentSettings& settings);
 

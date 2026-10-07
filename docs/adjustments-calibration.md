@@ -48,6 +48,10 @@ Fitted against Photoshop's renders of psd-tools' `adjustments/levels_rgb.psd` an
 - Refuted: the piecewise sRGB curve in place of the plain 2.2 power (up to 7/255 off at +2 stops).
 - Unprobed: Grayscale and CMYK documents (Photoshop adjusts in the document's space; Patchy converts to sRGB on open first) and 16/32-bit sources.
 
+## Color Lookup (October 2026)
+
+3DLUT File mode with .cube tables, tetrahedral interpolation and a position-hash Dither; uncalibrated. Math, `clrL` layout, caps and the patent note: [color-lookup.md](color-lookup.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -71,7 +75,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Color Lookup and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

@@ -341,6 +341,8 @@ void ui_main_window_renders_color_controls() {
   CHECK(require_action(window, "layerNewPosterizeAdjustmentAction") != nullptr);
   CHECK(require_action(window, "layerNewThresholdAdjustmentAction") != nullptr);
   CHECK(require_action(window, "layerNewBrightnessContrastAdjustmentAction") != nullptr);
+  CHECK(require_action(window, "layerNewColorLookupAdjustmentAction") != nullptr);
+  CHECK(require_action(window, "imageAdjustColorLookupAction") != nullptr);
   CHECK(window.findChild<QToolButton*>(QStringLiteral("layerNewAdjustmentButton")) != nullptr);
   // The Layer menu stays short enough for a small browser viewport (wasm) by
   // grouping the new-layer, mask, and arrange sets into submenus; the direct

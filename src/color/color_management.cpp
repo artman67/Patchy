@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdlib>
 #include <stdexcept>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -116,6 +117,75 @@ RgbColor CmykToRgbTransform::convert_single(std::uint8_t cyan_inverted,
 
 const std::string& CmykToRgbTransform::profile_description() const {
   return impl_->description;
+}
+
+std::vector<std::uint8_t> build_color_lookup_device_link(const ColorLookupTable& table,
+                                                        std::string_view description) {
+  if (!table.valid() || table.grid > 255) {
+    return {};
+  }
+  cmsContext context = cmsCreateContext(nullptr, nullptr);
+  if (context == nullptr) {
+    return {};
+  }
+  cmsSetLogErrorHandlerTHR(context, ignore_lcms_error);
+  // Little CMS tables vary the first input (red) slowest; the .cube order varies it fastest.
+  const auto grid = static_cast<std::size_t>(table.grid);
+  std::vector<cmsUInt16Number> clut(grid * grid * grid * 3U);
+  std::size_t out = 0;
+  for (std::size_t red = 0; red < grid; ++red) {
+    for (std::size_t green = 0; green < grid; ++green) {
+      for (std::size_t blue = 0; blue < grid; ++blue) {
+        const auto node = ((blue * grid + green) * grid + red) * 3U;
+        clut[out++] = table.nodes[node];
+        clut[out++] = table.nodes[node + 1U];
+        clut[out++] = table.nodes[node + 2U];
+      }
+    }
+  }
+  std::vector<std::uint8_t> bytes;
+  cmsHPROFILE profile = cmsCreateProfilePlaceholder(context);
+  cmsPipeline* pipeline = cmsPipelineAlloc(context, 3, 3);
+  cmsStage* stage = cmsStageAllocCLut16bit(context, static_cast<cmsUInt32Number>(grid), 3, 3, clut.data());
+  cmsMLU* text = cmsMLUalloc(context, 1);
+  const std::string description_text(description);
+  bool ok = profile != nullptr && pipeline != nullptr && stage != nullptr && text != nullptr;
+  if (ok) {
+    cmsSetProfileVersion(profile, 4.4);
+    cmsSetDeviceClass(profile, cmsSigLinkClass);
+    cmsSetColorSpace(profile, cmsSigRgbData);
+    cmsSetPCS(profile, cmsSigRgbData);
+    cmsSetHeaderRenderingIntent(profile, INTENT_PERCEPTUAL);
+    // lutAtoBType stores A curves, CLUT, B curves: identity curves around the table.
+    ok = cmsPipelineInsertStage(pipeline, cmsAT_END, cmsStageAllocToneCurves(context, 3, nullptr)) != 0;
+    ok = cmsPipelineInsertStage(pipeline, cmsAT_END, stage) != 0 && ok;
+    stage = nullptr;  // linked into the pipeline even when the insert reports failure
+    ok = cmsPipelineInsertStage(pipeline, cmsAT_END, cmsStageAllocToneCurves(context, 3, nullptr)) != 0 && ok;
+  }
+  ok = ok && cmsMLUsetUTF8(text, cmsNoLanguage, cmsNoCountry, description_text.c_str()) != 0 &&
+       cmsWriteTag(profile, cmsSigProfileDescriptionTag, text) != 0 &&
+       cmsWriteTag(profile, cmsSigAToB0Tag, pipeline) != 0;
+  cmsUInt32Number size = 0;
+  if (ok && cmsSaveProfileToMem(profile, nullptr, &size) != 0 && size > 0) {
+    bytes.resize(size);
+    if (cmsSaveProfileToMem(profile, bytes.data(), &size) == 0) {
+      bytes.clear();
+    }
+  }
+  if (stage != nullptr) {
+    cmsStageFree(stage);
+  }
+  if (text != nullptr) {
+    cmsMLUfree(text);
+  }
+  if (pipeline != nullptr) {
+    cmsPipelineFree(pipeline);
+  }
+  if (profile != nullptr) {
+    cmsCloseProfile(profile);
+  }
+  cmsDeleteContext(context);
+  return bytes;
 }
 
 std::shared_ptr<const InkSpace> build_cmyk_ink_space(std::span<const std::uint8_t> profile_bytes,

@@ -1810,6 +1810,151 @@ void ui_exposure_adjustment_layer_creates_and_edits() {
   CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(100, 100, 100), 6));
 }
 
+void ui_color_lookup_adjustment_layer_and_image_command() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto& doc = patchy::ui::MainWindowTestAccess::document(window);
+  auto* layer_list = window.findChild<QListWidget*>(QStringLiteral("layerList"));
+  CHECK(layer_list != nullptr);
+
+  // A self-authored 2-point table that swaps red and blue and inverts green: linear,
+  // so it maps exactly with Dither on. Plus a file that is not a LUT.
+  QDir().mkpath(QStringLiteral("test-artifacts"));
+  const auto lut_path = QFileInfo(QStringLiteral("test-artifacts/ui-color-lookup-swap.cube")).absoluteFilePath();
+  const auto bad_path = QFileInfo(QStringLiteral("test-artifacts/ui-color-lookup-bad.cube")).absoluteFilePath();
+  const auto write_text = [](const QString& path, const QByteArray& text) {
+    QFile file(path);
+    CHECK(file.open(QIODevice::WriteOnly | QIODevice::Truncate));
+    file.write(text);
+  };
+  write_text(lut_path, "LUT_3D_SIZE 2\n0 1 0\n0 1 1\n0 0 0\n0 0 1\n1 1 0\n1 1 1\n1 0 0\n1 0 1\n");
+  write_text(bad_path, "LUT_3D_SIZE 2\n0 0 0\n");
+
+  canvas->set_primary_color(QColor(200, 100, 50));
+  use_solid_fill_settings(canvas);
+  require_action(window, "layerFillForegroundAction")->trigger();
+  QApplication::processEvents();
+  const QColor swapped(50, 155, 200);
+
+  // Picks `path` through the dropdown's Load 3D LUT... entry.
+  const auto load_through_combo = [&](QComboBox* combo, const QString& path) {
+    bool saw_file_dialog = false;
+    QTimer::singleShot(0, [&] {
+      auto* file_dialog =
+          qobject_cast<QFileDialog*>(find_top_level_dialog(QStringLiteral("colorLookupOpenFileDialog")));
+      CHECK(file_dialog != nullptr);
+      if (file_dialog != nullptr) {
+        CHECK(file_dialog->nameFilters().contains(QStringLiteral("Cube LUT (*.cube)")));
+        saw_file_dialog = true;
+        file_dialog->selectFile(path);
+        static_cast<QDialog*>(file_dialog)->accept();
+      }
+    });
+    combo->setCurrentIndex(combo->count() - 1);
+    emit combo->activated(combo->count() - 1);
+    CHECK(saw_file_dialog);
+  };
+
+  // Layer > New Adjustment Layer > Color Lookup: Dither starts on and no LUT is chosen;
+  // a malformed file is refused with a message, a good one previews live.
+  const auto layer_count = doc.layers().size();
+  const auto filled_id = doc.active_layer_id().value_or(patchy::LayerId{});
+  bool saw_error = false;
+  bool saw_preview = false;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = qobject_cast<QDialog*>(find_top_level_dialog(QStringLiteral("patchyColorLookupDialog")));
+    CHECK(dialog != nullptr);
+    if (dialog == nullptr) {
+      return;
+    }
+    auto* combo = dialog->findChild<QComboBox*>(QStringLiteral("colorLookupFileCombo"));
+    auto* dither = dialog->findChild<QCheckBox*>(QStringLiteral("colorLookupDitherCheck"));
+    CHECK(combo != nullptr && dither != nullptr);
+    CHECK(dither->isChecked());
+    CHECK(combo->count() == 2 && combo->currentText() == QStringLiteral("None"));
+    // The refusal is a modal message box: poll for it and close it.
+    QTimer error_poll;
+    error_poll.setInterval(20);
+    QObject::connect(&error_poll, &QTimer::timeout, [&] {
+      if (auto* box = find_top_level_dialog(QStringLiteral("colorLookupLoadErrorMessageBox"));
+          box != nullptr && box->isVisible()) {
+        saw_error = true;
+        error_poll.stop();
+        static_cast<QDialog*>(box)->accept();
+      }
+    });
+    error_poll.start();
+    load_through_combo(combo, bad_path);
+    error_poll.stop();
+    CHECK(combo->count() == 2 && combo->currentIndex() == 0);
+    load_through_combo(combo, lut_path);
+    CHECK(combo->count() == 3 && combo->currentText() == QStringLiteral("ui-color-lookup-swap.cube"));
+    process_events_for(150);
+    saw_preview = color_close(canvas_pixel(*canvas, QPoint(70, 70)), swapped, 1);
+    save_widget_artifact("ui_color_lookup_dialog", *dialog);
+    dialog->accept();
+  });
+  require_action(window, "layerNewColorLookupAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(saw_error);
+  CHECK(saw_preview);
+  CHECK(doc.layers().size() == layer_count + 1);
+  CHECK(layer_list->item(0) != nullptr && layer_list->item(0)->text() == QStringLiteral("Color Lookup"));
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), swapped, 1));
+  save_widget_artifact("ui_color_lookup_layer_panel", *layer_list);
+
+  // Editing reopens the loaded LUT; None previews the original, and Cancel keeps the LUT.
+  bool saw_none_preview = false;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = qobject_cast<QDialog*>(find_top_level_dialog(QStringLiteral("patchyColorLookupDialog")));
+    CHECK(dialog != nullptr);
+    if (dialog == nullptr) {
+      return;
+    }
+    auto* combo = dialog->findChild<QComboBox*>(QStringLiteral("colorLookupFileCombo"));
+    CHECK(combo != nullptr && combo->currentText() == QStringLiteral("ui-color-lookup-swap.cube"));
+    combo->setCurrentIndex(0);
+    emit combo->activated(0);
+    process_events_for(150);
+    saw_none_preview = color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(200, 100, 50), 1);
+    dialog->reject();
+  });
+  require_action(window, "layerEditAdjustmentAction")->trigger();
+  QApplication::processEvents();
+  CHECK(saw_none_preview);
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), swapped, 1));
+
+  // Image > Adjustments > Color Lookup rewrites the pixel layer as one undo step and adds
+  // no layer; the swapped colors then swap back through the Color Lookup layer.
+  doc.set_active_layer(filled_id);
+  patchy::ui::MainWindowTestAccess::refresh_layer_ui(window);
+  const auto undo_depth_before = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  QTimer::singleShot(0, [&] {
+    auto* dialog = qobject_cast<QDialog*>(find_top_level_dialog(QStringLiteral("patchyColorLookupDialog")));
+    CHECK(dialog != nullptr);
+    if (dialog == nullptr) {
+      return;
+    }
+    auto* combo = dialog->findChild<QComboBox*>(QStringLiteral("colorLookupFileCombo"));
+    CHECK(combo != nullptr);
+    load_through_combo(combo, lut_path);
+    dialog->accept();
+  });
+  require_action(window, "imageAdjustColorLookupAction")->trigger();
+  QApplication::processEvents();
+  CHECK(doc.layers().size() == layer_count + 1);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth_before + 1);
+  const auto* filled = std::as_const(doc).find_layer(filled_id);
+  CHECK(filled != nullptr);
+  if (filled != nullptr) {
+    const auto* pixel = filled->pixels().pixel(70 - filled->bounds().x, 70 - filled->bounds().y);
+    CHECK(pixel[0] == 50 && pixel[1] == 155 && pixel[2] == 200);
+  }
+  CHECK(color_close(canvas_pixel(*canvas, QPoint(70, 70)), QColor(200, 100, 50), 1));
+  save_widget_artifact("ui_color_lookup_adjustment_layer_and_image_command", *canvas);
+}
+
 void ui_posterize_and_threshold_adjustment_layers_create_and_edit() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3588,6 +3733,7 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
       {"ui_posterize_and_threshold_adjustment_layers_create_and_edit",
        ui_posterize_and_threshold_adjustment_layers_create_and_edit},
       {"ui_exposure_adjustment_layer_creates_and_edits", ui_exposure_adjustment_layer_creates_and_edits},
+      {"ui_color_lookup_adjustment_layer_and_image_command", ui_color_lookup_adjustment_layer_and_image_command},
       {"ui_brightness_contrast_adjustment_layer_creates_and_edits",
        ui_brightness_contrast_adjustment_layer_creates_and_edits},
       {"ui_levels_dialog_remaps_selected_tonal_range", ui_levels_dialog_remaps_selected_tonal_range},
