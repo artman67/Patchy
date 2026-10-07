@@ -8992,6 +8992,63 @@ RGB：%2, %3, %4</translation>
         <source>History Brush</source>
         <translation>步驟記錄筆刷</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>取樣的顏色</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>中間調</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>黑色背景</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>白色背景</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>快速遮色片</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>顏色範圍</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>選取:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>朦朧:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>顏色範圍預視</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>選取範圍預視:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>滴管：按一下影像以取樣顏色</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>增加至樣本 (按住 Shift 按一下)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>從樣本中減去 (按住 %ALT% 按一下)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>負相</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18839,6 +18896,22 @@ Baked into images: %1.</source>
     <message>
         <source>History Brush source: %1</source>
         <translation>步驟記錄筆刷的來源：%1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>顏色範圍(&amp;N)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>已取消顏色範圍</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>顏色範圍</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>顏色範圍未選取任何像素</translation>
     </message>
 </context>
 <context>

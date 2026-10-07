@@ -1099,6 +1099,15 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
   if (!curves_clipping_mode_.has_value()) {
     draw_mask_display_overlay(painter, target_rect, pixel_aligned_view, pixel_aligned_target_rect);
   }
+  if (!selection_preview_overlay_.isNull() &&
+      selection_preview_overlay_.size() == QSize(document_->width(), document_->height())) {
+    // Drawn like the Quick Mask overlay: one full-document image, no mip chain.
+    if (pixel_aligned_view) {
+      painter.drawImage(pixel_aligned_target_rect, selection_preview_overlay_, selection_preview_overlay_.rect());
+    } else {
+      painter.drawImage(target_rect, selection_preview_overlay_, QRectF(selection_preview_overlay_.rect()));
+    }
+  }
   painter.restore();
 
   if (moving_layer_ && !moving_layers_.empty() && !draw_transform_overlay) {

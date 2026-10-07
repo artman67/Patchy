@@ -8992,6 +8992,63 @@ Mixed selection</source>
         <source>History Brush</source>
         <translation>ヒストリーブラシ</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>指定色域</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>中間調</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>黒マット</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>白マット</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>クイックマスク</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>色域指定</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>選択:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>許容量:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>色域指定のプレビュー</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>選択範囲のプレビュー:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>スポイト: 画像をクリックして色をサンプリングします</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>サンプルに追加 (Shiftクリック)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>サンプルから削除 (%ALT%クリック)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>反転</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18839,6 +18896,22 @@ Baked into images: %1.</source>
     <message>
         <source>History Brush source: %1</source>
         <translation>ヒストリーブラシのソース：%1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>色域指定(&amp;N)...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>色域指定をキャンセルしました</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>色域指定</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>色域指定で選択されたピクセルはありません</translation>
     </message>
 </context>
 <context>

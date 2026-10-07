@@ -9022,6 +9022,63 @@ RGB: %2, %3, %4</translation>
         <source>History Brush</source>
         <translation>Protokoll-Pinsel</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>Aufgenommene Farben</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>Mitteltöne</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>Schwarze Basis</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>Weiße Basis</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>Maskierungsmodus</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Farbbereich</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>Auswahl:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>Toleranz:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>Farbbereich-Vorschau</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>Auswahlvorschau:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>Pipette: auf das Bild klicken, um eine Farbe aufzunehmen</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>Zur Aufnahme hinzufügen (Shift-Klick)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>Von Aufnahme subtrahieren (%ALT%-Klick)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>Umkehren</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18895,6 +18952,22 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>History Brush source: %1</source>
         <translation>Quelle für Protokoll-Pinsel: %1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>&amp;Farbbereich...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>Farbbereich abgebrochen</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Farbbereich</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>Farbbereich hat keine Pixel ausgewählt</translation>
     </message>
 </context>
 <context>

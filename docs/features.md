@@ -17,7 +17,7 @@
 - Common raster editing tools, including Brush with Flow and timed Airbrush buildup, Healing Brush, Spot Healing, Patch, Clone Stamp, History Brush, Remove Object, Dodge, Burn, Sponge, Blur, Sharpen, Smudge, Eraser, selections, transforms, gradients, and shapes
 - Brush tip libraries with Photoshop .abr import, custom tips from selections, spacing, angle, roundness, texture, dual-brush effects, wet edges, and dynamics for size, opacity, flow, scatter, and color. Supported dynamics can respond to pen pressure, tilt, rotation, or stroke direction
 - Mixer Brush with Wet, Load, Mix, Flow, and Sample All Layers controls, plus stroke smoothing with pulled-string and catch-up options
-- Rectangular and elliptical marquees, lassos including Magnetic Lasso, Magic Wand, Quick Select, and paintable Quick Mask selections, with feathering and selection adjustments
+- Rectangular and elliptical marquees, lassos including Magnetic Lasso, Magic Wand, Quick Select, Color Range (sampled colors, color families, and tonal ranges with Fuzziness), and paintable Quick Mask selections, with feathering and selection adjustments
 - Move tool layer selection: drag a rectangle to select overlapping layers, Shift-click to toggle individual layers, or right-click to choose among the layers under the pointer, with a selected-layer count in the status bar
 - Guides, grids, snapping, and layer alignment/distribution, plus interactive cropping with aspect-ratio presets and straightening
 - Filter Gallery with 32 effects, live full-resolution preview, ordered effect stacks, favorites, and reusable Saved Looks, plus a manual Liquify workspace with warp, twirl, pucker, bloat, and freeze brushes

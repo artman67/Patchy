@@ -9052,6 +9052,63 @@ RGB: %2, %3, %4</translation>
         <source>History Brush</source>
         <translation>Архивная кисть</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>По образцам</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>Средние тона</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>Черный фон</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>Белый фон</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>Быстрая маска</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Цветовой диапазон</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>Выбрать:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>Разброс:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>Просмотр цветового диапазона</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>Просмотр выделения:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>Пипетка: щёлкните изображение, чтобы взять образец цвета</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>Добавить к образцу (щелчок с Shift)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>Вычесть из образца (щелчок с %ALT%)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>Инвертировать</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18951,6 +19008,22 @@ Y: %2
     <message>
         <source>History Brush source: %1</source>
         <translation>Источник архивной кисти: %1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>&amp;Цветовой диапазон...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>Отмененный цветовой диапазон</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Цветовой диапазон</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>Цветовой диапазон не выделил ни одного пикселя</translation>
     </message>
 </context>
 <context>

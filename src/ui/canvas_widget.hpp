@@ -1249,6 +1249,9 @@ public:
                                       QCursor cursor = Qt::CrossCursor);
   void clear_transient_read_interaction();
   [[nodiscard]] bool has_transient_read_interaction() const noexcept;
+  // Select > Color Range's Selection Preview: a document-size premultiplied image drawn
+  // over the composite while the dialog is open. A null image clears it.
+  void set_selection_preview_overlay(QImage overlay);
   void set_curves_clipping_preview(std::optional<CurvesClippingMode> mode,
                                    std::optional<CurvesChannel> channel = std::nullopt);
   [[nodiscard]] std::optional<CurvesClippingMode> curves_clipping_preview_mode() const noexcept;
@@ -3018,6 +3021,7 @@ private:
   std::optional<CurvesClippingMode> curves_clipping_mode_{};
   std::optional<CurvesChannel> curves_clipping_channel_{};
   QImage curves_clipping_preview_image_{};
+  QImage selection_preview_overlay_{};
   std::vector<QImage> curves_clipping_display_mip_cache_{};
   qint64 curves_clipping_display_mip_source_key_{0};
   std::function<void()> brush_settings_changed_callback_;

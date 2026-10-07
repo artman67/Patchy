@@ -1453,6 +1453,7 @@ private:
   void expand_selection_dialog();
   void contract_selection_dialog();
   void border_selection_dialog();
+  void color_range_dialog();
   void toggle_quick_mask_mode();
   void refresh_quick_mask_ui();
   void flip_active_layer_horizontal();

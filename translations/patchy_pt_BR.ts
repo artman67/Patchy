@@ -9022,6 +9022,63 @@ RGB: %2, %3, %4</translation>
         <source>History Brush</source>
         <translation>Pincel do histórico</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>Cores da amostra</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>Meios-tons</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>Fosco preto</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>Fosco branco</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>Máscara Rápida</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Intervalo de cores</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>Selecionar:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>Tolerância:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>Visualização do intervalo de cores</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>Visualização da seleção:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>Conta-gotas: clique na imagem para amostrar uma cor</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>Adicionar à amostra (Shift-clique)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>Subtrair da amostra (%ALT%-clique)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>Inverter</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18895,6 +18952,22 @@ Y: %2
     <message>
         <source>History Brush source: %1</source>
         <translation>Origem do pincel do histórico: %1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>I&amp;ntervalo de cores...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>Intervalo de cores cancelado</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Intervalo de cores</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>Intervalo de cores não selecionou nenhum pixel</translation>
     </message>
 </context>
 <context>

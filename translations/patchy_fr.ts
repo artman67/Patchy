@@ -9022,6 +9022,63 @@ RVB : %2, %3, %4</translation>
         <source>History Brush</source>
         <translation>Forme d&apos;historique</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>Couleurs échantillonnées</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>Tons moyens</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>Cache noir</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>Cache blanc</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>Masque rapide</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Plage de couleurs</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>Sélection :</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>Tolérance :</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>Aperçu de la plage de couleurs</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>Aperçu de la sélection :</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>Pipette : cliquez sur l'image pour échantillonner une couleur</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>Ajouter à l'échantillon (Shift-clic)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>Soustraire de l'échantillon (%ALT%-clic)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>Inverser</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18895,6 +18952,22 @@ Convertis en images : %1.</translation>
     <message>
         <source>History Brush source: %1</source>
         <translation>Source de la Forme d&apos;historique : %1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>Pla&amp;ge de couleurs...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>Plage de couleurs annulée</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Plage de couleurs</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>La plage de couleurs n'a sélectionné aucun pixel</translation>
     </message>
 </context>
 <context>

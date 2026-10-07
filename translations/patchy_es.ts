@@ -9022,6 +9022,63 @@ RGB: %2, %3, %4</translation>
         <source>History Brush</source>
         <translation>Pincel de historia</translation>
     </message>
+    <message>
+        <source>Sampled Colors</source>
+        <translation>Colores muestreados</translation>
+    </message>
+    <message>
+        <source>Midtones</source>
+        <translation>Medios tonos</translation>
+    </message>
+    <message>
+        <source>Black Matte</source>
+        <translation>Mate negro</translation>
+    </message>
+    <message>
+        <source>White Matte</source>
+        <translation>Mate blanco</translation>
+    </message>
+    <message>
+        <source>Quick Mask</source>
+        <translation>Máscara rápida</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Gama de colores</translation>
+    </message>
+    <message>
+        <source>Select:</source>
+        <translation>Seleccionar:</translation>
+    </message>
+    <message>
+        <source>Fuzziness:</source>
+        <translation>Tolerancia:</translation>
+    </message>
+    <message>
+        <source>Color Range preview</source>
+        <translation>Vista previa de Gama de colores</translation>
+    </message>
+    <message>
+        <source>Selection Preview:</source>
+        <translation>Previsualización de selección:</translation>
+    </message>
+    <message>
+        <source>Eyedropper: click the image to sample a color</source>
+        <translation>Cuentagotas: haga clic en la imagen para muestrear un color</translation>
+    </message>
+    <message>
+        <source>Add to Sample (Shift-click)</source>
+        <translation>Añadir a muestra (Shift+clic)</translation>
+    </message>
+    <message>
+        <source>Subtract from Sample (%ALT%-click)</source>
+        <translation>Restar de muestra (%ALT%+clic)</translation>
+    </message>
+    <message>
+        <source>Invert</source>
+        <comment>Color Range: invert the selection</comment>
+        <translation>Invertir</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18895,6 +18952,22 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>History Brush source: %1</source>
         <translation>Origen del Pincel de historia: %1</translation>
+    </message>
+    <message>
+        <source>Color Ra&amp;nge...</source>
+        <translation>&amp;Gama de colores...</translation>
+    </message>
+    <message>
+        <source>Cancelled Color Range</source>
+        <translation>Se ha cancelado Gama de colores</translation>
+    </message>
+    <message>
+        <source>Color Range</source>
+        <translation>Gama de colores</translation>
+    </message>
+    <message>
+        <source>Color Range selected no pixels</source>
+        <translation>Gama de colores no seleccionó ningún píxel</translation>
     </message>
 </context>
 <context>
