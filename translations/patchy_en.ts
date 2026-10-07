@@ -8898,6 +8898,132 @@ RGB: %2, %3, %4</source>
         <source>Ratio</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18607,6 +18733,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

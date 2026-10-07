@@ -8939,6 +8939,132 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation>Теплый фильтр (85)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation>Теплый фильтр (LBA)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation>Теплый фильтр (81)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation>Холодный фильтр (80)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation>Холодный фильтр (LBB)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation>Холодный фильтр (82)</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation>Красный</translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation>Оранжевый</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation>Желтый</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation>Зеленый</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation>Голубой</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation>Синий</translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation>Фиолетовый</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation>Пурпурный</translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation>Сепия</translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation>Насыщенный красный</translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation>Насыщенный синий</translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation>Насыщенный изумрудный</translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation>Насыщенный желтый</translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation>Под водой</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>Фотофильтр</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>Плотность</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>Фильтр:</translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation>Выбрать цвет фильтра</translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation>Сохранить свечение</translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation>Цвет фотофильтра</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation>Фотофильтр: %1, плотность %2%, свечение сохранено</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation>Фотофильтр: %1, плотность %2%</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18840,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation>&amp;Фотофильтр...</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>Фотофильтр</translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
+        <translation>Фотофильтр отменен</translation>
     </message>
 </context>
 <context>

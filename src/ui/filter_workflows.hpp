@@ -74,6 +74,7 @@ struct ColorBalanceSettings {
 using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
+using PhotoFilterSettings = PhotoFilterAdjustment;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 
 struct FilterControlSpec {
@@ -166,6 +167,12 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<ExposureSettings> request_exposure_settings(
     QWidget* parent, std::function<void(bool, const ExposureSettings&)> preview_changed = {},
     ExposureSettings initial = {});
+[[nodiscard]] std::optional<PhotoFilterSettings> request_photo_filter_settings(
+    QWidget* parent, std::function<void(bool, const PhotoFilterSettings&)> preview_changed = {},
+    PhotoFilterSettings initial = {});
+// The translated name of Photoshop's Photo Filter preset at `index`
+// (photo_filter_preset_colors() order).
+[[nodiscard]] QString photo_filter_preset_name(std::size_t index);
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -202,5 +209,9 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+// The destructive Photo Filter: the adjustment layer's per-pixel function, so the
+// result equals a Photo Filter layer over the same pixels.
+void apply_photo_filter_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                  PhotoFilterSettings settings, const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

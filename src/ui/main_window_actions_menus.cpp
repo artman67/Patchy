@@ -1337,6 +1337,15 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   register_hotkey(color_balance_action, "image.color_balance", QKeySequence(Qt::CTRL | Qt::Key_B));
   connect(color_balance_action, &QAction::triggered, this, [this] { color_balance_dialog(); });
   register_document_action(color_balance_action);
+  // Photoshop lists Photo Filter after Color Balance (and Black & White) and gives it
+  // no shortcut.
+  auto* photo_filter_action = adjustments_menu->addAction(tr("Photo &Filter..."));
+  bind_action_text(photo_filter_action, QT_TR_NOOP("Photo &Filter..."));
+  photo_filter_action->setObjectName(QStringLiteral("imageAdjustPhotoFilterAction"));
+  photo_filter_action->setIcon(simple_icon(QStringLiteral("PF")));
+  register_hotkey(photo_filter_action, "image.photo_filter");
+  connect(photo_filter_action, &QAction::triggered, this, [this] { photo_filter_dialog(); });
+  register_document_action(photo_filter_action);
   add_adjustment_action(QT_TR_NOOP("&Desaturate"), QStringLiteral("imageAdjustDesaturateAction"),
                         QStringLiteral("patchy.filters.desaturate"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_U));

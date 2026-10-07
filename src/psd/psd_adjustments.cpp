@@ -777,6 +777,91 @@ std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& s
   return writer.bytes();
 }
 
+std::optional<AdjustmentSettings> parse_photoshop_photo_filter_adjustment(std::span<const std::uint8_t> payload) {
+  // u16 version, then the color (12 bytes in version 3, 10 in version 2), a u32 density
+  // and a u8 Preserve Luminosity flag.
+  if (payload.size() < 2) {
+    return std::nullopt;
+  }
+  BigEndianReader reader(payload);
+  const auto version = reader.read_u16();
+  if ((version != 2 && version != 3) || payload.size() < (version == 3 ? 19U : 17U)) {
+    return std::nullopt;
+  }
+  PhotoFilterAdjustment photo_filter;
+  if (version == 3) {
+    // Adobe's table calls these three i32 "XYZ"; other PSD readers decode them as
+    // Lab times 100, which matches Photoshop's own Lab filter colors. Unverified.
+    const auto lightness = static_cast<std::int32_t>(reader.read_u32()) / 100.0;
+    const auto a = static_cast<std::int32_t>(reader.read_u32()) / 100.0;
+    const auto b = static_cast<std::int32_t>(reader.read_u32()) / 100.0;
+    if (lightness < 0.0 || lightness > 100.0 || std::abs(a) > 128.0 || std::abs(b) > 128.0) {
+      return std::nullopt;
+    }
+    const auto rgb = srgb8_from_lab(lightness, a, b);
+    photo_filter.color = RgbColor{rgb[0], rgb[1], rgb[2]};
+  } else {
+    // Adobe's color structure: a u16 space, then four u16 components.
+    const auto space = reader.read_u16();
+    std::array<std::uint16_t, 4> component{};
+    for (auto& value : component) {
+      value = reader.read_u16();
+    }
+    const auto byte = [](double unit) {
+      return static_cast<std::uint8_t>(std::clamp(std::lround(unit * 255.0), 0L, 255L));
+    };
+    if (space == 0) {  // RGB, 0..65535
+      photo_filter.color = RgbColor{byte(component[0] / 65535.0), byte(component[1] / 65535.0),
+                                    byte(component[2] / 65535.0)};
+    } else if (space == 2) {  // CMYK, 0 = full ink
+      photo_filter.color = rgb_from_cmyk_ink_fractions(1.0 - component[0] / 65535.0, 1.0 - component[1] / 65535.0,
+                                                       1.0 - component[2] / 65535.0, 1.0 - component[3] / 65535.0);
+    } else if (space == 7) {  // Lab: L 0..10000, a and b signed hundredths
+      const auto rgb = srgb8_from_lab(component[0] / 100.0, static_cast<std::int16_t>(component[1]) / 100.0,
+                                      static_cast<std::int16_t>(component[2]) / 100.0);
+      photo_filter.color = RgbColor{rgb[0], rgb[1], rgb[2]};
+    } else {
+      return std::nullopt;
+    }
+  }
+  photo_filter.density = static_cast<int>(std::min<std::uint32_t>(reader.read_u32(), kPhotoFilterDensityMax));
+  photo_filter.preserve_luminosity = reader.read_u8() != 0;
+  AdjustmentSettings settings;
+  settings.kind = AdjustmentKind::PhotoFilter;
+  settings.photo_filter = clamp_photo_filter(photo_filter);
+  return settings;
+}
+
+std::vector<std::uint8_t> photoshop_photo_filter_payload(const PhotoFilterAdjustment& settings,
+                                                         const UnknownPsdBlock* original) {
+  const auto clamped = clamp_photo_filter(settings);
+  if (original != nullptr) {
+    // Unedited imported payloads re-emit byte-for-byte, which keeps Photoshop's own
+    // color encoding.
+    const auto parsed = parse_photoshop_photo_filter_adjustment(original->payload);
+    if (parsed.has_value() && parsed->photo_filter.color == clamped.color &&
+        parsed->photo_filter.density == clamped.density &&
+        parsed->photo_filter.preserve_luminosity == clamped.preserve_luminosity) {
+      return original->payload;
+    }
+  }
+  // Version 2 with an RGB color structure: every field is defined by Adobe's
+  // specification, unlike version 3's color triple.
+  BigEndianWriter writer;
+  writer.write_u16(2);
+  writer.write_u16(0);
+  writer.write_u16(static_cast<std::uint16_t>(clamped.color.red * 257));
+  writer.write_u16(static_cast<std::uint16_t>(clamped.color.green * 257));
+  writer.write_u16(static_cast<std::uint16_t>(clamped.color.blue * 257));
+  writer.write_u16(0);
+  writer.write_u32(static_cast<std::uint32_t>(clamped.density));
+  writer.write_u8(clamped.preserve_luminosity ? 1 : 0);
+  // Zero padding to a four-byte multiple.
+  writer.write_u8(0);
+  writer.write_u16(0);
+  return writer.bytes();
+}
+
 std::optional<AdjustmentSettings> parse_photoshop_threshold_adjustment(std::span<const std::uint8_t> payload) {
   if (payload.size() < 2) {
     return std::nullopt;

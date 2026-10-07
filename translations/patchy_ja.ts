@@ -8879,6 +8879,132 @@ Mixed selection</source>
         <source>Ratio</source>
         <translation>比率</translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation>暖色系 (85)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation>暖色系 (LBA)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation>暖色系 (81)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation>寒色系 (80)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation>寒色系 (LBB)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation>寒色系 (82)</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation>レッド</translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation>オレンジ</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation>イエロー</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation>グリーン</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation>シアン</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation>ブルー</translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation>バイオレット</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation>マゼンタ</translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation>セピア</translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation>ディープレッド</translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation>ディープブルー</translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation>ディープエメラルド</translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation>ディープイエロー</translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation>水中</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>レンズフィルター</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>適用量</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>フィルター:</translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation>フィルターの色を選択</translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation>輝度を保持</translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation>レンズフィルターの色</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation>レンズフィルター: %1、適用量 %2%、輝度を保持</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation>レンズフィルター: %1、適用量 %2%</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18728,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation>レンズフィルター(&amp;F)...</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>レンズフィルター</translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
+        <translation>レンズフィルターをキャンセルしました</translation>
     </message>
 </context>
 <context>

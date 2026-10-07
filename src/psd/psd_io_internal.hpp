@@ -123,6 +123,12 @@ constexpr std::array<char, 4> kPhotoshopThresholdBlockKey{'t', 'h', 'r', 's'};
 // big-endian float32, then 2 zero pad bytes (psd-tools' exposure_rgb.psd, saved
 // by Photoshop: 00 01 | 40 01 EB 85 | 3D 9E B8 52 | 3F C2 8F 5C | 00 00).
 constexpr std::array<char, 4> kPhotoshopExposureBlockKey{'e', 'x', 'p', 'A'};
+// Photo Filter, per Adobe's PSD specification
+// (https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/): u16 version 2 or 3,
+// the color (version 3: three i32; version 2: a u16 color space and four u16
+// components), u32 density percent, u8 Preserve Luminosity. Patchy writes version 2
+// RGB plus three zero pad bytes (20 bytes).
+constexpr std::array<char, 4> kPhotoshopPhotoFilterBlockKey{'p', 'h', 'f', 'l'};
 // Brightness/Contrast: legacy-mode PS 2026 writes ONLY the 8-byte 'brit'
 // (brightness i16, contrast i16, mean u16 = 127, lab u8 = 0, pad u8 = 0);
 // modern mode writes an all-zero 'brit' plus a 'CgEd' descriptor (u32 version
@@ -567,6 +573,9 @@ std::vector<std::uint8_t> photoshop_threshold_payload(const ThresholdAdjustment&
 std::optional<AdjustmentSettings> parse_photoshop_exposure_adjustment(std::span<const std::uint8_t> payload);
 std::vector<std::uint8_t> photoshop_exposure_payload(const ExposureAdjustment& settings,
                                                      const UnknownPsdBlock* original);
+std::optional<AdjustmentSettings> parse_photoshop_photo_filter_adjustment(std::span<const std::uint8_t> payload);
+std::vector<std::uint8_t> photoshop_photo_filter_payload(const PhotoFilterAdjustment& settings,
+                                                         const UnknownPsdBlock* original);
 std::optional<AdjustmentSettings> parse_photoshop_brightness_contrast_adjustment(
     std::span<const std::uint8_t> payload);
 struct BrightnessContrastDescriptorParse {

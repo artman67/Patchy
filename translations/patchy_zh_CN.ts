@@ -8879,6 +8879,132 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation>加温滤镜 (85)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation>加温滤镜 (LBA)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation>加温滤镜 (81)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation>冷却滤镜 (80)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation>冷却滤镜 (LBB)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation>冷却滤镜 (82)</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation>红</translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation>橙</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation>黄</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation>绿</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation>青</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation>蓝</translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation>紫</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation>洋红</translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation>深褐</translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation>深红</translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation>深蓝</translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation>深祖母绿</translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation>深黄</translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation>水下</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>照片滤镜</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>浓度</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>滤镜:</translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation>选择滤镜颜色</translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation>保留明度</translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation>照片滤镜颜色</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation>照片滤镜：%1，浓度 %2%，保留明度</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation>照片滤镜：%1，浓度 %2%</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18728,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁剪框高度</translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation>照片滤镜(&amp;F)...</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>照片滤镜</translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
+        <translation>已取消照片滤镜</translation>
     </message>
 </context>
 <context>

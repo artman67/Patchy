@@ -630,6 +630,8 @@ QColor adjustment_thumbnail_accent(const Layer& layer) {
       return QColor(250, 225, 120);
     case AdjustmentKind::Exposure:
       return QColor(255, 170, 110);
+    case AdjustmentKind::PhotoFilter:
+      return QColor(240, 160, 70);
   }
   return QColor(145, 175, 215);
 }
@@ -773,6 +775,19 @@ QString adjustment_settings_summary(const Layer& layer) {
           .arg(QLocale().toString(settings->exposure.exposure_hundredths / 100.0, 'f', 2))
           .arg(QLocale().toString(settings->exposure.offset_ten_thousandths / 10000.0, 'f', 4))
           .arg(QLocale().toString(settings->exposure.gamma_hundredths / 100.0, 'f', 2));
+    case AdjustmentKind::PhotoFilter: {
+      const auto& photo_filter = settings->photo_filter;
+      const auto preset = photo_filter_preset_index(photo_filter.color);
+      const auto filter = preset.has_value()
+                              ? photo_filter_preset_name(*preset)
+                              : QColor(photo_filter.color.red, photo_filter.color.green, photo_filter.color.blue)
+                                    .name()
+                                    .toUpper();
+      return (photo_filter.preserve_luminosity ? QObject::tr("Photo Filter: %1, density %2%, preserve luminosity")
+                                               : QObject::tr("Photo Filter: %1, density %2%"))
+          .arg(filter)
+          .arg(photo_filter.density);
+    }
     case AdjustmentKind::BrightnessContrast:
       return QObject::tr("Brightness/Contrast: brightness %1, contrast %2")
           .arg(settings->brightness_contrast.brightness)
@@ -1050,6 +1065,21 @@ void draw_exposure_adjustment_thumbnail_symbol(QPainter& painter, const QColor& 
   painter.drawRect(square);
 }
 
+void draw_photo_filter_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent,
+                                                   const PhotoFilterAdjustment& settings) {
+  // A lens seen head on, tinted with the layer's own filter color.
+  painter.setRenderHint(QPainter::Antialiasing, true);
+  QColor tint(settings.color.red, settings.color.green, settings.color.blue);
+  painter.setPen(QPen(accent.lighter(120), 1.6));
+  painter.setBrush(QColor(31, 37, 46));
+  painter.drawEllipse(QPointF(14.0, 14.0), 7.5, 7.5);
+  painter.setPen(Qt::NoPen);
+  painter.setBrush(tint);
+  painter.drawEllipse(QPointF(14.0, 14.0), 5.0, 5.0);
+  painter.setBrush(QColor(255, 255, 255, 150));
+  painter.drawEllipse(QPointF(12.0, 12.0), 1.6, 1.6);
+}
+
 void draw_threshold_adjustment_thumbnail_symbol(QPainter& painter, const QColor& accent) {
   // A hard vertical black/white split: everything below the level goes black,
   // everything above goes white.
@@ -1280,6 +1310,9 @@ QPixmap layer_content_thumbnail(const Layer& layer, int document_width, int docu
           break;
         case AdjustmentKind::Exposure:
           draw_exposure_adjustment_thumbnail_symbol(painter, accent);
+          break;
+        case AdjustmentKind::PhotoFilter:
+          draw_photo_filter_adjustment_thumbnail_symbol(painter, accent, settings->photo_filter);
           break;
         case AdjustmentKind::BrightnessContrast:
           draw_brightness_contrast_adjustment_thumbnail_symbol(painter, accent);

@@ -2337,6 +2337,103 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+void adjustment_photo_filter_math_metadata_and_psd_round_trip() {
+  CHECK(patchy::adjustment_kind_key(patchy::AdjustmentKind::PhotoFilter) == "photo_filter");
+  CHECK(patchy::adjustment_kind_from_key("photo_filter") == patchy::AdjustmentKind::PhotoFilter);
+  CHECK(patchy::adjustment_display_name(patchy::AdjustmentKind::PhotoFilter) == "Photo Filter");
+
+  // Photoshop's defaults: Warming Filter (85), Density 25, Preserve Luminosity on.
+  patchy::AdjustmentSettings photo_filter;
+  photo_filter.kind = patchy::AdjustmentKind::PhotoFilter;
+  CHECK(photo_filter.photo_filter.color == (patchy::RgbColor{236, 138, 0}));
+  CHECK(photo_filter.photo_filter.density == 25 && photo_filter.photo_filter.preserve_luminosity);
+  CHECK(patchy::photo_filter_preset_index({236, 138, 0}) == std::optional<std::size_t>{0});
+  CHECK(patchy::photo_filter_preset_index({0, 194, 177}) == std::optional<std::size_t>{19});
+  CHECK(!patchy::photo_filter_preset_index({10, 20, 30}).has_value());
+
+  const auto apply = [](patchy::RgbColor color, patchy::RgbColor filter, int density, bool preserve) {
+    return patchy::apply_photo_filter(color, patchy::PhotoFilterAdjustment{filter, density, preserve});
+  };
+  const auto near = [](patchy::RgbColor a, patchy::RgbColor b) {
+    return std::abs(a.red - b.red) <= 1 && std::abs(a.green - b.green) <= 1 && std::abs(a.blue - b.blue) <= 1;
+  };
+  // Without Preserve Luminosity each channel moves toward its product with the filter:
+  // at 100 percent white becomes the filter color, at 25 percent a quarter of the way.
+  CHECK(apply({255, 255, 255}, {236, 138, 0}, 100, false) == (patchy::RgbColor{236, 138, 0}));
+  CHECK(apply({200, 200, 200}, {236, 138, 0}, 25, false) == (patchy::RgbColor{196, 177, 150}));
+  // Preserve Luminosity puts the source's luminosity back on that tint.
+  CHECK(near(apply({200, 200, 200}, {236, 138, 0}, 25, true), {216, 197, 170}));
+  CHECK(apply({0, 0, 0}, {236, 138, 0}, 100, true) == (patchy::RgbColor{0, 0, 0}));
+  // A white filter passes everything.
+  CHECK(apply({90, 140, 30}, {255, 255, 255}, 100, false) == (patchy::RgbColor{90, 140, 30}));
+  photo_filter.photo_filter.color = {255, 255, 255};
+  CHECK(!patchy::adjustment_has_effect(photo_filter));
+  // Density clamps to Photoshop's 1..100.
+  CHECK(patchy::clamp_photo_filter({{0, 0, 0}, 0, true}).density == 1);
+  CHECK(patchy::clamp_photo_filter({{0, 0, 0}, 500, true}).density == 100);
+
+  // Per-channel without Preserve Luminosity (a LUT), channel-mixing with it.
+  photo_filter.photo_filter = patchy::PhotoFilterAdjustment{{236, 138, 0}, 25, false};
+  const auto lut = patchy::build_adjustment_lut(photo_filter);
+  CHECK(lut.has_value() && lut->red[200] == 196 && lut->green[200] == 177 && lut->blue[200] == 150);
+  photo_filter.photo_filter.preserve_luminosity = true;
+  CHECK(!patchy::build_adjustment_lut(photo_filter).has_value());
+
+  // Native phfl: Patchy writes version 2 with an RGB color structure.
+  photo_filter.photo_filter = patchy::PhotoFilterAdjustment{{10, 20, 30}, 60, false};
+  CHECK(patchy::adjustment_has_effect(photo_filter));
+  patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
+  document.add_pixel_layer("Base", solid_rgb(1, 1, 150, 100, 100));
+  patchy::Layer layer(document.allocate_layer_id(), "Photo Filter", patchy::LayerKind::Adjustment);
+  layer.set_bounds(patchy::Rect::from_size(document.width(), document.height()));
+  patchy::configure_adjustment_layer(layer, photo_filter);
+  document.add_layer(std::move(layer));
+  const auto bytes = patchy::psd::DocumentIo::write_layered_rgb8(document);
+  const auto extra = psd_layer_extra_data(bytes, 1);
+  const auto block = psd_layer_block_payload(extra, "phfl");
+  // Version 2, color space 0 (RGB) with 16-bit components, density 60, flag 0, padding.
+  const std::vector<std::uint8_t> expected_block{0x00, 0x02, 0x00, 0x00, 0x0A, 0x0A, 0x14, 0x14, 0x1E, 0x1E,
+                                                 0x00, 0x00, 0x00, 0x00, 0x00, 0x3C, 0x00, 0x00, 0x00, 0x00};
+  CHECK(block.has_value() && *block == expected_block);
+  CHECK(!psd_layer_block_payload(extra, "plAD").has_value());
+
+  const auto read = patchy::psd::DocumentIo::read(bytes);
+  CHECK(read.layers().size() == 2);
+  const auto restored = patchy::adjustment_settings_from_layer(read.layers()[1]);
+  CHECK(restored.has_value());
+  CHECK(restored->kind == patchy::AdjustmentKind::PhotoFilter);
+  CHECK(restored->photo_filter.color == (patchy::RgbColor{10, 20, 30}));
+  CHECK(restored->photo_filter.density == 60 && !restored->photo_filter.preserve_luminosity);
+  const auto expected_pixel = apply({150, 100, 100}, {10, 20, 30}, 60, false);
+  const auto flattened = patchy::Compositor{}.flatten_rgb8(read);
+  CHECK(flattened.pixel(0, 0)[0] == expected_pixel.red);
+  CHECK(flattened.pixel(0, 0)[1] == expected_pixel.green);
+  CHECK(flattened.pixel(0, 0)[2] == expected_pixel.blue);
+
+  // Version 3 (three i32, read as Lab times 100: here L 100 = white) parses, and an
+  // unedited imported block is written back byte for byte; an edit regenerates it.
+  const std::vector<std::uint8_t> version3{0x00, 0x03, 0x00, 0x00, 0x27, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                           0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x28, 0x01, 0x00};
+  const auto save_with_imported_block = [&](patchy::PhotoFilterAdjustment settings) {
+    patchy::Document imported(1, 1, patchy::PixelFormat::rgb8());
+    imported.add_pixel_layer("Base", solid_rgb(1, 1, 150, 100, 100));
+    patchy::Layer adjustment(imported.allocate_layer_id(), "Photo Filter", patchy::LayerKind::Adjustment);
+    adjustment.set_bounds(patchy::Rect::from_size(1, 1));
+    photo_filter.photo_filter = settings;
+    patchy::configure_adjustment_layer(adjustment, photo_filter);
+    adjustment.unknown_psd_blocks().push_back(patchy::UnknownPsdBlock{"phfl", version3});
+    imported.add_layer(std::move(adjustment));
+    return patchy::psd::DocumentIo::write_layered_rgb8(imported);
+  };
+  const auto unedited = save_with_imported_block({{255, 255, 255}, 40, true});
+  CHECK(psd_layer_block_payload(psd_layer_extra_data(unedited, 1), "phfl") == version3);
+  const auto reread = patchy::adjustment_settings_from_layer(patchy::psd::DocumentIo::read(unedited).layers()[1]);
+  CHECK(reread.has_value() && reread->photo_filter.color == (patchy::RgbColor{255, 255, 255}) &&
+        reread->photo_filter.density == 40 && reread->photo_filter.preserve_luminosity);
+  const auto edited = save_with_imported_block({{255, 255, 255}, 41, true});
+  CHECK(psd_layer_block_payload(psd_layer_extra_data(edited, 1), "phfl") != version3);
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3087,6 +3184,8 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"psd_posterize_threshold_write_native_blocks_and_round_trip",
        psd_posterize_threshold_write_native_blocks_and_round_trip},
       {"adjustment_exposure_math_metadata_and_psd_round_trip", adjustment_exposure_math_metadata_and_psd_round_trip},
+      {"adjustment_photo_filter_math_metadata_and_psd_round_trip",
+       adjustment_photo_filter_math_metadata_and_psd_round_trip},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",

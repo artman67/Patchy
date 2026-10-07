@@ -8879,6 +8879,132 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>비율</translation>
     </message>
+    <message>
+        <source>Warming Filter (85)</source>
+        <translation>따뜻한 필터(85)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (LBA)</source>
+        <translation>따뜻한 필터(LBA)</translation>
+    </message>
+    <message>
+        <source>Warming Filter (81)</source>
+        <translation>따뜻한 필터(81)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (80)</source>
+        <translation>차가운 필터(80)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (LBB)</source>
+        <translation>차가운 필터(LBB)</translation>
+    </message>
+    <message>
+        <source>Cooling Filter (82)</source>
+        <translation>차가운 필터(82)</translation>
+    </message>
+    <message>
+        <source>Red</source>
+        <comment>photo filter</comment>
+        <translation>빨강</translation>
+    </message>
+    <message>
+        <source>Orange</source>
+        <comment>photo filter</comment>
+        <translation>주황</translation>
+    </message>
+    <message>
+        <source>Yellow</source>
+        <comment>photo filter</comment>
+        <translation>노랑</translation>
+    </message>
+    <message>
+        <source>Green</source>
+        <comment>photo filter</comment>
+        <translation>녹색</translation>
+    </message>
+    <message>
+        <source>Cyan</source>
+        <comment>photo filter</comment>
+        <translation>녹청</translation>
+    </message>
+    <message>
+        <source>Blue</source>
+        <comment>photo filter</comment>
+        <translation>파랑</translation>
+    </message>
+    <message>
+        <source>Violet</source>
+        <comment>photo filter</comment>
+        <translation>보라</translation>
+    </message>
+    <message>
+        <source>Magenta</source>
+        <comment>photo filter</comment>
+        <translation>마젠타</translation>
+    </message>
+    <message>
+        <source>Sepia</source>
+        <comment>photo filter</comment>
+        <translation>세피아</translation>
+    </message>
+    <message>
+        <source>Deep Red</source>
+        <comment>photo filter</comment>
+        <translation>진한 빨강</translation>
+    </message>
+    <message>
+        <source>Deep Blue</source>
+        <comment>photo filter</comment>
+        <translation>진한 파랑</translation>
+    </message>
+    <message>
+        <source>Deep Emerald</source>
+        <comment>photo filter</comment>
+        <translation>진한 에메랄드</translation>
+    </message>
+    <message>
+        <source>Deep Yellow</source>
+        <comment>photo filter</comment>
+        <translation>진한 노랑</translation>
+    </message>
+    <message>
+        <source>Underwater</source>
+        <comment>photo filter</comment>
+        <translation>수중</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>포토 필터</translation>
+    </message>
+    <message>
+        <source>Density</source>
+        <translation>밀도</translation>
+    </message>
+    <message>
+        <source>Filter:</source>
+        <translation>필터:</translation>
+    </message>
+    <message>
+        <source>Choose the filter color</source>
+        <translation>필터 색상 선택</translation>
+    </message>
+    <message>
+        <source>Preserve Luminosity</source>
+        <translation>광도 유지</translation>
+    </message>
+    <message>
+        <source>Photo Filter Color</source>
+        <translation>포토 필터 색상</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%, preserve luminosity</source>
+        <translation>포토 필터: %1, 밀도 %2%, 광도 유지</translation>
+    </message>
+    <message>
+        <source>Photo Filter: %1, density %2%</source>
+        <translation>포토 필터: %1, 밀도 %2%</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18728,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Photo &amp;Filter...</source>
+        <translation>포토 필터(&amp;F)...</translation>
+    </message>
+    <message>
+        <source>Photo Filter</source>
+        <translation>포토 필터</translation>
+    </message>
+    <message>
+        <source>Cancelled Photo Filter</source>
+        <translation>취소된 포토 필터</translation>
     </message>
 </context>
 <context>
