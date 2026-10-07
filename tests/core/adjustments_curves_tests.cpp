@@ -2334,6 +2334,112 @@ void adjustment_exposure_math_metadata_and_psd_round_trip() {
   CHECK(std::abs(static_cast<int>(flattened.pixel(0, 0)[2]) - 227) <= 1);
 }
 
+void adjustment_channel_mixer_math_metadata_and_psd_round_trip() {
+  CHECK(patchy::adjustment_kind_key(patchy::AdjustmentKind::ChannelMixer) == "channel_mixer");
+  CHECK(patchy::adjustment_kind_from_key("channel_mixer") == patchy::AdjustmentKind::ChannelMixer);
+  CHECK(patchy::adjustment_display_name(patchy::AdjustmentKind::ChannelMixer) == "Channel Mixer");
+
+  // Fresh mixers are the identity and take the per-pixel path (outputs mix channels).
+  patchy::AdjustmentSettings mixer;
+  mixer.kind = patchy::AdjustmentKind::ChannelMixer;
+  CHECK(!patchy::adjustment_has_effect(mixer));
+  CHECK(!patchy::build_adjustment_lut(mixer).has_value());
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 30}, mixer) == (patchy::RgbColor{200, 50, 30}));
+  CHECK(mixer.channel_mixer.outputs[0].total() == 100);
+
+  // out = sum(source% * channel) + constant% * 255, rounded and clamped.
+  auto& red = mixer.channel_mixer.outputs[0];
+  red = {0, 0, 100, 0};
+  CHECK(patchy::adjustment_has_effect(mixer));
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 30}, mixer) == (patchy::RgbColor{30, 50, 30}));
+  red = {50, 50, 0, 10};  // 100 + 25 + 25.5 = 150.5
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 30}, mixer).red == 151);
+  red = {100, 0, 0, -50};
+  CHECK(patchy::apply_adjustment_to_color({100, 50, 30}, mixer).red == 0);
+  red = {200, 0, 0, 0};
+  CHECK(patchy::apply_adjustment_to_color({200, 50, 30}, mixer).red == 255);
+
+  // Monochrome sends the Gray mix (Photoshop's 40/40/20 when first ticked) to every
+  // channel, and the canonical form copies it into the outputs.
+  patchy::ChannelMixerAdjustment mono;
+  mono.monochrome = true;
+  CHECK(patchy::channel_mixer_has_effect(mono));
+  CHECK(patchy::apply_channel_mixer({200, 50, 30}, mono) == (patchy::RgbColor{106, 106, 106}));
+  const auto canonical = patchy::clamp_channel_mixer(mono);
+  CHECK(canonical.outputs[2] == (patchy::ChannelMixerChannel{40, 40, 20, 0}));
+  const auto clamped = patchy::clamp_channel_mixer(
+      patchy::ChannelMixerAdjustment{{{{999, -999, 5, 201}, {0, 100, 0, 0}, {0, 0, 100, 0}}}, {}, false});
+  CHECK(clamped.outputs[0] == (patchy::ChannelMixerChannel{200, -200, 5, 200}));
+
+  // Metadata and the native 'mixr' block: version 1, monochrome, then red, green, blue
+  // and a zero black output record of (red, green, blue, black, constant) i16s.
+  red = {-5, 6, 120, -7};
+  mixer.channel_mixer.outputs[2] = {0, 0, 80, 0};
+  patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
+  document.add_pixel_layer("Base", solid_rgb(1, 1, 200, 50, 100));
+  patchy::Layer layer(document.allocate_layer_id(), "Channel Mixer", patchy::LayerKind::Adjustment);
+  layer.set_bounds(patchy::Rect::from_size(document.width(), document.height()));
+  patchy::configure_adjustment_layer(layer, mixer);
+  document.add_layer(std::move(layer));
+
+  const auto bytes = patchy::psd::DocumentIo::write_layered_rgb8(document);
+  const auto extra = psd_layer_extra_data(bytes, 1);
+  const auto block = psd_layer_block_payload(extra, "mixr");
+  CHECK(block.has_value());
+  CHECK(block->size() == 44U);
+  const std::array<std::uint8_t, 14> head{0x00, 0x01, 0x00, 0x00, 0xFF, 0xFB, 0x00, 0x06,
+                                          0x00, 0x78, 0x00, 0x00, 0xFF, 0xF9};
+  CHECK(std::equal(head.begin(), head.end(), block->begin()));
+  CHECK(std::all_of(block->end() - 10, block->end(), [](std::uint8_t byte) { return byte == 0; }));
+  CHECK(!psd_layer_block_payload(extra, "plAD").has_value());
+
+  const auto read = patchy::psd::DocumentIo::read(bytes);
+  CHECK(read.layers().size() == 2);
+  const auto restored = patchy::adjustment_settings_from_layer(read.layers()[1]);
+  CHECK(restored.has_value());
+  CHECK(restored->kind == patchy::AdjustmentKind::ChannelMixer);
+  CHECK(restored->channel_mixer.outputs == mixer.channel_mixer.outputs);
+  CHECK(!restored->channel_mixer.monochrome);
+  // Red: -10 + 3 + 120 - 17.85 = 95.15; blue: 80% of 100.
+  const auto flattened = patchy::Compositor{}.flatten_rgb8(read);
+  CHECK(flattened.pixel(0, 0)[0] == 95 && flattened.pixel(0, 0)[1] == 50 && flattened.pixel(0, 0)[2] == 80);
+
+  // An unedited import re-emits its block byte for byte (here with a nonzero black
+  // source, as a CMYK mixer carries); an edit regenerates it with the column zeroed.
+  auto patched = bytes;
+  const std::array<std::uint8_t, 4> key{'m', 'i', 'x', 'r'};
+  const auto found = std::search(patched.begin(), patched.end(), key.begin(), key.end());
+  CHECK(found != patched.end());
+  const auto black_source = static_cast<std::size_t>(found - patched.begin()) + 8U + 4U + 7U;
+  patched[black_source] = 0x2A;
+  auto reopened = patchy::psd::DocumentIo::read(patched);
+  const auto resaved = psd_layer_block_payload(
+      psd_layer_extra_data(patchy::psd::DocumentIo::write_layered_rgb8(reopened), 1), "mixr");
+  CHECK(resaved.has_value() && resaved->size() == 44U && (*resaved)[11] == 0x2A);
+
+  // Monochrome: the Gray mix rides the first record (and the two after it).
+  auto edited = *patchy::adjustment_settings_from_layer(reopened.layers()[1]);
+  edited.channel_mixer.monochrome = true;
+  patchy::configure_adjustment_layer(reopened.layers()[1], edited);
+  auto mono_bytes = patchy::psd::DocumentIo::write_layered_rgb8(reopened);
+  const auto regenerated = psd_layer_block_payload(psd_layer_extra_data(mono_bytes, 1), "mixr");
+  CHECK(regenerated.has_value() && regenerated->size() == 44U);
+  const std::array<std::uint8_t, 14> mono_head{0x00, 0x01, 0x00, 0x01, 0x00, 0x28, 0x00, 0x28,
+                                               0x00, 0x14, 0x00, 0x00, 0x00, 0x00};
+  CHECK(std::equal(mono_head.begin(), mono_head.end(), regenerated->begin()));
+  // A monochrome block whose other records differ still reads as one Gray mix.
+  const auto mono_key = std::search(mono_bytes.begin(), mono_bytes.end(), key.begin(), key.end());
+  CHECK(mono_key != mono_bytes.end());
+  mono_bytes[static_cast<std::size_t>(mono_key - mono_bytes.begin()) + 8U + 15U] = 0x63;
+  const auto mono_read = patchy::psd::DocumentIo::read(mono_bytes);
+  const auto mono_settings = patchy::adjustment_settings_from_layer(mono_read.layers()[1]);
+  CHECK(mono_settings.has_value() && mono_settings->channel_mixer.monochrome);
+  CHECK(mono_settings->channel_mixer.gray == (patchy::ChannelMixerChannel{40, 40, 20, 0}));
+  CHECK(mono_settings->channel_mixer.outputs[1] == mono_settings->channel_mixer.gray);
+  // 40% of 200 + 40% of 50 + 20% of 100.
+  CHECK(patchy::Compositor{}.flatten_rgb8(mono_read).pixel(0, 0)[1] == 120);
+}
+
 void psd_posterize_threshold_write_native_blocks_and_round_trip() {
   patchy::Document document(1, 1, patchy::PixelFormat::rgb8());
   document.add_pixel_layer("Base", solid_rgb(1, 1, 100, 100, 100));
@@ -3084,6 +3190,8 @@ std::vector<patchy::test::TestCase> adjustments_curves_tests() {
       {"psd_posterize_threshold_write_native_blocks_and_round_trip",
        psd_posterize_threshold_write_native_blocks_and_round_trip},
       {"adjustment_exposure_math_metadata_and_psd_round_trip", adjustment_exposure_math_metadata_and_psd_round_trip},
+      {"adjustment_channel_mixer_math_metadata_and_psd_round_trip",
+       adjustment_channel_mixer_math_metadata_and_psd_round_trip},
       {"psd_photoshop_posterize_threshold_fixtures_import_and_round_trip",
        psd_photoshop_posterize_threshold_fixtures_import_and_round_trip},
       {"adjustment_brightness_contrast_math_lut_and_metadata_round_trip",

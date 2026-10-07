@@ -100,6 +100,14 @@ inline constexpr const char* kLayerMetadataAdjustmentThresholdLevel = "patchy.ad
 inline constexpr const char* kLayerMetadataAdjustmentExposureValue = "patchy.adjustment.exposure.value";
 inline constexpr const char* kLayerMetadataAdjustmentExposureOffset = "patchy.adjustment.exposure.offset";
 inline constexpr const char* kLayerMetadataAdjustmentExposureGamma = "patchy.adjustment.exposure.gamma";
+// Channel Mixer: monochrome 0/1, plus one key per mix (red, green, blue outputs and
+// the monochrome gray) holding "red;green;blue;constant" percentages.
+inline constexpr const char* kLayerMetadataAdjustmentChannelMixerMonochrome =
+    "patchy.adjustment.channel_mixer.monochrome";
+inline constexpr const char* kLayerMetadataAdjustmentChannelMixerRed = "patchy.adjustment.channel_mixer.red";
+inline constexpr const char* kLayerMetadataAdjustmentChannelMixerGreen = "patchy.adjustment.channel_mixer.green";
+inline constexpr const char* kLayerMetadataAdjustmentChannelMixerBlue = "patchy.adjustment.channel_mixer.blue";
+inline constexpr const char* kLayerMetadataAdjustmentChannelMixerGray = "patchy.adjustment.channel_mixer.gray";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastBrightness =
     "patchy.adjustment.brightness_contrast.brightness";
 inline constexpr const char* kLayerMetadataAdjustmentBrightnessContrastContrast =
@@ -118,7 +126,8 @@ enum class AdjustmentKind {
   Posterize,
   Threshold,
   BrightnessContrast,
-  Exposure
+  Exposure,
+  ChannelMixer
 };
 
 enum class LevelsChannel {
@@ -273,6 +282,40 @@ struct ExposureAdjustment {
 // render of psd-tools' exposure_rgb.psd on all four of its setting triples.
 [[nodiscard]] std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment settings);
 
+// Photoshop's Channel Mixer ('mixr'): each output channel is a blend of the source
+// channels plus a constant, all in percent (-200..200). Monochrome sends one Gray mix
+// to every channel.
+inline constexpr int kChannelMixerRange = 200;
+struct ChannelMixerChannel {
+  int red{0};
+  int green{0};
+  int blue{0};
+  int constant{0};
+
+  // The dialog's Total readout: the source percentages, without the constant.
+  [[nodiscard]] int total() const { return red + green + blue; }
+  friend bool operator==(const ChannelMixerChannel&, const ChannelMixerChannel&) = default;
+};
+struct ChannelMixerAdjustment {
+  // Red, green and blue outputs; the defaults are the identity.
+  std::array<ChannelMixerChannel, 3> outputs{
+      {ChannelMixerChannel{100, 0, 0, 0}, ChannelMixerChannel{0, 100, 0, 0}, ChannelMixerChannel{0, 0, 100, 0}}};
+  // The Gray mix Photoshop shows when Monochrome is first ticked.
+  ChannelMixerChannel gray{40, 40, 20, 0};
+  bool monochrome{false};
+
+  friend bool operator==(const ChannelMixerAdjustment&, const ChannelMixerAdjustment&) = default;
+};
+// Clamps every value to -200..200. A monochrome mixer also copies the Gray mix into
+// the three outputs: Photoshop leaves each output on the gray mix when Monochrome is
+// cleared, so that is the one canonical form.
+[[nodiscard]] ChannelMixerAdjustment clamp_channel_mixer(ChannelMixerAdjustment settings);
+[[nodiscard]] bool channel_mixer_has_effect(const ChannelMixerAdjustment& settings);
+// out = (red% * R + green% * G + blue% * B) + constant% * 255 per output, rounded and
+// clamped, on the encoded 8-bit values. NOT calibrated against Photoshop; see
+// docs/adjustments-calibration.md.
+[[nodiscard]] RgbColor apply_channel_mixer(RgbColor color, const ChannelMixerAdjustment& settings);
+
 // Both Photoshop algorithms are modeled. Modern mode (Photoshop's default,
 // use_legacy false) takes brightness -150..150 and contrast -50..100; legacy
 // mode takes -100..100 for both. Old Patchy documents and 'brit'-only PSDs
@@ -299,6 +342,7 @@ struct AdjustmentSettings {
   ThresholdAdjustment threshold{};
   BrightnessContrastAdjustment brightness_contrast{};
   ExposureAdjustment exposure{};
+  ChannelMixerAdjustment channel_mixer{};
   // Set for an adjustment layer that came from a CMYK document whose profile could be
   // read: the channel-wise kinds (Levels, Curves, Invert, Posterize, Brightness/Contrast,
   // Exposure) then run on the four inks instead of on RGB. See core/ink_space.hpp.

@@ -1,6 +1,6 @@
 # Adjustment calibration vs Photoshop
 
-Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, and Hue/Saturation. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
+Calibration record for adjustment-layer and auto-adjustment math: Brightness/Contrast (legacy and modern), Curves, the auto adjustments, Hue/Saturation, Exposure, and the still-uncalibrated Channel Mixer. Read this before touching src/core/adjustment_layer.* or src/filters/auto_levels_math.*.
 Conventions: "PS" = Adobe Photoshop 2026/27.8, the installed ground truth; every rule is pinned by PS COM captures unless noted. Fixtures named `photoshop-*` live in `test-fixtures/psd/`; `local-test-fixtures/` is machine-local. The COM workflow lives in [ps-compat.md](ps-compat.md).
 
 ## Brightness/Contrast legacy calibration (July 2026)
@@ -48,6 +48,17 @@ Fitted against Photoshop's renders of psd-tools' `adjustments/levels_rgb.psd` an
 - Refuted: the piecewise sRGB curve in place of the plain 2.2 power (up to 7/255 off at +2 stops).
 - Unprobed: Grayscale and CMYK documents (Photoshop adjusts in the document's space; Patchy converts to sRGB on open first) and 16/32-bit sources.
 
+## Channel Mixer (NOT calibrated; open item)
+
+Added without Photoshop access (October 2026); nothing below is pinned by a PS capture. `AdjustmentKind::ChannelMixer`, Photoshop's `mixr` block. The [Adobe Photoshop File Formats Specification](https://www.adobe.com/devnet-apps/photoshop/fileformatashtml/) ("Channel Mixer") gives u16 version 1, u16 monochrome, then records of four i16 color percentages plus an i16 constant, without a record count. Patchy reads the first three as the red, green and blue outputs (sources red/cyan, green/magenta, blue/yellow, black, constant; the black source is ignored) and writes four (the fourth a zero black output): 44 bytes. Monochrome keeps the Gray mix in the first record; Patchy also repeats it in the next two. The record count, the fourth record's RGB contents and where Photoshop keeps the gray are inferred from open readers' documentation, not from a Photoshop file. An unedited import re-emits byte for byte (CMYK black data and any tail kept); an edit regenerates.
+
+- Math (`apply_channel_mixer`), per output on encoded 8-bit values: `out = clamp((r% R + g% G + b% B + c% 255) / 100)`, integer, rounded half up. Basis: Adobe's documented behavior (each source slider adds that percentage of the channel; Constant adds white or black). Uncalibrated: the constant's scale (255 per 100%, so +-200% forces black or white for any source total within +-100%, as Adobe's help describes) and the rounding.
+- UI: Output Channel (Red, Green, Blue; only Gray while Monochrome), Red, Green and Blue sources and Constant at -200..200%, Total (the three sources, not the constant) with a warning icon above 100%. New layers are the identity, opening on Red. Ticking Monochrome first shows 40/40/20 (Photoshop's widely reported default, unverified); clearing it leaves every output on the gray mix, as Adobe documents for hand tinting, which is also the canonical stored form (`clamp_channel_mixer`). PS's Preset menu is not modeled.
+- No CMYK ink space: a CMYK document's mixer (four ink outputs, a Black source) renders its C/M/Y records as R/G/B on the RGB math, so its constant's sign and the black source are wrong; unmodeled, like Hue/Saturation.
+- Image > Adjustments > Channel Mixer runs `apply_channel_mixer_to_pixels`, equal to a layer with the same settings.
+- Probes owed (PS COM): a Photoshop-saved `mixr` (RGB and CMYK, color and monochrome) for the record count and contents; source and constant sweeps on a gray ramp; the mono default; warning-free opening of a Patchy-written block.
+- Patent check (2026-10-07, Google Patents claim text). The channel mixer itself is 1990s prior art (Photoshop 5.0, 1998; GIMP's Channel Mixer). Nearest active claims: Adobe US 8086029 (to 2030-10-24; every independent claim derives the mixer weights by principal component analysis of the image) and Apple US 9092893 (to 2032-09-27; one control value mapped through a chroma-space path to RGB weights for grayscale). Apple US 8462384 (weights from image statistics) has lapsed. Patchy's weights are only the user's sliders and fixed constants: no image statistics and no single-control weight path. Binding rule: [legal-constraints.md](legal-constraints.md).
+
 ## Adjustment layers of CMYK documents (October 2026)
 
 Patchy converts a CMYK file's pixels to RGB when it reads it, but an adjustment layer is
@@ -71,7 +82,7 @@ inks they match on 99.9 percent (worst channel miss 7/255 at the 16 pinned probe
   drop. Ink values are the stored ones (0 = full ink), the domain Photoshop's CMYK
   Levels reads. `build_adjustment_lut` returns nullopt for these, so every compositor
   takes the per-pixel path.
-- Hue/Saturation, Color Balance and Threshold stay on RGB math in CMYK documents.
+- Hue/Saturation, Color Balance, Channel Mixer and Threshold stay on RGB math in CMYK documents.
 - Grayscale documents get the one-channel form (`InkSpace::is_gray`, `build_gray_ink_space`):
   the 256 stored gray values through the gray profile and the nearest-value inverse.
   Their Levels record and curve sit in the slot RGB calls red (index 1; the composite

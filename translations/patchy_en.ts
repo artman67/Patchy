@@ -8898,6 +8898,39 @@ RGB: %2, %3, %4</source>
         <source>Ratio</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Constant</source>
+        <comment>channel mixer</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Output Channel:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Source Channels:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Total:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Monochrome</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Channel Mixer: monochrome, red %1, green %2, blue %3, constant %4</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Channel Mixer: %1 of 3 output channels changed</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18607,6 +18640,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Channel Mi&amp;xer...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Channel Mixer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Channel Mixer</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

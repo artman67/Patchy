@@ -164,6 +164,33 @@ std::optional<HueSaturationBand> parse_hue_saturation_band(std::string_view enco
                            std::clamp(fields[6], -100, 100)};
 }
 
+// "red;green;blue;constant". A malformed or missing value leaves the mix at its
+// default.
+std::string serialize_channel_mixer_channel(const ChannelMixerChannel& channel) {
+  return std::to_string(channel.red) + ';' + std::to_string(channel.green) + ';' + std::to_string(channel.blue) +
+         ';' + std::to_string(channel.constant);
+}
+
+std::optional<ChannelMixerChannel> parse_channel_mixer_channel(std::string_view encoded) {
+  std::array<int, 4> fields{};
+  for (std::size_t index = 0; index < fields.size(); ++index) {
+    if (encoded.empty()) {
+      return std::nullopt;
+    }
+    const auto separator = encoded.find(';');
+    const auto value = parse_int(encoded.substr(0, separator));
+    if (!value.has_value()) {
+      return std::nullopt;
+    }
+    fields[index] = std::clamp(*value, -kChannelMixerRange, kChannelMixerRange);
+    encoded = separator == std::string_view::npos ? std::string_view{} : encoded.substr(separator + 1U);
+  }
+  if (!encoded.empty()) {
+    return std::nullopt;
+  }
+  return ChannelMixerChannel{fields[0], fields[1], fields[2], fields[3]};
+}
+
 LevelsRecord metadata_levels_record_or(const Layer& layer, const char* black_input_key, const char* white_input_key,
                                        const char* gamma_percent_key, const char* black_output_key,
                                        const char* white_output_key) {
@@ -944,6 +971,46 @@ std::uint8_t exposure_channel_value(std::uint8_t value, ExposureAdjustment setti
   return static_cast<std::uint8_t>(std::clamp(std::lround(encoded * 255.0), 0L, 255L));
 }
 
+ChannelMixerAdjustment clamp_channel_mixer(ChannelMixerAdjustment settings) {
+  const auto clamp_channel = [](ChannelMixerChannel& channel) {
+    channel.red = std::clamp(channel.red, -kChannelMixerRange, kChannelMixerRange);
+    channel.green = std::clamp(channel.green, -kChannelMixerRange, kChannelMixerRange);
+    channel.blue = std::clamp(channel.blue, -kChannelMixerRange, kChannelMixerRange);
+    channel.constant = std::clamp(channel.constant, -kChannelMixerRange, kChannelMixerRange);
+  };
+  clamp_channel(settings.gray);
+  for (auto& output : settings.outputs) {
+    clamp_channel(output);
+  }
+  if (settings.monochrome) {
+    settings.outputs.fill(settings.gray);
+  }
+  return settings;
+}
+
+bool channel_mixer_has_effect(const ChannelMixerAdjustment& settings) {
+  // Monochrome always changes a color pixel; otherwise only a non-identity mix does.
+  return settings.monochrome || settings.outputs != ChannelMixerAdjustment{}.outputs;
+}
+
+RgbColor apply_channel_mixer(RgbColor color, const ChannelMixerAdjustment& settings) {
+  // NOT calibrated against Photoshop (added without Photoshop access). Adobe documents
+  // each source slider as a percentage of that channel added to the output and the
+  // constant as a percentage of white (or black when negative). Integer math with one
+  // rounding, so every toolchain gives the same bytes.
+  const auto mix = [&color](const ChannelMixerChannel& channel) {
+    const auto sum = channel.red * static_cast<int>(color.red) + channel.green * static_cast<int>(color.green) +
+                     channel.blue * static_cast<int>(color.blue) + channel.constant * 255;
+    return static_cast<std::uint8_t>(sum <= 0 ? 0 : std::min(255, (sum + 50) / 100));
+  };
+  if (settings.monochrome) {
+    const auto gray = mix(settings.gray);
+    return RgbColor{gray, gray, gray};
+  }
+  const auto& outputs = settings.outputs;
+  return RgbColor{mix(outputs[0]), mix(outputs[1]), mix(outputs[2])};
+}
+
 int threshold_luminance(std::uint8_t red, std::uint8_t green, std::uint8_t blue) {
   return (static_cast<int>(red) * 30 + static_cast<int>(green) * 59 + static_cast<int>(blue) * 11) / 100;
 }
@@ -1111,6 +1178,8 @@ std::string adjustment_kind_key(AdjustmentKind kind) {
       return "brightness_contrast";
     case AdjustmentKind::Exposure:
       return "exposure";
+    case AdjustmentKind::ChannelMixer:
+      return "channel_mixer";
   }
   return "levels";
 }
@@ -1135,6 +1204,8 @@ std::string adjustment_display_name(AdjustmentKind kind) {
       return "Brightness/Contrast";
     case AdjustmentKind::Exposure:
       return "Exposure";
+    case AdjustmentKind::ChannelMixer:
+      return "Channel Mixer";
   }
   return "Adjustment";
 }
@@ -1166,6 +1237,9 @@ std::optional<AdjustmentKind> adjustment_kind_from_key(std::string_view key) {
   }
   if (key == "exposure") {
     return AdjustmentKind::Exposure;
+  }
+  if (key == "channel_mixer") {
+    return AdjustmentKind::ChannelMixer;
   }
   return std::nullopt;
 }
@@ -1252,6 +1326,18 @@ std::optional<AdjustmentSettings> adjustment_settings_from_layer(const Layer& la
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureValue, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureOffset, 0),
       metadata_int_or(layer, kLayerMetadataAdjustmentExposureGamma, 100)});
+  settings.channel_mixer.monochrome = metadata_int_or(layer, kLayerMetadataAdjustmentChannelMixerMonochrome, 0) != 0;
+  const std::array<std::pair<const char*, ChannelMixerChannel*>, 4> mixer_keys{
+      {{kLayerMetadataAdjustmentChannelMixerRed, &settings.channel_mixer.outputs[0]},
+       {kLayerMetadataAdjustmentChannelMixerGreen, &settings.channel_mixer.outputs[1]},
+       {kLayerMetadataAdjustmentChannelMixerBlue, &settings.channel_mixer.outputs[2]},
+       {kLayerMetadataAdjustmentChannelMixerGray, &settings.channel_mixer.gray}}};
+  for (const auto& [key, channel] : mixer_keys) {
+    if (const auto parsed = parse_channel_mixer_channel(metadata_string_or(layer, key, {}))) {
+      *channel = *parsed;
+    }
+  }
+  settings.channel_mixer = clamp_channel_mixer(settings.channel_mixer);
   // Default legacy when the key is absent: pre-July-2026 documents were always
   // legacy-mode and must keep their render.
   settings.brightness_contrast.use_legacy =
@@ -1362,6 +1448,24 @@ void configure_adjustment_layer(Layer& layer, const AdjustmentSettings& settings
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureValue, exposure.exposure_hundredths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureOffset, exposure.offset_ten_thousandths);
   set_metadata_int(layer, kLayerMetadataAdjustmentExposureGamma, exposure.gamma_hundredths);
+  // Written only for Channel Mixer layers: the five keys would be noise on every other kind.
+  const std::array<const char*, 4> mixer_keys{kLayerMetadataAdjustmentChannelMixerRed,
+                                              kLayerMetadataAdjustmentChannelMixerGreen,
+                                              kLayerMetadataAdjustmentChannelMixerBlue,
+                                              kLayerMetadataAdjustmentChannelMixerGray};
+  if (settings.kind == AdjustmentKind::ChannelMixer) {
+    const auto mixer = clamp_channel_mixer(settings.channel_mixer);
+    set_metadata_int(layer, kLayerMetadataAdjustmentChannelMixerMonochrome, mixer.monochrome ? 1 : 0);
+    for (std::size_t index = 0; index < mixer.outputs.size(); ++index) {
+      set_metadata_string(layer, mixer_keys[index], serialize_channel_mixer_channel(mixer.outputs[index]));
+    }
+    set_metadata_string(layer, mixer_keys[3], serialize_channel_mixer_channel(mixer.gray));
+  } else {
+    layer.metadata().erase(kLayerMetadataAdjustmentChannelMixerMonochrome);
+    for (const auto* key : mixer_keys) {
+      layer.metadata().erase(key);
+    }
+  }
   const auto bc_brightness_range =
       settings.brightness_contrast.use_legacy ? kBrightnessContrastLegacyRange : kModernBrightnessRange;
   const auto bc_contrast_low =
@@ -1458,8 +1562,11 @@ bool adjustment_runs_in_ink_space(const AdjustmentSettings& settings) noexcept {
       return settings.ink_space->is_gray();
     // Hue/Saturation and Color Balance mix channels (as does Threshold on four inks);
     // Photoshop's CMYK forms of them are not modeled, so they stay on the RGB math.
+    // So does Channel Mixer: Photoshop's CMYK form mixes four ink outputs (with a
+    // Black source) in its own domain, which is not modeled.
     case AdjustmentKind::HueSaturation:
     case AdjustmentKind::ColorBalance:
+    case AdjustmentKind::ChannelMixer:
       return false;
   }
   return false;
@@ -1511,6 +1618,8 @@ RgbColor apply_adjustment_on_rgb(RgbColor color, const AdjustmentSettings& setti
       return RgbColor{exposure_channel_value(color.red, settings.exposure),
                       exposure_channel_value(color.green, settings.exposure),
                       exposure_channel_value(color.blue, settings.exposure)};
+    case AdjustmentKind::ChannelMixer:
+      return apply_channel_mixer(color, settings.channel_mixer);
   }
   return color;
 }
@@ -1546,9 +1655,11 @@ std::optional<AdjustmentLut> build_adjustment_lut(const AdjustmentSettings& sett
     return std::nullopt;
   }
   // Hue/Saturation mixes channels through HSL; Threshold compares the mixed
-  // RGB luminance, so a per-channel gray-probe LUT would be wrong for any
-  // colored pixel. Both take the per-pixel path.
-  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold) {
+  // RGB luminance; Channel Mixer sums all three channels into each output.
+  // A per-channel gray-probe LUT would be wrong for any colored pixel, so they
+  // take the per-pixel path.
+  if (settings.kind == AdjustmentKind::HueSaturation || settings.kind == AdjustmentKind::Threshold ||
+      settings.kind == AdjustmentKind::ChannelMixer) {
     return std::nullopt;
   }
   if (settings.kind == AdjustmentKind::Curves) {
@@ -1605,6 +1716,8 @@ bool adjustment_has_effect(const AdjustmentSettings& settings) {
       return exposure.exposure_hundredths != 0 || exposure.offset_ten_thousandths != 0 ||
              exposure.gamma_hundredths != 100;
     }
+    case AdjustmentKind::ChannelMixer:
+      return channel_mixer_has_effect(clamp_channel_mixer(settings.channel_mixer));
   }
   return false;
 }
