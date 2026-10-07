@@ -58,8 +58,9 @@ caches), so a zero angle is an exact no-op. Fit on Screen and Zoom to selection 
 bounding box. Design notes are in docs/rotate-view.md.
 
 Known limits: the canvas shows upright while a text box is open, rulers hide their numbers while
-rotated, and transform-handle cursors don't follow the rotation. AGENTS.md is 73 bytes over its
-30,000-byte cap with the new pointer line; trim before filing.
+rotated, and transform-handle cursors don't follow the rotation. AGENTS.md is untouched; the
+pointer to docs/rotate-view.md sits at the top of docs/view-navigation.md, which AGENTS.md already
+links.
 
 ---
 
