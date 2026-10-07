@@ -664,6 +664,8 @@ QString tool_name(CanvasTool tool) {
       return QObject::tr("Delete Anchor Point");
     case CanvasTool::ConvertPoint:
       return QObject::tr("Convert Point");
+    case CanvasTool::ColorReplacement:
+      return QObject::tr("Color Replacement");
   }
   return QObject::tr("Tool");
 }

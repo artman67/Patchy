@@ -2438,6 +2438,78 @@ void ui_local_adjustment_brushes_use_fixed_math_and_round_trip_psd() {
   }
 }
 
+// Color Replacement (docs/color-replacement.md): Color mode keeps each pixel's
+// luminosity, Continuous re-samples under every dab while Once keeps the
+// stroke's first sample, a selection limits the write, and each stroke is one
+// undo step.
+void ui_color_replacement_recolors_sampled_color_in_one_undo_step() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  const QColor red(200, 40, 40);
+  const QColor blue(40, 60, 200);
+  patchy::Document document(90, 70, patchy::PixelFormat::rgba8());
+  auto pixels = solid_pixels(90, 70, patchy::PixelFormat::rgba8(), blue);
+  fill_pixel_rect(pixels, QRect(0, 0, 45, 70), red);
+  const auto layer_id = document.add_pixel_layer("Paint", std::move(pixels)).id();
+  window.add_document_session(std::move(document), QStringLiteral("Color Replacement"));
+  QApplication::processEvents();
+  auto* canvas = require_canvas(window);
+  require_action(window, "toolColorReplacementAction")->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->tool() == patchy::ui::CanvasTool::ColorReplacement);
+  // Photoshop's defaults: Color, Continuous, Contiguous, 30%, Anti-alias.
+  CHECK(canvas->color_replacement_settings() == patchy::ColorReplacementSettings{});
+  canvas->set_primary_color(QColor(40, 180, 60));
+  canvas->set_brush_size(15);
+  canvas->set_brush_softness(0);
+  const auto pixel_at = [&window, layer_id](QPoint point) {
+    const auto* layer = std::as_const(patchy::ui::MainWindowTestAccess::document(window)).find_layer(layer_id);
+    CHECK(layer != nullptr);
+    const auto* pixel = layer->pixels().pixel(point.x(), point.y());
+    return QColor(pixel[0], pixel[1], pixel[2], pixel[3]);
+  };
+  const auto luminosity = [](QColor color) {
+    return 0.3 * color.red() + 0.59 * color.green() + 0.11 * color.blue();
+  };
+  const auto greenish = [](QColor color) { return color.green() > color.red() && color.green() > color.blue(); };
+
+  // Continuous: the stroke crosses from red into blue and recolors both.
+  const auto depth = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  drag_document_path(*canvas, {QPoint(8, 12), QPoint(82, 12)}, 24);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == depth + 1);
+  const auto recolored = pixel_at(QPoint(20, 12));
+  CHECK(greenish(recolored) && recolored.alpha() == 255);
+  CHECK(std::abs(luminosity(recolored) - luminosity(red)) <= 1.5);
+  CHECK(greenish(pixel_at(QPoint(70, 12))));
+  CHECK(pixel_at(QPoint(20, 30)) == red);
+
+  // Once: the first sample is red, so the blue half of the same path stays.
+  auto settings = canvas->color_replacement_settings();
+  settings.sampling = patchy::ColorReplacementSampling::Once;
+  canvas->set_color_replacement_settings(settings);
+  drag_document_path(*canvas, {QPoint(8, 32), QPoint(82, 32)}, 24);
+  CHECK(greenish(pixel_at(QPoint(20, 32))));
+  CHECK(pixel_at(QPoint(70, 32)) == blue);
+
+  // A selection limits the write.
+  canvas->set_tool(patchy::ui::CanvasTool::Marquee);
+  canvas->set_selection_feather_radius(0);
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(0, 40)),
+       canvas->widget_position_for_document_point(QPoint(30, 70)));
+  CHECK(canvas->selected_document_rect().has_value());
+  canvas->set_tool(patchy::ui::CanvasTool::ColorReplacement);
+  drag_document_path(*canvas, {QPoint(8, 52), QPoint(40, 52)}, 12);
+  CHECK(greenish(pixel_at(QPoint(20, 52))));
+  CHECK(pixel_at(QPoint(36, 52)) == red);
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == depth + 4);
+  save_widget_artifact("ui_color_replacement_strokes", *canvas);
+
+  patchy::ui::MainWindowTestAccess::undo(window);
+  QApplication::processEvents();
+  CHECK(pixel_at(QPoint(20, 52)) == red);
+  CHECK(greenish(pixel_at(QPoint(20, 32))));
+}
+
 void ui_smudge_tool_drags_painted_pixels() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -3420,6 +3492,8 @@ std::vector<patchy::test::TestCase> brush_engine_stroke_tests_part1() {
        ui_healing_brush_transfers_detail_and_preserves_destination_tone},
       {"ui_local_adjustment_brushes_use_fixed_math_and_round_trip_psd",
        ui_local_adjustment_brushes_use_fixed_math_and_round_trip_psd},
+      {"ui_color_replacement_recolors_sampled_color_in_one_undo_step",
+       ui_color_replacement_recolors_sampled_color_in_one_undo_step},
       {"ui_smudge_tool_drags_painted_pixels", ui_smudge_tool_drags_painted_pixels},
       {"ui_wet_edges_uses_one_continuous_stroke_boundary",
        ui_wet_edges_uses_one_continuous_stroke_boundary},

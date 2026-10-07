@@ -1477,7 +1477,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
       QT_TR_NOOP("Size:"),
       {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
        CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-       CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
+       CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
        CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
   auto* brush_size = new QSpinBox(toolbar);
   brush_size->setObjectName(QStringLiteral("brushSizeSpin"));
@@ -1488,7 +1488,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   add_option_widget(brush_size,
                     {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
                      CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
+                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   auto* brush_size_slider = new QSlider(Qt::Horizontal, toolbar);
   brush_size_slider->setObjectName(QStringLiteral("brushSizeSlider"));
@@ -1503,7 +1503,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   add_option_widget(brush_size_slider,
                     {CanvasTool::Brush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
                      CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
+                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   vector_pixel_only_option_widgets_.push_back(add_option_label(
       QT_TR_NOOP("Opacity:"),
@@ -1532,7 +1532,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
       QT_TR_NOOP("Soft:"),
       {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
        CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-       CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
+       CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
        CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
   auto* brush_softness = new QSpinBox(toolbar);
   brush_softness->setObjectName(QStringLiteral("brushSoftnessSpin"));
@@ -1543,7 +1543,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   add_option_widget(brush_softness,
                     {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
                      CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
+                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   auto* brush_softness_slider = new QSlider(Qt::Horizontal, toolbar);
   brush_softness_slider->setObjectName(QStringLiteral("brushSoftnessSlider"));
@@ -1556,7 +1556,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   add_option_widget(brush_softness_slider,
                     {CanvasTool::Brush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
                      CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush,
+                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
                      CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
   for (auto* raster_only :
        std::initializer_list<QWidget*>{brush_size, brush_size_slider, brush_opacity,
@@ -2302,6 +2302,136 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     }
     save_tool_settings();
   });
+
+  // Color Replacement (docs/color-replacement.md): Photoshop's Mode, Sampling,
+  // Limits, Tolerance, and Anti-alias, beside the shared Size/Soft footprint.
+  const auto store_color_replacement = [this] {
+    if (canvas_ != nullptr) {
+      canvas_->set_color_replacement_settings(current_color_replacement_);
+    }
+    save_tool_settings();
+    refresh_document_info();
+  };
+  add_option_label(QT_TR_NOOP("Mode:"), {CanvasTool::ColorReplacement});
+  color_replacement_mode_combo_ = new QComboBox(toolbar);
+  color_replacement_mode_combo_->setObjectName(QStringLiteral("colorReplacementModeCombo"));
+  color_replacement_mode_combo_->addItem(tr("Hue"), static_cast<int>(ColorReplacementMode::Hue));
+  color_replacement_mode_combo_->addItem(tr("Saturation"), static_cast<int>(ColorReplacementMode::Saturation));
+  color_replacement_mode_combo_->addItem(tr("Color"), static_cast<int>(ColorReplacementMode::Color));
+  color_replacement_mode_combo_->addItem(tr("Luminosity"), static_cast<int>(ColorReplacementMode::Luminosity));
+  color_replacement_mode_combo_->setCurrentIndex(std::max(
+      0, color_replacement_mode_combo_->findData(static_cast<int>(current_color_replacement_.mode))));
+  color_replacement_mode_combo_->setFixedWidth(96);
+  add_option_widget(color_replacement_mode_combo_, {CanvasTool::ColorReplacement});
+  connect(color_replacement_mode_combo_, &QComboBox::currentIndexChanged, this,
+          [this, store_color_replacement](int index) {
+            if (index < 0 || color_replacement_mode_combo_ == nullptr) {
+              return;
+            }
+            current_color_replacement_.mode =
+                static_cast<ColorReplacementMode>(color_replacement_mode_combo_->itemData(index).toInt());
+            store_color_replacement();
+          });
+
+  add_option_label(QT_TR_NOOP("Sampling:"), {CanvasTool::ColorReplacement});
+  color_replacement_sampling_combo_ = new QComboBox(toolbar);
+  color_replacement_sampling_combo_->setObjectName(QStringLiteral("colorReplacementSamplingCombo"));
+  color_replacement_sampling_combo_->addItem(tr("Continuous"),
+                                             static_cast<int>(ColorReplacementSampling::Continuous));
+  color_replacement_sampling_combo_->addItem(tr("Once"), static_cast<int>(ColorReplacementSampling::Once));
+  color_replacement_sampling_combo_->addItem(tr("Background Swatch"),
+                                             static_cast<int>(ColorReplacementSampling::BackgroundSwatch));
+  color_replacement_sampling_combo_->setCurrentIndex(std::max(
+      0, color_replacement_sampling_combo_->findData(static_cast<int>(current_color_replacement_.sampling))));
+  bind_tooltip(color_replacement_sampling_combo_,
+               QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Which color the brush replaces: the color under each dab, "
+                                 "the color where the stroke starts, or the background color"));
+  add_option_widget(color_replacement_sampling_combo_, {CanvasTool::ColorReplacement});
+  connect(color_replacement_sampling_combo_, &QComboBox::currentIndexChanged, this,
+          [this, store_color_replacement](int index) {
+            if (index < 0 || color_replacement_sampling_combo_ == nullptr) {
+              return;
+            }
+            current_color_replacement_.sampling =
+                static_cast<ColorReplacementSampling>(color_replacement_sampling_combo_->itemData(index).toInt());
+            store_color_replacement();
+          });
+
+  add_option_label(QT_TR_NOOP("Limits:"), {CanvasTool::ColorReplacement});
+  color_replacement_limits_combo_ = new QComboBox(toolbar);
+  color_replacement_limits_combo_->setObjectName(QStringLiteral("colorReplacementLimitsCombo"));
+  color_replacement_limits_combo_->addItem(tr("Discontiguous"),
+                                           static_cast<int>(ColorReplacementLimits::Discontiguous));
+  color_replacement_limits_combo_->addItem(tr("Contiguous"), static_cast<int>(ColorReplacementLimits::Contiguous));
+  color_replacement_limits_combo_->addItem(tr("Find Edges"), static_cast<int>(ColorReplacementLimits::FindEdges));
+  color_replacement_limits_combo_->setCurrentIndex(std::max(
+      0, color_replacement_limits_combo_->findData(static_cast<int>(current_color_replacement_.limits))));
+  bind_tooltip(color_replacement_limits_combo_,
+               QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Discontiguous replaces every match under the brush; "
+                                 "Contiguous only matches connected to its center; Find Edges also stops at sharp edges"));
+  add_option_widget(color_replacement_limits_combo_, {CanvasTool::ColorReplacement});
+  connect(color_replacement_limits_combo_, &QComboBox::currentIndexChanged, this,
+          [this, store_color_replacement](int index) {
+            if (index < 0 || color_replacement_limits_combo_ == nullptr) {
+              return;
+            }
+            current_color_replacement_.limits =
+                static_cast<ColorReplacementLimits>(color_replacement_limits_combo_->itemData(index).toInt());
+            store_color_replacement();
+          });
+  QPointer<QComboBox> color_replacement_mode_combo(color_replacement_mode_combo_);
+  QPointer<QComboBox> color_replacement_sampling_combo(color_replacement_sampling_combo_);
+  QPointer<QComboBox> color_replacement_limits_combo(color_replacement_limits_combo_);
+  register_retranslation([color_replacement_mode_combo, color_replacement_sampling_combo,
+                          color_replacement_limits_combo] {
+    const auto retitle = [](QComboBox* combo, std::initializer_list<const char*> sources) {
+      if (combo == nullptr || combo->count() != static_cast<int>(sources.size())) {
+        return;
+      }
+      const QSignalBlocker blocker(combo);
+      int index = 0;
+      for (const auto* source : sources) {
+        combo->setItemText(index++, QCoreApplication::translate(kMainWindowTranslationContext, source));
+      }
+    };
+    retitle(color_replacement_mode_combo, {"Hue", "Saturation", "Color", "Luminosity"});
+    retitle(color_replacement_sampling_combo, {"Continuous", "Once", "Background Swatch"});
+    retitle(color_replacement_limits_combo, {"Discontiguous", "Contiguous", "Find Edges"});
+  });
+
+  add_option_label(QT_TR_NOOP("Tol:"), {CanvasTool::ColorReplacement});
+  color_replacement_tolerance_spin_ = new QSpinBox(toolbar);
+  color_replacement_tolerance_spin_->setObjectName(QStringLiteral("colorReplacementToleranceSpin"));
+  color_replacement_tolerance_spin_->setRange(1, 100);
+  color_replacement_tolerance_spin_->setValue(current_color_replacement_.tolerance);
+  color_replacement_tolerance_spin_->setSuffix(percent_suffix());
+  configure_toolbar_spinbox(color_replacement_tolerance_spin_, 52);
+  bind_tooltip(color_replacement_tolerance_spin_,
+               QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "How far a pixel's color may differ from the sampled color "
+                                 "and still be replaced"));
+  add_option_widget(color_replacement_tolerance_spin_, {CanvasTool::ColorReplacement});
+  connect(color_replacement_tolerance_spin_, &QSpinBox::valueChanged, this, [this](int value) {
+    current_color_replacement_.tolerance = value;
+    if (canvas_ != nullptr) {
+      canvas_->set_color_replacement_settings(current_color_replacement_);
+    }
+    schedule_save_tool_settings();
+    refresh_document_info();
+  });
+
+  color_replacement_anti_alias_check_ = new CheckGlyphBox(tr("Anti-alias"), toolbar);
+  color_replacement_anti_alias_check_->setObjectName(QStringLiteral("colorReplacementAntiAliasCheck"));
+  color_replacement_anti_alias_check_->setChecked(current_color_replacement_.anti_alias);
+  bind_widget_text(color_replacement_anti_alias_check_, QT_TR_NOOP("Anti-alias"));
+  bind_tooltip(color_replacement_anti_alias_check_,
+               QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Fade the replacement out near the tolerance limit for smooth "
+                                 "edges"));
+  add_option_widget(color_replacement_anti_alias_check_, {CanvasTool::ColorReplacement});
+  connect(color_replacement_anti_alias_check_, &QCheckBox::toggled, this,
+          [this, store_color_replacement](bool checked) {
+            current_color_replacement_.anti_alias = checked;
+            store_color_replacement();
+          });
 
   add_option_label(QT_TR_NOOP("Size:"), {CanvasTool::QuickSelect});
   auto* quick_select_size = new QSpinBox(toolbar);

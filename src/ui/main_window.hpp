@@ -2000,6 +2000,11 @@ private:
   QCheckBox* local_protect_tones_check_{nullptr};
   QComboBox* sponge_mode_combo_{nullptr};
   QCheckBox* sponge_vibrance_check_{nullptr};
+  QComboBox* color_replacement_mode_combo_{nullptr};
+  QComboBox* color_replacement_sampling_combo_{nullptr};
+  QComboBox* color_replacement_limits_combo_{nullptr};
+  QSpinBox* color_replacement_tolerance_spin_{nullptr};
+  QCheckBox* color_replacement_anti_alias_check_{nullptr};
   QCheckBox* wand_contiguous_check_{nullptr};
   QCheckBox* fill_contiguous_check_{nullptr};
   QCheckBox* zoom_scrubby_check_{nullptr};
@@ -2396,6 +2401,7 @@ private:
   bool current_local_protect_tones_{true};
   CanvasWidget::SpongeMode current_sponge_mode_{CanvasWidget::SpongeMode::Desaturate};
   bool current_sponge_vibrance_{true};
+  ColorReplacementSettings current_color_replacement_{};
   bool view_rulers_visible_{false};
   MeasurementUnit ruler_unit_{MeasurementUnit::Pixels};
   std::vector<QPointer<UnitSpinBox>> ruler_unit_fields_;

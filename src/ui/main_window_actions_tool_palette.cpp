@@ -331,6 +331,8 @@ const char* tool_action_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Delete Anchor");
     case CanvasTool::ConvertPoint:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Convert Point");
+    case CanvasTool::ColorReplacement:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Color Replacement");
   }
   return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Tool");
 }
@@ -415,6 +417,8 @@ QString tool_hotkey_id(CanvasTool tool) {
       return QStringLiteral("tools.delete_anchor");
     case CanvasTool::ConvertPoint:
       return QStringLiteral("tools.convert_point");
+    case CanvasTool::ColorReplacement:
+      return QStringLiteral("tools.color_replacement");
   }
   return QStringLiteral("tools.unknown");
 }
@@ -441,6 +445,9 @@ const char* tool_tooltip_detail_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to remove it.");
     case CanvasTool::ConvertPoint:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to switch it between corner and smooth.");
+    case CanvasTool::ColorReplacement:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Paints the foreground color over pixels that match the sampled "
+             "color and keeps their shading. %ALT%+click picks the foreground color.");
     default:
       return nullptr;
   }
@@ -473,6 +480,9 @@ const char* tool_activation_hint_source(CanvasTool tool) {
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Delete Anchor Point: click a point to remove it.");
     case CanvasTool::ConvertPoint:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Convert Point: click a point to switch it between corner and smooth.");
+    case CanvasTool::ColorReplacement:
+      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Color Replacement: paint over a color to replace it with the "
+             "foreground color. Tolerance sets how close a pixel must be to the sampled color.");
     case CanvasTool::PatchTool:
       return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Patch: draw around the area to fix, then drag the selection to a clean source area, or press Enter to remove the object automatically");
     case CanvasTool::Marquee:
@@ -796,6 +806,9 @@ QIcon tool_icon(CanvasTool tool) {
     case CanvasTool::ConvertPoint:
       name = "tool-convert-point";
       break;
+    case CanvasTool::ColorReplacement:
+      name = "tool-color-replacement";
+      break;
   }
   return themed_svg_icon(QLatin1String(name));
 }
@@ -942,7 +955,21 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   add_tool_action(tool_palette, tool_group, tr("Crop"), CanvasTool::Crop, QKeySequence(Qt::Key_C));
   tool_palette->addSeparator();
 
-  add_tool_action(tool_palette, tool_group, tr("Brush"), CanvasTool::Brush, QKeySequence(Qt::Key_B))->setChecked(true);
+  // The Brush Tools flyout: Brush (B, the default) plus Color Replacement,
+  // Photoshop's brush group. Mixer Brush stays in the Detail flyout.
+  auto* brush_menu = new QMenu(tr("Brush Tools"), tool_palette);
+  brush_menu->setObjectName(QStringLiteral("brushToolMenu"));
+  bind_widget_text(brush_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush Tools"));
+  auto* brush_action = create_flyout_tool_action(brush_menu, tr("Brush"), CanvasTool::Brush, QKeySequence(Qt::Key_B));
+  brush_action->setChecked(true);
+  auto* color_replacement_action = create_flyout_tool_action(brush_menu, tr("Color Replacement"),
+                                                             CanvasTool::ColorReplacement, QKeySequence());
+  auto* brush_tool_button = new QToolButton(tool_palette);
+  brush_tool_button->setObjectName(QStringLiteral("brushToolButton"));
+  configure_tool_flyout(tool_palette, brush_menu, brush_tool_button, brush_action,
+                        {brush_action, color_replacement_action},
+                        QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Cycle Brush Tools"),
+                        "toolCycleBrushAction", "tools.cycle.brush", QKeySequence(Qt::SHIFT | Qt::Key_B));
   add_tool_action(tool_palette, tool_group, tr("Eraser"), CanvasTool::Eraser, QKeySequence(Qt::Key_E));
   auto* gradient_menu = new QMenu(tr("Fill Tools"), tool_palette);
   gradient_menu->setObjectName(QStringLiteral("gradientToolMenu"));

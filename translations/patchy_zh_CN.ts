@@ -8879,6 +8879,10 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>颜色替换</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -10434,6 +10438,14 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Crop box reset to the canvas</source>
         <translation>裁剪框已重置为画布</translation>
+    </message>
+    <message>
+        <source>Color Replacement is unavailable while editing a grayscale channel</source>
+        <translation>编辑灰度通道时无法使用颜色替换</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>颜色替换</translation>
     </message>
 </context>
 <context>
@@ -18602,6 +18614,90 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁剪框高度</translation>
+    </message>
+    <message>
+        <source>Hue</source>
+        <translation>色相</translation>
+    </message>
+    <message>
+        <source>Saturation</source>
+        <translation>饱和度</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>颜色</translation>
+    </message>
+    <message>
+        <source>Luminosity</source>
+        <translation>明度</translation>
+    </message>
+    <message>
+        <source>Sampling:</source>
+        <translation>取样:</translation>
+    </message>
+    <message>
+        <source>Continuous</source>
+        <translation>连续</translation>
+    </message>
+    <message>
+        <source>Once</source>
+        <translation>一次</translation>
+    </message>
+    <message>
+        <source>Background Swatch</source>
+        <translation>背景色板</translation>
+    </message>
+    <message>
+        <source>Which color the brush replaces: the color under each dab, the color where the stroke starts, or the background color</source>
+        <translation>画笔替换哪种颜色: 每个笔迹下的颜色、描边起点的颜色或背景色</translation>
+    </message>
+    <message>
+        <source>Limits:</source>
+        <translation>限制:</translation>
+    </message>
+    <message>
+        <source>Discontiguous</source>
+        <translation>不连续</translation>
+    </message>
+    <message>
+        <source>Find Edges</source>
+        <translation>查找边缘</translation>
+    </message>
+    <message>
+        <source>Discontiguous replaces every match under the brush; Contiguous only matches connected to its center; Find Edges also stops at sharp edges</source>
+        <translation>不连续替换画笔下所有匹配的颜色；连续只替换与中心相连的颜色；查找边缘还会在清晰边缘处停止</translation>
+    </message>
+    <message>
+        <source>How far a pixel&apos;s color may differ from the sampled color and still be replaced</source>
+        <translation>像素颜色与取样颜色相差多少仍会被替换</translation>
+    </message>
+    <message>
+        <source>Fade the replacement out near the tolerance limit for smooth edges</source>
+        <translation>在容差边界附近逐渐减弱替换，使边缘平滑</translation>
+    </message>
+    <message>
+        <source>Color Replacement</source>
+        <translation>颜色替换</translation>
+    </message>
+    <message>
+        <source>Paints the foreground color over pixels that match the sampled color and keeps their shading. %ALT%+click picks the foreground color.</source>
+        <translation>用前景色绘制与取样颜色匹配的像素，并保留其明暗。按住 %ALT% 单击可拾取前景色。</translation>
+    </message>
+    <message>
+        <source>Color Replacement: paint over a color to replace it with the foreground color. Tolerance sets how close a pixel must be to the sampled color.</source>
+        <translation>颜色替换: 在某种颜色上绘制，将其替换为前景色。容差决定像素与取样颜色需要多接近。</translation>
+    </message>
+    <message>
+        <source>Brush Tools</source>
+        <translation>画笔工具</translation>
+    </message>
+    <message>
+        <source>Cycle Brush Tools</source>
+        <translation>循环切换画笔工具</translation>
+    </message>
+    <message>
+        <source>Tolerance: %1%</source>
+        <translation>容差: %1%</translation>
     </message>
 </context>
 <context>

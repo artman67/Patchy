@@ -2148,6 +2148,11 @@ QRect CanvasWidget::smudge_brush_segment(QPoint from, QPoint to) {
 }
 
 QRect CanvasWidget::local_adjustment_brush_segment(QPoint from, QPoint to) {
+  // Color Replacement shares this stroke flow, not this engine: its matching
+  // and limits live in core/color_replacement.cpp under their own boundary.
+  if (tool_ == CanvasTool::ColorReplacement) {
+    return color_replacement_brush_segment(from, to);
+  }
   auto* layer = active_pixel_layer();
   if (document_ == nullptr || layer == nullptr || !document_->active_layer_id().has_value()) {
     return {};
@@ -2345,6 +2350,168 @@ QRect CanvasWidget::local_adjustment_brush_segment(QPoint from, QPoint to) {
     }
     tick_processing_operation();
   }
+  return dirty;
+}
+
+void CanvasWidget::begin_color_replacement_stroke() noexcept {
+  color_replacement_once_sample_.reset();
+  color_replacement_distance_since_dab_ = -1.0;
+}
+
+QRect CanvasWidget::color_replacement_brush_segment(QPoint from, QPoint to) {
+  // Dabs at Photoshop's default 25% spacing: each dab samples (Continuous) and
+  // floods (Contiguous, Find Edges) from its own center, so the cadence must
+  // follow document distance, not mouse-move density.
+  const auto spacing = std::max(1.0, static_cast<double>(std::max(1, effective_brush_input().size)) * 0.25);
+  QRect dirty;
+  if (color_replacement_distance_since_dab_ < 0.0) {
+    dirty = dirty.united(color_replacement_dab(from));
+    color_replacement_distance_since_dab_ = 0.0;
+  }
+  const auto dx = static_cast<double>(to.x() - from.x());
+  const auto dy = static_cast<double>(to.y() - from.y());
+  const auto length = std::hypot(dx, dy);
+  if (length <= 0.0) {
+    return dirty;
+  }
+  auto travelled = spacing - color_replacement_distance_since_dab_;
+  while (travelled <= length) {
+    const auto along = travelled / length;
+    const QPoint center(static_cast<int>(std::lround(static_cast<double>(from.x()) + dx * along)),
+                        static_cast<int>(std::lround(static_cast<double>(from.y()) + dy * along)));
+    dirty = dirty.united(color_replacement_dab(center));
+    travelled += spacing;
+  }
+  color_replacement_distance_since_dab_ = length - (travelled - spacing);
+  return dirty;
+}
+
+QRect CanvasWidget::color_replacement_dab(QPoint center) {
+  auto* layer = active_pixel_layer();
+  if (document_ == nullptr || layer == nullptr || !document_->active_layer_id().has_value()) {
+    return {};
+  }
+  const auto layer_id = *document_->active_layer_id();
+  ensure_brush_stroke_layer_snapshot(layer_id, std::as_const(*layer));
+  if (!brush_stroke_layer_snapshot_.has_value() || brush_stroke_layer_snapshot_->layer_id != layer_id) {
+    return {};
+  }
+  const auto& snapshot = *brush_stroke_layer_snapshot_;
+  const auto& source_pixels = snapshot.pixels;
+  const auto channels = source_pixels.format().channels;
+  if (source_pixels.empty() || source_pixels.format().bit_depth != BitDepth::UInt8 || channels < 3) {
+    return {};
+  }
+
+  const auto brush = effective_brush_input();
+  const auto radius = std::max(1, brush.size) / 2;
+  const auto layer_rect = to_qrect(snapshot.bounds);
+  const auto box = QRect(center.x() - radius, center.y() - radius, radius * 2 + 1, radius * 2 + 1)
+                       .intersected(QRect(0, 0, document_->width(), document_->height()))
+                       .intersected(layer_rect);
+  if (box.isEmpty()) {
+    return {};
+  }
+  // Every read comes from the stroke-start snapshot, so overlapping dabs and
+  // repeated passes in one stroke never feed on their own output.
+  const auto snapshot_pixel = [&](QPoint point) {
+    return source_pixels.pixel(point.x() - snapshot.bounds.x, point.y() - snapshot.bounds.y);
+  };
+  const auto opaque_at = [&](QPoint point) {
+    return layer_rect.contains(point) && (channels < 4 || snapshot_pixel(point)[3] != 0);
+  };
+
+  const auto& settings = color_replacement_settings_;
+  ColorReplacementRgb sample{};
+  if (settings.sampling == ColorReplacementSampling::BackgroundSwatch) {
+    sample = {static_cast<std::uint8_t>(secondary_color_.red()), static_cast<std::uint8_t>(secondary_color_.green()),
+              static_cast<std::uint8_t>(secondary_color_.blue())};
+  } else if (settings.sampling == ColorReplacementSampling::Once && color_replacement_once_sample_.has_value()) {
+    sample = *color_replacement_once_sample_;
+  } else {
+    // Continuous samples under every dab; Once keeps the first sample it gets.
+    // A transparent center has no color to sample, so that dab does nothing.
+    if (!opaque_at(center)) {
+      return {};
+    }
+    const auto* pixel = snapshot_pixel(center);
+    sample = {pixel[0], pixel[1], pixel[2]};
+    if (settings.sampling == ColorReplacementSampling::Once) {
+      color_replacement_once_sample_ = sample;
+    }
+  }
+
+  const auto width = box.width();
+  const auto height = box.height();
+  std::vector<ColorReplacementRgb> colors(static_cast<std::size_t>(width) * static_cast<std::size_t>(height));
+  std::vector<float> weights(colors.size(), 0.0F);
+  for (int y = box.top(); y <= box.bottom(); ++y) {
+    for (int x = box.left(); x <= box.right(); ++x) {
+      const QPoint point(x, y);
+      const auto index = static_cast<std::size_t>(y - box.top()) * static_cast<std::size_t>(width) +
+                         static_cast<std::size_t>(x - box.left());
+      const auto* pixel = snapshot_pixel(point);
+      colors[index] = {pixel[0], pixel[1], pixel[2]};
+      if (opaque_at(point)) {
+        weights[index] = radius == 0 ? 1.0F
+                                     : brush_shape_coverage(static_cast<double>(x - center.x()),
+                                                            static_cast<double>(y - center.y()), radius,
+                                                            brush.softness, brush.roundness, brush.angle_degrees);
+      }
+    }
+  }
+  color_replacement_dab_weights(colors, weights, width, height, center.x() - box.left(), center.y() - box.top(),
+                                sample, settings);
+
+  auto& pixels = layer->pixels();
+  const auto mutable_channels = pixels.format().channels;
+  const ColorReplacementRgb foreground{static_cast<std::uint8_t>(primary_color_.red()),
+                                       static_cast<std::uint8_t>(primary_color_.green()),
+                                       static_cast<std::uint8_t>(primary_color_.blue())};
+  const auto* palette_snap = palette_snap_for_edits();
+  QRect dirty;
+  for (std::size_t index = 0; index < weights.size(); ++index) {
+    auto coverage = weights[index];
+    if (coverage <= 0.0F) {
+      continue;
+    }
+    const QPoint point(box.left() + static_cast<int>(index % static_cast<std::size_t>(width)),
+                       box.top() + static_cast<int>(index / static_cast<std::size_t>(width)));
+    if (!selection_allows(point)) {
+      continue;
+    }
+    if (has_selection()) {
+      coverage *= static_cast<float>(selection_alpha_at(point)) / 255.0F;
+    }
+    if (palette_snap != nullptr) {
+      if (coverage < palette_snap->coverage_threshold) {
+        continue;
+      }
+      coverage = 1.0F;
+    }
+    // The strongest coverage x match any dab of the stroke reached wins; the
+    // replacement color is a function of the snapshot pixel alone, so the
+    // incremental blend lands exactly on it.
+    coverage = capped_stroke_coverage(point.x(), point.y(), coverage, 1.0F);
+    if (coverage <= 0.0F) {
+      continue;
+    }
+    const auto replacement = color_replacement_color(colors[index], foreground, settings.mode);
+    auto* destination = pixels.pixel(point.x() - snapshot.bounds.x, point.y() - snapshot.bounds.y);
+    const std::array<std::uint8_t, 3> before{destination[0], destination[1], destination[2]};
+    for (std::size_t channel = 0; channel < replacement.size(); ++channel) {
+      destination[channel] = clamp_byte(static_cast<float>(replacement[channel]) * coverage +
+                                        static_cast<float>(destination[channel]) * (1.0F - coverage));
+    }
+    // Alpha is never written: the tool recolors, it does not paint coverage.
+    if (palette_snap != nullptr) {
+      patchy::snap_pixel_to_palette(destination, mutable_channels, *palette_snap);
+    }
+    if (destination[0] != before[0] || destination[1] != before[1] || destination[2] != before[2]) {
+      dirty = dirty.united(QRect(point, QSize(1, 1)));
+    }
+  }
+  tick_processing_operation();
   return dirty;
 }
 

@@ -1924,6 +1924,35 @@ void MainWindow::load_tool_settings() {
   canvas_->set_local_protect_tones(current_local_protect_tones_);
   canvas_->set_sponge_mode(current_sponge_mode_);
   canvas_->set_sponge_vibrance(current_sponge_vibrance_);
+  // Color Replacement keys store tokens, never enum values (docs/color-replacement.md).
+  const auto color_replacement_mode =
+      settings.value(QStringLiteral("tools/colorReplacementMode"), QStringLiteral("color")).toString();
+  current_color_replacement_.mode = color_replacement_mode == QStringLiteral("hue")
+                                        ? ColorReplacementMode::Hue
+                                    : color_replacement_mode == QStringLiteral("saturation")
+                                        ? ColorReplacementMode::Saturation
+                                    : color_replacement_mode == QStringLiteral("luminosity")
+                                        ? ColorReplacementMode::Luminosity
+                                        : ColorReplacementMode::Color;
+  const auto color_replacement_sampling =
+      settings.value(QStringLiteral("tools/colorReplacementSampling"), QStringLiteral("continuous")).toString();
+  current_color_replacement_.sampling = color_replacement_sampling == QStringLiteral("once")
+                                            ? ColorReplacementSampling::Once
+                                        : color_replacement_sampling == QStringLiteral("backgroundSwatch")
+                                            ? ColorReplacementSampling::BackgroundSwatch
+                                            : ColorReplacementSampling::Continuous;
+  const auto color_replacement_limits =
+      settings.value(QStringLiteral("tools/colorReplacementLimits"), QStringLiteral("contiguous")).toString();
+  current_color_replacement_.limits = color_replacement_limits == QStringLiteral("discontiguous")
+                                          ? ColorReplacementLimits::Discontiguous
+                                      : color_replacement_limits == QStringLiteral("findEdges")
+                                          ? ColorReplacementLimits::FindEdges
+                                          : ColorReplacementLimits::Contiguous;
+  current_color_replacement_.tolerance =
+      std::clamp(settings.value(QStringLiteral("tools/colorReplacementTolerance"), 30).toInt(), 1, 100);
+  current_color_replacement_.anti_alias =
+      settings.value(QStringLiteral("tools/colorReplacementAntiAlias"), true).toBool();
+  canvas_->set_color_replacement_settings(current_color_replacement_);
   canvas_->set_shape_corner_radius(
       settings.value(QStringLiteral("tools/shapeCornerRadius"), canvas_->shape_corner_radius()).toInt());
   // The spin resync below is signal-blocked, so mirror the loaded value by hand.
@@ -2207,6 +2236,23 @@ void MainWindow::save_tool_settings() const {
                         ? QStringLiteral("saturate")
                         : QStringLiteral("desaturate"));
   settings.setValue(QStringLiteral("tools/spongeVibrance"), current_sponge_vibrance_);
+  const auto& color_replacement = current_color_replacement_;
+  settings.setValue(QStringLiteral("tools/colorReplacementMode"),
+                    color_replacement.mode == ColorReplacementMode::Hue          ? QStringLiteral("hue")
+                    : color_replacement.mode == ColorReplacementMode::Saturation ? QStringLiteral("saturation")
+                    : color_replacement.mode == ColorReplacementMode::Luminosity ? QStringLiteral("luminosity")
+                                                                                 : QStringLiteral("color"));
+  settings.setValue(QStringLiteral("tools/colorReplacementSampling"),
+                    color_replacement.sampling == ColorReplacementSampling::Once ? QStringLiteral("once")
+                    : color_replacement.sampling == ColorReplacementSampling::BackgroundSwatch
+                        ? QStringLiteral("backgroundSwatch")
+                        : QStringLiteral("continuous"));
+  settings.setValue(QStringLiteral("tools/colorReplacementLimits"),
+                    color_replacement.limits == ColorReplacementLimits::Discontiguous ? QStringLiteral("discontiguous")
+                    : color_replacement.limits == ColorReplacementLimits::FindEdges   ? QStringLiteral("findEdges")
+                                                                                      : QStringLiteral("contiguous"));
+  settings.setValue(QStringLiteral("tools/colorReplacementTolerance"), color_replacement.tolerance);
+  settings.setValue(QStringLiteral("tools/colorReplacementAntiAlias"), color_replacement.anti_alias);
   settings.setValue(QStringLiteral("tools/shapeCornerRadius"), canvas_->shape_corner_radius());
   settings.setValue(QStringLiteral("tools/vectorToolMode"),
                     current_vector_tool_mode_ == VectorToolMode::Path     ? QStringLiteral("path")
@@ -2795,6 +2841,23 @@ void MainWindow::refresh_options_bar() {
   if (sponge_vibrance_check_ != nullptr) {
     QSignalBlocker blocker(sponge_vibrance_check_);
     sponge_vibrance_check_->setChecked(current_sponge_vibrance_);
+  }
+  for (const auto& [combo, value] :
+       {std::pair{color_replacement_mode_combo_, static_cast<int>(current_color_replacement_.mode)},
+        std::pair{color_replacement_sampling_combo_, static_cast<int>(current_color_replacement_.sampling)},
+        std::pair{color_replacement_limits_combo_, static_cast<int>(current_color_replacement_.limits)}}) {
+    if (combo != nullptr) {
+      QSignalBlocker blocker(combo);
+      combo->setCurrentIndex(std::max(0, combo->findData(value)));
+    }
+  }
+  if (color_replacement_tolerance_spin_ != nullptr) {
+    QSignalBlocker blocker(color_replacement_tolerance_spin_);
+    color_replacement_tolerance_spin_->setValue(current_color_replacement_.tolerance);
+  }
+  if (color_replacement_anti_alias_check_ != nullptr) {
+    QSignalBlocker blocker(color_replacement_anti_alias_check_);
+    color_replacement_anti_alias_check_->setChecked(current_color_replacement_.anti_alias);
   }
   if (wand_contiguous_check_ != nullptr && canvas_ != nullptr) {
     QSignalBlocker blocker(wand_contiguous_check_);

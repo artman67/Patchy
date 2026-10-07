@@ -2,6 +2,7 @@
 
 #include "ui/script_stroke.hpp"
 
+#include "core/color_replacement.hpp"
 #include "core/document.hpp"
 #include "core/exemplar_inpaint.hpp"
 #include "core/layer_alignment.hpp"
@@ -121,7 +122,9 @@ enum class CanvasTool {
   // They share the Pen's handlers with a fixed edit action each.
   AddAnchor,
   DeleteAnchor,
-  ConvertPoint
+  ConvertPoint,
+  // October 2026 Color Replacement (append-only: values ride persisted settings).
+  ColorReplacement
 };
 
 // Which tool produced a committed vector path; MainWindow picks the layer
@@ -594,6 +597,8 @@ public:
   [[nodiscard]] SpongeMode sponge_mode() const noexcept;
   void set_sponge_vibrance(bool enabled) noexcept;
   [[nodiscard]] bool sponge_vibrance() const noexcept;
+  void set_color_replacement_settings(const ColorReplacementSettings& settings) noexcept;
+  [[nodiscard]] const ColorReplacementSettings& color_replacement_settings() const noexcept;
   void set_pen_input_settings(PenInputSettings settings) noexcept;
   [[nodiscard]] const PenInputSettings& pen_input_settings() const noexcept;
   [[nodiscard]] std::optional<PenInputSample> last_pen_input_sample() const;
@@ -1731,6 +1736,11 @@ private:
   [[nodiscard]] QRect draw_mask_brush_at(QPoint point, bool erase);
   [[nodiscard]] QRect smudge_brush_segment(QPoint from, QPoint to);
   [[nodiscard]] QRect local_adjustment_brush_segment(QPoint from, QPoint to);
+  // Color Replacement rides the local adjustment stroke flow; the segment
+  // places dabs at 25% spacing and each dab recolors its matching pixels.
+  void begin_color_replacement_stroke() noexcept;
+  [[nodiscard]] QRect color_replacement_brush_segment(QPoint from, QPoint to);
+  [[nodiscard]] QRect color_replacement_dab(QPoint center);
   void set_clone_source(QPoint point);
   [[nodiscard]] bool begin_pattern_stamp_stroke(QPoint point);
   [[nodiscard]] QRect clone_brush_segment(QPoint from, QPoint to);
@@ -2699,6 +2709,12 @@ private:
   bool local_protect_tones_{true};
   SpongeMode sponge_mode_{SpongeMode::Desaturate};
   bool sponge_vibrance_{true};
+  ColorReplacementSettings color_replacement_settings_{};
+  // Per stroke: the Once sample (taken at the first dab) and the distance
+  // walked since the last dab; a negative distance stamps the next segment's
+  // start point first.
+  std::optional<ColorReplacementRgb> color_replacement_once_sample_;
+  double color_replacement_distance_since_dab_{-1.0};
   PenInputSettings pen_input_settings_{};
   std::optional<PenInputSample> active_pen_input_sample_{};
   std::optional<PenInputSample> last_pen_input_sample_{};
