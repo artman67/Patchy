@@ -8936,6 +8936,30 @@ Mixed selection</source>
         <comment>Color Range: invert the selection</comment>
         <translation>反転</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>色の置き換え</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>サンプルカラー</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>色の置き換えのプレビュー</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>置き換え</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>結果のカラー</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>結果:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18675,6 +18699,18 @@ Baked into images: %1.</source>
     <message>
         <source>Color Range selected no pixels</source>
         <translation>色域指定で選択されたピクセルはありません</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>色の置き換え(&amp;E)...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>色の置き換え</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>色の置き換えをキャンセルしました</translation>
     </message>
 </context>
 <context>

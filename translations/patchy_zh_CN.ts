@@ -8936,6 +8936,30 @@ RGB：%2, %3, %4</translation>
         <comment>Color Range: invert the selection</comment>
         <translation>反相</translation>
     </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>替换颜色</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>取样颜色</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>替换颜色预览</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>替换</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>结果颜色</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>结果:</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18675,6 +18699,18 @@ Baked into images: %1.</source>
     <message>
         <source>Color Range selected no pixels</source>
         <translation>色彩范围未选中任何像素</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>替换颜色(&amp;E)...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>替换颜色</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>已取消替换颜色</translation>
     </message>
 </context>
 <context>

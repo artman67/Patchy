@@ -8951,7 +8951,7 @@ RGB: %2, %3, %4</translation>
     </message>
     <message>
         <source>Eyedropper: click the image to sample a color</source>
-        <translation>Contagocce: fai clic sull'immagine per campionare un colore</translation>
+        <translation>Contagocce: fai clic sull&apos;immagine per campionare un colore</translation>
     </message>
     <message>
         <source>Add to Sample (Shift-click)</source>
@@ -8965,6 +8965,30 @@ RGB: %2, %3, %4</translation>
         <source>Invert</source>
         <comment>Color Range: invert the selection</comment>
         <translation>Inverti</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Sostituisci colore</translation>
+    </message>
+    <message>
+        <source>Sampled color</source>
+        <translation>Colore campionato</translation>
+    </message>
+    <message>
+        <source>Replace Color preview</source>
+        <translation>Anteprima Sostituisci colore</translation>
+    </message>
+    <message>
+        <source>Replacement</source>
+        <translation>Sostituzione</translation>
+    </message>
+    <message>
+        <source>Result color</source>
+        <translation>Colore risultante</translation>
+    </message>
+    <message>
+        <source>Result:</source>
+        <translation>Risultato:</translation>
     </message>
 </context>
 <context>
@@ -18731,6 +18755,18 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Color Range selected no pixels</source>
         <translation>Intervallo colori non ha selezionato alcun pixel</translation>
+    </message>
+    <message>
+        <source>R&amp;eplace Color...</source>
+        <translation>Sostit&amp;uisci colore...</translation>
+    </message>
+    <message>
+        <source>Replace Color</source>
+        <translation>Sostituisci colore</translation>
+    </message>
+    <message>
+        <source>Cancelled Replace Color</source>
+        <translation>Annullato: Sostituisci colore</translation>
     </message>
 </context>
 <context>

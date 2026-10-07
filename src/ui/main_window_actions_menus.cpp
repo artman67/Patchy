@@ -1352,6 +1352,14 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   add_adjustment_action(QT_TR_NOOP("&Desaturate"), QStringLiteral("imageAdjustDesaturateAction"),
                         QStringLiteral("patchy.filters.desaturate"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_U));
+  // Photoshop lists Replace Color after Desaturate (and Match Color) with no shortcut.
+  auto* replace_color_action = adjustments_menu->addAction(tr("R&eplace Color..."));
+  bind_action_text(replace_color_action, QT_TR_NOOP("R&eplace Color..."));
+  replace_color_action->setObjectName(QStringLiteral("imageAdjustReplaceColorAction"));
+  replace_color_action->setIcon(simple_icon(QStringLiteral("RC")));
+  register_hotkey(replace_color_action, "image.replace_color");
+  connect(replace_color_action, &QAction::triggered, this, [this] { replace_color_dialog(); });
+  register_document_action(replace_color_action);
   add_adjustment_action(QT_TR_NOOP("&Auto Tone"), QStringLiteral("imageAdjustAutoToneAction"),
                         QStringLiteral("patchy.filters.auto_tone"),
                         QKeySequence(Qt::CTRL | Qt::SHIFT | Qt::Key_L));
