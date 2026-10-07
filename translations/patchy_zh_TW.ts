@@ -8879,6 +8879,47 @@ RGB：%2, %3, %4</translation>
         <source>Ratio</source>
         <translation>比例</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>陰影/亮部</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>總量:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>色調:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>半徑:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>調整</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>中間調:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>黑色剪裁:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>白色剪裁:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>儲存為預設值</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>顯示更多選項</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18602,6 +18643,18 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁切框高度</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>陰影/亮部(&amp;W)...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>陰影/亮部</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>已取消陰影/亮部</translation>
     </message>
 </context>
 <context>

@@ -8939,6 +8939,47 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Пропорции</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Тени/Светлые тона</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Эффект:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Тон:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Радиус:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Коррекция</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Средние тона:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Отсечение черного:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Отсечение белого:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Сохранить по умолчанию</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Показать дополнительные параметры</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18714,6 +18755,18 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>&amp;Тени/Светлые тона...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Тени/Светлые тона</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Отменено: Тени/Светлые тона</translation>
     </message>
 </context>
 <context>

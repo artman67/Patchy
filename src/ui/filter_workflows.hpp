@@ -3,6 +3,7 @@
 #include "core/adjustment_layer.hpp"
 #include "core/layer.hpp"
 #include "filters/filter_registry.hpp"
+#include "filters/shadows_highlights.hpp"
 #include "ui/canvas_widget.hpp"
 #include "ui/curves_editor.hpp"
 
@@ -74,6 +75,7 @@ struct ColorBalanceSettings {
 using PosterizeSettings = PosterizeAdjustment;
 using ThresholdSettings = ThresholdAdjustment;
 using ExposureSettings = ExposureAdjustment;
+using ShadowsHighlightsSettings = ::patchy::ShadowsHighlightsSettings;
 using BrightnessContrastSettings = BrightnessContrastAdjustment;
 
 struct FilterControlSpec {
@@ -166,6 +168,9 @@ using FilterCancelled = ::patchy::FilterCancelled;
 [[nodiscard]] std::optional<ExposureSettings> request_exposure_settings(
     QWidget* parent, std::function<void(bool, const ExposureSettings&)> preview_changed = {},
     ExposureSettings initial = {});
+// Opens with the saved defaults (Save Defaults) or Photoshop's factory values.
+[[nodiscard]] std::optional<ShadowsHighlightsSettings> request_shadows_highlights_settings(
+    QWidget* parent, std::function<void(bool, const ShadowsHighlightsSettings&)> preview_changed = {});
 [[nodiscard]] std::optional<BrightnessContrastSettings> request_brightness_contrast_settings(
     QWidget* parent, std::function<void(bool, const BrightnessContrastSettings&)> preview_changed = {},
     BrightnessContrastSettings initial = {});
@@ -202,5 +207,9 @@ void apply_hue_saturation_to_pixels(PixelBuffer& pixels, Rect bounds, const QReg
                                     HueSaturationSettings settings, const FilterProgress* progress = nullptr);
 void apply_color_balance_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
                                    ColorBalanceSettings settings, const FilterProgress* progress = nullptr);
+// Neighborhoods read the whole layer; only selected pixels change.
+void apply_shadows_highlights_to_pixels(PixelBuffer& pixels, Rect bounds, const QRegion& selection,
+                                        const ShadowsHighlightsSettings& settings,
+                                        const FilterProgress* progress = nullptr);
 
 }  // namespace patchy::ui

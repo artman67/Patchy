@@ -8898,6 +8898,47 @@ RGB: %2, %3, %4</source>
         <source>Ratio</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18607,6 +18648,18 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

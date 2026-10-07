@@ -8909,6 +8909,47 @@ RGB: %2, %3, %4</translation>
         <source>Ratio</source>
         <translation>Proporción</translation>
     </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Sombras/iluminaciones</translation>
+    </message>
+    <message>
+        <source>Amount:</source>
+        <translation>Cantidad:</translation>
+    </message>
+    <message>
+        <source>Tone:</source>
+        <translation>Tono:</translation>
+    </message>
+    <message>
+        <source>Radius:</source>
+        <translation>Radio:</translation>
+    </message>
+    <message>
+        <source>Adjustments</source>
+        <comment>Shadows/Highlights dialog group</comment>
+        <translation>Ajustes</translation>
+    </message>
+    <message>
+        <source>Midtone:</source>
+        <translation>Medios tonos:</translation>
+    </message>
+    <message>
+        <source>Black Clip:</source>
+        <translation>Recorte de negro:</translation>
+    </message>
+    <message>
+        <source>White Clip:</source>
+        <translation>Recorte de blanco:</translation>
+    </message>
+    <message>
+        <source>Save Defaults</source>
+        <translation>Guardar como predeterminado</translation>
+    </message>
+    <message>
+        <source>Show More Options</source>
+        <translation>Mostrar más opciones</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -18658,6 +18699,18 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Height of the crop box</source>
         <translation>Alto del cuadro de recorte</translation>
+    </message>
+    <message>
+        <source>Shado&amp;ws/Highlights...</source>
+        <translation>&amp;Sombras/iluminaciones...</translation>
+    </message>
+    <message>
+        <source>Shadows/Highlights</source>
+        <translation>Sombras/iluminaciones</translation>
+    </message>
+    <message>
+        <source>Cancelled Shadows/Highlights</source>
+        <translation>Se ha cancelado Sombras/iluminaciones</translation>
     </message>
 </context>
 <context>

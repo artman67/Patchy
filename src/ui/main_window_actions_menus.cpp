@@ -1363,6 +1363,15 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
                         QStringLiteral("patchy.filters.threshold"));
   add_adjustment_action(QT_TR_NOOP("&Posterize"), QStringLiteral("imageAdjustPosterizeAction"),
                         QStringLiteral("patchy.filters.posterize"));
+  // Photoshop gives Shadows/Highlights its own menu section and no shortcut.
+  adjustments_menu->addSeparator();
+  auto* shadows_highlights_action = adjustments_menu->addAction(tr("Shado&ws/Highlights..."));
+  bind_action_text(shadows_highlights_action, QT_TR_NOOP("Shado&ws/Highlights..."));
+  shadows_highlights_action->setObjectName(QStringLiteral("imageAdjustShadowsHighlightsAction"));
+  shadows_highlights_action->setIcon(simple_icon(QStringLiteral("SH")));
+  register_hotkey(shadows_highlights_action, "image.shadows_highlights");
+  connect(shadows_highlights_action, &QAction::triggered, this, [this] { shadows_highlights_dialog(); });
+  register_document_action(shadows_highlights_action);
   image_menu->addSeparator();
 
   auto* image_size_action = image_menu->addAction(tr("&Image Size..."));
