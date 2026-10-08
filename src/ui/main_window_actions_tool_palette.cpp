@@ -1097,11 +1097,8 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
       return;
     }
     const auto selected = static_cast<CanvasTool>(action->data().toInt());
-    if (canvas_->free_transform_active()) {
-      canvas_->finish_free_transform();
-    }
-    if (canvas_->warp_transform_active()) {
-      canvas_->finish_warp_transform();
+    if (canvas_->layer_transform_session_active()) {
+      canvas_->commit_modal_session();
     }
     if (selected != CanvasTool::Text) {
       finish_active_text_editor();
