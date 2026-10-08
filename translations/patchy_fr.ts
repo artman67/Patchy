@@ -10990,6 +10990,26 @@ RVB : %2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>Remplacement de couleur</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Cliquez sur le maillage pour ajouter des épingles, puis faites-les glisser. %ALT%+clic sur une épingle la supprime. Enter applique, Esc annule.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Déformation de la marionnette annulée</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>Le maillage est vide. Augmentez l&apos;extension pour qu&apos;il couvre le calque.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Déformation de la marionnette</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Déformation de la marionnette appliquée</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19515,6 +19535,119 @@ Convertis en images : %1.</translation>
     <message>
         <source>Tolerance: %1%</source>
         <translation>Tolérance : %1 %</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Déformation de la marionnette</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Mode :</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Rigidité avec laquelle le maillage conserve sa forme</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Densité :</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Espacement du maillage</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Rigide</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Distorsion</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Moins de points</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Normale</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Plus de points</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Extension :</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Agrandir ou réduire le maillage au-delà du bord du calque</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Afficher le maillage</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Profondeur d&apos;épingle :</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Placer les épingles sélectionnées au premier plan là où la déformation se chevauche</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Placer les épingles sélectionnées à l&apos;arrière-plan là où la déformation se chevauche</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Rotation :</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Rotation des épingles sélectionnées</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Auto</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Fixe</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Angle de rotation fixe des épingles sélectionnées</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Supprimer toutes les épingles</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>Déformation de la marionnette n&apos;est pas disponible en mode Masque</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>Déformation de la marionnette n&apos;est pas disponible pendant l&apos;affichage d&apos;une couche du document</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Pixellisez l&apos;objet dynamique avant d&apos;utiliser Déformation de la marionnette</translation>
     </message>
 </context>
 <context>

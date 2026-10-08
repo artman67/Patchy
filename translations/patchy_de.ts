@@ -10990,6 +10990,26 @@ RGB: %2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>Farbe ersetzen</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Klicken Sie auf das Gitter, um Pins zu setzen, und ziehen Sie sie dann. %ALT%-Klick auf einen Pin entfernt ihn. Enter wendet an, Esc bricht ab.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Formgitter abgebrochen</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>Das Gitter ist leer. Erhöhen Sie die Ausbreitung, damit es die Ebene abdeckt.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Formgitter</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Formgitter angewendet</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19515,6 +19535,119 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Tolerance: %1%</source>
         <translation>Toleranz: %1%</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Formgitter</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Modus:</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Wie starr das Gitter seine Form hält</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Dichte:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Gitterabstand</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Starr</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Verzerren</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Weniger Punkte</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Mehr Punkte</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Ausbreitung:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Das Gitter über den Ebenenrand hinaus erweitern oder verkleinern</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Gitter einblenden</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Pin-Tiefe:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Die ausgewählten Pins dort nach vorne bringen, wo sich die Verformung überlappt</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Die ausgewählten Pins dort nach hinten stellen, wo sich die Verformung überlappt</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Drehen:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Drehung der ausgewählten Pins</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Auto</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Fest</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Fester Drehwinkel der ausgewählten Pins</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Alle Pins entfernen</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>Formgitter ist im Maskierungsmodus nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>Formgitter ist beim Anzeigen eines Dokumentkanals nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Rastern Sie das Smartobjekt, bevor Sie Formgitter verwenden</translation>
     </message>
 </context>
 <context>

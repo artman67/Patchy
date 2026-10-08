@@ -290,7 +290,7 @@ bool CanvasWidget::event(QEvent* event) {
       // Accepting the override suppresses the app-level shortcuts (layer.clear binds
       // Backspace on macOS and Delete everywhere) so keyPressEvent receives a plain key
       // event instead of QShortcutMap consuming it first.
-      if (magnetic_lasso_active() || pen_session_active_ ||
+      if (magnetic_lasso_active() || pen_session_active_ || (puppet_.active && !puppet_.selected.empty()) ||
           (path_edit_tool_active() && path_edit_has_selection()) ||
           (!guides_locked_ && has_selected_guides())) {
         event->accept();
@@ -622,7 +622,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     // canvas context menu (show_canvas_context_menu), a drag opens nothing.
     if (event->buttons() == Qt::RightButton && document_ != nullptr && !spacebar_panning_ &&
         !handling_tablet_event_ && !pen_recently_in_proximity() && !pointer_gesture_active() &&
-        !transforming_layer_ && !warping_layer_ && !path_transform_active_ &&
+        !transforming_layer_ && !warping_layer_ && !puppet_.active && !path_transform_active_ &&
         (event->modifiers() & Qt::AltModifier) == 0) {
       context_press_pos_ = event->pos();
     }
@@ -667,6 +667,14 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
 
   if (event->button() == Qt::LeftButton && widget_position_in_ruler(event->pos())) {
     begin_new_guide_drag(event->pos());
+    event->accept();
+    return;
+  }
+
+  if (puppet_.active && event->button() == Qt::LeftButton) {
+    // Like the warp cage, the session stays alive on any click; only Enter/Esc,
+    // the options-bar buttons, or a tool/layer switch end it.
+    handle_puppet_warp_press(event);
     event->accept();
     return;
   }
@@ -1616,6 +1624,13 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
     return;
   }
 
+  if (puppet_.active) {
+    clear_move_hover_outline();
+    handle_puppet_warp_move(event);
+    last_mouse_position_ = event->pos();
+    return;
+  }
+
   if (dragging_transform_) {
     clear_move_hover_outline();
     // The readout anchors on the pointer, so record it before the preview
@@ -2264,6 +2279,11 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
     dragging_warp_handle_ = false;
     warp_drag_index_ = -1;
     update();
+    return;
+  }
+
+  if (puppet_.active) {
+    handle_puppet_warp_release();
     return;
   }
 
@@ -3342,6 +3362,24 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
     return;
   }
 
+  if (puppet_.active) {
+    if (event->key() == Qt::Key_Escape) {
+      cancel_puppet_warp();
+      event->accept();
+      return;
+    }
+    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
+      commit_puppet_warp();
+      event->accept();
+      return;
+    }
+    if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
+      remove_selected_puppet_pins();
+      event->accept();
+      return;
+    }
+  }
+
   if (warping_layer_) {
     if (event->key() == Qt::Key_Escape) {
       cancel_warp_transform();
@@ -3611,7 +3649,7 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   // move, shape, quick select) keep the selection intact.
   if (event->key() == Qt::Key_Escape && event->modifiers() == Qt::NoModifier && !event->isAutoRepeat() &&
       document_ != nullptr && !pointer_gesture_active() && !transforming_layer_ && !warping_layer_ &&
-      (!selected_layer_ids_.empty() || document_->active_layer_id().has_value())) {
+      !puppet_.active && (!selected_layer_ids_.empty() || document_->active_layer_id().has_value())) {
     request_layer_deselection();
     event->accept();
     return;
@@ -3790,6 +3828,7 @@ void CanvasWidget::cancel_pointer_gestures() {
     reset_move_live_latch();
   }
   dragging_transform_ = dragging_warp_handle_ = false;
+  puppet_.dragging = false;
   transform_drag_uses_proxy_preview_ = false;
   path_transform_drag_handle_ = TransformHandle::None;
   path_drag_mode_ = PathEditDrag::None;

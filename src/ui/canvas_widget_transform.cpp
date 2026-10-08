@@ -703,10 +703,30 @@ TransformedImage resample_warped_rgba8(const QImage& source, const WarpSurfaceGr
   if (min_x_it == grid.doc_xs.end() || min_y_it == grid.doc_ys.end()) {
     return TransformedImage{QImage(), Rect{}};
   }
-  const auto left = static_cast<int>(std::floor(*min_x_it)) - 1;
-  const auto top = static_cast<int>(std::floor(*min_y_it)) - 1;
-  const auto right = static_cast<int>(std::ceil(*max_x_it)) + 1;
-  const auto bottom = static_cast<int>(std::ceil(*max_y_it)) + 1;
+  double min_x = *min_x_it;
+  double max_x = *max_x_it;
+  double min_y = *min_y_it;
+  double max_y = *max_y_it;
+  const auto cell_columns = grid.columns - 1;
+  if (!grid.cell_order.empty()) {
+    // A listed subset renders only its own cells, so the output spans their nodes.
+    min_x = min_y = std::numeric_limits<double>::max();
+    max_x = max_y = std::numeric_limits<double>::lowest();
+    for (const auto cell : grid.cell_order) {
+      const auto i00 = static_cast<std::size_t>((cell / cell_columns) * grid.columns + cell % cell_columns);
+      for (const auto index : {i00, i00 + 1, i00 + static_cast<std::size_t>(grid.columns),
+                               i00 + static_cast<std::size_t>(grid.columns) + 1}) {
+        min_x = std::min(min_x, grid.doc_xs[index]);
+        max_x = std::max(max_x, grid.doc_xs[index]);
+        min_y = std::min(min_y, grid.doc_ys[index]);
+        max_y = std::max(max_y, grid.doc_ys[index]);
+      }
+    }
+  }
+  const auto left = static_cast<int>(std::floor(min_x)) - 1;
+  const auto top = static_cast<int>(std::floor(min_y)) - 1;
+  const auto right = static_cast<int>(std::ceil(max_x)) + 1;
+  const auto bottom = static_cast<int>(std::ceil(max_y)) + 1;
   QImage transformed(std::max(1, right - left), std::max(1, bottom - top), QImage::Format_RGBA8888);
   transformed.fill(Qt::transparent);
   std::vector<std::uint8_t> covered(static_cast<std::size_t>(transformed.width()) * transformed.height(), 0);
@@ -722,55 +742,68 @@ TransformedImage resample_warped_rgba8(const QImage& source, const WarpSurfaceGr
     }
   };
 
-  for (int cell_row = 0; cell_row + 1 < grid.rows; ++cell_row) {
-    for (int cell_column = 0; cell_column + 1 < grid.columns; ++cell_column) {
-      const auto i00 = static_cast<std::size_t>(cell_row * grid.columns + cell_column);
-      const auto i10 = i00 + 1;
-      const auto i01 = i00 + static_cast<std::size_t>(grid.columns);
-      const auto i11 = i01 + 1;
-      const double cell_min_x = std::min({grid.doc_xs[i00], grid.doc_xs[i10], grid.doc_xs[i11], grid.doc_xs[i01]});
-      const double cell_max_x = std::max({grid.doc_xs[i00], grid.doc_xs[i10], grid.doc_xs[i11], grid.doc_xs[i01]});
-      const double cell_min_y = std::min({grid.doc_ys[i00], grid.doc_ys[i10], grid.doc_ys[i11], grid.doc_ys[i01]});
-      const double cell_max_y = std::max({grid.doc_ys[i00], grid.doc_ys[i10], grid.doc_ys[i11], grid.doc_ys[i01]});
-      const int px_start = std::max(left, static_cast<int>(std::floor(cell_min_x)));
-      const int px_end = std::min(right, static_cast<int>(std::ceil(cell_max_x)) + 1);
-      const int py_start = std::max(top, static_cast<int>(std::floor(cell_min_y)));
-      const int py_end = std::min(bottom, static_cast<int>(std::ceil(cell_max_y)) + 1);
-      for (int py = py_start; py < py_end; ++py) {
-        auto* row = transformed.scanLine(py - top);
-        auto* coverage_row = covered.data() + static_cast<std::size_t>(py - top) * transformed.width();
-        for (int px = px_start; px < px_end; ++px) {
-          if (coverage_row[px - left] != 0) {
-            continue;  // first writer wins on folds (row-major cell order)
-          }
-          const auto st = invert_bilinear_cell(px + 0.5, py + 0.5, grid.doc_xs[i00], grid.doc_ys[i00],
-                                               grid.doc_xs[i10], grid.doc_ys[i10], grid.doc_xs[i11],
-                                               grid.doc_ys[i11], grid.doc_xs[i01], grid.doc_ys[i01]);
-          if (!st.has_value()) {
-            continue;
-          }
-          const double s = (*st)[0];
-          const double t = (*st)[1];
-          const double source_x = (1.0 - t) * ((1.0 - s) * grid.source_xs[i00] + s * grid.source_xs[i10]) +
-                                  t * ((1.0 - s) * grid.source_xs[i01] + s * grid.source_xs[i11]);
-          const double source_y = (1.0 - t) * ((1.0 - s) * grid.source_ys[i00] + s * grid.source_ys[i10]) +
-                                  t * ((1.0 - s) * grid.source_ys[i01] + s * grid.source_ys[i11]);
-          const auto sample = sample_at(QPointF(source_x, source_y));
-          auto* pixel = row + static_cast<std::ptrdiff_t>(px - left) * 4;
-          const auto alpha = clamp_sample_channel(sample.a);
-          pixel[3] = alpha;
-          if (alpha == 0) {
-            pixel[0] = 0;
-            pixel[1] = 0;
-            pixel[2] = 0;
-          } else {
-            pixel[0] = clamp_sample_channel(sample.r * 255.0 / static_cast<double>(alpha));
-            pixel[1] = clamp_sample_channel(sample.g * 255.0 / static_cast<double>(alpha));
-            pixel[2] = clamp_sample_channel(sample.b * 255.0 / static_cast<double>(alpha));
-          }
-          coverage_row[px - left] = 1;
+  const bool listed_order = !grid.cell_order.empty();
+  const auto render_cell = [&](int cell_row, int cell_column) {
+    const auto i00 = static_cast<std::size_t>(cell_row * grid.columns + cell_column);
+    const auto i10 = i00 + 1;
+    const auto i01 = i00 + static_cast<std::size_t>(grid.columns);
+    const auto i11 = i01 + 1;
+    const double cell_min_x = std::min({grid.doc_xs[i00], grid.doc_xs[i10], grid.doc_xs[i11], grid.doc_xs[i01]});
+    const double cell_max_x = std::max({grid.doc_xs[i00], grid.doc_xs[i10], grid.doc_xs[i11], grid.doc_xs[i01]});
+    const double cell_min_y = std::min({grid.doc_ys[i00], grid.doc_ys[i10], grid.doc_ys[i11], grid.doc_ys[i01]});
+    const double cell_max_y = std::max({grid.doc_ys[i00], grid.doc_ys[i10], grid.doc_ys[i11], grid.doc_ys[i01]});
+    const int px_start = std::max(left, static_cast<int>(std::floor(cell_min_x)));
+    const int px_end = std::min(right, static_cast<int>(std::ceil(cell_max_x)) + 1);
+    const int py_start = std::max(top, static_cast<int>(std::floor(cell_min_y)));
+    const int py_end = std::min(bottom, static_cast<int>(std::ceil(cell_max_y)) + 1);
+    for (int py = py_start; py < py_end; ++py) {
+      auto* row = transformed.scanLine(py - top);
+      auto* coverage_row = covered.data() + static_cast<std::size_t>(py - top) * transformed.width();
+      for (int px = px_start; px < px_end; ++px) {
+        if (coverage_row[px - left] != 0) {
+          continue;  // first writer wins on folds (row-major or listed cell order)
         }
+        const auto st = invert_bilinear_cell(px + 0.5, py + 0.5, grid.doc_xs[i00], grid.doc_ys[i00],
+                                             grid.doc_xs[i10], grid.doc_ys[i10], grid.doc_xs[i11],
+                                             grid.doc_ys[i11], grid.doc_xs[i01], grid.doc_ys[i01]);
+        if (!st.has_value()) {
+          continue;
+        }
+        const double s = (*st)[0];
+        const double t = (*st)[1];
+        const double source_x = (1.0 - t) * ((1.0 - s) * grid.source_xs[i00] + s * grid.source_xs[i10]) +
+                                t * ((1.0 - s) * grid.source_xs[i01] + s * grid.source_xs[i11]);
+        const double source_y = (1.0 - t) * ((1.0 - s) * grid.source_ys[i00] + s * grid.source_ys[i10]) +
+                                t * ((1.0 - s) * grid.source_ys[i01] + s * grid.source_ys[i11]);
+        const auto sample = sample_at(QPointF(source_x, source_y));
+        auto* pixel = row + static_cast<std::ptrdiff_t>(px - left) * 4;
+        const auto alpha = clamp_sample_channel(sample.a);
+        if (alpha == 0 && listed_order) {
+          continue;  // a clear sample in a listed cell never hides the cells behind it
+        }
+        pixel[3] = alpha;
+        if (alpha == 0) {
+          pixel[0] = 0;
+          pixel[1] = 0;
+          pixel[2] = 0;
+        } else {
+          pixel[0] = clamp_sample_channel(sample.r * 255.0 / static_cast<double>(alpha));
+          pixel[1] = clamp_sample_channel(sample.g * 255.0 / static_cast<double>(alpha));
+          pixel[2] = clamp_sample_channel(sample.b * 255.0 / static_cast<double>(alpha));
+        }
+        coverage_row[px - left] = 1;
       }
+    }
+  };
+  if (!listed_order) {
+    for (int cell_row = 0; cell_row + 1 < grid.rows; ++cell_row) {
+      for (int cell_column = 0; cell_column + 1 < grid.columns; ++cell_column) {
+        render_cell(cell_row, cell_column);
+      }
+    }
+  } else {
+    for (const auto cell : grid.cell_order) {
+      render_cell(cell / cell_columns, cell % cell_columns);
     }
   }
   const auto bounds = Rect{left, top, transformed.width(), transformed.height()};
@@ -3604,30 +3637,38 @@ bool CanvasWidget::prepare_warp_source() {
   // converting once here makes the per-move conversion a no-op.
   warp_source_image_ = warp_source_image_.convertToFormat(QImage::Format_RGBA8888);
   if (warp_base_cache_.isNull()) {
-    // Hidden via render overrides (set_visible toggles bumped revisions and
-    // cold-invalidated the style-mask caches), banded across workers, and at
-    // zoom <= 50% composited from the preview-scaled document.
-    warp_base_cache_scale_level_ = 0;
-    const std::vector<LayerId> hidden{*warp_layer_id_};
-    if (const auto composite_level = preview_composite_level_for_zoom(view_zoom()); composite_level >= 1) {
-      if (auto* scaled_document = preview_scaled_document_for_level(composite_level)) {
-        const QRect scaled_canvas(0, 0, scaled_document->width(), scaled_document->height());
-        auto base = qimage_from_document_rect_with_hidden_layers_banded(*scaled_document, scaled_canvas, true, hidden)
-                        .convertToFormat(QImage::Format_RGBA8888);
-        if (!base.isNull()) {
-          warp_base_cache_ = std::move(base);
-          warp_base_cache_scale_level_ = composite_level;
-        }
-      }
-    }
-    if (warp_base_cache_.isNull()) {
-      const QRect canvas_rect(0, 0, document_->width(), document_->height());
-      warp_base_cache_ = qimage_from_document_rect_with_hidden_layers_banded(*document_, canvas_rect, true, hidden)
-                             .convertToFormat(QImage::Format_RGBA8888);
-    }
+    build_warp_base_cache(*warp_layer_id_);
   }
   refresh_warp_preview_cache();
   return true;
+}
+
+void CanvasWidget::build_warp_base_cache(LayerId hidden_layer_id) {
+  // Hidden via render overrides (set_visible toggles bumped revisions and
+  // cold-invalidated the style-mask caches), banded across workers, and at
+  // zoom <= 50% composited from the preview-scaled document.
+  warp_base_cache_ = QImage();
+  warp_base_cache_scale_level_ = 0;
+  if (document_ == nullptr) {
+    return;
+  }
+  const std::vector<LayerId> hidden{hidden_layer_id};
+  if (const auto composite_level = preview_composite_level_for_zoom(view_zoom()); composite_level >= 1) {
+    if (auto* scaled_document = preview_scaled_document_for_level(composite_level)) {
+      const QRect scaled_canvas(0, 0, scaled_document->width(), scaled_document->height());
+      auto base = qimage_from_document_rect_with_hidden_layers_banded(*scaled_document, scaled_canvas, true, hidden)
+                      .convertToFormat(QImage::Format_RGBA8888);
+      if (!base.isNull()) {
+        warp_base_cache_ = std::move(base);
+        warp_base_cache_scale_level_ = composite_level;
+      }
+    }
+  }
+  if (warp_base_cache_.isNull()) {
+    const QRect canvas_rect(0, 0, document_->width(), document_->height());
+    warp_base_cache_ = qimage_from_document_rect_with_hidden_layers_banded(*document_, canvas_rect, true, hidden)
+                           .convertToFormat(QImage::Format_RGBA8888);
+  }
 }
 
 std::array<double, 8> CanvasWidget::warp_document_quad() const {
@@ -3653,25 +3694,30 @@ void CanvasWidget::refresh_warp_preview_cache() {
     return;
   }
   const auto warped = resample_warped_rgba8(warp_source_image_, *grid, transform_interpolation_);
-  if (warped.image.isNull()) {
+  set_warp_preview_patches(*warp_layer_id_, warped.image, warped.bounds);
+}
+
+void CanvasWidget::set_warp_preview_patches(LayerId layer_id, const QImage& warped_image, Rect warped_bounds) {
+  warp_preview_patches_.clear();
+  if (document_ == nullptr || warped_image.isNull()) {
     return;
   }
-  const auto* layer = std::as_const(*document_).find_layer(*warp_layer_id_);
+  const auto* layer = std::as_const(*document_).find_layer(layer_id);
   if (layer == nullptr) {
     return;
   }
-  const auto warped_pixels = pixels_from_image_rgba(warped.image);
+  const auto warped_pixels = pixels_from_image_rgba(warped_image);
   // Region-limited over the base cache (which excludes the layer): the warped
   // content only contributes inside its own effect bounds, so recompositing
   // the whole document per handle move - the warp drag's dominant cost - is
   // replaced by one bounded patch render.
   const QRect canvas_rect(0, 0, document_->width(), document_->height());
-  const auto patch_rect = to_qrect(layer_bounds_with_effects(*layer, warped.bounds)).intersected(canvas_rect);
+  const auto patch_rect = to_qrect(layer_bounds_with_effects(*layer, warped_bounds)).intersected(canvas_rect);
   if (patch_rect.isEmpty()) {
     return;
   }
   warp_preview_patches_ = qimage_patches_from_document_region_with_layer_pixels(
-      *document_, QRegion(patch_rect), true, *warp_layer_id_, warped_pixels, warped.bounds);
+      *document_, QRegion(patch_rect), true, layer_id, warped_pixels, warped_bounds);
   for (auto& patch : warp_preview_patches_) {
     patch.image = patch.image.convertToFormat(QImage::Format_RGBA8888);
   }

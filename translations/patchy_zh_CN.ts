@@ -10960,6 +10960,26 @@ RGB：%2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>颜色替换</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>单击网格添加图钉，然后拖动图钉。按住 %ALT% 单击图钉可将其删除。按 Enter 应用，按 Esc 取消。</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>已取消操控变形</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>网格为空。请增大扩展值以覆盖图层。</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>操控变形</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>已应用操控变形</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19459,6 +19479,119 @@ Baked into images: %1.</source>
     <message>
         <source>Tolerance: %1%</source>
         <translation>容差: %1%</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>操控变形</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>模式:</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>网格保持形状的刚性程度</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>密度:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>网格间距</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>刚性</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>正常</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>扭曲</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>较少点</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>正常</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>较多点</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>扩展:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>将网格扩展或收缩到图层边缘之外</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>显示网格</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>图钉深度:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>在变形重叠处将所选图钉前移</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>在变形重叠处将所选图钉后移</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>旋转:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>所选图钉的旋转</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>自动</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>固定</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>所选图钉的固定旋转角度</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>移去所有图钉</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>快速蒙版模式下无法使用操控变形</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>查看文档通道时无法使用操控变形</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>使用操控变形前，请先栅格化智能对象</translation>
     </message>
 </context>
 <context>

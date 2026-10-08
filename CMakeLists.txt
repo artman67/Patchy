@@ -133,6 +133,8 @@ add_library(patchy_core
   src/core/photo_divide.cpp
   src/core/pixel_buffer.cpp
   src/core/pixel_tools.cpp
+  src/core/puppet_warp.hpp
+  src/core/puppet_warp.cpp
   src/core/quick_select.cpp
   src/core/rect_utils.cpp
   src/core/smart_filter_effects.cpp
@@ -976,6 +978,7 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/canvas_widget_selection_engines.cpp
       src/ui/canvas_widget_spot_healing.cpp
       src/ui/canvas_widget_transform.cpp
+      src/ui/canvas_widget_puppet_warp.cpp
       src/ui/canvas_widget_vector_tools.cpp
       src/ui/canvas_widget_view.cpp
       src/ui/channel_panel.hpp
@@ -1829,6 +1832,7 @@ if(PATCHY_BUILD_TESTS)
       tests/ui/smart_filter_tests_kinds.cpp
       tests/ui/smart_object_tests.cpp
       tests/ui/warp_tests.cpp
+      tests/ui/puppet_warp_tests.cpp
       tests/ui/import_print_resolution_tests.cpp
       tests/ui/divide_photos_tests.cpp
       tests/ui/folder_open_export_tests.cpp

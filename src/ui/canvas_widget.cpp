@@ -247,7 +247,7 @@ void CanvasWidget::set_document(Document* document) {
 bool CanvasWidget::pointer_gesture_active() const noexcept {
   return move_layer_selection_gesture_.has_value() || painting_ || drawing_shape_ || dragging_text_rect_ ||
          move_drag_pending_ ||
-         moving_layer_ || dragging_transform_ || dragging_warp_handle_ || selecting_ ||
+         moving_layer_ || dragging_transform_ || dragging_warp_handle_ || puppet_.dragging || selecting_ ||
          lassoing_ || quick_selecting_ || spot_healing_stroke_active_ || patch_tool_dragging_ ||
          moving_selection_ || marquee_resize_handle_ != TransformHandle::None || dragging_guide_ ||
          crop_dragging_out_ || crop_rotating_ ||
@@ -341,6 +341,9 @@ void CanvasWidget::set_document_internal(Document* document, bool preserve_frame
   cancel_free_transform();
   if (warping_layer_) {
     reset_warp_state();
+  }
+  if (puppet_.active) {
+    reset_puppet_warp_state();
   }
   cancel_move_layer_selection();
   move_drag_pending_ = false;
@@ -446,6 +449,7 @@ void CanvasWidget::set_tool(CanvasTool tool) {
     commit_path_transform();  // tool switches commit, like the pen session
     finish_free_transform();
     finish_warp_transform();
+    finish_puppet_warp();
     cancel_move_layer_selection();
     move_drag_pending_ = false;
     moving_layer_ = false;
@@ -1299,6 +1303,9 @@ void CanvasWidget::set_selected_layer_ids(std::vector<LayerId> layer_ids) {
                                  layer_ids.front() == *warp_layer_id_;
   if (warping_layer_ && !keeps_active_warp) {
     finish_warp_transform();
+  }
+  if (puppet_.active && !(layer_ids.size() == 1U && layer_ids.front() == puppet_.layer_id)) {
+    finish_puppet_warp();
   }
   if (move_transform_controls_layer_id_.has_value() &&
       !(layer_ids.size() == 1U && layer_ids.front() == *move_transform_controls_layer_id_)) {

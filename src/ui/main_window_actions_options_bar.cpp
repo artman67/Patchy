@@ -586,6 +586,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   option_actions_.clear();
   transform_option_actions_.clear();
   warp_option_actions_.clear();
+  puppet_warp_option_actions_.clear();
   transform_session_actions_.clear();
   const auto make_option_separator = [options_content, options_flow]() -> QWidget* {
     auto* line = new QFrame(options_content);
@@ -1030,6 +1031,177 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   connect(warp_bend_spin_, &QDoubleSpinBox::valueChanged, this,
           [apply_warp_style_from_ui](double) { apply_warp_style_from_ui(); });
 
+  // Puppet Warp options: visible only while a Puppet Warp session runs. Pin
+  // rotation and depth are set here and never from the canvas (no pop-up and no
+  // rotation ring around a pin; see docs/puppet-warp.md).
+  const auto add_puppet_option_widget = [this, options_flow](QWidget* widget) {
+    options_flow->addWidget(widget);
+    puppet_warp_option_actions_.push_back(widget);
+    return widget;
+  };
+  const auto make_puppet_label = [toolbar, add_puppet_option_widget](const char* source) {
+    auto* label = new QLabel(QCoreApplication::translate(kMainWindowTranslationContext, source), toolbar);
+    label->setProperty("optionLabel", true);
+    label->setAlignment(Qt::AlignVCenter);
+    bind_widget_text(label, source);
+    add_puppet_option_widget(label);
+    return label;
+  };
+  const auto apply_puppet_options_from_ui = [this] {
+    if (updating_transform_controls_ || canvas_ == nullptr) {
+      return;
+    }
+    canvas_->set_puppet_warp_options(puppet_warp_options_from_ui());
+  };
+  // Its own "Mode:" entry: the shared one is the blend-mode label in some languages.
+  auto* puppet_mode_label = new QLabel(toolbar);
+  puppet_mode_label->setProperty("optionLabel", true);
+  puppet_mode_label->setAlignment(Qt::AlignVCenter);
+  add_puppet_option_widget(puppet_mode_label);
+  register_retranslation([puppet_mode_label] { puppet_mode_label->setText(tr("Mode:", "Puppet Warp")); });
+  puppet_warp_mode_combo_ = new QComboBox(toolbar);
+  puppet_warp_mode_combo_->setObjectName(QStringLiteral("puppetWarpModeCombo"));
+  bind_tooltip(puppet_warp_mode_combo_, QT_TR_NOOP("How rigidly the mesh holds its shape"));
+  puppet_warp_mode_combo_->setMinimumWidth(86);
+  add_puppet_option_widget(puppet_warp_mode_combo_);
+  make_puppet_label(QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Density:"));
+  puppet_warp_density_combo_ = new QComboBox(toolbar);
+  puppet_warp_density_combo_->setObjectName(QStringLiteral("puppetWarpDensityCombo"));
+  bind_tooltip(puppet_warp_density_combo_, QT_TR_NOOP("Mesh spacing"));
+  puppet_warp_density_combo_->setMinimumWidth(104);
+  add_puppet_option_widget(puppet_warp_density_combo_);
+  register_retranslation([this] {
+    if (puppet_warp_mode_combo_ == nullptr || puppet_warp_density_combo_ == nullptr) {
+      return;
+    }
+    const auto mode = puppet_warp_mode_combo_->currentData();
+    const auto density = puppet_warp_density_combo_->currentData();
+    QSignalBlocker mode_blocker(puppet_warp_mode_combo_);
+    QSignalBlocker density_blocker(puppet_warp_density_combo_);
+    puppet_warp_mode_combo_->clear();
+    puppet_warp_mode_combo_->addItem(tr("Rigid", "Puppet Warp mode"), static_cast<int>(PuppetWarpMode::Rigid));
+    puppet_warp_mode_combo_->addItem(tr("Normal", "Puppet Warp mode"), static_cast<int>(PuppetWarpMode::Normal));
+    puppet_warp_mode_combo_->addItem(tr("Distort", "Puppet Warp mode"), static_cast<int>(PuppetWarpMode::Distort));
+    puppet_warp_density_combo_->clear();
+    puppet_warp_density_combo_->addItem(tr("Fewer Points", "Puppet Warp density"),
+                                        static_cast<int>(PuppetWarpDensity::FewerPoints));
+    puppet_warp_density_combo_->addItem(tr("Normal", "Puppet Warp density"),
+                                        static_cast<int>(PuppetWarpDensity::Normal));
+    puppet_warp_density_combo_->addItem(tr("More Points", "Puppet Warp density"),
+                                        static_cast<int>(PuppetWarpDensity::MorePoints));
+    const auto normal_mode = QVariant(static_cast<int>(PuppetWarpMode::Normal));
+    const auto normal_density = QVariant(static_cast<int>(PuppetWarpDensity::Normal));
+    puppet_warp_mode_combo_->setCurrentIndex(
+        std::max(0, puppet_warp_mode_combo_->findData(mode.isValid() ? mode : normal_mode)));
+    puppet_warp_density_combo_->setCurrentIndex(
+        std::max(0, puppet_warp_density_combo_->findData(density.isValid() ? density : normal_density)));
+  });
+  make_puppet_label(QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Expansion:"));
+  puppet_warp_expansion_spin_ = new UnitSpinBox(SpinUnit::Pixels, toolbar);
+  puppet_warp_expansion_spin_->setObjectName(QStringLiteral("puppetWarpExpansionSpin"));
+  puppet_warp_expansion_spin_->setRange(-100.0, 100.0);
+  puppet_warp_expansion_spin_->setDecimals(0);
+  puppet_warp_expansion_spin_->setKeyboardTracking(false);
+  puppet_warp_expansion_spin_->setValue(2.0);
+  bind_tooltip(puppet_warp_expansion_spin_, QT_TR_NOOP("Grow or shrink the mesh beyond the layer's edge"));
+  configure_dialog_spinbox(puppet_warp_expansion_spin_, 70);
+  add_puppet_option_widget(puppet_warp_expansion_spin_);
+  puppet_warp_show_mesh_check_ = new CheckGlyphBox(tr("Show Mesh"), toolbar);
+  puppet_warp_show_mesh_check_->setObjectName(QStringLiteral("puppetWarpShowMeshCheck"));
+  bind_widget_text(puppet_warp_show_mesh_check_, QT_TR_NOOP("Show Mesh"));
+  puppet_warp_show_mesh_check_->setChecked(true);
+  add_puppet_option_widget(puppet_warp_show_mesh_check_);
+  make_puppet_label(QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pin Depth:"));
+  const auto make_puppet_button = [toolbar, add_puppet_option_widget](const QString& object_name, const QString& text,
+                                                                      const char* tooltip) {
+    auto* button = new QPushButton(text, toolbar);
+    button->setObjectName(object_name);
+    bind_tooltip(button, tooltip);
+    button->setFixedWidth(30);
+    button->setProperty("optionsSessionButton", true);
+    add_puppet_option_widget(button);
+    return button;
+  };
+  puppet_warp_pin_forward_button_ =
+      make_puppet_button(QStringLiteral("puppetWarpPinForwardButton"), QStringLiteral("+"),
+                         QT_TR_NOOP("Bring the selected pins forward where the warp overlaps"));
+  puppet_warp_pin_backward_button_ =
+      make_puppet_button(QStringLiteral("puppetWarpPinBackwardButton"), QStringLiteral("-"),
+                         QT_TR_NOOP("Send the selected pins backward where the warp overlaps"));
+  make_puppet_label(QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rotate:"));
+  puppet_warp_rotate_combo_ = new QComboBox(toolbar);
+  puppet_warp_rotate_combo_->setObjectName(QStringLiteral("puppetWarpRotateCombo"));
+  bind_tooltip(puppet_warp_rotate_combo_, QT_TR_NOOP("Rotation of the selected pins"));
+  puppet_warp_rotate_combo_->setMinimumWidth(70);
+  add_puppet_option_widget(puppet_warp_rotate_combo_);
+  register_retranslation([this] {
+    if (puppet_warp_rotate_combo_ == nullptr) {
+      return;
+    }
+    const auto current = puppet_warp_rotate_combo_->currentData();
+    QSignalBlocker blocker(puppet_warp_rotate_combo_);
+    puppet_warp_rotate_combo_->clear();
+    puppet_warp_rotate_combo_->addItem(tr("Auto", "Puppet Warp pin rotation"), false);
+    puppet_warp_rotate_combo_->addItem(tr("Fixed", "Puppet Warp pin rotation"), true);
+    puppet_warp_rotate_combo_->setCurrentIndex(
+        std::max(0, puppet_warp_rotate_combo_->findData(current.isValid() ? current : QVariant(false))));
+  });
+  puppet_warp_rotate_angle_spin_ = new UnitSpinBox(SpinUnit::Degrees, toolbar);
+  puppet_warp_rotate_angle_spin_->setObjectName(QStringLiteral("puppetWarpRotateAngleSpin"));
+  puppet_warp_rotate_angle_spin_->setRange(-180.0, 180.0);
+  puppet_warp_rotate_angle_spin_->setDecimals(0);
+  puppet_warp_rotate_angle_spin_->setKeyboardTracking(false);
+  bind_tooltip(puppet_warp_rotate_angle_spin_, QT_TR_NOOP("Fixed rotation angle of the selected pins"));
+  configure_dialog_spinbox(puppet_warp_rotate_angle_spin_, 70);
+  add_puppet_option_widget(puppet_warp_rotate_angle_spin_);
+  puppet_warp_remove_all_button_ = new QPushButton(toolbar);
+  puppet_warp_remove_all_button_->setObjectName(QStringLiteral("puppetWarpRemoveAllPinsButton"));
+  puppet_warp_remove_all_button_->setIcon(simple_icon(QStringLiteral("rotate")));
+  bind_tooltip(puppet_warp_remove_all_button_, QT_TR_NOOP("Remove all pins"));
+  puppet_warp_remove_all_button_->setFixedWidth(30);
+  puppet_warp_remove_all_button_->setIconSize(QSize(20, 20));
+  puppet_warp_remove_all_button_->setProperty("optionsSessionButton", true);
+  add_puppet_option_widget(puppet_warp_remove_all_button_);
+  connect(puppet_warp_mode_combo_, &QComboBox::currentIndexChanged, this,
+          [apply_puppet_options_from_ui](int) { apply_puppet_options_from_ui(); });
+  connect(puppet_warp_density_combo_, &QComboBox::currentIndexChanged, this,
+          [apply_puppet_options_from_ui](int) { apply_puppet_options_from_ui(); });
+  connect(puppet_warp_expansion_spin_, &QDoubleSpinBox::valueChanged, this,
+          [apply_puppet_options_from_ui](double) { apply_puppet_options_from_ui(); });
+  connect(puppet_warp_show_mesh_check_, &QCheckBox::toggled, this,
+          [apply_puppet_options_from_ui](bool) { apply_puppet_options_from_ui(); });
+  connect(puppet_warp_pin_forward_button_, &QPushButton::clicked, this, [this] {
+    if (canvas_ != nullptr) {
+      canvas_->shift_selected_puppet_pins_depth(1);
+    }
+  });
+  connect(puppet_warp_pin_backward_button_, &QPushButton::clicked, this, [this] {
+    if (canvas_ != nullptr) {
+      canvas_->shift_selected_puppet_pins_depth(-1);
+    }
+  });
+  const auto apply_puppet_rotation_from_ui = [this] {
+    if (updating_transform_controls_ || canvas_ == nullptr || puppet_warp_rotate_combo_ == nullptr ||
+        puppet_warp_rotate_angle_spin_ == nullptr) {
+      return;
+    }
+    canvas_->set_selected_puppet_pins_rotation(puppet_warp_rotate_combo_->currentData().toBool(),
+                                               puppet_warp_rotate_angle_spin_->value());
+  };
+  connect(puppet_warp_rotate_combo_, &QComboBox::currentIndexChanged, this,
+          [apply_puppet_rotation_from_ui](int index) {
+            if (index >= 0) {
+              apply_puppet_rotation_from_ui();
+            }
+          });
+  connect(puppet_warp_rotate_angle_spin_, &QDoubleSpinBox::valueChanged, this,
+          [apply_puppet_rotation_from_ui](double) { apply_puppet_rotation_from_ui(); });
+  connect(puppet_warp_remove_all_button_, &QPushButton::clicked, this, [this] {
+    if (canvas_ != nullptr) {
+      canvas_->remove_all_puppet_pins();
+    }
+  });
+
   // Shared session trio, laid out after both control sets so it closes the row in
   // either mode (Photoshop's options-bar order: mode toggle, then cancel/commit).
   // Apply/cancel dispatch on whichever session is active.
@@ -1082,7 +1254,9 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     if (canvas_ == nullptr) {
       return;
     }
-    if (canvas_->warp_transform_active()) {
+    if (canvas_->puppet_warp_active()) {
+      canvas_->finish_puppet_warp();
+    } else if (canvas_->warp_transform_active()) {
       canvas_->finish_warp_transform();
     } else {
       canvas_->finish_free_transform();
@@ -1092,7 +1266,9 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     if (canvas_ == nullptr) {
       return;
     }
-    if (canvas_->warp_transform_active()) {
+    if (canvas_->puppet_warp_active()) {
+      canvas_->cancel_puppet_warp();
+    } else if (canvas_->warp_transform_active()) {
       canvas_->cancel_warp_transform();
     } else {
       canvas_->cancel_free_transform();

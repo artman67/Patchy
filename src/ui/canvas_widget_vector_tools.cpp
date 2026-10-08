@@ -1548,7 +1548,7 @@ bool CanvasWidget::handle_path_edit_key(QKeyEvent* event) {
     // handlers run later in keyPressEvent (guide drags, warp/free transform,
     // text-rect drags) keep priority - never swallow their cancel key.
     if (event->key() == Qt::Key_Escape && panel_path_targeted_ &&
-        path_display_dismiss_callback_ && !dragging_guide_ && !warping_layer_ &&
+        path_display_dismiss_callback_ && !dragging_guide_ && !warping_layer_ && !puppet_.active &&
         !transforming_layer_ && !dragging_text_rect_) {
       path_display_dismiss_callback_();
       return true;

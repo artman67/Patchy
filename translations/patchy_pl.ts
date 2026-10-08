@@ -11020,6 +11020,26 @@ RGB: %2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>Zastępowanie koloru</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Kliknij siatkę, aby dodać pinezki, a następnie je przeciągnij. %ALT%+kliknięcie pinezki usuwa ją. Enter zatwierdza, Esc anuluje.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Anulowano wypaczenie marionetkowe</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>Siatka jest pusta. Zwiększ rozszerzenie, aby obejmowała warstwę.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Wypaczenie marionetkowe</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Zastosowano wypaczenie marionetkowe</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19571,6 +19591,119 @@ Y: %2
     <message>
         <source>Tolerance: %1%</source>
         <translation>Tolerancja: %1%</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Wypaczenie marionetkowe</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Tryb:</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Jak sztywno siatka zachowuje swój kształt</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Gęstość:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Odstęp siatki</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Sztywny</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Normalny</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Zniekształcenie</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Mniej punktów</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Normalna</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Więcej punktów</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Rozszerzenie:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Powiększ lub zmniejsz siatkę poza krawędź warstwy</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Pokaż siatkę</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Głębokość pinezki:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Przesuń zaznaczone pinezki do przodu tam, gdzie wypaczenie się nakłada</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Przesuń zaznaczone pinezki do tyłu tam, gdzie wypaczenie się nakłada</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Obrót:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Obrót zaznaczonych pinezek</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Automatyczny</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Stały</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Stały kąt obrotu zaznaczonych pinezek</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Usuń wszystkie pinezki</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>Funkcja Wypaczenie marionetkowe jest niedostępna w trybie szybkiej maski</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>Funkcja Wypaczenie marionetkowe jest niedostępna podczas przeglądania kanału dokumentu</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Przed użyciem funkcji Wypaczenie marionetkowe zrasteryzuj obiekt inteligentny</translation>
     </message>
 </context>
 <context>

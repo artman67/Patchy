@@ -10990,6 +10990,26 @@ RGB: %2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>Sostituzione colore</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Fai clic sulla trama per aggiungere puntine, poi trascinale. %ALT%+clic su una puntina la rimuove. Enter applica, Esc annulla.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Alterazione burattino annullata</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>La trama è vuota. Aumenta l&apos;espansione per coprire il livello.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Alterazione burattino</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Alterazione burattino applicata</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19515,6 +19535,119 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Tolerance: %1%</source>
         <translation>Tolleranza: %1%</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Alterazione burattino</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Modalità:</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Quanto rigidamente la trama mantiene la propria forma</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Densità:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Spaziatura della trama</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Rigido</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Normale</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Distorci</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Meno punti</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Normale</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Più punti</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Espansione:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Espandi o riduci la trama oltre il bordo del livello</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Mostra trama</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Profondità puntina:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Porta in avanti le puntine selezionate dove l&apos;alterazione si sovrappone</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Porta indietro le puntine selezionate dove l&apos;alterazione si sovrappone</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Ruota:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Rotazione delle puntine selezionate</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Auto</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Fissa</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Angolo di rotazione fisso delle puntine selezionate</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Rimuovi tutte le puntine</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>Alterazione burattino non è disponibile in modalità Maschera veloce</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>Alterazione burattino non è disponibile durante la visualizzazione di un canale del documento</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Rasterizza l&apos;oggetto avanzato prima di usare Alterazione burattino</translation>
     </message>
 </context>
 <context>

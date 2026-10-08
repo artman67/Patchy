@@ -10990,6 +10990,26 @@ RGB: %2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>Substituição de cores</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Clique na malha para adicionar alfinetes e arraste-os. %ALT%+clique em um alfinete o remove. Enter aplica; Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Distorção de fantoches cancelada</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>A malha está vazia. Aumente a expansão para cobrir a camada.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Distorção de fantoches</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Distorção de fantoches aplicada</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19515,6 +19535,119 @@ Y: %2
     <message>
         <source>Tolerance: %1%</source>
         <translation>Tolerância: %1%</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Distorção de fantoches</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Modo:</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Quão rigidamente a malha mantém sua forma</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Densidade:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Espaçamento da malha</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Rígido</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Distorcer</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Menos pontos</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Mais pontos</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Expansão:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Aumenta ou reduz a malha além da borda da camada</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Mostrar malha</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Profundidade do alfinete:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Trazer os alfinetes selecionados para a frente onde a distorção se sobrepõe</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Enviar os alfinetes selecionados para trás onde a distorção se sobrepõe</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Girar:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Rotação dos alfinetes selecionados</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Automático</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Fixo</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Ângulo de rotação fixo dos alfinetes selecionados</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Remover todos os alfinetes</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>Distorção de fantoches não está disponível no modo Máscara Rápida</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>Distorção de fantoches não está disponível durante a visualização de um canal de documento</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Rasterize o objeto inteligente antes de usar Distorção de fantoches</translation>
     </message>
 </context>
 <context>

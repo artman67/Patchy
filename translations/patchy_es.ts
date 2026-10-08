@@ -10990,6 +10990,26 @@ RGB: %2, %3, %4</translation>
         <source>Color Replacement</source>
         <translation>Sustitución de color</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Haga clic en la malla para añadir chinchetas y luego arrástrelas. %ALT%+clic en una chincheta la elimina. Enter aplica, Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Deformación de posición libre cancelada</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>La malla está vacía. Aumente la expansión para que cubra la capa.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Deformación de posición libre</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Deformación de posición libre aplicada</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19515,6 +19535,119 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Tolerance: %1%</source>
         <translation>Tolerancia: %1%</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Deformación de posición libre</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Modo:</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Grado de rigidez con que la malla conserva su forma</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Densidad:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Separación de la malla</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Rígido</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Distorsionar</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Menos puntos</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Normal</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Más puntos</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Expansión:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Amplía o reduce la malla más allá del borde de la capa</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Mostrar malla</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Profundidad de chincheta:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Traer al frente las chinchetas seleccionadas donde la deformación se superpone</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Enviar atrás las chinchetas seleccionadas donde la deformación se superpone</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Rotar:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Rotación de las chinchetas seleccionadas</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Automático</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Fijo</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Ángulo de rotación fijo de las chinchetas seleccionadas</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Quitar todas las chinchetas</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>Deformación de posición libre no está disponible en el modo Máscara rápida</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>Deformación de posición libre no está disponible mientras se visualiza un canal del documento</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Rasterice el objeto inteligente antes de usar Deformación de posición libre</translation>
     </message>
 </context>
 <context>

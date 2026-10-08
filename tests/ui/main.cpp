@@ -305,6 +305,7 @@ int main(int argc, char* argv[]) {
            smart_filter_tests,
            smart_object_tests,
            warp_tests,
+           puppet_warp_tests,
            import_print_resolution_tests,
            divide_photos_tests,
            folder_open_export_tests,
