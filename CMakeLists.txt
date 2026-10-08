@@ -124,6 +124,7 @@ add_library(patchy_core
   src/core/shape_combine.cpp
   src/core/pattern_presets.cpp
   src/core/pattern_resource.cpp
+  src/core/perspective_warp.cpp
   src/core/photo_divide.cpp
   src/core/pixel_buffer.cpp
   src/core/pixel_tools.cpp
@@ -968,6 +969,7 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/canvas_widget_selection_engines.cpp
       src/ui/canvas_widget_spot_healing.cpp
       src/ui/canvas_widget_transform.cpp
+      src/ui/canvas_widget_perspective_warp.cpp
       src/ui/canvas_widget_vector_tools.cpp
       src/ui/canvas_widget_view.cpp
       src/ui/channel_panel.hpp
@@ -1702,6 +1704,7 @@ if(PATCHY_BUILD_TESTS)
     tests/core/palette_tests.cpp
     tests/core/pat_asl_abr_tests.cpp
     tests/core/pattern_styles_fixtures_tests.cpp
+    tests/core/perspective_warp_tests.cpp
     tests/core/photo_divide_tests.cpp
     tests/core/pixel_tools_tests.cpp
     tests/core/psd_core_io_tests.cpp
@@ -1811,6 +1814,7 @@ if(PATCHY_BUILD_TESTS)
       tests/ui/smart_filter_tests_kinds.cpp
       tests/ui/smart_object_tests.cpp
       tests/ui/warp_tests.cpp
+      tests/ui/perspective_warp_tests.cpp
       tests/ui/import_print_resolution_tests.cpp
       tests/ui/divide_photos_tests.cpp
       tests/ui/folder_open_export_tests.cpp

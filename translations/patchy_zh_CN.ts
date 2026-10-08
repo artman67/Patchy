@@ -10435,6 +10435,46 @@ RGB：%2, %3, %4</translation>
         <source>Crop box reset to the canvas</source>
         <translation>裁剪框已重置为画布</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>使用透视变形前，请先栅格化智能对象</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>拖动以在每个平面上绘制四边形，然后选择变形。按 Enter 应用，按 Esc 取消。</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>透视变形</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>已应用透视变形</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>已取消透视变形</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>切换到变形前请先绘制四边形</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>拖动四边形的角点。按 Enter 应用，按 Esc 取消。</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>请选择要拉直的四边形</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>拉直会使此四边形翻折或接触另一个四边形</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>四边形不能相互接触或重叠。请在平面之间留出间隙。</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18602,6 +18642,62 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>裁剪框高度</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>透视变形</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>版面</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>在图像的平面上绘制四边形</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>变形</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>拖动四边形的角点以更改透视</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>将所选四边形的近垂直边设为垂直</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>将所选四边形的近水平边设为水平</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>将所选四边形的边设为垂直和水平</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>移去所有四边形</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>移去所有四边形并重新开始版面</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>应用透视变形</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>取消透视变形</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>快速蒙版模式下无法使用透视变形</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>使用透视变形前，请先栅格化智能对象</translation>
     </message>
 </context>
 <context>

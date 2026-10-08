@@ -7,6 +7,7 @@
 #include "core/layer_alignment.hpp"
 #include "core/magnetic_lasso.hpp"
 #include "core/pattern_resource.hpp"
+#include "core/perspective_warp.hpp"
 #include "core/pixel_tools.hpp"
 #include "core/spot_heal.hpp"
 #include "core/stroke_stabilizer.hpp"
@@ -977,6 +978,37 @@ public:
   [[nodiscard]] int warp_handle_count() const noexcept;
   [[nodiscard]] QPointF warp_handle_document_position(int index) const;
   void set_warp_handle_document_position(int index, QPointF document_point);
+  // Perspective Warp (Edit > Perspective Warp, docs/perspective-warp.md) on one
+  // RGB pixel layer: Layout mode draws separate quads over the image's planes,
+  // Warp mode drags their corners. Each quad maps by its own homography and the
+  // rest of the layer follows a harmonic membrane. Commit bakes one resample of
+  // the original pixels as one undo step; smart objects are refused.
+  enum class PerspectiveWarpMode { Layout, Warp };
+  bool begin_perspective_warp();
+  void finish_perspective_warp();
+  void cancel_perspective_warp();
+  [[nodiscard]] bool perspective_warp_active() const noexcept;
+  [[nodiscard]] PerspectiveWarpMode perspective_warp_mode() const noexcept;
+  // Warp needs at least one quad; a refusal reports in the status bar.
+  bool set_perspective_warp_mode(PerspectiveWarpMode mode);
+  // Layout mode only. Corners in document pixels, clockwise from top-left.
+  // Adding or moving a corner refuses anything that would fold a quad or bring
+  // two quads closer than kPerspectiveQuadGap.
+  bool add_perspective_warp_quad(const PerspectiveQuad& corners);
+  [[nodiscard]] int perspective_warp_quad_count() const noexcept;
+  [[nodiscard]] int perspective_warp_selected_quad() const noexcept;
+  void select_perspective_warp_quad(int index);
+  // The corner in the current mode: layout corners in Layout, warped in Warp.
+  [[nodiscard]] QPointF perspective_warp_corner(int quad, int corner) const;
+  bool set_perspective_warp_corner(int quad, int corner, QPointF document_point);
+  // Warp mode, selected quad only: a one-shot move of its own corners that
+  // makes its near-vertical and/or near-horizontal sides exact. Nothing stays
+  // locked: a later drag may bend the side again.
+  bool straighten_perspective_warp_quad(bool vertical, bool horizontal);
+  void remove_all_perspective_warp_quads();
+  // Edit > Undo while the session runs: steps back the last quad edit instead
+  // of leaving the session (Photoshop behavior). False when nothing is left.
+  bool undo_perspective_warp_step();
   void set_transform_interpolation(TransformInterpolation interpolation) noexcept;
   [[nodiscard]] TransformInterpolation transform_interpolation() const noexcept;
   void set_transform_reference_point(CanvasAnchor anchor) noexcept;
@@ -2130,6 +2162,24 @@ private:
   void draw_warp_transform(QPainter& painter) const;
   void commit_warp_transform();
   void reset_warp_state();
+  // Shared by the Warp Transform cage and Perspective Warp (never both live):
+  // the document with the warped layer hidden, its bounded preview patches,
+  // and their teardown.
+  void ensure_warp_base_cache(LayerId hidden_layer_id);
+  void set_warp_preview_patches(LayerId layer_id, const QImage& warped_image, Rect warped_bounds);
+  void clear_warp_preview();
+  // Perspective Warp internals (canvas_widget_perspective_warp.cpp).
+  [[nodiscard]] bool perspective_warp_planes_allowed(const std::vector<PerspectivePlane>& planes) const;
+  void refresh_perspective_warp_preview();
+  void reset_perspective_warp_state();
+  void remember_perspective_warp_step();
+  [[nodiscard]] std::pair<int, int> perspective_warp_corner_at(QPoint widget_point) const;
+  [[nodiscard]] int perspective_warp_quad_at(QPointF document_point) const;
+  bool handle_perspective_warp_press(QMouseEvent* event);
+  bool handle_perspective_warp_move(QMouseEvent* event);
+  bool handle_perspective_warp_release(QMouseEvent* event);
+  bool handle_perspective_warp_key(QKeyEvent* event);
+  void draw_perspective_warp(QPainter& painter) const;
   bool constrain_pan() noexcept;
   void notify_view_changed();
   void sync_scroll_bars();
@@ -2919,6 +2969,21 @@ private:
   QString pending_warp_style_{QStringLiteral("warpCustom")};
   double pending_warp_style_value_{0.0};
   QImage pending_warp_source_image_{};
+  // Perspective Warp session; reuses the warp preview members above.
+  struct PerspectiveWarpSession {
+    LayerId layer_id{};
+    PerspectiveWarpMode mode{PerspectiveWarpMode::Layout};
+    std::vector<PerspectivePlane> planes;
+    int selected_quad{-1};
+    int drag_quad{-1};
+    int drag_corner{-1};
+    bool drawing_quad{false};  // Layout-mode drag that lays out a new quad
+    QPointF draw_start{};
+    QPointF draw_current{};
+    QImage source{};  // the layer's pixels at entry, RGBA8888
+    std::vector<std::vector<PerspectivePlane>> undo_steps;  // quad sets before each edit
+  };
+  std::optional<PerspectiveWarpSession> perspective_warp_;
   std::optional<LayerId> move_transform_controls_layer_id_{};
   std::function<void(QString)> before_edit_callback_;
   std::function<void(QString, SelectionSnapshot, bool)> selection_history_callback_;

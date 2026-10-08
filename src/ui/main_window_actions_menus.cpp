@@ -585,6 +585,14 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   paste_in_place_action->setObjectName(QStringLiteral("editPasteInPlaceAction"));
   paste_in_place_action->setProperty("patchy.channelViewBlocked", true);
   bind_action_text(paste_in_place_action, QT_TR_NOOP("Paste in Place"));
+  // Photoshop's place: Perspective Warp sits just above Free Transform.
+  auto* perspective_warp_action = edit_menu->addAction(tr("Perspective Warp"));
+  bind_action_text(perspective_warp_action, QT_TR_NOOP("Perspective Warp"));
+  perspective_warp_action->setObjectName(QStringLiteral("editPerspectiveWarpAction"));
+  perspective_warp_action->setIcon(simple_icon(QStringLiteral("PW")));
+  register_hotkey(perspective_warp_action, "edit.perspective_warp", QKeySequence());
+  connect(perspective_warp_action, &QAction::triggered, this, [this] { perspective_warp_active_layer(); });
+  register_document_action(perspective_warp_action);
   auto* transform_action = edit_menu->addAction(tr("Free &Transform..."));
   auto* warp_transform_action = edit_menu->addAction(tr("Warp Transform"));
   bind_action_text(warp_transform_action, QT_TR_NOOP("Warp Transform"));

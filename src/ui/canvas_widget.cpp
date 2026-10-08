@@ -253,7 +253,8 @@ bool CanvasWidget::pointer_gesture_active() const noexcept {
          crop_dragging_out_ || crop_rotating_ ||
          crop_drag_handle_ != TransformHandle::None || pen_handle_dragging_ ||
          pen_session_drag_anchor_ >= 0 || path_drag_mode_ != PathEditDrag::None ||
-         path_transform_drag_handle_ != TransformHandle::None;
+         path_transform_drag_handle_ != TransformHandle::None ||
+         (perspective_warp_.has_value() && (perspective_warp_->drag_quad >= 0 || perspective_warp_->drawing_quad));
 }
 
 void CanvasWidget::set_tiling_preview_enabled(bool enabled) {
@@ -341,6 +342,7 @@ void CanvasWidget::set_document_internal(Document* document, bool preserve_frame
   if (warping_layer_) {
     reset_warp_state();
   }
+  reset_perspective_warp_state();
   cancel_move_layer_selection();
   move_drag_pending_ = false;
   moving_layer_ = false;
@@ -445,6 +447,7 @@ void CanvasWidget::set_tool(CanvasTool tool) {
     commit_path_transform();  // tool switches commit, like the pen session
     finish_free_transform();
     finish_warp_transform();
+    finish_perspective_warp();
     cancel_move_layer_selection();
     move_drag_pending_ = false;
     moving_layer_ = false;
@@ -1271,6 +1274,10 @@ void CanvasWidget::set_selected_layer_ids(std::vector<LayerId> layer_ids) {
                                  layer_ids.front() == *warp_layer_id_;
   if (warping_layer_ && !keeps_active_warp) {
     finish_warp_transform();
+  }
+  if (perspective_warp_.has_value() &&
+      !(layer_ids.size() == 1U && layer_ids.front() == perspective_warp_->layer_id)) {
+    finish_perspective_warp();
   }
   if (move_transform_controls_layer_id_.has_value() &&
       !(layer_ids.size() == 1U && layer_ids.front() == *move_transform_controls_layer_id_)) {

@@ -524,6 +524,8 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   transform_option_actions_.clear();
   warp_option_actions_.clear();
   transform_session_actions_.clear();
+  perspective_warp_option_actions_.clear();
+  perspective_warp_straighten_buttons_.clear();
   const auto make_option_separator = [options_content, options_flow]() -> QWidget* {
     auto* line = new QFrame(options_content);
     line->setObjectName(QStringLiteral("optionSeparator"));
@@ -1033,6 +1035,125 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
       canvas_->cancel_warp_transform();
     } else {
       canvas_->cancel_free_transform();
+    }
+  });
+
+  // Perspective Warp session row (Edit > Perspective Warp): the Layout/Warp mode
+  // pair, the one-shot straighten trio (Warp mode, selected quad), Remove All
+  // Quads, and the session's own apply/cancel pair. Visibility and enabled
+  // states follow the canvas session in refresh_options_bar. Qt::NoFocus keeps
+  // the keyboard on the canvas, so Enter and Esc still end the session.
+  const auto add_perspective_warp_widget = [this, options_flow](QWidget* widget) {
+    widget->setFocusPolicy(Qt::NoFocus);
+    options_flow->addWidget(widget);
+    perspective_warp_option_actions_.push_back(widget);
+    return widget;
+  };
+  const auto make_perspective_mode_button = [toolbar](const char* object_name, const char* text,
+                                                      const char* tooltip) {
+    auto* button = new QPushButton(toolbar);
+    button->setObjectName(QString::fromLatin1(object_name));
+    button->setCheckable(true);
+    bind_widget_text(button, text);
+    bind_tooltip(button, tooltip);
+    return button;
+  };
+  perspective_warp_layout_button_ = make_perspective_mode_button(
+      "perspectiveWarpLayoutButton", QT_TR_NOOP("Layout"), QT_TR_NOOP("Draw quads over the planes of the image"));
+  perspective_warp_warp_button_ = make_perspective_mode_button(
+      "perspectiveWarpWarpButton", QT_TR_NOOP("Warp"), QT_TR_NOOP("Drag the quad corners to change the perspective"));
+  add_perspective_warp_widget(perspective_warp_layout_button_);
+  add_perspective_warp_widget(perspective_warp_warp_button_);
+  const auto set_perspective_mode = [this](CanvasWidget::PerspectiveWarpMode mode) {
+    if (canvas_ != nullptr) {
+      canvas_->set_perspective_warp_mode(mode);  // a refusal lands in the status bar
+    }
+    refresh_options_bar();  // re-sync the checked pair
+  };
+  connect(perspective_warp_layout_button_, &QPushButton::clicked, this,
+          [set_perspective_mode] { set_perspective_mode(CanvasWidget::PerspectiveWarpMode::Layout); });
+  connect(perspective_warp_warp_button_, &QPushButton::clicked, this,
+          [set_perspective_mode] { set_perspective_mode(CanvasWidget::PerspectiveWarpMode::Warp); });
+  // Straighten glyphs: bold vertical bars, bold horizontal bars, or both.
+  const auto straighten_icon = [](bool vertical, bool horizontal) {
+    return themed_glyph_icon(
+        vertical && horizontal ? QStringLiteral("perspective-straighten-both")
+                               : (vertical ? QStringLiteral("perspective-straighten-vertical")
+                                           : QStringLiteral("perspective-level-horizontal")),
+        32.0, &ThemePalette::icon_ink, [vertical, horizontal](QPainter& painter, const QColor& ink) {
+          painter.setRenderHint(QPainter::Antialiasing, true);
+          painter.setPen(QPen(ink, 1.5));
+          painter.setBrush(Qt::NoBrush);
+          painter.drawPolygon(QPolygonF{QPointF(8.0, 9.0), QPointF(24.0, 6.0), QPointF(26.0, 26.0), QPointF(6.0, 24.0)});
+          painter.setPen(QPen(ink, 3.0, Qt::SolidLine, Qt::FlatCap));
+          if (vertical) {
+            painter.drawLine(QPointF(10.0, 4.0), QPointF(10.0, 28.0));
+            painter.drawLine(QPointF(22.0, 4.0), QPointF(22.0, 28.0));
+          }
+          if (horizontal) {
+            painter.drawLine(QPointF(4.0, 10.0), QPointF(28.0, 10.0));
+            painter.drawLine(QPointF(4.0, 22.0), QPointF(28.0, 22.0));
+          }
+        });
+  };
+  const auto add_straighten_button = [this, toolbar, add_perspective_warp_widget, straighten_icon](
+                                         const char* object_name, const char* tooltip, bool vertical,
+                                         bool horizontal) {
+    auto* button = new QPushButton(toolbar);
+    button->setObjectName(QString::fromLatin1(object_name));
+    button->setIcon(straighten_icon(vertical, horizontal));
+    bind_tooltip(button, tooltip);
+    button->setFixedWidth(30);
+    button->setIconSize(QSize(20, 20));
+    button->setProperty("optionsSessionButton", true);
+    add_perspective_warp_widget(button);
+    perspective_warp_straighten_buttons_.push_back(button);
+    connect(button, &QPushButton::clicked, this, [this, vertical, horizontal] {
+      if (canvas_ != nullptr) {
+        canvas_->straighten_perspective_warp_quad(vertical, horizontal);
+      }
+    });
+  };
+  add_straighten_button("perspectiveWarpStraightenVerticalButton",
+                        QT_TR_NOOP("Make the selected quad's near-vertical sides vertical"), true, false);
+  add_straighten_button("perspectiveWarpLevelHorizontalButton",
+                        QT_TR_NOOP("Make the selected quad's near-horizontal sides horizontal"), false, true);
+  add_straighten_button("perspectiveWarpStraightenBothButton",
+                        QT_TR_NOOP("Make the selected quad's sides vertical and horizontal"), true, true);
+  perspective_warp_remove_all_button_ = new QPushButton(toolbar);
+  perspective_warp_remove_all_button_->setObjectName(QStringLiteral("perspectiveWarpRemoveAllButton"));
+  bind_widget_text(perspective_warp_remove_all_button_, QT_TR_NOOP("Remove All Quads"));
+  bind_tooltip(perspective_warp_remove_all_button_, QT_TR_NOOP("Remove every quad and start the layout again"));
+  add_perspective_warp_widget(perspective_warp_remove_all_button_);
+  connect(perspective_warp_remove_all_button_, &QPushButton::clicked, this, [this] {
+    if (canvas_ != nullptr) {
+      canvas_->remove_all_perspective_warp_quads();
+    }
+  });
+  auto* perspective_apply = new QPushButton(toolbar);
+  perspective_apply->setObjectName(QStringLiteral("perspectiveWarpApplyButton"));
+  perspective_apply->setIcon(simple_icon(QStringLiteral("ok"), QColor(160, 220, 165)));
+  bind_tooltip(perspective_apply, QT_TR_NOOP("Apply Perspective Warp"));
+  perspective_apply->setFixedWidth(30);
+  perspective_apply->setIconSize(QSize(20, 20));
+  perspective_apply->setProperty("optionsSessionButton", true);
+  add_perspective_warp_widget(perspective_apply);
+  auto* perspective_cancel = new QPushButton(toolbar);
+  perspective_cancel->setObjectName(QStringLiteral("perspectiveWarpCancelButton"));
+  perspective_cancel->setIcon(simple_icon(QStringLiteral("clear"), QColor(255, 150, 150)));
+  bind_tooltip(perspective_cancel, QT_TR_NOOP("Cancel Perspective Warp"));
+  perspective_cancel->setFixedWidth(30);
+  perspective_cancel->setIconSize(QSize(20, 20));
+  perspective_cancel->setProperty("optionsSessionButton", true);
+  add_perspective_warp_widget(perspective_cancel);
+  connect(perspective_apply, &QPushButton::clicked, this, [this] {
+    if (canvas_ != nullptr) {
+      canvas_->finish_perspective_warp();
+    }
+  });
+  connect(perspective_cancel, &QPushButton::clicked, this, [this] {
+    if (canvas_ != nullptr) {
+      canvas_->cancel_perspective_warp();
     }
   });
 
