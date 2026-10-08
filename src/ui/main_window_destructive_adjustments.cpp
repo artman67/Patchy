@@ -1,8 +1,10 @@
 // MainWindow destructive adjustment dialogs, split out of
 // main_window_adjustments.cpp: the Levels / Curves / Hue-Saturation /
-// Color Balance / Gradient Map / Vibrance / Selective Color / Black & White / Channel Mixer / Photo Filter / Match Color / Shadows-Highlights / Color Lookup / Replace Color dialogs that rewrite layer pixels in place. Each dialog is a
-// DestructiveAdjustmentSpec (its dialog call and pixel render) run by
-// run_destructive_adjustment, which owns the layer guards, the async live
+// Color Balance / Gradient Map / Vibrance / Selective Color / Black & White /
+// Channel Mixer / Photo Filter / Match Color / Shadows-Highlights / Color
+// Lookup / Replace Color dialogs that rewrite layer pixels in place. Each
+// dialog is a DestructiveAdjustmentSpec (its dialog call and pixel render) run
+// by run_destructive_adjustment, which owns the layer guards, the async live
 // preview (make_destructive_adjustment_preview_state in main_window_shared),
 // the restore on close, and the cancellable apply.
 
@@ -265,6 +267,9 @@ struct DestructiveAdjustmentSpec {
   // Previews and the close restore the whole original Layer instead of only
   // its pixels (Curves, as its pre-launcher worker did).
   bool restore_whole_layer{false};
+  // Selects a document's only layer when none is active, as the Image >
+  // Adjustments commands do; Gradient Map never did.
+  bool select_only_layer_if_none_active{true};
 };
 
 // Guards the active layer, previews the dialog's settings live on it, restores
@@ -273,7 +278,9 @@ struct DestructiveAdjustmentSpec {
 template <typename Settings>
 void MainWindow::run_destructive_adjustment(const DestructiveAdjustmentSpec<Settings>& spec) {
   auto& doc = document();
-  select_only_layer_if_none_active();
+  if (spec.select_only_layer_if_none_active) {
+    select_only_layer_if_none_active();
+  }
   const auto active = doc.active_layer_id();
   if (!active.has_value()) {
     return;
@@ -551,1677 +558,314 @@ void MainWindow::color_balance_dialog() {
 }
 
 void MainWindow::gradient_map_dialog() {
-  auto& doc = document();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Gradient Map"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
+  DestructiveAdjustmentSpec<GradientMapAdjustment> spec;
+  spec.display_name = tr("Gradient Map");
+  spec.cancelled_message = tr("Cancelled Gradient Map");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_gradient_map(std::move(preview_changed));
   };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection](bool enabled,
-                                                                  const GradientMapAdjustment& settings) {
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = !enabled;
-    if (enabled) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_gradient_map_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), !enabled);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_gradient_map(preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Gradient Map"));
-    return;
-  }
-
-  auto final_pixels = *original_pixels;
-  const auto display_name = tr("Gradient Map");
-  if (canvas_ != nullptr) {
-    canvas_->begin_processing_operation();
-  }
-  const auto finish_processing = qScopeGuard([this] {
-    if (canvas_ != nullptr) {
-      canvas_->end_processing_operation();
-    }
-  });
-  QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-  progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-  progress.setWindowModality(Qt::WindowModal);
-  progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-  remember_dialog_position(progress);
-  progress.setValue(0);
-  try {
-    run_filter_compute_with_progress(
-        progress,
-        [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-        [this] {
-          if (canvas_ != nullptr) {
-            canvas_->tick_processing_operation();
-          }
-        },
-        [&](FilterProgress& filter_progress) {
-          apply_gradient_map_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-        });
-    progress.setValue(100);
-  } catch (const FilterCancelled&) {
-    statusBar()->showMessage(tr("Cancelled Gradient Map"));
-    return;
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  spec.render = apply_gradient_map_to_pixels;
+  spec.select_only_layer_if_none_active = false;
+  run_destructive_adjustment(spec);
 }
 
 void MainWindow::vibrance_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Vibrance"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  const auto vibrance_has_effect = [](const VibranceSettings& settings) {
+  DestructiveAdjustmentSpec<VibranceSettings> spec;
+  spec.display_name = tr("Vibrance");
+  spec.cancelled_message = tr("Cancelled Vibrance");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_vibrance_settings(this, std::move(preview_changed));
+  };
+  spec.render = apply_vibrance_to_pixels;
+  spec.has_effect = [](const VibranceSettings& settings) {
     const auto clamped = clamp_vibrance(settings);
     return clamped.vibrance != 0 || clamped.saturation != 0;
   };
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection, vibrance_has_effect](
-                                   bool enabled, const VibranceSettings& settings) {
-    const auto identity = !enabled || !vibrance_has_effect(settings);
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_vibrance_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_vibrance_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Vibrance"));
-    return;
-  }
-
-  const auto display_name = tr("Vibrance");
-  auto final_pixels = *original_pixels;
-  if (vibrance_has_effect(*settings)) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_vibrance_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Vibrance"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  run_destructive_adjustment(spec);
 }
 
-
 void MainWindow::selective_color_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Selective Color"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
+  DestructiveAdjustmentSpec<SelectiveColorSettings> spec;
+  spec.display_name = tr("Selective Color");
+  spec.cancelled_message = tr("Cancelled Selective Color");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_selective_color_settings(this, std::move(preview_changed));
   };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection](bool enabled,
-                                                                  const SelectiveColorSettings& settings) {
-    const auto identity = !enabled || !settings.has_effect();
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_selective_color_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_selective_color_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Selective Color"));
-    return;
-  }
-
-  auto final_pixels = *original_pixels;
-  const auto display_name = tr("Selective Color");
-  if (settings->has_effect()) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_selective_color_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Selective Color"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  spec.render = apply_selective_color_to_pixels;
+  spec.has_effect = [](const SelectiveColorSettings& settings) { return settings.has_effect(); };
+  run_destructive_adjustment(spec);
 }
 
 void MainWindow::black_white_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Black & White"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
+  DestructiveAdjustmentSpec<BlackWhiteSettings> spec;
+  spec.display_name = tr("Black & White");
+  spec.cancelled_message = tr("Cancelled Black & White");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_black_white_settings(this, std::move(preview_changed));
   };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection](bool enabled, const BlackWhiteSettings& settings) {
-    // Every setting removes the color, so only an unchecked Preview is the identity.
-    const auto identity = !enabled;
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_black_white_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_black_white_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Black & White"));
-    return;
-  }
-
-  // Image > Adjustments rewrites the layer's pixels in place, as in Photoshop; the
-  // adjustment layer is the non-destructive route.
-  auto final_pixels = *original_pixels;
-  const auto display_name = tr("Black & White");
-  {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_black_white_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Black & White"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  // No has_effect: every setting removes the color, so only an unchecked
+  // Preview is the identity.
+  spec.render = apply_black_white_to_pixels;
+  run_destructive_adjustment(spec);
 }
 
 void MainWindow::channel_mixer_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Channel Mixer"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
+  DestructiveAdjustmentSpec<ChannelMixerSettings> spec;
+  spec.display_name = tr("Channel Mixer");
+  spec.cancelled_message = tr("Cancelled Channel Mixer");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_channel_mixer_settings(this, std::move(preview_changed));
   };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection](bool enabled,
-                                                                  const ChannelMixerSettings& settings) {
-    const auto identity = !enabled || !channel_mixer_has_effect(settings);
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_channel_mixer_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_channel_mixer_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Channel Mixer"));
-    return;
-  }
-
-  auto final_pixels = *original_pixels;
-  const auto display_name = tr("Channel Mixer");
-  if (channel_mixer_has_effect(*settings)) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_channel_mixer_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Channel Mixer"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  spec.render = apply_channel_mixer_to_pixels;
+  spec.has_effect = channel_mixer_has_effect;
+  run_destructive_adjustment(spec);
 }
 
 void MainWindow::photo_filter_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr("Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Photo Filter"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels = std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  const auto has_effect = [](const PhotoFilterSettings& settings) {
+  DestructiveAdjustmentSpec<PhotoFilterSettings> spec;
+  spec.display_name = tr("Photo Filter");
+  spec.cancelled_message = tr("Cancelled Photo Filter");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_photo_filter_settings(this, std::move(preview_changed));
+  };
+  spec.render = apply_photo_filter_to_pixels;
+  spec.has_effect = [](const PhotoFilterSettings& settings) {
     AdjustmentSettings adjustment;
     adjustment.kind = AdjustmentKind::PhotoFilter;
     adjustment.photo_filter = settings;
     return adjustment_has_effect(adjustment);
   };
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id, bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection, has_effect](bool enabled,
-                                                                              const PhotoFilterSettings& settings) {
-    const auto identity = !enabled || !has_effect(settings);
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_photo_filter_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_photo_filter_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Photo Filter"));
-    return;
-  }
-
-  const auto display_name = tr("Photo Filter");
-  auto final_pixels = *original_pixels;
-  if (has_effect(*settings)) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_photo_filter_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Photo Filter"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  run_destructive_adjustment(spec);
 }
+
+namespace {
+
+// Match Color's dialog settings resolved on the UI thread, because the
+// statistics read other open documents: the color map and the region it
+// applies to.
+struct ResolvedMatchColor {
+  MatchColorTransform transform;
+  QRegion apply_region;
+};
+
+}  // namespace
 
 void MainWindow::match_color_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Match Color"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  const auto target_session_id = session().session_id;
+  DestructiveAdjustmentSpec<ResolvedMatchColor> spec;
+  spec.display_name = tr("Match Color");
+  spec.cancelled_message = tr("Cancelled Match Color");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget& target,
+                                 auto preview_changed) -> std::optional<ResolvedMatchColor> {
+    const auto active_id = target.layer_id;
+    const auto bounds = target.bounds;
+    const auto& selection = target.selection;
+    const auto& original_pixels = target.original_pixels;
+    const auto target_session_id = session().session_id;
+    const auto* layer = std::as_const(document()).find_layer(active_id);
 
-  // Every open document is a possible source, the target's own included
-  // (Photoshop matches two layers of one image that way). Sessions and layers
-  // are held by id and looked up again when statistics are computed.
-  struct SourceEntry {
-    std::int64_t session_id{0};
-    std::vector<LayerId> layer_ids;
-  };
-  std::vector<SourceEntry> source_entries;
-  MatchColorDialogSpec spec;
-  spec.target_description = tr("Target: %1 (%2, RGB/8)")
-                                .arg(session().title, QString::fromStdString(std::as_const(*layer).name()));
-  spec.target_has_selection = !selection.isEmpty();
-  for (const auto& candidate : sessions_) {
-    if (candidate == nullptr) {
-      continue;
-    }
-    const auto& candidate_document = std::as_const(candidate->document);
-    std::vector<const Layer*> layers;
-    collect_match_color_source_layers(candidate_document.layers(), layers);
-    SourceEntry entry{candidate->session_id, {}};
-    MatchColorSourceDocument source;
-    source.title = candidate->title;
-    for (const auto* source_layer : layers) {
-      if (candidate_document.active_layer_id() == source_layer->id()) {
-        source.default_layer = static_cast<int>(entry.layer_ids.size());
-      }
-      entry.layer_ids.push_back(source_layer->id());
-      source.layer_names.push_back(QString::fromStdString(source_layer->name()));
-    }
-    source.has_selection = candidate->canvas != nullptr && candidate->canvas->has_selection();
-    source_entries.push_back(std::move(entry));
-    spec.sources.push_back(std::move(source));
-  }
-
-  // Statistics depend only on the Image Statistics choices, so each choice is
-  // computed once on this thread and reused by every preview and the final apply.
-  // The target layer always contributes its original pixels, never the preview.
-  using StatisticsKey = std::tuple<int, int, bool>;
-  auto statistics_cache = std::make_shared<std::map<StatisticsKey, MatchColorStatistics>>();
-  const auto target_statistics = [original_pixels, bounds, selection,
-                                  statistics_cache](bool use_selection) -> MatchColorStatistics {
-    const StatisticsKey key{-2, 0, use_selection};
-    if (const auto found = statistics_cache->find(key); found != statistics_cache->end()) {
-      return found->second;
-    }
-    std::vector<std::uint8_t> coverage;
-    if (use_selection) {
-      coverage = region_coverage(selection, bounds);
-    }
-    const auto statistics =
-        match_color_statistics(*original_pixels, coverage.empty() ? nullptr : coverage.data());
-    statistics_cache->emplace(key, statistics);
-    return statistics;
-  };
-  const auto source_statistics = [this, source_entries, active_id, original_pixels, bounds, target_session_id,
-                                  statistics_cache](const MatchColorDialogSettings& settings)
-      -> std::optional<MatchColorStatistics> {
-    if (settings.source < 0 || static_cast<std::size_t>(settings.source) >= source_entries.size()) {
-      return std::nullopt;
-    }
-    const StatisticsKey key{settings.source, settings.source_layer, settings.use_source_selection};
-    if (const auto found = statistics_cache->find(key); found != statistics_cache->end()) {
-      return found->second;
-    }
-    const auto& entry = source_entries[static_cast<std::size_t>(settings.source)];
-    const DocumentSession* source_session = nullptr;
+    // Every open document is a possible source, the target's own included
+    // (Photoshop matches two layers of one image that way). Sessions and layers
+    // are held by id and looked up again when statistics are computed.
+    struct SourceEntry {
+      std::int64_t session_id{0};
+      std::vector<LayerId> layer_ids;
+    };
+    std::vector<SourceEntry> source_entries;
+    MatchColorDialogSpec dialog_spec;
+    dialog_spec.target_description =
+        tr("Target: %1 (%2, RGB/8)").arg(session().title, QString::fromStdString(layer->name()));
+    dialog_spec.target_has_selection = !selection.isEmpty();
     for (const auto& candidate : sessions_) {
-      if (candidate != nullptr && candidate->session_id == entry.session_id) {
-        source_session = candidate.get();
+      if (candidate == nullptr) {
+        continue;
       }
+      const auto& candidate_document = std::as_const(candidate->document);
+      std::vector<const Layer*> layers;
+      collect_match_color_source_layers(candidate_document.layers(), layers);
+      SourceEntry entry{candidate->session_id, {}};
+      MatchColorSourceDocument source;
+      source.title = candidate->title;
+      for (const auto* source_layer : layers) {
+        if (candidate_document.active_layer_id() == source_layer->id()) {
+          source.default_layer = static_cast<int>(entry.layer_ids.size());
+        }
+        entry.layer_ids.push_back(source_layer->id());
+        source.layer_names.push_back(QString::fromStdString(source_layer->name()));
+      }
+      source.has_selection = candidate->canvas != nullptr && candidate->canvas->has_selection();
+      source_entries.push_back(std::move(entry));
+      dialog_spec.sources.push_back(std::move(source));
     }
-    if (source_session == nullptr) {
+
+    // Statistics depend only on the Image Statistics choices, so each choice is
+    // computed once on this thread and reused by every preview and the final apply.
+    // The target layer always contributes its original pixels, never the preview.
+    using StatisticsKey = std::tuple<int, int, bool>;
+    auto statistics_cache = std::make_shared<std::map<StatisticsKey, MatchColorStatistics>>();
+    const auto target_statistics = [original_pixels, bounds, selection,
+                                    statistics_cache](bool use_selection) -> MatchColorStatistics {
+      const StatisticsKey key{-2, 0, use_selection};
+      if (const auto found = statistics_cache->find(key); found != statistics_cache->end()) {
+        return found->second;
+      }
+      std::vector<std::uint8_t> coverage;
+      if (use_selection) {
+        coverage = region_coverage(selection, bounds);
+      }
+      const auto statistics =
+          match_color_statistics(*original_pixels, coverage.empty() ? nullptr : coverage.data());
+      statistics_cache->emplace(key, statistics);
+      return statistics;
+    };
+    const auto source_statistics = [this, source_entries, active_id, original_pixels, bounds, target_session_id,
+                                    statistics_cache](const MatchColorDialogSettings& settings)
+        -> std::optional<MatchColorStatistics> {
+      if (settings.source < 0 || static_cast<std::size_t>(settings.source) >= source_entries.size()) {
+        return std::nullopt;
+      }
+      const StatisticsKey key{settings.source, settings.source_layer, settings.use_source_selection};
+      if (const auto found = statistics_cache->find(key); found != statistics_cache->end()) {
+        return found->second;
+      }
+      const auto& entry = source_entries[static_cast<std::size_t>(settings.source)];
+      const DocumentSession* source_session = nullptr;
+      for (const auto& candidate : sessions_) {
+        if (candidate != nullptr && candidate->session_id == entry.session_id) {
+          source_session = candidate.get();
+        }
+      }
+      if (source_session == nullptr) {
+        return std::nullopt;
+      }
+      const auto& source_document = std::as_const(source_session->document);
+      const auto same_document = entry.session_id == target_session_id;
+      PixelBuffer pixels;
+      Rect pixel_bounds;
+      std::vector<std::uint8_t> coverage;
+      if (settings.source_layer < 0) {
+        // Merged: the source composite, weighted by its coverage.
+        if (same_document) {
+          auto restored = source_document;
+          if (auto* restored_layer = restored.find_layer(active_id); restored_layer != nullptr) {
+            set_layer_pixels_preserving_origin(*restored_layer, *original_pixels, bounds);
+          }
+          pixels = Compositor{}.flatten_rgb8(restored, &coverage);
+        } else {
+          pixels = Compositor{}.flatten_rgb8(source_document, &coverage);
+        }
+        pixel_bounds = Rect{0, 0, pixels.width(), pixels.height()};
+      } else if (static_cast<std::size_t>(settings.source_layer) < entry.layer_ids.size()) {
+        const auto layer_id = entry.layer_ids[static_cast<std::size_t>(settings.source_layer)];
+        if (same_document && layer_id == active_id) {
+          pixels = *original_pixels;
+          pixel_bounds = bounds;
+        } else if (const auto* source_layer = source_document.find_layer(layer_id); source_layer != nullptr) {
+          pixels = source_layer->pixels();
+          pixel_bounds = source_layer->bounds();
+        }
+      }
+      if (settings.use_source_selection && source_session->canvas != nullptr) {
+        auto mask = region_coverage(source_session->canvas->selected_document_region(), pixel_bounds);
+        if (coverage.size() == mask.size()) {
+          for (std::size_t index = 0; index < mask.size(); ++index) {
+            mask[index] = static_cast<std::uint8_t>(mask[index] == 0 ? 0 : coverage[index]);
+          }
+        }
+        coverage = std::move(mask);
+      }
+      if (!coverage.empty() &&
+          coverage.size() != static_cast<std::size_t>(pixels.width()) * static_cast<std::size_t>(pixels.height())) {
+        coverage.clear();
+      }
+      const auto statistics = match_color_statistics(pixels, coverage.empty() ? nullptr : coverage.data());
+      statistics_cache->emplace(key, statistics);
+      return statistics;
+    };
+    const auto resolve = [target_statistics, source_statistics,
+                          selection](const MatchColorDialogSettings& settings) {
+      const auto target_stats = target_statistics(settings.use_target_selection);
+      const auto source = source_statistics(settings);
+      return ResolvedMatchColor{
+          make_match_color_transform(target_stats, source.has_value() ? &*source : nullptr, settings.options),
+          settings.ignore_selection ? QRegion() : selection};
+    };
+
+    const auto settings = request_match_color_settings(
+        this, dialog_spec,
+        [&resolve, preview_changed](bool enabled, const MatchColorDialogSettings& dialog_settings) {
+          preview_changed(enabled, enabled ? resolve(dialog_settings) : ResolvedMatchColor{});
+        });
+    if (!settings.has_value()) {
       return std::nullopt;
     }
-    const auto& source_document = std::as_const(source_session->document);
-    const auto same_document = entry.session_id == target_session_id;
-    PixelBuffer pixels;
-    Rect pixel_bounds;
-    std::vector<std::uint8_t> coverage;
-    if (settings.source_layer < 0) {
-      // Merged: the source composite, weighted by its coverage.
-      if (same_document) {
-        auto restored = source_document;
-        if (auto* restored_layer = restored.find_layer(active_id); restored_layer != nullptr) {
-          set_layer_pixels_preserving_origin(*restored_layer, *original_pixels, bounds);
-        }
-        pixels = Compositor{}.flatten_rgb8(restored, &coverage);
-      } else {
-        pixels = Compositor{}.flatten_rgb8(source_document, &coverage);
-      }
-      pixel_bounds = Rect{0, 0, pixels.width(), pixels.height()};
-    } else if (static_cast<std::size_t>(settings.source_layer) < entry.layer_ids.size()) {
-      const auto layer_id = entry.layer_ids[static_cast<std::size_t>(settings.source_layer)];
-      if (same_document && layer_id == active_id) {
-        pixels = *original_pixels;
-        pixel_bounds = bounds;
-      } else if (const auto* source_layer = source_document.find_layer(layer_id); source_layer != nullptr) {
-        pixels = source_layer->pixels();
-        pixel_bounds = source_layer->bounds();
-      }
-    }
-    if (settings.use_source_selection && source_session->canvas != nullptr) {
-      auto mask = region_coverage(source_session->canvas->selected_document_region(), pixel_bounds);
-      if (coverage.size() == mask.size()) {
-        for (std::size_t index = 0; index < mask.size(); ++index) {
-          mask[index] = static_cast<std::uint8_t>(mask[index] == 0 ? 0 : coverage[index]);
-        }
-      }
-      coverage = std::move(mask);
-    }
-    if (!coverage.empty() &&
-        coverage.size() != static_cast<std::size_t>(pixels.width()) * static_cast<std::size_t>(pixels.height())) {
-      coverage.clear();
-    }
-    const auto statistics = match_color_statistics(pixels, coverage.empty() ? nullptr : coverage.data());
-    statistics_cache->emplace(key, statistics);
-    return statistics;
+    return resolve(*settings);
   };
-  const auto resolve_transform = [target_statistics, source_statistics](const MatchColorDialogSettings& settings) {
-    const auto target = target_statistics(settings.use_target_selection);
-    const auto source = source_statistics(settings);
-    return make_match_color_transform(target, source.has_value() ? &*source : nullptr, settings.options);
+  spec.render = [](PixelBuffer& pixels, Rect bounds, const QRegion&, const ResolvedMatchColor& resolved,
+                   const FilterProgress* progress) {
+    apply_match_color_to_pixels(pixels, bounds, resolved.apply_region, resolved.transform, progress);
   };
-
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection, resolve_transform](
-                                   bool enabled, const MatchColorDialogSettings& settings) {
-    const auto transform = enabled ? resolve_transform(settings) : MatchColorTransform{};
-    const auto identity = transform.identity;
-    const auto apply_region = settings.ignore_selection ? QRegion() : selection;
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, apply_region, transform](PixelBuffer& pixels) {
-        apply_match_color_to_pixels(pixels, bounds, apply_region, transform, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_match_color_settings(this, spec, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Match Color"));
-    return;
-  }
-
-  const auto display_name = tr("Match Color");
-  const auto transform = resolve_transform(*settings);
-  const auto apply_region = settings->ignore_selection ? QRegion() : selection;
-  auto final_pixels = *original_pixels;
-  if (!transform.identity) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_match_color_to_pixels(final_pixels, bounds, apply_region, transform, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Match Color"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  spec.has_effect = [](const ResolvedMatchColor& resolved) { return !resolved.transform.identity; };
+  run_destructive_adjustment(spec);
 }
 
+// Photoshop also applies Shadows/Highlights as a Smart Filter; Patchy has no
+// native descriptor for it, so Smart Objects take the destructive-adjustment
+// refusal (docs/shadows-highlights.md).
 void MainWindow::shadows_highlights_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  // Photoshop also applies Shadows/Highlights as a Smart Filter; Patchy has no
-  // native descriptor for it, so Smart Objects take the destructive-adjustment
-  // refusal (docs/shadows-highlights.md).
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Shadows/Highlights"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
+  DestructiveAdjustmentSpec<ShadowsHighlightsSettings> spec;
+  spec.display_name = tr("Shadows/Highlights");
+  spec.cancelled_message = tr("Cancelled Shadows/Highlights");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_shadows_highlights_settings(this, std::move(preview_changed));
   };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection](bool enabled,
-                                                                  const ShadowsHighlightsSettings& settings) {
-    const auto identity = !enabled || !shadows_highlights_has_effect(settings);
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_shadows_highlights_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_shadows_highlights_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Shadows/Highlights"));
-    return;
-  }
-
-  const auto display_name = tr("Shadows/Highlights");
-  auto final_pixels = *original_pixels;
-  if (shadows_highlights_has_effect(*settings)) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_shadows_highlights_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Shadows/Highlights"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  spec.render = apply_shadows_highlights_to_pixels;
+  spec.has_effect = shadows_highlights_has_effect;
+  run_destructive_adjustment(spec);
 }
 
 void MainWindow::color_lookup_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Color Lookup"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  const auto color_lookup_has_effect = [](const ColorLookupSettings& settings) {
+  DestructiveAdjustmentSpec<ColorLookupSettings> spec;
+  spec.display_name = tr("Color Lookup");
+  spec.cancelled_message = tr("Cancelled Color Lookup");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget&, auto preview_changed) {
+    return request_color_lookup_settings(this, std::move(preview_changed));
+  };
+  spec.render = apply_color_lookup_to_pixels;
+  spec.has_effect = [](const ColorLookupSettings& settings) {
     return settings.data != nullptr && settings.data->table.valid();
   };
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
-      } else {
-        window->canvas_->end_preview_render();
-      }
-    }
-  };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-  const auto preview_changed = [preview_state, bounds, selection, color_lookup_has_effect](
-                                   bool enabled, const ColorLookupSettings& settings) {
-    const auto identity = !enabled || !color_lookup_has_effect(settings);
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_color_lookup_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_color_lookup_settings(this, preview_changed);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Color Lookup"));
-    return;
-  }
-
-  const auto display_name = tr("Color Lookup");
-  auto final_pixels = *original_pixels;
-  if (color_lookup_has_effect(*settings)) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_color_lookup_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Color Lookup"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  run_destructive_adjustment(spec);
 }
 
-// Image > Adjustments > Replace Color (docs/replace-color.md): a Color Range Sampled
-// Colors score of the active layer's own pixels weights a Hue/Saturation master shift.
-// The dialog is non-modal so the canvas eyedroppers keep working under the preview
-// edit lock; the canvas shows the live result and OK commits one undo step.
 void MainWindow::replace_color_dialog() {
-  auto& doc = document();
-  select_only_layer_if_none_active();
-  const auto active = doc.active_layer_id();
-  if (!active.has_value()) {
-    return;
-  }
-  auto* layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  if (layer_is_smart_object(*layer)) {
-    show_status_error(tr(
-        "Rasterize the Smart Object before applying destructive filters or adjustments"));
-    return;
-  }
-  if (layer_id_locks_image_pixels(*active)) {
-    show_status_error(tr("Layer pixels are locked."));
-    return;
-  }
-  if (!prompt_rasterize_procedural_layer(*active, tr("Replace Color"), false)) {
-    return;
-  }
-  layer = doc.find_layer(*active);
-  if (!editable_rgb8_layer(layer)) {
-    show_status_error(tr("Select an editable RGB pixel layer"));
-    return;
-  }
-  const auto active_id = *active;
-  const auto bounds = layer->bounds();
-  auto original_pixels =
-      std::make_shared<const PixelBuffer>(std::as_const(*layer).pixels());
-  const auto selection = canvas_->selected_document_region();
-  DestructiveAdjustmentPreviewHooks preview_hooks;
-  preview_hooks.original_pixels = original_pixels;
-  preview_hooks.restore_identity = [this, active_id, bounds, original_pixels] {
-    if (auto* preview_layer = document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, *original_pixels, bounds);
-      if (canvas_ != nullptr) {
-        canvas_->document_changed(to_qrect(bounds));
+  DestructiveAdjustmentSpec<ReplaceColorSettings> spec;
+  spec.display_name = tr("Replace Color");
+  spec.cancelled_message = tr("Cancelled Replace Color");
+  spec.request_settings = [this](const DestructiveAdjustmentTarget& target, auto preview_changed) {
+    ReplaceColorDialogInput input;
+    input.layer = qimage_from_pixel_buffer(*target.original_pixels);
+    input.layer_origin = QPoint(target.bounds.x, target.bounds.y);
+    input.document_size = QSize(document().width(), document().height());
+    input.selection = target.selection;
+    input.initial_sample = canvas_->primary_color();
+    const QPointer<CanvasWidget> target_canvas = canvas_;
+    ReplaceColorDialogHooks hooks;
+    hooks.set_canvas_sampler = [target_canvas](std::function<void(const CanvasReadGesture&)> callback) {
+      if (target_canvas == nullptr) {
+        return;
       }
-    }
-  };
-  preview_hooks.apply_result = [window = QPointer<MainWindow>(this), active_id,
-                                bounds](PixelBuffer result) {
-    if (window == nullptr) {
-      return;
-    }
-    if (auto* preview_layer = window->document().find_layer(active_id); preview_layer != nullptr) {
-      set_layer_pixels_preserving_origin(*preview_layer, std::move(result), bounds);
-      if (window->canvas_ != nullptr) {
-        window->canvas_->document_changed(to_qrect(bounds));
-      }
-    }
-  };
-  preview_hooks.preview_render_active = [window = QPointer<MainWindow>(this)](bool active) {
-    if (window != nullptr && window->canvas_ != nullptr) {
-      if (active) {
-        window->canvas_->begin_preview_render();
+      if (callback) {
+        target_canvas->set_transient_read_interaction(std::move(callback), eyedropper_cursor());
       } else {
-        window->canvas_->end_preview_render();
+        target_canvas->clear_transient_read_interaction();
       }
-    }
+    };
+    hooks.preview_changed = std::move(preview_changed);
+    return request_replace_color(this, input, hooks);
   };
-  auto preview_state = make_destructive_adjustment_preview_state(std::move(preview_hooks));
-
-  ReplaceColorDialogInput input;
-  input.layer = qimage_from_pixel_buffer(*original_pixels);
-  input.layer_origin = QPoint(bounds.x, bounds.y);
-  input.document_size = QSize(doc.width(), doc.height());
-  input.selection = selection;
-  input.initial_sample = canvas_->primary_color();
-  const QPointer<CanvasWidget> target_canvas = canvas_;
-  ReplaceColorDialogHooks hooks;
-  hooks.set_canvas_sampler = [target_canvas](std::function<void(const CanvasReadGesture&)> callback) {
-    if (target_canvas == nullptr) {
-      return;
-    }
-    if (callback) {
-      target_canvas->set_transient_read_interaction(std::move(callback), eyedropper_cursor());
-    } else {
-      target_canvas->clear_transient_read_interaction();
-    }
-  };
-  hooks.preview_changed = [preview_state, bounds, selection](bool enabled, const ReplaceColorSettings& settings) {
-    const auto identity = !enabled || !replace_color_has_effect(settings);
-    DestructiveAdjustmentPreviewRequest request;
-    request.identity = identity;
-    if (!identity) {
-      request.render = [bounds, selection, settings](PixelBuffer& pixels) {
-        apply_replace_color_to_pixels(pixels, bounds, selection, settings, nullptr);
-      };
-    }
-    enqueue_async_pixel_preview(preview_state, std::move(request), identity);
-  };
-
-  auto preview_edit_lock = lock_preview_dialog_edits();
-  auto preview_cleanup = qScopeGuard([this, &doc, preview_state, original = *layer] {
-    close_async_pixel_preview(preview_state);
-    if (auto* target = doc.find_layer(original.id()); target != nullptr) {
-      *target = original;
-      canvas_->document_changed();
-    }
-  });
-  const auto settings = request_replace_color(this, input, hooks);
-  close_async_pixel_preview(preview_state);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, *original_pixels, bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  preview_cleanup.dismiss();
-  preview_edit_lock.release();
-  if (!settings.has_value()) {
-    statusBar()->showMessage(tr("Cancelled Replace Color"));
-    return;
-  }
-
-  const auto display_name = tr("Replace Color");
-  auto final_pixels = *original_pixels;
-  if (replace_color_has_effect(*settings)) {
-    if (canvas_ != nullptr) {
-      canvas_->begin_processing_operation();
-    }
-    const auto finish_processing = qScopeGuard([this] {
-      if (canvas_ != nullptr) {
-        canvas_->end_processing_operation();
-      }
-    });
-    QProgressDialog progress(tr("Applying %1...").arg(display_name), tr("Cancel"), 0, 100, this);
-    progress.setObjectName(QStringLiteral("adjustmentProgressDialog"));
-    progress.setWindowModality(Qt::WindowModal);
-    progress.setMinimumDuration(kFilterProgressMinimumDurationMs);
-    remember_dialog_position(progress);
-    progress.setValue(0);
-    try {
-      run_filter_compute_with_progress(
-          progress,
-          [display_name](const QString& detail) { return tr("Applying %1...\n%2").arg(display_name, detail); },
-          [this] {
-            if (canvas_ != nullptr) {
-              canvas_->tick_processing_operation();
-            }
-          },
-          [&](FilterProgress& filter_progress) {
-            apply_replace_color_to_pixels(final_pixels, bounds, selection, *settings, &filter_progress);
-          });
-      progress.setValue(100);
-    } catch (const FilterCancelled&) {
-      statusBar()->showMessage(tr("Cancelled Replace Color"));
-      return;
-    }
-  }
-  if (pixel_buffers_equal(final_pixels, *original_pixels)) {
-    statusBar()->showMessage(tr("%1 made no changes").arg(display_name));
-    return;
-  }
-  push_undo_snapshot(display_name);
-  layer = doc.find_layer(active_id);
-  if (layer == nullptr) {
-    return;
-  }
-  set_layer_pixels_preserving_origin(*layer, std::move(final_pixels), bounds);
-  canvas_->document_changed(to_qrect(bounds));
-  statusBar()->showMessage(tr("Applied %1").arg(display_name));
+  spec.render = apply_replace_color_to_pixels;
+  spec.has_effect = replace_color_has_effect;
+  run_destructive_adjustment(spec);
 }
 
 }  // namespace patchy::ui

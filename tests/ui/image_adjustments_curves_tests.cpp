@@ -4531,6 +4531,31 @@ void ui_destructive_adjustment_cancel_restores_original_pixels() {
        set_spin("hueSaturationHueSpin", 120)},
       {"imageAdjustColorBalanceAction", "patchyColorBalanceDialog", "Cancelled Color Balance",
        set_spin("colorBalanceCyanRedSpin", 100)},
+      // Gradient Map, Black & White and Shadows/Highlights change pixels at
+      // their defaults. Color Lookup is left out: it needs a LUT file first.
+      {"imageAdjustGradientMapAction", "patchyGradientMapDialog", "Cancelled Gradient Map", [](QDialog&) {}},
+      {"imageAdjustVibranceAction", "patchyVibranceDialog", "Cancelled Vibrance",
+       set_spin("vibranceVibranceSpin", 100)},
+      {"imageAdjustSelectiveColorAction", "patchySelectiveColorDialog", "Cancelled Selective Color",
+       [](QDialog& dialog) {
+         auto* colors = dialog.findChild<QComboBox*>(QStringLiteral("selectiveColorColorsCombo"));
+         auto* cyan = dialog.findChild<QSpinBox*>(QStringLiteral("selectiveColorCyanSpin"));
+         CHECK(colors != nullptr && cyan != nullptr);
+         colors->setCurrentIndex(colors->findText(QStringLiteral("Blues"), Qt::MatchContains));
+         cyan->setValue(100);
+       }},
+      {"imageAdjustBlackWhiteAction", "patchyBlackWhiteDialog", "Cancelled Black & White", [](QDialog&) {}},
+      {"imageAdjustChannelMixerAction", "patchyChannelMixerDialog", "Cancelled Channel Mixer",
+       set_spin("channelMixerRedSpin", 200)},
+      {"imageAdjustPhotoFilterAction", "patchyPhotoFilterDialog", "Cancelled Photo Filter",
+       set_spin("photoFilterDensitySpin", 100)},
+      {"imageAdjustMatchColorAction", "patchyMatchColorDialog", "Cancelled Match Color",
+       set_spin("matchColorLuminanceSpin", 200)},
+      {"imageAdjustShadowsHighlightsAction", "patchyShadowsHighlightsDialog", "Cancelled Shadows/Highlights",
+       [](QDialog&) {}},
+      // The dialog samples the foreground color, set to the layer's below.
+      {"imageAdjustReplaceColorAction", "patchyReplaceColorDialog", "Cancelled Replace Color",
+       set_spin("replaceColorHueSpin", 180)},
   };
   for (const auto& test_case : cases) {
     patchy::Document source(48, 32, patchy::PixelFormat::rgba8());
@@ -4538,6 +4563,7 @@ void ui_destructive_adjustment_cancel_restores_original_pixels() {
     patchy::ui::MainWindow window;
     window.add_document_session(std::move(source), QStringLiteral("Cancel"));
     show_window(window);
+    require_canvas(window)->set_primary_color(QColor(40, 60, 80));
     auto& document = patchy::ui::MainWindowTestAccess::document(window);
     const auto original = std::as_const(document).layers().front().pixels();
     const auto layer_is_original = [&] {
