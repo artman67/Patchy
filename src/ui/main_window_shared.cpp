@@ -12,6 +12,7 @@
 #include "ui/brush_presets.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/layer_list_widget.hpp"
+#include "ui/tool_traits.hpp"
 
 #include <QAbstractButton>
 #include <QAction>
@@ -599,93 +600,8 @@ void bind_tooltip(QObject* object, const char* source) {
 }
 
 QString tool_name(CanvasTool tool) {
-  switch (tool) {
-    case CanvasTool::Move:
-      return QObject::tr("Move");
-    case CanvasTool::Marquee:
-      return QObject::tr("Marquee");
-    case CanvasTool::EllipticalMarquee:
-      return QObject::tr("Elliptical Marquee");
-    case CanvasTool::Lasso:
-      return QObject::tr("Lasso");
-    case CanvasTool::MagneticLasso:
-      return QObject::tr("Magnetic Lasso");
-    case CanvasTool::MagicWand:
-      return QObject::tr("Magic Wand");
-    case CanvasTool::QuickSelect:
-      return QObject::tr("Quick Select");
-    case CanvasTool::Brush:
-      return QObject::tr("Brush");
-    case CanvasTool::MixerBrush:
-      return QObject::tr("Mixer Brush");
-    case CanvasTool::Clone:
-      return QObject::tr("Clone Stamp");
-    case CanvasTool::PatternStamp:
-      return QObject::tr("Pattern Stamp");
-    case CanvasTool::HistoryBrush:
-      return QObject::tr("History Brush");
-    case CanvasTool::Healing:
-      return QObject::tr("Healing Brush");
-    case CanvasTool::Smudge:
-      return QObject::tr("Smudge");
-    case CanvasTool::Dodge:
-      return QObject::tr("Dodge");
-    case CanvasTool::Burn:
-      return QObject::tr("Burn");
-    case CanvasTool::Sponge:
-      return QObject::tr("Sponge");
-    case CanvasTool::BlurBrush:
-      return QObject::tr("Blur");
-    case CanvasTool::SharpenBrush:
-      return QObject::tr("Sharpen");
-    case CanvasTool::Eraser:
-      return QObject::tr("Eraser");
-    case CanvasTool::Gradient:
-      return QObject::tr("Gradient");
-    case CanvasTool::Pen:
-      return QObject::tr("Pen");
-    case CanvasTool::PathSelect:
-      return QObject::tr("Path Select");
-    case CanvasTool::DirectSelect:
-      return QObject::tr("Direct Select");
-    case CanvasTool::Line:
-      return QObject::tr("Line");
-    case CanvasTool::Rectangle:
-      return QObject::tr("Rectangle");
-    case CanvasTool::Ellipse:
-      return QObject::tr("Ellipse");
-    case CanvasTool::Polygon:
-      return QObject::tr("Polygon");
-    case CanvasTool::CustomShape:
-      return QObject::tr("Custom Shape");
-    case CanvasTool::Fill:
-      return QObject::tr("Fill");
-    case CanvasTool::Eyedropper:
-      return QObject::tr("Eyedropper");
-    case CanvasTool::Text:
-      return QObject::tr("Type");
-    case CanvasTool::Pan:
-      return QObject::tr("Pan");
-    case CanvasTool::Zoom:
-      return QObject::tr("Zoom");
-    case CanvasTool::SpotHealing:
-      return QObject::tr("Spot Healing");
-    case CanvasTool::PatchTool:
-      return QObject::tr("Patch");
-    case CanvasTool::Crop:
-      return QObject::tr("Crop");
-    case CanvasTool::AddAnchor:
-      return QObject::tr("Add Anchor Point");
-    case CanvasTool::DeleteAnchor:
-      return QObject::tr("Delete Anchor Point");
-    case CanvasTool::ConvertPoint:
-      return QObject::tr("Convert Point");
-    case CanvasTool::RotateView:
-      return QObject::tr("Rotate View");
-    case CanvasTool::ColorReplacement:
-      return QObject::tr("Color Replacement");
-  }
-  return QObject::tr("Tool");
+  // display_name is marked for the QObject context.
+  return QCoreApplication::translate("QObject", tool_traits(tool).display_name);
 }
 
 int text_smoothing_combo_value(const QComboBox* combo) {

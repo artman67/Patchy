@@ -661,93 +661,9 @@ void paint_selection_mode_badge(QPainter& painter, CanvasWidget::SelectionMode m
   stroke(kSelectionCursorInk, kSelectionCursorWidth);
 }
 
-bool tool_uses_alt_left_for_color_pick(CanvasTool tool) noexcept {
-  // Rectangle/Ellipse are deliberately absent: Alt means draw-from-center there
-  // (Photoshop parity), and the temporary-eyedropper cursor would fight it.
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::MixerBrush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Smudge:
-    case CanvasTool::ColorReplacement:
-    case CanvasTool::Eraser:
-    case CanvasTool::Gradient:
-    case CanvasTool::Line:
-    case CanvasTool::Fill:
-      return true;
-    default:
-      return false;
-  }
-}
-
 QPoint clamped_document_point(const Document& document, QPoint point) {
   return QPoint(std::clamp(point.x(), 0, std::max(0, document.width() - 1)),
                 std::clamp(point.y(), 0, std::max(0, document.height() - 1)));
-}
-
-// The tools whose Size/Soft options-bar controls apply; these accept the
-// Photoshop-style Alt+Right-drag brush resize gesture.
-bool tool_supports_brush_adjust_drag(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::MixerBrush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Clone:
-    case CanvasTool::Healing:
-    case CanvasTool::SpotHealing:
-    case CanvasTool::Smudge:
-    case CanvasTool::Dodge:
-    case CanvasTool::Burn:
-    case CanvasTool::Sponge:
-    case CanvasTool::BlurBrush:
-    case CanvasTool::SharpenBrush:
-    case CanvasTool::ColorReplacement:
-    case CanvasTool::Eraser:
-    case CanvasTool::Line:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool tool_uses_brush_footprint_cursor(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::MixerBrush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Clone:
-    case CanvasTool::Healing:
-    case CanvasTool::SpotHealing:
-    case CanvasTool::Smudge:
-    case CanvasTool::Dodge:
-    case CanvasTool::Burn:
-    case CanvasTool::Sponge:
-    case CanvasTool::BlurBrush:
-    case CanvasTool::SharpenBrush:
-    case CanvasTool::ColorReplacement:
-    case CanvasTool::Eraser:
-      return true;
-    default:
-      return false;
-  }
-}
-
-bool tool_paints_with_brush_tip(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::MixerBrush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Eraser:
-      return true;
-    default:
-      return false;
-  }
 }
 
 }  // namespace patchy::ui

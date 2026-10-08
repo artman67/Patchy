@@ -75,6 +75,7 @@
 #include "ui/zoom_status_bar.hpp"
 #include "ui/theme_palette.hpp"
 #include "ui/theme_qss.hpp"
+#include "ui/tool_traits.hpp"
 #include "support/string_utils.hpp"
 
 #include <QAbstractItemView>
@@ -4274,13 +4275,7 @@ void MainWindow::refresh_document_info() {
   if (active_tool_info_label_ != nullptr && canvas_ != nullptr) {
     QStringList lines;
     lines << tr("Tool: %1").arg(tool_name(current_tool_));
-    if (current_tool_ == CanvasTool::Brush || current_tool_ == CanvasTool::MixerBrush ||
-        current_tool_ == CanvasTool::PatternStamp || current_tool_ == CanvasTool::HistoryBrush ||
-        current_tool_ == CanvasTool::Clone ||
-        current_tool_ == CanvasTool::Healing ||
-        current_tool_ == CanvasTool::Smudge || current_tool_ == CanvasTool::Eraser ||
-        current_tool_ == CanvasTool::Line || current_tool_ == CanvasTool::Rectangle ||
-        current_tool_ == CanvasTool::Ellipse) {
+    if (tool_has(current_tool_, kToolBrushInfo)) {
       lines << tr("Size: %1 px").arg(canvas_->brush_size());
       if (current_tool_ == CanvasTool::MixerBrush) {
         lines << tr("Wet: %1% | Load: %2% | Mix: %3% | Flow: %4%")
@@ -4295,13 +4290,10 @@ void MainWindow::refresh_document_info() {
         lines << tr("Opacity: %1%").arg(canvas_->brush_opacity());
       }
       lines << tr("Softness: %1%").arg(canvas_->brush_softness());
-      if ((current_tool_ == CanvasTool::Brush || current_tool_ == CanvasTool::MixerBrush ||
-           current_tool_ == CanvasTool::Eraser) &&
-          canvas_->brush_smoothing() > 0) {
+      if (tool_has(current_tool_, kToolSmoothing) && canvas_->brush_smoothing() > 0) {
         lines << tr("Smoothing: %1%").arg(canvas_->brush_smoothing());
       }
-      if (current_tool_ == CanvasTool::Brush || current_tool_ == CanvasTool::PatternStamp ||
-          current_tool_ == CanvasTool::HistoryBrush) {
+      if (tool_has(current_tool_, kToolFlow)) {
         lines << tr("Flow: %1%").arg(canvas_->brush_flow());
         if (current_tool_ == CanvasTool::Brush) {
           lines << (canvas_->brush_build_up() ? tr("Airbrush: on") : tr("Airbrush: off"));

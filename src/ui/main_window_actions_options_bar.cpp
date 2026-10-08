@@ -79,6 +79,7 @@
 #include "ui/splash_dialog.hpp"
 #include "ui/update_checker.hpp"
 #include "ui/zoom_status_bar.hpp"
+#include "ui/tool_traits.hpp"
 #include "support/string_utils.hpp"
 
 #include <QAbstractItemView>
@@ -620,9 +621,9 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     register_option_action(button, tools);
     return action;
   };
-  const auto add_option_widget = [this, options_flow](QWidget* widget, std::initializer_list<CanvasTool> tools) {
+  const auto add_option_widget = [this, options_flow](QWidget* widget, std::vector<CanvasTool> tools) {
     options_flow->addWidget(widget);
-    register_option_action(widget, tools);
+    register_option_action(widget, std::move(tools));
     return widget;
   };
   const auto add_transform_option_widget = [this, options_flow](QWidget* widget) {
@@ -631,12 +632,12 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     return widget;
   };
   const auto add_option_label = [options_content, add_option_widget](const char* source,
-                                                                     std::initializer_list<CanvasTool> tools) {
+                                                                     std::vector<CanvasTool> tools) {
     auto* label = new QLabel(options_content);
     bind_widget_text(label, source);
     label->setProperty("optionLabel", true);
     label->setAlignment(Qt::AlignVCenter);
-    return add_option_widget(label, tools);
+    return add_option_widget(label, std::move(tools));
   };
 
   move_auto_select_check_ = new CheckGlyphBox(tr("Auto-Select"), toolbar);
@@ -1755,9 +1756,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     }
   });
 
-  add_option_label(QT_TR_NOOP("Preset:"),
-                   {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
-                    CanvasTool::Eraser});
+  add_option_label(QT_TR_NOOP("Preset:"), tools_with(kToolBrushPresets));
   brush_preset_combo_ = new QComboBox(toolbar);
   brush_preset_combo_->setObjectName(QStringLiteral("brushPresetCombo"));
   // 112 (was 132): reclaims room for the labeled Smoothing controls on the
@@ -1775,10 +1774,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     }
   }
   brush_preset_combo_->setProperty("lastBrushPresetId", brush_preset_combo_->currentData());
-  add_option_widget(
-      brush_preset_combo_,
-      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
-       CanvasTool::Eraser});
+  add_option_widget(brush_preset_combo_, tools_with(kToolBrushPresets));
 
   // Mode sits FIRST for the shape tools so it never moves when the Pixels-mode
   // brush controls below appear (Seth, September 2026).
@@ -1821,23 +1817,14 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
 
   // The raster brush controls double as the shape tools' Pixels-mode options;
   // refresh_vector_tool_options_visibility hides them in the vector modes.
-  vector_pixel_only_option_widgets_.push_back(add_option_label(
-      QT_TR_NOOP("Size:"),
-      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
-       CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-       CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
-       CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
+  vector_pixel_only_option_widgets_.push_back(add_option_label(QT_TR_NOOP("Size:"), tools_with(kToolBrushSize)));
   auto* brush_size = new QSpinBox(toolbar);
   brush_size->setObjectName(QStringLiteral("brushSizeSpin"));
   brush_size->setRange(1, kMaxBrushSize);
   brush_size->setValue(canvas_defaults->brush_size());
   brush_size->setProperty(kToolbarSpinboxSliderCurvedProperty, true);
   configure_toolbar_spinbox(brush_size, 58);
-  add_option_widget(brush_size,
-                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
-                     CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
-                     CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
+  add_option_widget(brush_size, tools_with(kToolBrushSize));
   auto* brush_size_slider = new QSlider(Qt::Horizontal, toolbar);
   brush_size_slider->setObjectName(QStringLiteral("brushSizeSlider"));
   bind_curved_slider(*brush_size_slider, *brush_size);
@@ -1848,24 +1835,16 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   register_retranslation([brush_size_slider] {
     brush_size_slider->setToolTip(resolve_modifier_names(MainWindow::tr("Brush size: press [ or ], or %ALT%+Right-drag on the canvas")));
   });
-  add_option_widget(brush_size_slider,
-                    {CanvasTool::Brush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
-                     CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
-                     CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
-  vector_pixel_only_option_widgets_.push_back(add_option_label(
-      QT_TR_NOOP("Opacity:"),
-      {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
-       CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
+  add_option_widget(brush_size_slider, tools_with(kToolBrushSizeSliders));
+  vector_pixel_only_option_widgets_.push_back(
+      add_option_label(QT_TR_NOOP("Opacity:"), tools_with(kToolBrushOpacity)));
   auto* brush_opacity = new QSpinBox(toolbar);
   brush_opacity->setObjectName(QStringLiteral("brushOpacitySpin"));
   brush_opacity->setRange(1, 100);
   brush_opacity->setValue(canvas_defaults->brush_opacity());
   brush_opacity->setSuffix(percent_suffix());
   configure_toolbar_spinbox(brush_opacity, 52);
-  add_option_widget(brush_opacity,
-                    {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
-                     CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
+  add_option_widget(brush_opacity, tools_with(kToolBrushOpacity));
   auto* brush_opacity_slider = new QSlider(Qt::Horizontal, toolbar);
   brush_opacity_slider->setObjectName(QStringLiteral("brushOpacitySlider"));
   brush_opacity_slider->setRange(1, 100);
@@ -1873,26 +1852,15 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   brush_opacity_slider->setFixedWidth(100);  // was 120; see the size-slider note
 
   bind_tooltip(brush_opacity_slider, QT_TR_NOOP("Brush opacity: press number keys (5 = 50%, 0 = 100%)"));
-  add_option_widget(brush_opacity_slider,
-                    {CanvasTool::Brush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::Smudge,
-                     CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
-  vector_pixel_only_option_widgets_.push_back(add_option_label(
-      QT_TR_NOOP("Soft:"),
-      {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
-       CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-       CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
-       CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse}));
+  add_option_widget(brush_opacity_slider, tools_with(kToolBrushOpacitySlider));
+  vector_pixel_only_option_widgets_.push_back(add_option_label(QT_TR_NOOP("Soft:"), tools_with(kToolBrushSize)));
   auto* brush_softness = new QSpinBox(toolbar);
   brush_softness->setObjectName(QStringLiteral("brushSoftnessSpin"));
   brush_softness->setRange(0, 100);
   brush_softness->setValue(canvas_defaults->brush_softness());
   brush_softness->setSuffix(percent_suffix());
   configure_toolbar_spinbox(brush_softness, 52);
-  add_option_widget(brush_softness,
-                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
-                     CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
-                     CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
+  add_option_widget(brush_softness, tools_with(kToolBrushSize));
   auto* brush_softness_slider = new QSlider(Qt::Horizontal, toolbar);
   brush_softness_slider->setObjectName(QStringLiteral("brushSoftnessSlider"));
   brush_softness_slider->setRange(0, 100);
@@ -1901,11 +1869,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   register_retranslation([brush_softness_slider] {
     brush_softness_slider->setToolTip(resolve_modifier_names(MainWindow::tr("Brush edge softness: %ALT%+Right-drag up or down on the canvas")));
   });
-  add_option_widget(brush_softness_slider,
-                    {CanvasTool::Brush, CanvasTool::Clone, CanvasTool::Healing, CanvasTool::SpotHealing, CanvasTool::Smudge,
-                     CanvasTool::Dodge, CanvasTool::Burn, CanvasTool::Sponge,
-                     CanvasTool::BlurBrush, CanvasTool::SharpenBrush, CanvasTool::ColorReplacement,
-                     CanvasTool::Eraser, CanvasTool::Line, CanvasTool::Rectangle, CanvasTool::Ellipse});
+  add_option_widget(brush_softness_slider, tools_with(kToolBrushSizeSliders));
   for (auto* raster_only :
        std::initializer_list<QWidget*>{brush_size, brush_size_slider, brush_opacity,
                                        brush_opacity_slider, brush_softness, brush_softness_slider}) {
@@ -1928,7 +1892,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     }
   });
 
-  auto* brush_flow_label = add_option_label(QT_TR_NOOP("Flow:"), {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush});
+  auto* brush_flow_label = add_option_label(QT_TR_NOOP("Flow:"), tools_with(kToolFlow));
   bind_widget_text(brush_flow_label, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Flow:"));
   auto* brush_flow = new QSpinBox(toolbar);
   brush_flow->setObjectName(QStringLiteral("brushFlowSpin"));
@@ -1937,7 +1901,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   brush_flow->setSuffix(percent_suffix());
   bind_tooltip(brush_flow, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush flow: Shift+number keys (number keys with Airbrush)"));
   configure_toolbar_spinbox(brush_flow, 60);
-  add_option_widget(brush_flow, {CanvasTool::Brush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush});
+  add_option_widget(brush_flow, tools_with(kToolFlow));
   auto* brush_airbrush = new CheckGlyphBox(tr("Airbrush"), toolbar);
   brush_airbrush->setObjectName(QStringLiteral("brushAirbrushCheck"));
   bind_widget_text(brush_airbrush, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Airbrush"));
@@ -1959,10 +1923,9 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     }
   });
 
-  // Stroke Smoothing (Brush, Mixer Brush, Eraser): the percent spin plus a
+  // Stroke Smoothing (the kToolSmoothing tools): the percent spin plus a
   // gear button whose menu holds the four Photoshop smoothing toggles.
-  const std::initializer_list<CanvasTool> smoothing_tools = {
-      CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::Eraser};
+  const auto smoothing_tools = tools_with(kToolSmoothing);
   // Created here, APPENDED to the bar after the mixer cluster below so every
   // row reads Photoshop-style (..., Flow, Sample All Layers, Smooth).
   auto* brush_smoothing = new QSpinBox(toolbar);
@@ -2302,18 +2265,14 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     statusBar()->showMessage(tr("Brush preset: %1").arg(brush_preset_display_name(*preset)));
   });
 
-  add_option_label(QT_TR_NOOP("Tip:"),
-                   {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush,
-                   CanvasTool::Eraser});
+  add_option_label(QT_TR_NOOP("Tip:"), tools_with(kToolBrushTip));
   (void)brush_automation_library();
   refresh_automation_brush_presets();
   register_retranslation([this] { refresh_automation_brush_presets(); });
   brush_tip_picker_ = new BrushTipPicker(brush_tip_library(), toolbar);
   // The options bar is built after load_tool_settings() reset the active tip to Round.
   brush_tip_picker_->set_current_tip_id(active_brush_tip_id_);
-  add_option_widget(brush_tip_picker_,
-                    {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::HistoryBrush,
-                     CanvasTool::Eraser});
+  add_option_widget(brush_tip_picker_, tools_with(kToolBrushTip));
   connect(brush_tip_picker_, &BrushTipPicker::tip_selected, this,
           [this](const QString& id) { set_active_brush_tip(id, true); });
   connect(brush_tip_picker_, &BrushTipPicker::import_requested, this,

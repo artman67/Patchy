@@ -86,6 +86,7 @@
 #include "ui/zoom_status_bar.hpp"
 #include "ui/theme_manager.hpp"
 #include "ui/theme_qss.hpp"
+#include "ui/tool_traits.hpp"
 #include "ui/user_fonts.hpp"
 #include "support/string_utils.hpp"
 
@@ -13672,8 +13673,7 @@ bool MainWindow::document_action_enabled_during_preview_lock(const QAction* acti
     return true;
   }
   if (action->data().isValid()) {
-    const auto tool = static_cast<CanvasTool>(action->data().toInt());
-    return tool == CanvasTool::Pan || tool == CanvasTool::Zoom || tool == CanvasTool::RotateView;
+    return tool_has(static_cast<CanvasTool>(action->data().toInt()), kToolViewOnly);
   }
   return false;
 }

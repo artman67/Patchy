@@ -44,6 +44,7 @@
 
 #include <array>
 #include <atomic>
+#include <cstddef>
 #include <cstdint>
 #include <chrono>
 #include <map>
@@ -132,6 +133,10 @@ enum class CanvasTool {
   // October 2026 Color Replacement (append-only: values ride persisted settings).
   ColorReplacement
 };
+
+// One past the last CanvasTool. Bump it when appending a tool; the
+// tool_traits.cpp table must then gain the tool's row (static_assert).
+inline constexpr std::size_t kCanvasToolCount = static_cast<std::size_t>(CanvasTool::ColorReplacement) + 1;
 
 // Which tool produced a committed vector path; MainWindow picks the layer
 // name pattern (Pen/Polygon/CustomShape all route the same way otherwise).
@@ -1854,9 +1859,8 @@ private:
   void begin_brush_smoothing(QPointF document_point) noexcept;
   void reset_brush_smoothing() noexcept;
   // Stroke Smoothing (the taut-leash stabilizer). It applies between the axis
-  // constraint and the always-on midpoint smoother, for Brush/Mixer/Eraser
-  // strokes only; smoothing 0 never consults it (exact pass-through).
-  [[nodiscard]] static bool tool_uses_stroke_stabilizer(CanvasTool tool) noexcept;
+  // constraint and the always-on midpoint smoother, for kToolSmoothing tools
+  // only; smoothing 0 never consults it (exact pass-through).
   [[nodiscard]] double stroke_stabilizer_leash_radius() const noexcept;
   void begin_stroke_stabilizer(QPointF document_point, CanvasTool effective_tool);
   [[nodiscard]] QPointF stabilized_stroke_point(QPointF constrained_point, CanvasTool effective_tool);

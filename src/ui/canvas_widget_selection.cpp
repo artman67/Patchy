@@ -197,24 +197,7 @@ std::uint8_t alpha_at(const QImage& mask, QRect bounds, QPoint document_point) {
 }  // namespace
 
 int CanvasWidget::selection_tool_index(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Marquee:
-      return 0;
-    case CanvasTool::EllipticalMarquee:
-      return 1;
-    case CanvasTool::Lasso:
-      return 2;
-    case CanvasTool::MagneticLasso:
-      return 3;
-    case CanvasTool::MagicWand:
-      return 4;
-    case CanvasTool::QuickSelect:
-      return 5;
-    case CanvasTool::PatchTool:
-      return 6;
-    default:
-      return -1;
-  }
+  return tool_traits(tool).selection_slot;
 }
 
 void CanvasWidget::set_selection_mode(SelectionMode mode) noexcept {
