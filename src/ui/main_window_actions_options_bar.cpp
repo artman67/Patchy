@@ -1019,21 +1019,13 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     if (canvas_ == nullptr) {
       return;
     }
-    if (canvas_->warp_transform_active()) {
-      canvas_->finish_warp_transform();
-    } else {
-      canvas_->finish_free_transform();
-    }
+    canvas_->commit_modal_session();
   });
   connect(transform_cancel_button_, &QPushButton::clicked, this, [this] {
     if (canvas_ == nullptr) {
       return;
     }
-    if (canvas_->warp_transform_active()) {
-      canvas_->cancel_warp_transform();
-    } else {
-      canvas_->cancel_free_transform();
-    }
+    canvas_->cancel_modal_session();
   });
 
   auto* selection_new = add_option_action(

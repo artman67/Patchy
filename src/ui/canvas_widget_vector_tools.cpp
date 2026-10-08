@@ -1545,11 +1545,11 @@ bool CanvasWidget::handle_path_edit_key(QKeyEvent* event) {
     // Photoshop's second-stage Escape: with no anchors selected (and no pen
     // session - handle_pen_key already consumed that), Esc dismisses the
     // targeted path display via the Paths panel. Sessions whose own Escape
-    // handlers run later in keyPressEvent (guide drags, warp/free transform,
+    // handlers run later in keyPressEvent (guide drags, modal sessions,
     // text-rect drags) keep priority - never swallow their cancel key.
     if (event->key() == Qt::Key_Escape && panel_path_targeted_ &&
-        path_display_dismiss_callback_ && !dragging_guide_ && !warping_layer_ &&
-        !transforming_layer_ && !dragging_text_rect_) {
+        path_display_dismiss_callback_ && !dragging_guide_ && !modal_session_active() &&
+        !dragging_text_rect_) {
       path_display_dismiss_callback_();
       return true;
     }

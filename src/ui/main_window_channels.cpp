@@ -423,8 +423,9 @@ void MainWindow::set_channel_edit_target(ChannelPanel::RowKind kind, ChannelId i
     return;
   }
   finish_active_text_editor();
-  canvas_->finish_free_transform();
-  canvas_->finish_warp_transform();
+  if (canvas_->layer_transform_session_active()) {
+    canvas_->commit_modal_session();
+  }
   if (canvas_->quick_mask_active() && kind != ChannelPanel::RowKind::QuickMask) {
     canvas_->set_quick_mask_active(false);
   }
@@ -825,8 +826,9 @@ void MainWindow::toggle_quick_mask_mode() {
     return;
   }
   finish_active_text_editor();
-  canvas_->finish_free_transform();
-  canvas_->finish_warp_transform();
+  if (canvas_->layer_transform_session_active()) {
+    canvas_->commit_modal_session();
+  }
   const auto active = !canvas_->quick_mask_active();
   canvas_->set_quick_mask_active(active);
   refresh_quick_mask_ui();

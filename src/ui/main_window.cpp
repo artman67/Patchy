@@ -10334,7 +10334,7 @@ void MainWindow::open_text_character_dialog() {
 
 std::vector<LayerId> MainWindow::text_character_target_layer_ids() const {
   if (canvas_ == nullptr || !has_active_document() || preview_dialog_edit_locked() ||
-      canvas_->free_transform_active() || canvas_->warp_transform_active()) {
+      canvas_->layer_transform_session_active()) {
     return {};
   }
   // The active layer leads so text_character_target_layer() keeps answering what the panel
@@ -13648,8 +13648,7 @@ bool MainWindow::refuse_layer_dialog_during_transform() {
   if (canvas_ == nullptr) {
     return false;
   }
-  if (!canvas_->free_transform_active() && !canvas_->warp_transform_active() &&
-      !canvas_->path_transform_active()) {
+  if (!canvas_->modal_session_active()) {
     return false;
   }
   show_status_error(tr("Finish the transform first: press Enter to apply it or Esc to cancel it"));
