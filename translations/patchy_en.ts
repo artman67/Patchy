@@ -10454,6 +10454,26 @@ RGB: %2, %3, %4</source>
         <source>Crop box reset to the canvas</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18607,6 +18627,119 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
         <translation type="unfinished"></translation>
     </message>
 </context>

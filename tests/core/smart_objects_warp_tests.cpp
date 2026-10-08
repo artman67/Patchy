@@ -37,6 +37,7 @@
 #include "psd/psd_layer_effects.hpp"
 #include "psd/psd_patterns.hpp"
 #include "psd/psd_smart_objects.hpp"
+#include "core/puppet_warp.hpp"
 #include "core/text_warp.hpp"
 #include "core/warp_mesh.hpp"
 #include "psd/psd_document_io.hpp"
@@ -1217,6 +1218,156 @@ void psd_style_only_warp_unlocks_and_regenerates_if_available() {
   }
 }
 
+// Puppet Warp (core/puppet_warp, docs/puppet-warp.md): moving least squares per
+// grid node. Unmoved pins must be an exact identity, a single pin a pure
+// translation, and a pin on its own target exact.
+void puppet_warp_unmoved_pins_are_identity_and_one_pin_translates() {
+  std::vector<std::uint8_t> alpha(40U * 30U, 255);
+  const auto mesh = patchy::build_puppet_warp_mesh(alpha, 10, 20, 40, 30, patchy::PuppetWarpDensity::Normal, 0);
+  CHECK(!patchy::puppet_warp_mesh_is_empty(mesh));
+  std::vector<patchy::PuppetPin> pins(2);
+  pins[0].rest_x = pins[0].x = 15.5;
+  pins[0].rest_y = pins[0].y = 25.5;
+  pins[1].rest_x = pins[1].x = 41.0;
+  pins[1].rest_y = pins[1].y = 44.0;
+  CHECK(patchy::puppet_warp_is_identity(pins));
+  for (const auto mode : {patchy::PuppetWarpMode::Rigid, patchy::PuppetWarpMode::Normal, patchy::PuppetWarpMode::Distort}) {
+    for (const auto& set : {pins, std::vector<patchy::PuppetPin>{}}) {
+      const auto grid = patchy::deform_puppet_warp_mesh(mesh, set, mode, 3, 10.0, 20.0);
+      CHECK(!grid.cell_order.empty());
+      for (std::size_t i = 0; i < grid.doc_xs.size(); ++i) {
+        CHECK(grid.doc_xs[i] == grid.source_xs[i] + 10.0);
+        CHECK(grid.doc_ys[i] == grid.source_ys[i] + 20.0);
+      }
+    }
+  }
+
+  // One dragged pin moves everything by the same offset, in every mode.
+  std::vector<patchy::PuppetPin> single(1);
+  single[0].rest_x = 20.0;
+  single[0].rest_y = 30.0;
+  single[0].x = 27.0;
+  single[0].y = 21.0;
+  CHECK(!patchy::puppet_warp_is_identity(single));
+  for (const auto mode : {patchy::PuppetWarpMode::Rigid, patchy::PuppetWarpMode::Normal, patchy::PuppetWarpMode::Distort}) {
+    for (const auto& point : {std::array<double, 2>{10.0, 20.0}, std::array<double, 2>{49.5, 22.25},
+                              std::array<double, 2>{20.0, 30.0}}) {
+      const auto mapped = patchy::puppet_warp_map_point(single, mode, 8.0, point[0], point[1]);
+      CHECK(std::abs(mapped[0] - (point[0] + 7.0)) < 1e-9);
+      CHECK(std::abs(mapped[1] - (point[1] - 9.0)) < 1e-9);
+    }
+  }
+
+  // A pin added on the deformed surface inverts to the rest point under it.
+  const auto grid = patchy::deform_puppet_warp_mesh(mesh, single, patchy::PuppetWarpMode::Rigid, 3, 10.0, 20.0);
+  const auto rest = patchy::puppet_warp_rest_point(grid, 40.0, 30.0, 10.0, 20.0);
+  CHECK(rest.has_value());
+  CHECK(std::abs((*rest)[0] - 33.0) < 1e-6);
+  CHECK(std::abs((*rest)[1] - 39.0) < 1e-6);
+  CHECK(!patchy::puppet_warp_rest_point(grid, 200.0, 30.0, 10.0, 20.0).has_value());
+}
+
+// Two pins, one held and one pulled to twice the distance. Rigid never scales,
+// Distort (affine, which falls back to similarity below three pins) scales, and
+// Normal sits halfway; the held pin stays exactly where it is in every mode.
+void puppet_warp_held_pin_stays_and_modes_differ() {
+  std::vector<patchy::PuppetPin> pins(2);
+  pins[0].rest_x = pins[0].x = 0.0;
+  pins[0].rest_y = pins[0].y = 0.0;
+  pins[1].rest_x = 100.0;
+  pins[1].rest_y = 0.0;
+  pins[1].x = 200.0;
+  pins[1].y = 0.0;
+  const auto map = [&pins](patchy::PuppetWarpMode mode, double x, double y) {
+    return patchy::puppet_warp_map_point(pins, mode, 8.0, x, y);
+  };
+  for (const auto mode : {patchy::PuppetWarpMode::Rigid, patchy::PuppetWarpMode::Normal, patchy::PuppetWarpMode::Distort}) {
+    const auto held = map(mode, 0.0, 0.0);
+    CHECK(held[0] == 0.0 && held[1] == 0.0);
+    const auto pulled = map(mode, 100.0, 0.0);
+    CHECK(pulled[0] == 200.0 && pulled[1] == 0.0);
+  }
+  // (50, 100) is equidistant from both pins: centroid offset (50, 0), rotation 0.
+  const auto rigid = map(patchy::PuppetWarpMode::Rigid, 50.0, 100.0);
+  const auto normal = map(patchy::PuppetWarpMode::Normal, 50.0, 100.0);
+  const auto distort = map(patchy::PuppetWarpMode::Distort, 50.0, 100.0);
+  CHECK(std::abs(rigid[0] - 100.0) < 1e-9 && std::abs(rigid[1] - 100.0) < 1e-9);
+  CHECK(std::abs(normal[0] - 100.0) < 1e-9 && std::abs(normal[1] - 150.0) < 1e-9);
+  CHECK(std::abs(distort[0] - 100.0) < 1e-9 && std::abs(distort[1] - 200.0) < 1e-9);
+
+  // With three pins Distort reproduces an affine stretch exactly; Rigid cannot.
+  std::vector<patchy::PuppetPin> three(3);
+  three[0].rest_x = three[0].x = 0.0;
+  three[0].rest_y = three[0].y = 0.0;
+  three[1].rest_x = three[1].x = 100.0;
+  three[1].rest_y = three[1].y = 0.0;
+  three[2].rest_x = three[2].x = 0.0;
+  three[2].rest_y = 100.0;
+  three[2].y = 150.0;
+  const auto stretched = patchy::puppet_warp_map_point(three, patchy::PuppetWarpMode::Distort, 8.0, 50.0, 50.0);
+  CHECK(std::abs(stretched[0] - 50.0) < 1e-6 && std::abs(stretched[1] - 75.0) < 1e-6);
+  const auto rigid_stretch = patchy::puppet_warp_map_point(three, patchy::PuppetWarpMode::Rigid, 8.0, 50.0, 50.0);
+  CHECK(std::hypot(rigid_stretch[0] - 50.0, rigid_stretch[1] - 75.0) > 2.0);
+
+  // A Fixed rotation turns the neighbourhood of an unmoved pin; Auto reads 0 there.
+  std::vector<patchy::PuppetPin> fixed(2);
+  fixed[0].rest_x = fixed[0].x = 0.0;
+  fixed[0].rest_y = fixed[0].y = 0.0;
+  fixed[1].rest_x = fixed[1].x = 200.0;
+  fixed[1].rest_y = fixed[1].y = 0.0;
+  CHECK(patchy::puppet_warp_pin_angle(fixed, patchy::PuppetWarpMode::Rigid, 8.0, 0) == 0.0);
+  fixed[0].fixed_rotation = true;
+  fixed[0].rotation_degrees = 90.0;
+  CHECK(!patchy::puppet_warp_is_identity(fixed));
+  CHECK(patchy::puppet_warp_pin_angle(fixed, patchy::PuppetWarpMode::Rigid, 8.0, 0) == 90.0);
+  const auto turned = patchy::puppet_warp_map_point(fixed, patchy::PuppetWarpMode::Rigid, 8.0, 8.0, 0.0);
+  CHECK(std::abs(turned[0]) < 1e-9 && std::abs(turned[1] - 8.0) < 1e-9);  // clockwise on screen
+}
+
+// The mesh covers the opaque pixels grown or shrunk by Expansion, and pin depth
+// orders the cells front-most first.
+void puppet_warp_mesh_follows_alpha_and_depth_orders_cells() {
+  // A 96x8 layer whose only opaque pixels are a 16x8 block on the left.
+  std::vector<std::uint8_t> alpha(96U * 8U, 0);
+  for (int y = 0; y < 8; ++y) {
+    for (int x = 0; x < 16; ++x) {
+      alpha[static_cast<std::size_t>(y * 96 + x)] = 200;
+    }
+  }
+  const auto count = [](const patchy::PuppetWarpMesh& mesh) {
+    return std::count(mesh.active.begin(), mesh.active.end(), std::uint8_t{1});
+  };
+  const auto tight = patchy::build_puppet_warp_mesh(alpha, 0, 0, 96, 8, patchy::PuppetWarpDensity::MorePoints, 0);
+  CHECK(tight.spacing == 2);
+  CHECK(count(tight) == 8 * 4);  // exactly the 16x8 block in 2 px cells
+  const auto grown = patchy::build_puppet_warp_mesh(alpha, 0, 0, 96, 8, patchy::PuppetWarpDensity::MorePoints, 4);
+  const auto shrunk = patchy::build_puppet_warp_mesh(alpha, 0, 0, 96, 8, patchy::PuppetWarpDensity::MorePoints, -2);
+  CHECK(count(grown) > count(tight));
+  CHECK(count(shrunk) > 0 && count(shrunk) < count(tight));
+  CHECK(grown.origin_x == -4.0 && grown.origin_y == -4.0);
+  CHECK(patchy::puppet_warp_mesh_is_empty(
+      patchy::build_puppet_warp_mesh(std::vector<std::uint8_t>(96U * 8U, 0), 0, 0, 96, 8,
+                                     patchy::PuppetWarpDensity::Normal, 2)));
+
+  // Depth: a full strip, right pin in front. Equal depths keep row-major order.
+  const std::vector<std::uint8_t> strip(96U * 8U, 255);
+  const auto mesh = patchy::build_puppet_warp_mesh(strip, 0, 0, 96, 8, patchy::PuppetWarpDensity::Normal, 0);
+  std::vector<patchy::PuppetPin> pins(2);
+  pins[0].rest_x = pins[0].x = 4.0;
+  pins[0].rest_y = pins[0].y = 4.0;
+  pins[1].rest_x = 92.0;
+  pins[1].x = 90.0;  // moved: an unmoved rig is the identity and never overlaps
+  pins[1].rest_y = pins[1].y = 4.0;
+  const auto flat = patchy::deform_puppet_warp_mesh(mesh, pins, patchy::PuppetWarpMode::Normal, 1, 0.0, 0.0);
+  CHECK(std::is_sorted(flat.cell_order.begin(), flat.cell_order.end()));
+  pins[1].depth = 1;
+  const auto layered = patchy::deform_puppet_warp_mesh(mesh, pins, patchy::PuppetWarpMode::Normal, 1, 0.0, 0.0);
+  CHECK(layered.cell_order.size() == flat.cell_order.size());
+  const int cells_x = layered.columns - 1;
+  CHECK(layered.cell_order.front() % cells_x > 3 * cells_x / 4);  // front: the right end
+  CHECK(layered.cell_order.back() % cells_x < cells_x / 4);       // back: the left end
+}
+
 void text_warp_serialization_round_trips() {
   patchy::TextWarp warp;
   warp.style = "warpSqueeze";
@@ -2263,6 +2414,10 @@ std::vector<patchy::test::TestCase> smart_objects_warp_tests() {
       {"warp_style_meshes_match_photoshop_if_available", warp_style_meshes_match_photoshop_if_available},
       {"psd_style_only_warp_unlocks_and_regenerates_if_available",
        psd_style_only_warp_unlocks_and_regenerates_if_available},
+      {"puppet_warp_unmoved_pins_are_identity_and_one_pin_translates",
+       puppet_warp_unmoved_pins_are_identity_and_one_pin_translates},
+      {"puppet_warp_held_pin_stays_and_modes_differ", puppet_warp_held_pin_stays_and_modes_differ},
+      {"puppet_warp_mesh_follows_alpha_and_depth_orders_cells", puppet_warp_mesh_follows_alpha_and_depth_orders_cells},
       {"text_warp_serialization_round_trips", text_warp_serialization_round_trips},
       {"warp_style_meshes_match_photoshop_e9c_if_available",
        warp_style_meshes_match_photoshop_e9c_if_available},

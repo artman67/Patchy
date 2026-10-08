@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <string_view>
 #include <vector>
@@ -75,6 +76,11 @@ struct WarpSurfaceGrid {
   std::vector<double> doc_ys;
   std::vector<double> source_xs;  // matching source-image pixel coordinates
   std::vector<double> source_ys;
+  // Optional raster order (cell index = row * (columns - 1) + column). Empty renders
+  // every cell row-major; otherwise only the listed cells render, in this order: the
+  // first listed opaque sample wins where the surface folds (Puppet Warp's pin depth)
+  // and fully clear samples never hide the cells behind them.
+  std::vector<std::int32_t> cell_order;
 };
 
 // Builds the lattice: mesh (content space) -> homography (doc space), sampled so no

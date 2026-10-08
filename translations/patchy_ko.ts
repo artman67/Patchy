@@ -10435,6 +10435,26 @@ RGB: %2, %3, %4</translation>
         <source>Crop box reset to the canvas</source>
         <translation>자르기 상자를 캔버스로 재설정했습니다</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>메시를 클릭하여 핀을 추가한 다음 드래그합니다. %ALT% 키를 누른 채 핀을 클릭하면 제거됩니다. Enter는 적용하고 Esc는 취소합니다.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>퍼펫 뒤틀기를 취소했습니다</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>메시가 비어 있습니다. 레이어를 덮도록 확장을 늘리세요.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>퍼펫 뒤틀기</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>퍼펫 뒤틀기를 적용했습니다</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18602,6 +18622,119 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>퍼펫 뒤틀기</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>메시가 모양을 유지하는 강도</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>밀도:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>메시 간격</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>고정</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>표준</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>왜곡</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>적은 점</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>표준</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>많은 점</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>확장:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>메시를 레이어 가장자리 너머로 넓히거나 줄입니다</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>메시 표시</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>핀 깊이:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>뒤틀기가 겹치는 곳에서 선택한 핀을 앞으로 가져옵니다</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>뒤틀기가 겹치는 곳에서 선택한 핀을 뒤로 보냅니다</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>회전:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>선택한 핀의 회전</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>자동</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>고정</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>선택한 핀의 고정 회전 각도</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>모든 핀 제거</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>빠른 마스크 모드에서는 퍼펫 뒤틀기를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>문서 채널을 보는 동안 퍼펫 뒤틀기를 사용할 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>퍼펫 뒤틀기를 사용하기 전에 스마트 개체를 래스터화하세요</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>모드:</translation>
     </message>
 </context>
 <context>

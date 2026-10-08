@@ -1103,6 +1103,7 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
     if (canvas_->warp_transform_active()) {
       canvas_->finish_warp_transform();
     }
+    canvas_->finish_puppet_warp();
     if (selected != CanvasTool::Text) {
       finish_active_text_editor();
     }

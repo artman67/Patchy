@@ -10495,6 +10495,26 @@ RGB: %2, %3, %4</translation>
         <source>Crop box reset to the canvas</source>
         <translation>Рамка кадрирования сброшена к холсту</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>Щелкните по сетке, чтобы добавить булавки, затем перетащите их. %ALT%+щелчок по булавке удаляет ее. Enter применяет изменения, Esc отменяет.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>Марионеточная деформация отменена</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>Сетка пуста. Увеличьте расширение, чтобы сетка покрыла слой.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Марионеточная деформация</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>Марионеточная деформация применена</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18714,6 +18734,119 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>Марионеточная деформация</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>Насколько жестко сетка сохраняет форму</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>Плотность:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>Шаг сетки</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Жесткий</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Нормальный</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>Искажение</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Меньше точек</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Нормальная</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>Больше точек</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>Расширение:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>Расширить или сузить сетку за край слоя</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>Показать сетку</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>Глубина булавки:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>Переместить выбранные булавки вперед там, где деформация перекрывается</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>Переместить выбранные булавки назад там, где деформация перекрывается</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>Поворот:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>Поворот выбранных булавок</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Авто</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>Фиксированный</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>Фиксированный угол поворота выбранных булавок</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>Удалить все булавки</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>«Марионеточная деформация» недоступна в режиме быстрой маски.</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>«Марионеточная деформация» недоступна при просмотре канала документа</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>Перед использованием «Марионеточной деформации» растрируйте смарт-объект</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>Режим:</translation>
     </message>
 </context>
 <context>

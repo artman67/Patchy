@@ -1258,6 +1258,55 @@ void MainWindow::warp_transform_active_layer() {
   refresh_options_bar();
 }
 
+void MainWindow::puppet_warp_active_layer() {
+  if (!has_active_document() || canvas_ == nullptr || canvas_->puppet_warp_active()) {
+    return;
+  }
+  // The same guards as Liquify: a destructive edit of an RGB pixel layer, Smart
+  // Objects refused (no native Puppet Warp Smart Filter is authored), text and
+  // shapes offered Rasterize first.
+  if (canvas_->quick_mask_active()) {
+    show_status_error(tr("Puppet Warp is unavailable in Quick Mask mode"));
+    return;
+  }
+  const auto target = canvas_->layer_edit_target();
+  if (target == CanvasWidget::LayerEditTarget::DocumentChannel || target == CanvasWidget::LayerEditTarget::ComponentRed ||
+      target == CanvasWidget::LayerEditTarget::ComponentGreen || target == CanvasWidget::LayerEditTarget::ComponentBlue) {
+    show_status_error(tr("Puppet Warp is unavailable while viewing a document channel"));
+    return;
+  }
+  if (canvas_->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr) {
+    finish_active_text_editor();
+  }
+  select_only_layer_if_none_active();
+  const auto active = document().active_layer_id();
+  if (!active.has_value()) {
+    return;
+  }
+  const auto& read_only_doc = std::as_const(document());
+  if (!editable_rgb8_layer(read_only_doc.find_layer(*active))) {
+    show_status_error(tr("Select an editable RGB pixel layer"));
+    return;
+  }
+  if (layer_is_smart_object(*read_only_doc.find_layer(*active))) {
+    show_status_error(tr("Rasterize the Smart Object before using Puppet Warp"));
+    return;
+  }
+  if (layer_id_locks_image_pixels(*active)) {
+    show_status_error(tr("Layer pixels are locked."));
+    return;
+  }
+  if (!prompt_rasterize_procedural_layer(*active, tr("Puppet Warp"), false)) {
+    return;
+  }
+  if (!editable_rgb8_layer(read_only_doc.find_layer(*active))) {
+    show_status_error(tr("Select an editable RGB pixel layer"));
+    return;
+  }
+  canvas_->begin_puppet_warp(puppet_warp_options_from_ui());  // refusals land in the status bar
+  refresh_options_bar();
+}
+
 void MainWindow::add_layer() {
   auto& doc = document();
   const auto name = default_new_layer_name(doc);

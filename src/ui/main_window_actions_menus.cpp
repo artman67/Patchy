@@ -585,6 +585,15 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
   paste_in_place_action->setObjectName(QStringLiteral("editPasteInPlaceAction"));
   paste_in_place_action->setProperty("patchy.channelViewBlocked", true);
   bind_action_text(paste_in_place_action, QT_TR_NOOP("Paste in Place"));
+  // Photoshop's order: Puppet Warp sits just above Free Transform.
+  auto* puppet_warp_action = edit_menu->addAction(tr("Puppet Warp"));
+  bind_action_text(puppet_warp_action, QT_TR_NOOP("Puppet Warp"));
+  puppet_warp_action->setObjectName(QStringLiteral("editPuppetWarpAction"));
+  puppet_warp_action->setProperty("patchy.channelViewBlocked", true);
+  puppet_warp_action->setIcon(simple_icon(QStringLiteral("PW")));
+  register_hotkey(puppet_warp_action, "edit.puppet_warp", QKeySequence());
+  connect(puppet_warp_action, &QAction::triggered, this, [this] { puppet_warp_active_layer(); });
+  register_document_action(puppet_warp_action);
   auto* transform_action = edit_menu->addAction(tr("Free &Transform..."));
   auto* warp_transform_action = edit_menu->addAction(tr("Warp Transform"));
   bind_action_text(warp_transform_action, QT_TR_NOOP("Warp Transform"));

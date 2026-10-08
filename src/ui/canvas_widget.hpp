@@ -8,6 +8,7 @@
 #include "core/magnetic_lasso.hpp"
 #include "core/pattern_resource.hpp"
 #include "core/pixel_tools.hpp"
+#include "core/puppet_warp.hpp"
 #include "core/spot_heal.hpp"
 #include "core/stroke_stabilizer.hpp"
 #include "core/warp_mesh.hpp"
@@ -977,6 +978,44 @@ public:
   [[nodiscard]] int warp_handle_count() const noexcept;
   [[nodiscard]] QPointF warp_handle_document_position(int index) const;
   void set_warp_handle_document_position(int index, QPointF document_point);
+  // Puppet Warp (Edit menu): user-placed pins bend a pixel layer through a
+  // moving-least-squares grid (core/puppet_warp, docs/puppet-warp.md). Pin rotation
+  // and depth change only through these calls (the options bar), never through an
+  // on-canvas pop-up or ring (patent boundary). Commit bakes one resample from the
+  // original pixels as one undo step; Undo/Redo inside the session step pin edits.
+  struct PuppetWarpOptions {
+    PuppetWarpMode mode{PuppetWarpMode::Normal};
+    PuppetWarpDensity density{PuppetWarpDensity::Normal};
+    int expansion{2};
+    bool show_mesh{true};
+  };
+  struct PuppetPinControls {
+    bool has_selection{false};
+    bool fixed_rotation{false};
+    double angle_degrees{0.0};  // the fixed angle, or the Auto rotation readout
+  };
+  bool begin_puppet_warp(const PuppetWarpOptions& options);
+  void finish_puppet_warp();
+  void cancel_puppet_warp();
+  [[nodiscard]] bool puppet_warp_active() const noexcept;
+  void set_puppet_warp_options(const PuppetWarpOptions& options);
+  [[nodiscard]] PuppetWarpOptions puppet_warp_options() const;
+  // Adds a pin on the (deformed) mesh and selects it; -1 when the point is off it.
+  int add_puppet_pin(QPointF document_point);
+  void set_puppet_pin_position(int index, QPointF document_point);
+  [[nodiscard]] int puppet_pin_count() const noexcept;
+  [[nodiscard]] QPointF puppet_pin_position(int index) const;
+  void select_puppet_pins(std::vector<int> indices);
+  [[nodiscard]] std::vector<int> selected_puppet_pins() const;
+  void remove_selected_puppet_pins();
+  void remove_all_puppet_pins();
+  void set_selected_puppet_pins_rotation(bool fixed, double degrees);
+  void shift_selected_puppet_pins_depth(int delta);
+  [[nodiscard]] PuppetPinControls puppet_pin_controls() const;
+  [[nodiscard]] bool puppet_warp_can_undo() const noexcept;
+  [[nodiscard]] bool puppet_warp_can_redo() const noexcept;
+  void undo_puppet_warp_step();
+  void redo_puppet_warp_step();
   void set_transform_interpolation(TransformInterpolation interpolation) noexcept;
   [[nodiscard]] TransformInterpolation transform_interpolation() const noexcept;
   void set_transform_reference_point(CanvasAnchor anchor) noexcept;
@@ -2130,6 +2169,21 @@ private:
   void draw_warp_transform(QPainter& painter) const;
   void commit_warp_transform();
   void reset_warp_state();
+  // Shared by Warp Transform and Puppet Warp: the document with one layer hidden,
+  // and the warped layer's bounded patches drawn above it.
+  void build_warp_base_cache(LayerId hidden_layer_id);
+  void set_warp_preview_patches(LayerId layer_id, const QImage& warped_image, Rect warped_bounds);
+  // Puppet Warp internals (canvas_widget_puppet_warp.cpp).
+  void rebuild_puppet_warp_mesh();
+  void refresh_puppet_warp_preview();
+  void record_puppet_warp_step();
+  [[nodiscard]] int puppet_pin_at(QPoint widget_point) const;
+  bool handle_puppet_warp_press(QMouseEvent* event);
+  void handle_puppet_warp_move(QMouseEvent* event);
+  void handle_puppet_warp_release();
+  void draw_puppet_warp(QPainter& painter) const;
+  void commit_puppet_warp();
+  void reset_puppet_warp_state();
   bool constrain_pan() noexcept;
   void notify_view_changed();
   void sync_scroll_bars();
@@ -2901,6 +2955,27 @@ private:
   // Bounded patches of the warped layer over its effect rect, drawn above the
   // (layer-hidden) base cache.
   std::vector<RenderedDocumentPatch> warp_preview_patches_{};
+  // Puppet Warp session. The preview reuses warp_base_cache_ and
+  // warp_preview_patches_ (the two sessions never overlap).
+  struct PuppetWarpSession {
+    bool active{false};
+    LayerId layer_id{};
+    QImage source{};  // the layer's original pixels, RGBA8888
+    Rect source_bounds{};
+    PuppetWarpOptions options{};
+    PuppetWarpMesh mesh{};
+    int subdivisions{1};
+    WarpSurfaceGrid grid{};  // the deformed lattice; preview and commit render the same
+    std::vector<PuppetPin> pins;
+    std::vector<int> selected;
+    std::vector<std::vector<PuppetPin>> undo_steps;
+    std::vector<std::vector<PuppetPin>> redo_steps;
+    bool dragging{false};
+    bool drag_recorded{false};
+    QPointF drag_start{};
+    std::vector<QPointF> drag_origins;
+  };
+  PuppetWarpSession puppet_{};
   // True when warp_content_to_document_ carries a composed free-transform stage
   // (the single-session toggle), so commit must bake even with an untouched mesh.
   bool warp_entry_changed_{false};
@@ -2980,7 +3055,7 @@ TransformedImage resample_transformed_rgba8(const QImage& source, const QTransfo
                                             CanvasWidget::TransformInterpolation interpolation);
 // Warp-mesh variant: inverts each cell of the forward-evaluated surface grid
 // (core/warp_mesh) per output pixel; folds resolve first-writer-wins in row-major
-// cell order (deterministic simplification).
+// cell order (deterministic simplification), or in the grid's cell_order when set.
 TransformedImage resample_warped_rgba8(const QImage& source, const WarpSurfaceGrid& grid,
                                        CanvasWidget::TransformInterpolation interpolation);
 // Gray8 variant for linked layer masks (multi-target Free Transform commit):

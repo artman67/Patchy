@@ -2,6 +2,8 @@
 
 Deep reference for all warp machinery. Smart-object fundamentals (model, I/O, locks) live in docs/smart-objects.md; text-layer fundamentals live in docs/text-tool.md. Both warp consumers share `generate_style_warp_mesh` / `apply_warp_distortion` (core/warp_mesh) — a change there affects smart-object warps AND Warp Text.
 
+Puppet Warp ([puppet-warp.md](puppet-warp.md)) also renders through `resample_warped_rgba8` (its optional `cell_order`) and reuses the warp preview base cache.
+
 ## Warped smart objects
 
 - **Parsing**: psd_descriptor models 'ObAr' (object array = u32 count + ordinary descriptor body of 'rationalPoint's) and 'UnFl' (unit-float array = unit OSType + u32 count + f64s) byte-identically, so warped SoLds parse. A SUPPORTED warp (customEnvelopeWarp meshPoints present, orders 2..4, count == u*v, zero perspective, no quiltWarp) imports with lock="" plus `patchy.smart_object.warp` metadata and re-renders through Patchy's mesh pipeline; unsupported warps keep lock="warp" and the preserved preview. Mesh points are CONTENT-space (E6: a move translates only Trnf/nonAffine, mesh doubles byte-identical, and `psd_warp_move_matches_photoshop_if_available` byte-pins Patchy's regenerate against PS's own moved file).

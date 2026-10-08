@@ -11,6 +11,7 @@
 - Photoshop-compatible layer style, pattern, and gradient preset libraries, including .asl, .pat, and .grd import/export, 39 built-in styles, and 20 bundled CC0 photo textures
 - Continuous long shadows for type and shapes. This Patchy-specific layer-style setting falls back to a normal drop shadow in Photoshop; see the [example](screenshots.md).
 - Warp Transform tool and Warp Text with all 15 Photoshop warp styles and live preview
+- Puppet Warp: pins placed on a pixel layer bend it in Rigid, Normal or Distort mode, with pin depth for overlapping parts, fixed pin rotation, a live mesh preview, and one undo step
 
 ## Painting, selections, and retouching
 

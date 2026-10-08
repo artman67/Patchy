@@ -2399,14 +2399,16 @@ void MainWindow::sync_transform_controls_from_canvas() {
     set_widget_enabled(widget);
   }
   const bool warp_active = canvas_ != nullptr && canvas_->warp_transform_active();
-  const bool session_active = warp_active || (has_state && state->active);
+  const bool puppet_active = canvas_ != nullptr && canvas_->puppet_warp_active();
+  const bool session_active = warp_active || puppet_active || (has_state && state->active);
   // Warp works on one layer; a folder/multi-selection transform session cannot
-  // switch modes (same rule as refresh_options_bar's warp-toggle state).
+  // switch modes (same rule as refresh_options_bar's warp-toggle state). Puppet
+  // Warp has no mode toggle.
   const bool multi_target_transform = canvas_ != nullptr && canvas_->free_transform_is_multi_target();
   for (auto* button : {transform_warp_mode_button_, transform_apply_button_, transform_cancel_button_}) {
     if (button != nullptr) {
-      button->setEnabled(session_active &&
-                         !(button == transform_warp_mode_button_ && multi_target_transform));
+      button->setEnabled(session_active && !(button == transform_warp_mode_button_ &&
+                                             (multi_target_transform || puppet_active)));
     }
   }
   if (!state.has_value()) {
@@ -2446,6 +2448,54 @@ void MainWindow::sync_transform_controls_from_canvas() {
     if (index >= 0) {
       transform_interpolation_combo_->setCurrentIndex(index);
     }
+  }
+}
+
+CanvasWidget::PuppetWarpOptions MainWindow::puppet_warp_options_from_ui() const {
+  CanvasWidget::PuppetWarpOptions options;
+  if (puppet_warp_mode_combo_ != nullptr && puppet_warp_mode_combo_->currentIndex() >= 0) {
+    options.mode = static_cast<PuppetWarpMode>(puppet_warp_mode_combo_->currentData().toInt());
+  }
+  if (puppet_warp_density_combo_ != nullptr && puppet_warp_density_combo_->currentIndex() >= 0) {
+    options.density = static_cast<PuppetWarpDensity>(puppet_warp_density_combo_->currentData().toInt());
+  }
+  if (puppet_warp_expansion_spin_ != nullptr) {
+    options.expansion = static_cast<int>(std::lround(puppet_warp_expansion_spin_->value()));
+  }
+  if (puppet_warp_show_mesh_check_ != nullptr) {
+    options.show_mesh = puppet_warp_show_mesh_check_->isChecked();
+  }
+  return options;
+}
+
+void MainWindow::sync_puppet_warp_controls_from_canvas() {
+  if (canvas_ == nullptr || !canvas_->puppet_warp_active() || updating_transform_controls_) {
+    return;
+  }
+  updating_transform_controls_ = true;
+  const auto clear_guard = qScopeGuard([this] { updating_transform_controls_ = false; });
+  // Pin controls follow the first selected pin; with none selected they gray out.
+  const auto pin = canvas_->puppet_pin_controls();
+  for (auto* widget : {static_cast<QWidget*>(puppet_warp_pin_forward_button_),
+                       static_cast<QWidget*>(puppet_warp_pin_backward_button_),
+                       static_cast<QWidget*>(puppet_warp_rotate_combo_)}) {
+    if (widget != nullptr) {
+      widget->setEnabled(pin.has_selection);
+    }
+  }
+  if (puppet_warp_rotate_combo_ != nullptr) {
+    const auto index = puppet_warp_rotate_combo_->findData(pin.fixed_rotation);
+    if (index >= 0) {
+      puppet_warp_rotate_combo_->setCurrentIndex(index);
+    }
+  }
+  if (puppet_warp_rotate_angle_spin_ != nullptr) {
+    // Auto shows the solution's own rotation read-only; Fixed makes it editable.
+    puppet_warp_rotate_angle_spin_->setEnabled(pin.has_selection && pin.fixed_rotation);
+    puppet_warp_rotate_angle_spin_->setValue(pin.has_selection ? std::round(pin.angle_degrees) : 0.0);
+  }
+  if (puppet_warp_remove_all_button_ != nullptr) {
+    puppet_warp_remove_all_button_->setEnabled(canvas_->puppet_pin_count() > 0);
   }
 }
 
@@ -2556,7 +2606,8 @@ void MainWindow::refresh_options_bar() {
       canvas_ != nullptr ? canvas_->transform_controls_state() : std::optional<CanvasWidget::TransformControlsState>{};
   const bool free_transform_session = edit_allowed && transform_state.has_value() && transform_state->active;
   const bool warp_session = edit_allowed && canvas_ != nullptr && canvas_->warp_transform_active();
-  const bool transform_session_active = free_transform_session || warp_session;
+  const bool puppet_session = edit_allowed && canvas_ != nullptr && canvas_->puppet_warp_active();
+  const bool transform_session_active = free_transform_session || warp_session || puppet_session;
   // Every widget gets ONE setVisible with its final state, hides before shows.
   // Showing a child of a visible parent activates the parent layouts
   // synchronously (Qt), so a show-then-hide pass (per-tool show, then the
@@ -2644,10 +2695,18 @@ void MainWindow::refresh_options_bar() {
       widget->setEnabled(show_warp_options);
     }
   }
+  for (auto* widget : puppet_warp_option_actions_) {
+    if (widget != nullptr) {
+      widget->setVisible(puppet_session);
+      widget->setEnabled(puppet_session);
+    }
+  }
   for (auto* widget : transform_session_actions_) {
     if (widget != nullptr) {
-      widget->setVisible(transform_session_active);
-      widget->setEnabled(transform_session_active);
+      // Puppet Warp keeps apply/cancel but has no free-transform/warp toggle.
+      const bool visible = transform_session_active && !(widget == transform_warp_mode_button_ && puppet_session);
+      widget->setVisible(visible);
+      widget->setEnabled(visible);
     }
   }
   if (transform_warp_mode_button_ != nullptr) {
@@ -2690,6 +2749,9 @@ void MainWindow::refresh_options_bar() {
     if (canvas_->warp_style_preset() != QStringLiteral("warpCustom")) {
       warp_bend_spin_->setValue(canvas_->warp_style_preset_value());
     }
+  }
+  if (puppet_session) {
+    sync_puppet_warp_controls_from_canvas();
   }
   refresh_vector_tool_options_visibility();
   refresh_vector_stroke_controls();
