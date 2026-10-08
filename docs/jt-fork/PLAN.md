@@ -48,8 +48,8 @@ branch first; only the ones Seth wants go upstream, and only when JT says so.
 | W4 | - | Content-Aware Scale | dropped by JT 2026-10-07 |
 
 PR branches are `pr/<topic>` (feature minus the GCC fix, on upstream v1.06). Drafts and filing
-notes: [pr-drafts.md](pr-drafts.md). Warp patent study: kept outside the repo at
-`~/Work/patchy-sync-scratch/patent-research-warps.md`, summarized in each warp's docs file.
+notes: [pr-drafts.md](pr-drafts.md). Warp patent study: [patent-research-warps.md](patent-research-warps.md), summarized in each
+warp's docs file.
 
 ## After wave 1
 
