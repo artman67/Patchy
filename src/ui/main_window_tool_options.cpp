@@ -1865,6 +1865,15 @@ void MainWindow::load_tool_settings() {
     case CanvasWidget::TransformInterpolation::Bilinear:
       canvas_->set_transform_interpolation(CanvasWidget::TransformInterpolation::Bilinear);
       break;
+    case CanvasWidget::TransformInterpolation::BicubicSmoother:
+      canvas_->set_transform_interpolation(CanvasWidget::TransformInterpolation::BicubicSmoother);
+      break;
+    case CanvasWidget::TransformInterpolation::BicubicSharper:
+      canvas_->set_transform_interpolation(CanvasWidget::TransformInterpolation::BicubicSharper);
+      break;
+    case CanvasWidget::TransformInterpolation::Automatic:
+      canvas_->set_transform_interpolation(CanvasWidget::TransformInterpolation::Automatic);
+      break;
     case CanvasWidget::TransformInterpolation::Bicubic:
     default:
       canvas_->set_transform_interpolation(CanvasWidget::TransformInterpolation::Bicubic);
@@ -1881,6 +1890,15 @@ void MainWindow::load_tool_settings() {
   if (crop_style_combo_ != nullptr) {
     const QSignalBlocker blocker(crop_style_combo_);
     crop_style_combo_->setCurrentIndex(current_crop_style_);
+  }
+  current_crop_delete_pixels_ = settings.value(QStringLiteral("tools/cropDeletePixels"), true).toBool();
+  current_crop_delete_layers_ = settings.value(QStringLiteral("tools/cropDeleteLayers"), false).toBool();
+  for (const auto& [check, value] : {std::pair{crop_delete_pixels_check_, current_crop_delete_pixels_},
+                                     std::pair{crop_delete_layers_check_, current_crop_delete_layers_}}) {
+    if (check != nullptr) {
+      const QSignalBlocker blocker(check);
+      check->setChecked(value);
+    }
   }
   canvas_->set_crop_ratio(effective_crop_ratio_width(), effective_crop_ratio_height());
   // Patch mode and Transparent are deliberately session-only: every startup
@@ -2214,6 +2232,8 @@ void MainWindow::save_tool_settings() const {
   settings.setValue(QStringLiteral("tools/cropRatioWidth"), current_crop_ratio_w_);
   settings.setValue(QStringLiteral("tools/cropRatioHeight"), current_crop_ratio_h_);
   settings.setValue(QStringLiteral("tools/cropStyle"), current_crop_style_);
+  settings.setValue(QStringLiteral("tools/cropDeletePixels"), current_crop_delete_pixels_);
+  settings.setValue(QStringLiteral("tools/cropDeleteLayers"), current_crop_delete_layers_);
   settings.setValue(QStringLiteral("tools/patternStampPatternId"), current_pattern_stamp_pattern_id_);
   settings.setValue(QStringLiteral("tools/patternStampAligned"), current_pattern_stamp_aligned_);
   settings.setValue(QStringLiteral("tools/healingDiffusion"), current_healing_diffusion_);

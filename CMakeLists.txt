@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.26)
 
 project(
   Patchy
-  VERSION 1.06
+  VERSION 1.07
   DESCRIPTION "A native, PSD-oriented image editor foundation"
   LANGUAGES CXX
 )
@@ -110,6 +110,7 @@ add_library(patchy_core
   src/support/atomic_file_write.cpp
   src/core/environment.cpp
   src/core/document_geometry.cpp
+  src/core/resample.cpp
   src/core/document_path.cpp
   src/core/heal_membrane.cpp
   src/core/image_trace.cpp
@@ -962,6 +963,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/canvas_widget.cpp
       src/ui/canvas_widget_shared.hpp
       src/ui/canvas_widget_shared.cpp
+      src/ui/canvas_alt_space_filter.hpp
+      src/ui/canvas_alt_space_filter.cpp
       src/ui/canvas_widget_brush.cpp
       src/ui/canvas_widget_crop.cpp
       src/ui/canvas_widget_cursors.cpp
@@ -1256,6 +1259,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
     if(EMSCRIPTEN)
       target_sources(patchy_ui PRIVATE
         src/ui/print_dialog_wasm.cpp
+        src/ui/clipboard_wasm.hpp
+        src/ui/clipboard_wasm.cpp
         src/ui/dialog_utils_wasm.hpp
         src/ui/dialog_utils_wasm.cpp
         src/ui/user_fonts_wasm.hpp
@@ -1567,11 +1572,24 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       add_dependencies(patchy-mcp patchy_check_translation_runtime)
     endif()
     if(WIN32)
-      target_sources(patchy PRIVATE src/app/patchy.rc)
+      # VERSIONINFO requires four decimal components. Release names such as
+      # 1.08 keep their spelling in strings, but must not become octal RC literals.
+      set(PATCHY_WINDOWS_VERSION_PARTS)
+      foreach(component MAJOR MINOR PATCH TWEAK)
+        string(REGEX REPLACE "^0+" "" part "${PROJECT_VERSION_${component}}")
+        if(part STREQUAL "")
+          set(part 0)
+        endif()
+        list(APPEND PATCHY_WINDOWS_VERSION_PARTS "${part}")
+      endforeach()
+      list(JOIN PATCHY_WINDOWS_VERSION_PARTS "," PATCHY_WINDOWS_VERSION)
+      set(PATCHY_WINDOWS_RESOURCE "${CMAKE_CURRENT_BINARY_DIR}/generated/patchy.rc")
+      configure_file(src/app/patchy.rc.in "${PATCHY_WINDOWS_RESOURCE}" @ONLY)
+      target_sources(patchy PRIVATE "${PATCHY_WINDOWS_RESOURCE}")
       # The resource compiler's dependency scan follows #include only, not the
       # ICON statement, so a changed icon left a stale patchy.rc.res (and the
       # old taskbar/Explorer icon) in every existing build tree.
-      set_source_files_properties(src/app/patchy.rc PROPERTIES
+      set_source_files_properties("${PATCHY_WINDOWS_RESOURCE}" PROPERTIES
         OBJECT_DEPENDS "${PROJECT_SOURCE_DIR}/src/app/patchy.ico")
     endif()
     if(APPLE)

@@ -5748,16 +5748,6 @@
         <translation>两次立方（较平滑）（扩大）</translation>
     </message>
     <message>
-        <source>Nearest Neighbor</source>
-        <translation>邻近</translation>
-    </message>
-    <message>
-        <source>Create a new, larger document with more detail
-Open in Generative Upscale...</source>
-        <translation>创建一个更大、细节更丰富的新文档
-在生成式放大中打开...</translation>
-    </message>
-    <message>
         <source>%1 px x %2 px</source>
         <translation>%1 px x %2 px</translation>
     </message>
@@ -9375,6 +9365,30 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Color Replacement</source>
         <translation>颜色替换</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>自动</translation>
+    </message>
+    <message>
+        <source>Nearest Neighbor (hard edges)</source>
+        <translation>邻近 (硬边缘)</translation>
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation>两次线性</translation>
+    </message>
+    <message>
+        <source>Bicubic (smooth gradients)</source>
+        <translation>两次立方 (平滑渐变)</translation>
+    </message>
+    <message>
+        <source>Off: the pixel dimensions stay the same and only the print resolution changes, so the image is not scaled.</source>
+        <translation>关闭时像素尺寸保持不变，只更改打印分辨率，因此图像不会被缩放。</translation>
+    </message>
+    <message>
+        <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
+        <translation>像素尺寸已锁定。只有打印分辨率和打印尺寸会更改。</translation>
     </message>
 </context>
 <context>
@@ -19689,6 +19703,46 @@ Baked into images: %1.</source>
         <source>Rasterize the Smart Object before using Perspective Warp</source>
         <translation>使用透视变形前，请先栅格化智能对象</translation>
     </message>
+    <message>
+        <source>Delete Cropped Pixels</source>
+        <translation>删除裁剪的像素</translation>
+    </message>
+    <message>
+        <source>Delete Off-Canvas Layers</source>
+        <translation>删除画布外图层</translation>
+    </message>
+    <message>
+        <source>Bicubic Smoother</source>
+        <translation>两次立方（较平滑）</translation>
+    </message>
+    <message>
+        <source>Bicubic Sharper</source>
+        <translation>两次立方（较锐利）</translation>
+    </message>
+    <message>
+        <source>Bicubic Automatic</source>
+        <translation>两次立方（自动）</translation>
+    </message>
+    <message>
+        <source>Crop every layer to the new canvas; off, layers keep their pixels beyond it</source>
+        <translation>将每个图层裁剪到新画布；关闭时，图层保留画布之外的像素</translation>
+    </message>
+    <message>
+        <source>Delete layers that end up fully outside the crop box</source>
+        <translation>删除完全位于裁剪框之外的图层</translation>
+    </message>
+    <message>
+        <source>Crop to Selection (Advanced) cannot straighten a rotated crop box; use Crop to Selection</source>
+        <translation>裁剪到选区(高级)无法拉直旋转的裁剪框；请使用裁剪到选区</translation>
+    </message>
+    <message>
+        <source>Nothing to crop: the crop box matches the canvas</source>
+        <translation>无需裁剪：裁剪框与画布一致</translation>
+    </message>
+    <message>
+        <source>Cropped, off-canvas layers deleted: %1</source>
+        <translation>已裁剪，已删除画布外图层: %1</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -21126,6 +21180,10 @@ Baked into images: %1.</source>
     <message>
         <source>mergeLayers: effectsFrom requires singleVector.</source>
         <translation>mergeLayers：effectsFrom 需要 singleVector。</translation>
+    </message>
+    <message>
+        <source>resizeImage method must be one of %1.</source>
+        <translation>resizeImage 的 method 必须是 %1 之一。</translation>
     </message>
 </context>
 <context>

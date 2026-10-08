@@ -2,6 +2,7 @@
 
 #include "ui/measurement_units.hpp"
 #include "ui/qt_paths.hpp"
+#include "test_scratch_remove.hpp"
 #include "ui_test_access.hpp"
 
 #include <QCoreApplication>
@@ -58,6 +59,13 @@ void fill_pixel_rect(patchy::PixelBuffer& pixels, QRect rect, QColor color) {
 
 void ensure_artifact_dir() {
   std::filesystem::create_directories("test-artifacts");
+}
+
+bool remove_test_scratch_dir(const QString& path) {
+  if (path.isEmpty()) {
+    throw std::runtime_error("refusing to recursively delete a blank path");
+  }
+  return patchy::test::remove_test_scratch_tree(patchy::ui::to_filesystem_path(path));
 }
 
 double text_points_for_pixels(int pixels, double ppi) noexcept {
@@ -1645,6 +1653,7 @@ void accept_image_size_dialog(int width_value, int height_value) {
       auto* method = dialog->findChild<QComboBox*>(QStringLiteral("imageSizeResampleCombo"));
       auto* link = dialog->findChild<QToolButton*>(QStringLiteral("imageSizeLinkButton"));
       auto* width_unit = dialog->findChild<QComboBox*>(QStringLiteral("imageSizeWidthUnitCombo"));
+      auto* hint = dialog->findChild<QLabel*>(QStringLiteral("imageSizeResampleHintLabel"));
       CHECK(width != nullptr);
       CHECK(height != nullptr);
       CHECK(dimensions != nullptr);
@@ -1653,6 +1662,7 @@ void accept_image_size_dialog(int width_value, int height_value) {
       CHECK(method != nullptr);
       CHECK(link != nullptr);
       CHECK(width_unit != nullptr);
+      CHECK(hint != nullptr);
       // The dialog remembers its last unit (a Resample-off accept leaves Inches);
       // the values below are pixels, so pick Pixels explicitly.
       width_unit->setCurrentIndex(width_unit->findText(QStringLiteral("Pixels")));
@@ -1661,7 +1671,12 @@ void accept_image_size_dialog(int width_value, int height_value) {
       CHECK(height->buttonSymbols() == QAbstractSpinBox::NoButtons);
       CHECK(dimensions->text().contains(QStringLiteral("px x")));
       CHECK(resample->isChecked());
-      CHECK(method->currentText() == QStringLiteral("Bicubic Sharper (reduction)"));
+      // Six real methods, remembered across openings; the Resample-off hint stays hidden
+      // while resampling is on, and the Photoshop "Generative Upscale" label is gone.
+      CHECK(method->count() == 6);
+      CHECK(!method->currentData().toString().isEmpty());
+      CHECK(hint != nullptr && !hint->isVisible());
+      CHECK(dialog->findChild<QLabel*>(QStringLiteral("imageSizeUpscaleLabel")) == nullptr);
       CHECK(link->isChecked());
       width->setValue(width_value);
       height->setValue(height_value);
@@ -2171,7 +2186,7 @@ QString pattern_test_storage_dir() {
 }
 
 void clear_pattern_test_state() {
-  QDir(pattern_test_storage_dir()).removeRecursively();
+  remove_test_scratch_dir(pattern_test_storage_dir());
   auto settings = patchy::ui::app_settings();
   // Keep unrelated MainWindow tests from changing their pattern library on disk.
   // The dedicated default-seeding test explicitly resets this to zero.
@@ -2180,7 +2195,7 @@ void clear_pattern_test_state() {
 }
 
 void clear_brush_tip_test_state() {
-  QDir(brush_tip_test_storage_dir()).removeRecursively();
+  remove_test_scratch_dir(brush_tip_test_storage_dir());
   auto settings = patchy::ui::app_settings();
   settings.remove(QStringLiteral("tools/brushTip"));
   // Suppress first-run default-tip seeding so library contents stay deterministic; the

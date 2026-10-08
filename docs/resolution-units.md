@@ -51,8 +51,12 @@ new canvas entirely and any group that empties as a result; layers without bound
 (adjustments, never-painted layers) stay, and the status line reports the count. The
 delete runs against the frame BEFORE the resize (`remove_layers_outside_canvas(doc, frame)`):
 the layer crop rewrites every pixel layer to canvas-sized bounds, so afterwards nothing
-tests as off the canvas. Both
-checkboxes start unchecked on every opening and are never persisted. All modes are
+tests as off the canvas. Neither
+checkbox is persisted: both start unchecked on every Canvas Size opening, while Crop to
+Selection (Advanced) starts with the layer crop checked (Photoshop's Image > Crop trims
+the layers) and the delete unchecked. The Crop tool's
+options bar carries the same two options as Delete Cropped Pixels (default on) and Delete
+Off-Canvas Layers ([crop-tool.md](crop-tool.md)). All modes are
 undoable. Document alpha/spot channels remain canvas-sized; editable vector paths, text
 transforms and Smart Object placements continue to follow the anchor translation.
 The resize itself is core `resize_canvas_to_frame(doc, frame, ...)`: the dialog turns its
@@ -61,7 +65,8 @@ canvas rect in current coordinates through `canvas_resize_frame`, and the anchor
 `resize_canvas_and_layers` is that same path with the canvas as the frame.
 Image > Crop to Selection (Advanced) (`imageCropToSelectionAdvancedAction`, hotkey id
 `image.crop_to_selection_advanced`, no default) opens this dialog titled "Crop to Selection
-(Advanced)" with the rectangular selection as the reference frame: W/H prefill to the
+(Advanced)" with the rectangular selection as the reference frame (the Crop tool's pending
+box once laid out while that tool is active; see [crop-tool.md](crop-tool.md)): W/H prefill to the
 selection size, Current Size still shows the document, an unchanged accept crops exactly to
 the selection, and an edit grows or shrinks that rect about the chosen anchor point
 (Relative and Percent stay relative to the document size, as labeled). The link keeps the
@@ -86,13 +91,17 @@ The unit is remembered across openings (below); Relative, the link and the crop 
 are not.
 
 Image Size (`request_image_size_settings`, main_window_document_dialogs.cpp): canonical
-state is pixel W/H + PPI. W/H unit combos (Percent/Pixels/Inches/Cm/Mm/Points) stay in step. Resample ON:
+state is pixel W/H + PPI. The method combo (Automatic, Nearest Neighbor, Bilinear, Bicubic,
+Bicubic Smoother, Bicubic Sharper) drives the resampler and persists by id under
+`imageSize/lastResampleMethod` (docs/resampling.md). W/H unit combos (Percent/Pixels/Inches/Cm/Mm/Points) stay in step. Resample ON:
 pixel/percent edits move pixels; physical edits set pixels = value x ppi; a resolution
 edit keeps the PHYSICAL size (recomputes pixels) unless the units are pixel/percent, then
 pixels hold. Resample OFF: pixels lock to the document's real dimensions (pending
 resamples revert, as in Photoshop), pixel/percent units disable (auto-flip to Inches), and
-W/H/Resolution tri-link (a physical edit re-derives the PPI). Applying with Resample off
-is a metadata-only undo step ("Print resolution").
+W/H/Resolution tri-link (a physical edit re-derives the PPI), the method combo disables and
+the hint label `imageSizeResampleHintLabel` ("Pixel dimensions are locked...") appears; the
+checkbox tooltip says the same. Applying with Resample off is a metadata-only undo step
+("Print resolution").
 
 New Document: presets carry a resolution (physical paper presets 300; the screen presets,
 the default 1024x768 included, and Clipboard follow Photoshop's 72 screen convention). One
@@ -107,7 +116,8 @@ With no stored unit the combo seeds from `view/rulerUnits`; a token the combo ca
 show falls back to Pixels (New Document has no `pt` or `percent`). The keys are settings
 tokens and compatibility contracts: `newDocument/lastUnit`,
 `newDocument/lastResolutionUnit`, `imageSize/lastUnit`, `imageSize/lastResolutionUnit`,
-`canvasSize/lastUnit` (resolution units are `in`/`cm`). An Image Size accept with
+`canvasSize/lastUnit` (resolution units are `in`/`cm`), plus `imageSize/lastResampleMethod` (a
+resampling id, docs/resampling.md). An Image Size accept with
 Resample off remembers the Inches the dialog forced. Tests:
 `ui_new_document_dialog_remembers_unit`, `ui_image_size_dialog_remembers_units`,
 `ui_canvas_size_dialog_remembers_unit`; the UI suite clears the three groups at startup
@@ -230,7 +240,8 @@ PPI. Coverage: the `unit_spin_box` UI test group, `ui_transform_fields_accept_un
 ## Known limits / future work
 
 Type unit preference (pt vs px for the text tool), Info-panel cursor/selection readouts in
-ruler units, remembering Image Size's Resample state and Canvas Size's Relative checkbox
-(Photoshop does; Seth chose units only, September 2026), physical presets in Image Size's
+ruler units, remembering Image Size's Resample checkbox state and Canvas Size's Relative checkbox
+(Photoshop does; Seth chose units only, September 2026; the Image Size resampling method is
+remembered since October 2026), physical presets in Image Size's
 Fit To combo, and reading PCX header DPI (unreliable in the wild; Photoshop ignores it
 too) are deliberately not implemented yet.

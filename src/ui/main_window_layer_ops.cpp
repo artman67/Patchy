@@ -73,6 +73,9 @@
 #include "ui/color_range_dialog.hpp"
 #include "ui/layer_style_dialog.hpp"
 #include "ui/canvas_widget_shared.hpp"
+#ifdef Q_OS_WASM
+#include "ui/clipboard_wasm.hpp"
+#endif
 #include "ui/layer_list_widget.hpp"
 #include "ui/localization.hpp"
 #include "ui/measurement_units.hpp"
@@ -645,6 +648,13 @@ void MainWindow::set_system_clipboard_image(const QImage& image) {
     clipboard->setImage(image);
     patchy_system_clipboard_signature_ = clipboard_image_signature(clipboard->image());
   }
+#ifdef Q_OS_WASM
+  // Qt's own browser write above is rejected by Chromium (untyped Blob; see
+  // clipboard_wasm.hpp), so the Qt clipboard only serves Patchy's internal
+  // paste and the New Document Clipboard preset. This write is what reaches
+  // other apps.
+  wasm_clipboard::write_image_png(image);
+#endif
 }
 
 void MainWindow::set_system_clipboard_mime(QMimeData* mime) {
@@ -4520,6 +4530,15 @@ void MainWindow::flip_active_layer_vertical() {
 }
 
 void MainWindow::crop_to_selection() {
+  // With the Crop tool active, a box the user laid out is the crop selection:
+  // the command commits it exactly like Enter (an off-canvas box expands, a
+  // rotated one straightens). The untouched canvas frame defers to a marquee
+  // selection (it stays after Esc or Select commands); with neither, the
+  // commit reports "Nothing to crop".
+  if (canvas_->crop_session_active() && (canvas_->crop_session_has_changes() || !canvas_->has_selection())) {
+    canvas_->commit_crop_session();
+    return;
+  }
   const auto selection = canvas_->selected_document_rect();
   if (!selection.has_value() || selection->isEmpty()) {
     show_status_error(tr("Make a rectangular selection before cropping"));
@@ -4563,12 +4582,33 @@ void MainWindow::commit_crop_rect(QRect rect, double angle_degrees) {
 
   auto& doc = document();
   auto cropped_document = doc;
-  // The rect may extend past the canvas; the expansion fills with the
-  // background color under a "Background" layer, transparent elsewhere. A
-  // rotated box straightens on commit.
-  if (!patchy::crop_document(cropped_document, to_core_rect(rect), angle_degrees,
-                             edit_color(canvas_->secondary_color()))) {
-    return;
+  const auto extension_color = edit_color(canvas_->secondary_color());
+  const auto frame = to_core_rect(rect);
+  const auto rotated = std::abs(angle_degrees) >= 0.01;
+  std::size_t deleted_layers = 0;
+  if (current_crop_delete_layers_) {
+    // Canvas Size's "delete layers fully off the canvas". It runs against the
+    // frame BEFORE the crop (the crop empties off-frame layers, which would
+    // then no longer test as outside). For a rotated box the axis-aligned rect
+    // is a conservative test: a layer outside it is certainly outside the box.
+    deleted_layers = patchy::remove_layers_outside_canvas(cropped_document, frame);
+  }
+  if (rotated || current_crop_delete_pixels_) {
+    // Delete Cropped Pixels (the default, as in Photoshop): the expansion
+    // fills with the background color under a "Background" layer, transparent
+    // elsewhere; a rotated box straightens on commit. `crop_document` crops
+    // every layer to the box (tight buffers); the rotated path always does.
+    if (!patchy::crop_document(cropped_document, frame, angle_degrees, extension_color)) {
+      return;
+    }
+  } else {
+    // Delete Cropped Pixels off: the same frame resize as Canvas Size, so
+    // layers keep their pixels beyond the new canvas and a later canvas
+    // extension or move brings them back.
+    if (frame.empty()) {
+      return;
+    }
+    patchy::resize_canvas_to_frame(cropped_document, frame, extension_color, false);
   }
   push_undo_snapshot(tr("Crop"));
   doc = std::move(cropped_document);
@@ -4587,7 +4627,9 @@ void MainWindow::commit_crop_rect(QRect rect, double angle_degrees) {
   refresh_layer_controls();
   refresh_document_info();
   refresh_options_bar();
-  statusBar()->showMessage(tr("Cropped"));
+  statusBar()->showMessage(deleted_layers > 0
+                               ? tr("Cropped, off-canvas layers deleted: %1").arg(deleted_layers)
+                               : tr("Cropped"));
 }
 
 void MainWindow::rotate_canvas_clockwise() {

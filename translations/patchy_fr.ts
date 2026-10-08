@@ -5757,16 +5757,6 @@
         <translation>Bicubique plus lisse (agrandissement)</translation>
     </message>
     <message>
-        <source>Nearest Neighbor</source>
-        <translation>Au plus proche</translation>
-    </message>
-    <message>
-        <source>Create a new, larger document with more detail
-Open in Generative Upscale...</source>
-        <translation>Créer un nouveau document plus grand avec plus de détails
-Ouvrir dans Agrandissement génératif...</translation>
-    </message>
-    <message>
         <source>%1 px x %2 px</source>
         <translation>%1 px x %2 px</translation>
     </message>
@@ -9405,6 +9395,30 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Color Replacement</source>
         <translation>Remplacement de couleur</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automatique</translation>
+    </message>
+    <message>
+        <source>Nearest Neighbor (hard edges)</source>
+        <translation>Au plus proche (contours nets)</translation>
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation>Bilinéaire</translation>
+    </message>
+    <message>
+        <source>Bicubic (smooth gradients)</source>
+        <translation>Bicubique (dégradés lisses)</translation>
+    </message>
+    <message>
+        <source>Off: the pixel dimensions stay the same and only the print resolution changes, so the image is not scaled.</source>
+        <translation>Désactivé : les dimensions en pixels restent identiques et seule la résolution d&apos;impression change, l&apos;image n&apos;est donc pas redimensionnée.</translation>
+    </message>
+    <message>
+        <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
+        <translation>Les dimensions en pixels sont verrouillées. Seules la résolution et la taille d&apos;impression changent.</translation>
     </message>
 </context>
 <context>
@@ -19745,6 +19759,46 @@ Convertis en images : %1.</translation>
         <source>Rasterize the Smart Object before using Perspective Warp</source>
         <translation>Pixellisez l&apos;objet dynamique avant d&apos;utiliser Déformation de la perspective</translation>
     </message>
+    <message>
+        <source>Delete Cropped Pixels</source>
+        <translation>Supprimer les pixels recadrés</translation>
+    </message>
+    <message>
+        <source>Delete Off-Canvas Layers</source>
+        <translation>Supprimer les calques hors zone</translation>
+    </message>
+    <message>
+        <source>Bicubic Smoother</source>
+        <translation>Bicubique plus lisse</translation>
+    </message>
+    <message>
+        <source>Bicubic Sharper</source>
+        <translation>Bicubique plus net</translation>
+    </message>
+    <message>
+        <source>Bicubic Automatic</source>
+        <translation>Bicubique automatique</translation>
+    </message>
+    <message>
+        <source>Crop every layer to the new canvas; off, layers keep their pixels beyond it</source>
+        <translation>Recadre chaque calque sur la nouvelle zone de travail ; désactivé, les calques gardent leurs pixels au-delà</translation>
+    </message>
+    <message>
+        <source>Delete layers that end up fully outside the crop box</source>
+        <translation>Supprime les calques entièrement hors du cadre de recadrage</translation>
+    </message>
+    <message>
+        <source>Crop to Selection (Advanced) cannot straighten a rotated crop box; use Crop to Selection</source>
+        <translation>Recadrer selon la sélection (Avancé) ne peut pas redresser un cadre de recadrage pivoté ; utilisez Recadrer selon la sélection</translation>
+    </message>
+    <message>
+        <source>Nothing to crop: the crop box matches the canvas</source>
+        <translation>Rien à recadrer : le cadre de recadrage correspond à la zone de travail</translation>
+    </message>
+    <message>
+        <source>Cropped, off-canvas layers deleted: %1</source>
+        <translation>Recadré, calques hors zone supprimés : %1</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -21183,6 +21237,10 @@ Convertis en images : %1.</translation>
     <message>
         <source>mergeLayers: effectsFrom requires singleVector.</source>
         <translation>mergeLayers : effectsFrom nécessite singleVector.</translation>
+    </message>
+    <message>
+        <source>resizeImage method must be one of %1.</source>
+        <translation>La méthode de resizeImage doit être l&apos;une de %1.</translation>
     </message>
 </context>
 <context>

@@ -6,8 +6,14 @@
 
 #include "ui_test_groups.hpp"
 
+#include <QCheckBox>
+#include <QDialog>
+#include <QDoubleSpinBox>
 #include <QLineEdit>
 #include <QStatusBar>
+#include <QTimer>
+
+#include <cstdlib>
 
 namespace {
 
@@ -570,6 +576,89 @@ void ui_crop_alt_handle_drag_resizes_about_center() {
   CHECK(canvas->crop_session_rect() == QRect(0, 128, 1024, 512));
 }
 
+// Alt mirrors a crop drag-out about the press point, whether held from the
+// press or pressed mid-drag; releasing it re-anchors at the press corner, and a
+// set ratio still constrains the mirrored box (GitHub issue 78).
+void ui_crop_alt_drag_out_draws_from_center() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  require_action(window, "toolCropAction")->trigger();
+  QApplication::processEvents();
+  canvas->set_snap_enabled(false);
+  canvas->set_crop_ratio(0.0, 0.0);
+  const auto at = [&](int x, int y) { return canvas->widget_position_for_document_point(QPoint(x, y)); };
+  const auto within = [](int actual, int expected) { return std::abs(actual - expected) <= 1; };
+  const auto reset = [&] {
+    send_key(*canvas, Qt::Key_Escape);
+    QApplication::processEvents();
+  };
+
+  // Alt held from the press: the 100x80 drag extent doubles around (300, 300).
+  send_mouse(*canvas, QEvent::MouseButtonPress, at(300, 300), Qt::LeftButton, Qt::LeftButton, Qt::AltModifier);
+  send_mouse(*canvas, QEvent::MouseMove, at(400, 380), Qt::NoButton, Qt::LeftButton, Qt::AltModifier);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, at(400, 380), Qt::LeftButton, Qt::NoButton, Qt::AltModifier);
+  QApplication::processEvents();
+  auto rect = canvas->crop_session_rect();
+  CHECK(rect.has_value());
+  if (rect.has_value()) {
+    CHECK(within(rect->x(), 200));
+    CHECK(within(rect->y(), 220));
+    CHECK(within(rect->width(), 200));
+    CHECK(within(rect->height(), 160));
+  }
+  reset();
+
+  // Alt pressed after the drag starts, as a key event with the pointer still,
+  // then kept through the rest of the drag.
+  send_mouse(*canvas, QEvent::MouseButtonPress, at(300, 300), Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseMove, at(350, 340), Qt::NoButton, Qt::LeftButton);
+  send_key_press(*canvas, Qt::Key_Alt);
+  send_mouse(*canvas, QEvent::MouseMove, at(400, 380), Qt::NoButton, Qt::LeftButton, Qt::AltModifier);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, at(400, 380), Qt::LeftButton, Qt::NoButton, Qt::AltModifier);
+  send_key_release(*canvas, Qt::Key_Alt, Qt::AltModifier);
+  QApplication::processEvents();
+  rect = canvas->crop_session_rect();
+  CHECK(rect.has_value());
+  if (rect.has_value()) {
+    CHECK(within(rect->x(), 200));
+    CHECK(within(rect->y(), 220));
+    CHECK(within(rect->width(), 200));
+    CHECK(within(rect->height(), 160));
+  }
+  reset();
+
+  // Alt released mid-drag: the box re-anchors at the press corner.
+  send_mouse(*canvas, QEvent::MouseButtonPress, at(300, 300), Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseMove, at(350, 340), Qt::NoButton, Qt::LeftButton, Qt::AltModifier);
+  send_key_release(*canvas, Qt::Key_Alt, Qt::AltModifier);
+  send_mouse(*canvas, QEvent::MouseMove, at(400, 380), Qt::NoButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, at(400, 380), Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  rect = canvas->crop_session_rect();
+  CHECK(rect.has_value());
+  CHECK(rect == QRect(300, 300, 101, 81));
+  reset();
+
+  // A 2:1 ratio holds about the center: the 80 px half height wins, so the half
+  // width becomes 160.
+  canvas->set_crop_ratio(2.0, 1.0);
+  send_mouse(*canvas, QEvent::MouseButtonPress, at(300, 300), Qt::LeftButton, Qt::LeftButton, Qt::AltModifier);
+  send_mouse(*canvas, QEvent::MouseMove, at(400, 380), Qt::NoButton, Qt::LeftButton, Qt::AltModifier);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, at(400, 380), Qt::LeftButton, Qt::NoButton, Qt::AltModifier);
+  QApplication::processEvents();
+  rect = canvas->crop_session_rect();
+  CHECK(rect.has_value());
+  if (rect.has_value()) {
+    CHECK(within(rect->x(), 140));
+    CHECK(within(rect->y(), 220));
+    CHECK(within(rect->width(), 320));
+    CHECK(within(rect->height(), 160));
+  }
+  reset();
+  CHECK(canvas->crop_session_rect() == QRect(0, 128, 1024, 512));
+}
+
 // Space held during a crop handle drag slides the whole box, and releasing it
 // resumes the resize from the slid position (the marquee handle rule).
 void ui_crop_handle_drag_space_slides_box_then_resumes() {
@@ -817,6 +906,268 @@ void ui_crop_overlay_renders_shield_and_thirds() {
   send_key(*canvas, Qt::Key_Escape);
 }
 
+// Image > Crop to Selection and Crop to Selection (Advanced) act on the Crop
+// tool's pending box while the tool is active: the plain command commits like
+// Enter, the advanced one prefills the Canvas Size dialog with the box, and the
+// untouched canvas frame with no selection is refused with a message. A marquee
+// selection still wins while the box is the automatic frame (after Esc), and a
+// selection made under the tool (Select All) re-frames the box.
+void ui_crop_menu_commands_use_crop_box() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* info_label = window.findChild<QLabel*>(QStringLiteral("documentInfoLabel"));
+  CHECK(info_label != nullptr);
+  require_action(window, "toolCropAction")->trigger();
+  QApplication::processEvents();
+  canvas->set_snap_enabled(false);
+  canvas->set_crop_ratio(0.0, 0.0);
+  CHECK(!canvas->has_selection());
+
+  // The default frame is the whole canvas: nothing to crop, nothing changes.
+  require_action(window, "imageCropToSelectionAction")->trigger();
+  QApplication::processEvents();
+  CHECK(info_label->text().contains(QStringLiteral("1024 x 768 px")));
+  CHECK(window.statusBar()->currentMessage() == QStringLiteral("Nothing to crop: the box matches the canvas"));
+  require_action(window, "imageCropToSelectionAdvancedAction")->trigger();
+  QApplication::processEvents();
+  CHECK(info_label->text().contains(QStringLiteral("1024 x 768 px")));
+  CHECK(window.statusBar()->currentMessage() == QStringLiteral("Nothing to crop: the crop box matches the canvas"));
+
+  // The plain command commits the laid-out box.
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(50, 50)),
+       canvas->widget_position_for_document_point(QPoint(350, 250)));
+  CHECK(canvas->crop_session_rect() == QRect(50, 50, 301, 201));
+  require_action(window, "imageCropToSelectionAction")->trigger();
+  QApplication::processEvents();
+  CHECK(info_label->text().contains(QStringLiteral("301 x 201 px")));
+  CHECK(canvas->crop_session_active());
+  CHECK(canvas->crop_session_rect() == QRect(0, 0, 301, 201));
+  CHECK(!canvas->crop_session_has_changes());
+
+  // The advanced command opens the Canvas Size dialog prefilled with the box
+  // (its two layer options; the tool's own pair lives on the options bar).
+  canvas->zoom_to_document_rect(QRect(0, 0, 301, 201));
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(40, 30)),
+       canvas->widget_position_for_document_point(QPoint(160, 110)));
+  // (At a fractional zoom the widget-to-document mapping can wobble a pixel,
+  // so the expectations derive from the actual session rect.)
+  const auto box = canvas->crop_session_rect();
+  CHECK(box.has_value());
+  CHECK(std::abs(box->x() - 40) <= 2 && std::abs(box->y() - 30) <= 2);
+  CHECK(std::abs(box->width() - 121) <= 2 && std::abs(box->height() - 81) <= 2);
+  const auto expected_info = QStringLiteral("%1 x %2 px").arg(box->width()).arg(box->height());
+  bool drove_dialog = false;
+  QTimer::singleShot(0, [&] {
+    auto* dialog = find_top_level_dialog(QStringLiteral("patchyCanvasSizeDialog"));
+    CHECK(dialog != nullptr);
+    if (dialog == nullptr) {
+      return;
+    }
+    auto* width = dialog->findChild<QDoubleSpinBox*>(QStringLiteral("canvasSizeWidthSpin"));
+    auto* height = dialog->findChild<QDoubleSpinBox*>(QStringLiteral("canvasSizeHeightSpin"));
+    CHECK(width != nullptr && height != nullptr);
+    CHECK(dialog->windowTitle() == QStringLiteral("Crop to Selection (Advanced)"));
+    CHECK(width->value() == static_cast<double>(box->width()));
+    CHECK(height->value() == static_cast<double>(box->height()));
+    drove_dialog = true;
+    dialog->accept();
+  });
+  require_action(window, "imageCropToSelectionAdvancedAction")->trigger();
+  QApplication::processEvents();
+  CHECK(drove_dialog);
+  CHECK(info_label->text().contains(expected_info));
+  CHECK(canvas->crop_session_rect() == QRect(0, 0, box->width(), box->height()));
+
+  // A rotated box is refused by the advanced command (the dialog cannot straighten).
+  canvas->zoom_to_document_rect(QRect(0, 0, box->width(), box->height()));
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(30, 25)),
+       canvas->widget_position_for_document_point(QPoint(90, 60)));
+  CHECK(canvas->crop_session_has_changes());
+  CHECK(canvas->crop_session_angle() == 0.0);
+  // A drag off the custom box rotates it about its center.
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(110, 70)),
+       canvas->widget_position_for_document_point(QPoint(110, 15)));
+  CHECK(canvas->crop_session_angle() != 0.0);
+  require_action(window, "imageCropToSelectionAdvancedAction")->trigger();
+  QApplication::processEvents();
+  CHECK(info_label->text().contains(expected_info));
+  CHECK(window.statusBar()->currentMessage().startsWith(QStringLiteral("Crop to Selection (Advanced) cannot")));
+  send_key(*canvas, Qt::Key_Escape);
+  CHECK(!canvas->crop_session_has_changes());
+
+  // Select All under the tool re-frames the box from the selection (the
+  // whole canvas here, so still nothing to apply); a marquee drawn with the
+  // Marquee tool is adopted on the way back to Crop, Esc puts the canvas frame
+  // back with the marquee visible again, and the plain command then crops to
+  // the marquee rather than reporting nothing to crop.
+  canvas->select_all();
+  QApplication::processEvents();
+  CHECK(canvas->has_selection());
+  CHECK(canvas->crop_session_rect() == QRect(0, 0, box->width(), box->height()));
+  canvas->clear_selection();
+  QApplication::processEvents();
+  CHECK(!canvas->has_selection());
+  CHECK(canvas->crop_session_rect() == QRect(0, 0, box->width(), box->height()));
+  const auto doc_w = box->width();
+  const auto doc_h = box->height();
+  canvas->set_tool(patchy::ui::CanvasTool::Marquee);
+  drag(*canvas, canvas->widget_position_for_document_point(QPoint(10, 10)),
+       canvas->widget_position_for_document_point(QPoint(doc_w - 20, doc_h - 10)));
+  const auto marquee = canvas->selected_document_rect();
+  CHECK(marquee.has_value() && marquee->width() < doc_w && marquee->height() < doc_h);
+  require_action(window, "toolCropAction")->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->crop_session_rect() == marquee);
+  CHECK(canvas->crop_session_has_changes());
+  send_key(*canvas, Qt::Key_Escape);
+  CHECK(!canvas->crop_session_has_changes());
+  CHECK(canvas->selected_document_rect() == marquee);
+  require_action(window, "imageCropToSelectionAction")->trigger();
+  QApplication::processEvents();
+  CHECK(info_label->text().contains(QStringLiteral("%1 x %2 px").arg(marquee->width()).arg(marquee->height())));
+  CHECK(!canvas->has_selection());
+}
+
+// The options-bar layer options: "Delete Cropped Pixels" (tools/cropDeletePixels,
+// on by default like Photoshop's) and "Delete Off-Canvas Layers"
+// (tools/cropDeleteLayers, off). Pixels off, a commit keeps every layer's pixels
+// beyond the new canvas (the Canvas Size frame resize); on, layers are cropped to
+// the canvas. Layers on, layers left fully outside the box are deleted, with the
+// count in the status line. Both settings persist.
+void ui_crop_delete_options_crop_and_delete_layers() {
+  SettingsValueRestorer restore_pixels(QStringLiteral("tools/cropDeletePixels"));
+  SettingsValueRestorer restore_layers(QStringLiteral("tools/cropDeleteLayers"));
+  {
+    auto settings = patchy::ui::app_settings();
+    settings.remove(QStringLiteral("tools/cropDeletePixels"));
+    settings.remove(QStringLiteral("tools/cropDeleteLayers"));
+  }
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto& document = patchy::ui::MainWindowTestAccess::document(window);
+  auto* pixels_check = window.findChild<QCheckBox*>(QStringLiteral("cropDeletePixelsCheck"));
+  auto* layers_check = window.findChild<QCheckBox*>(QStringLiteral("cropDeleteLayersCheck"));
+  CHECK(pixels_check != nullptr && layers_check != nullptr);
+  CHECK(pixels_check->isChecked());
+  CHECK(!layers_check->isChecked());
+  CHECK(pixels_check->text() == QStringLiteral("Delete Cropped Pixels"));
+  CHECK(layers_check->text() == QStringLiteral("Delete Off-Canvas Layers"));
+  require_action(window, "toolCropAction")->trigger();
+  QApplication::processEvents();
+  CHECK(pixels_check->isVisible() && layers_check->isVisible());
+  canvas->set_snap_enabled(false);
+  canvas->set_crop_ratio(0.0, 0.0);
+
+  const auto add_layer = [&document](const char* name, QRect bounds) {
+    patchy::Layer layer(document.allocate_layer_id(), name,
+                        solid_pixels(bounds.width(), bounds.height(), patchy::PixelFormat::rgba8(), QColor(20, 90, 200)));
+    layer.set_bounds(patchy::Rect{bounds.x(), bounds.y(), bounds.width(), bounds.height()});
+    const auto id = layer.id();
+    document.add_layer(std::move(layer));
+    return id;
+  };
+  const auto straddling_id = add_layer("Straddling", QRect(80, 80, 60, 60));
+  const auto outside_id = add_layer("Outside", QRect(600, 500, 40, 40));
+  canvas->set_document(&document);
+  QApplication::processEvents();
+  const auto crop_to_box = [&] {
+    drag(*canvas, canvas->widget_position_for_document_point(QPoint(100, 100)),
+         canvas->widget_position_for_document_point(QPoint(300, 250)));
+    CHECK(canvas->crop_session_rect() == QRect(100, 100, 201, 151));
+    send_key(*canvas, Qt::Key_Return);
+    QApplication::processEvents();
+    CHECK(document.width() == 201 && document.height() == 151);
+  };
+  const auto undo = [&] {
+    require_action_by_text(window, QStringLiteral("Undo"))->trigger();
+    QApplication::processEvents();
+    CHECK(document.width() == 1024 && document.height() == 768);
+    CHECK(std::as_const(document).find_layer(outside_id) != nullptr);
+  };
+
+  // Defaults (pixels on, layers off): the straddling layer is cropped to the
+  // canvas, the outside layer survives emptied (the tool's long-standing crop).
+  crop_to_box();
+  {
+    const auto* straddling = std::as_const(document).find_layer(straddling_id);
+    const auto* outside = std::as_const(document).find_layer(outside_id);
+    CHECK(straddling != nullptr && outside != nullptr);
+    if (straddling != nullptr) {
+      CHECK(straddling->bounds().x == 0 && straddling->bounds().y == 0);
+      CHECK(straddling->bounds().width == 40 && straddling->bounds().height == 40);
+    }
+    if (outside != nullptr) {
+      CHECK(outside->bounds().empty());
+    }
+  }
+  CHECK(window.statusBar()->currentMessage() == QStringLiteral("Cropped"));
+  undo();
+
+  // Pixels off: the frame resize keeps the straddling layer's full buffer
+  // (translated by the box origin) and the outside layer's bounds.
+  pixels_check->setChecked(false);
+  QApplication::processEvents();
+  CHECK(!patchy::ui::app_settings().value(QStringLiteral("tools/cropDeletePixels"), true).toBool());
+  crop_to_box();
+  {
+    const auto* straddling = std::as_const(document).find_layer(straddling_id);
+    const auto* outside = std::as_const(document).find_layer(outside_id);
+    CHECK(straddling != nullptr && outside != nullptr);
+    if (straddling != nullptr) {
+      CHECK(straddling->bounds().x == -20 && straddling->bounds().y == -20);
+      CHECK(straddling->bounds().width == 60 && straddling->bounds().height == 60);
+    }
+    if (outside != nullptr) {
+      CHECK(outside->bounds().x == 500 && outside->bounds().y == 400);
+    }
+  }
+  undo();
+
+  // Pixels off, layers on: the outside layer goes, the straddling buffer stays whole.
+  layers_check->setChecked(true);
+  QApplication::processEvents();
+  CHECK(patchy::ui::app_settings().value(QStringLiteral("tools/cropDeleteLayers")).toBool());
+  crop_to_box();
+  {
+    const auto* straddling = std::as_const(document).find_layer(straddling_id);
+    CHECK(straddling != nullptr);
+    CHECK(std::as_const(document).find_layer(outside_id) == nullptr);
+    if (straddling != nullptr) {
+      CHECK(straddling->bounds().width == 60 && straddling->bounds().height == 60);
+    }
+  }
+  CHECK(window.statusBar()->currentMessage() == QStringLiteral("Cropped, off-canvas layers deleted: 1"));
+  undo();
+
+  // Both on: cropped and deleted (the Advanced dialog's pair at once).
+  pixels_check->setChecked(true);
+  QApplication::processEvents();
+  crop_to_box();
+  {
+    const auto* straddling = std::as_const(document).find_layer(straddling_id);
+    CHECK(straddling != nullptr);
+    CHECK(std::as_const(document).find_layer(outside_id) == nullptr);
+    if (straddling != nullptr) {
+      CHECK(straddling->bounds().width == 40 && straddling->bounds().height == 40);
+    }
+  }
+  CHECK(window.statusBar()->currentMessage() == QStringLiteral("Cropped, off-canvas layers deleted: 1"));
+  save_widget_artifact("ui_crop_delete_options", window);
+  undo();
+
+  // Both settings persist into a fresh window.
+  pixels_check->setChecked(false);
+  QApplication::processEvents();
+  patchy::ui::MainWindow second;
+  show_window(second);
+  auto* second_pixels = second.findChild<QCheckBox*>(QStringLiteral("cropDeletePixelsCheck"));
+  auto* second_layers = second.findChild<QCheckBox*>(QStringLiteral("cropDeleteLayersCheck"));
+  CHECK(second_pixels != nullptr && !second_pixels->isChecked());
+  CHECK(second_layers != nullptr && second_layers->isChecked());
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> crop_tool_tests() {
@@ -828,11 +1179,14 @@ std::vector<patchy::test::TestCase> crop_tool_tests() {
       {"ui_crop_size_style_fields_mirror_and_resize_box", ui_crop_size_style_fields_mirror_and_resize_box},
       {"ui_crop_handles_resize_move_and_nudge", ui_crop_handles_resize_move_and_nudge},
       {"ui_crop_alt_handle_drag_resizes_about_center", ui_crop_alt_handle_drag_resizes_about_center},
+      {"ui_crop_alt_drag_out_draws_from_center", ui_crop_alt_drag_out_draws_from_center},
       {"ui_crop_handle_drag_space_slides_box_then_resumes", ui_crop_handle_drag_space_slides_box_then_resumes},
       {"ui_crop_rotated_commit_straightens_box", ui_crop_rotated_commit_straightens_box},
       {"ui_crop_enter_commits_expanding_document", ui_crop_enter_commits_expanding_document},
       {"ui_crop_escape_resets_and_tool_switch_cancels", ui_crop_escape_resets_and_tool_switch_cancels},
       {"ui_crop_apply_cancel_buttons_follow_session", ui_crop_apply_cancel_buttons_follow_session},
       {"ui_crop_overlay_renders_shield_and_thirds", ui_crop_overlay_renders_shield_and_thirds},
+      {"ui_crop_menu_commands_use_crop_box", ui_crop_menu_commands_use_crop_box},
+      {"ui_crop_delete_options_crop_and_delete_layers", ui_crop_delete_options_crop_and_delete_layers},
   };
 }

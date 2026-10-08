@@ -5,6 +5,7 @@
 #include "core/document_recovery_store.hpp"
 #include "core/layer_alignment.hpp"
 #include "core/layer_tree.hpp"
+#include "core/resample.hpp"
 #include "core/smart_filter.hpp"
 #include "core/text_warp.hpp"
 #include "filters/filter_registry.hpp"
@@ -652,7 +653,9 @@ private:
   void create_clipboard_document(const QImage& image, QString history_label);
   void create_new_document();
   void resize_image_dialog();
-  bool resize_document_image(DocumentSession& target, int width, int height,
+  // Image Size for the dialog, doc.resizeImage and MCP: `method` is a core ResampleMethod
+  // (Automatic resolves inside resize_image_and_layers).
+  bool resize_document_image(DocumentSession& target, int width, int height, ResampleMethod method,
                              std::function<bool()> keep_running = {});
   void resize_canvas_dialog();
   // Image > Crop to Selection (Advanced): the Canvas Size dialog prefilled with the
@@ -2067,6 +2070,12 @@ private:
   std::vector<QWidget*> crop_ratio_option_widgets_;
   std::vector<QWidget*> crop_size_option_widgets_;
   QPushButton* crop_apply_button_{nullptr};
+  // Canvas Size's two layer options on the Crop bar. "Delete Cropped Pixels"
+  // (Photoshop's option and default: on) crops every layer to the new canvas;
+  // off, layers keep their off-canvas pixels like Canvas Size. "Delete
+  // Off-Canvas Layers" (off) drops layers left fully outside the box.
+  QCheckBox* crop_delete_pixels_check_{nullptr};
+  QCheckBox* crop_delete_layers_check_{nullptr};
   QPushButton* patch_remove_object_button_{nullptr};
   QPushButton* crop_cancel_button_{nullptr};
   UnitSpinBox* rotate_view_angle_spin_{nullptr};
@@ -2428,6 +2437,10 @@ private:
   // show and set the box). Size mode runs the canvas with no ratio; the
   // remembered ratio comes back with Ratio mode (effective_crop_ratio_*).
   int current_crop_style_{0};
+  // tools/cropDeletePixels (default on) and tools/cropDeleteLayers (default
+  // off): see crop_delete_pixels_check_ / crop_delete_layers_check_.
+  bool current_crop_delete_pixels_{true};
+  bool current_crop_delete_layers_{false};
   bool current_fill_shapes_{false};
   int current_shape_corner_radius_{0};
   CanvasWidget::MarqueeStyle current_shape_style_{CanvasWidget::MarqueeStyle::Normal};

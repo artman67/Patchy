@@ -5748,16 +5748,6 @@
         <translation>環迴增值法：更平滑 (放大)</translation>
     </message>
     <message>
-        <source>Nearest Neighbor</source>
-        <translation>最接近像素</translation>
-    </message>
-    <message>
-        <source>Create a new, larger document with more detail
-Open in Generative Upscale...</source>
-        <translation>建立細節更豐富的全新較大文件
-在生成式放大中開啟...</translation>
-    </message>
-    <message>
         <source>%1 px x %2 px</source>
         <translation>%1 px x %2 px</translation>
     </message>
@@ -9375,6 +9365,30 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Color Replacement</source>
         <translation>顏色取代</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>自動</translation>
+    </message>
+    <message>
+        <source>Nearest Neighbor (hard edges)</source>
+        <translation>最接近像素 (硬邊緣)</translation>
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation>縱橫增值</translation>
+    </message>
+    <message>
+        <source>Bicubic (smooth gradients)</source>
+        <translation>環迴增值 (平滑漸層)</translation>
+    </message>
+    <message>
+        <source>Off: the pixel dimensions stay the same and only the print resolution changes, so the image is not scaled.</source>
+        <translation>關閉時像素尺寸維持不變，只會更改列印解析度，因此影像不會被縮放。</translation>
+    </message>
+    <message>
+        <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
+        <translation>像素尺寸已鎖定。只有列印解析度與列印尺寸會更改。</translation>
     </message>
 </context>
 <context>
@@ -19689,6 +19703,46 @@ Baked into images: %1.</source>
         <source>Rasterize the Smart Object before using Perspective Warp</source>
         <translation>使用透視彎曲前請先點陣化智慧型物件</translation>
     </message>
+    <message>
+        <source>Delete Cropped Pixels</source>
+        <translation>刪除裁切的像素</translation>
+    </message>
+    <message>
+        <source>Delete Off-Canvas Layers</source>
+        <translation>刪除版面外圖層</translation>
+    </message>
+    <message>
+        <source>Bicubic Smoother</source>
+        <translation>環迴增值法：更平滑</translation>
+    </message>
+    <message>
+        <source>Bicubic Sharper</source>
+        <translation>環迴增值法：更銳利</translation>
+    </message>
+    <message>
+        <source>Bicubic Automatic</source>
+        <translation>環迴增值法：自動</translation>
+    </message>
+    <message>
+        <source>Crop every layer to the new canvas; off, layers keep their pixels beyond it</source>
+        <translation>將每個圖層裁切至新版面；關閉時，圖層保留版面之外的像素</translation>
+    </message>
+    <message>
+        <source>Delete layers that end up fully outside the crop box</source>
+        <translation>刪除完全位於裁切框之外的圖層</translation>
+    </message>
+    <message>
+        <source>Crop to Selection (Advanced) cannot straighten a rotated crop box; use Crop to Selection</source>
+        <translation>裁切至選取範圍(進階)無法拉直旋轉的裁切框；請使用裁切至選取範圍</translation>
+    </message>
+    <message>
+        <source>Nothing to crop: the crop box matches the canvas</source>
+        <translation>無需裁切：裁切框與版面一致</translation>
+    </message>
+    <message>
+        <source>Cropped, off-canvas layers deleted: %1</source>
+        <translation>已裁切，已刪除版面外的圖層: %1</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -21126,6 +21180,10 @@ Baked into images: %1.</source>
     <message>
         <source>mergeLayers: effectsFrom requires singleVector.</source>
         <translation>mergeLayers：effectsFrom 需要 singleVector。</translation>
+    </message>
+    <message>
+        <source>resizeImage method must be one of %1.</source>
+        <translation>resizeImage 的 method 必須是 %1 之一。</translation>
     </message>
 </context>
 <context>

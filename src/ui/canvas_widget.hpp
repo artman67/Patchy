@@ -318,10 +318,15 @@ public:
     BrushStrokeFinished
   };
 
+  // Persisted as an int (`tools/transformInterpolation`): append only. Automatic
+  // resolves per resample from the output area, like Image Size (docs/resampling.md).
   enum class TransformInterpolation {
     NearestNeighbor,
     Bilinear,
-    Bicubic
+    Bicubic,
+    BicubicSmoother,
+    BicubicSharper,
+    Automatic
   };
 
   struct TransformControlsState {
@@ -2123,7 +2128,7 @@ private:
   [[nodiscard]] TransformHandle crop_handle_at(QPoint widget_point) const;
   void begin_crop_drag_out(QMouseEvent* event, QPoint document_point);
   void handle_crop_session_press(QMouseEvent* event);
-  void update_crop_drag_out(QPoint document_point);
+  void update_crop_drag_out(QPoint document_point, Qt::KeyboardModifiers modifiers);
   void update_crop_adjust_drag(QPointF document_point, Qt::KeyboardModifiers modifiers);
   void update_crop_rotate_drag(QPointF document_point, Qt::KeyboardModifiers modifiers);
   void finish_crop_mouse_release(QMouseEvent* event);
@@ -2134,6 +2139,12 @@ private:
   // ratio), when the Crop tool is current and a document is set; a no-op
   // otherwise. Called on tool pick, document swap, and unlock.
   void begin_default_crop_session();
+  // A selection set or cleared while the Crop tool still shows its automatic
+  // frame (or the box it adopted from the previous selection) re-frames the
+  // session so the box follows Select commands and scripts, not only the
+  // selection that existed on tool pick. A custom box or an in-flight drag is
+  // left alone.
+  void follow_selection_into_crop_session();
   // The largest rect of the set ratio inside `within`, centered; `within`
   // itself when no ratio is set.
   [[nodiscard]] QRect ratio_fitted_crop_rect(QRect within) const;
@@ -2232,6 +2243,7 @@ private:
   [[nodiscard]] SelectionSnapshot selection_snapshot_before_edit() const;
   void notify_selection_mode_changed();
   void update_selection_square_constraint(Qt::KeyboardModifiers modifiers);
+  void update_marquee_from_center(Qt::KeyboardModifiers modifiers);
   void refresh_active_marquee_selection();
   [[nodiscard]] bool can_move_selection_at(QPoint document_point, Qt::KeyboardModifiers modifiers) const;
   void apply_selection_move(QPoint delta);
@@ -2559,6 +2571,8 @@ private:
   QPoint selection_move_origin_document_{};
   bool selection_shift_at_press_{false};
   bool selection_shift_released_since_press_{false};
+  bool selection_alt_at_press_{false};
+  bool selection_alt_released_since_press_{false};
   bool selection_square_constrained_{false};
   CanvasTool tool_{CanvasTool::Brush};
   LayerEditTarget layer_edit_target_{LayerEditTarget::Content};
@@ -2780,6 +2794,7 @@ private:
   double crop_rotate_start_angle_{0.0};
   double crop_rotate_start_vector_degrees_{0.0};
   bool crop_square_constrained_{false};
+  bool crop_from_center_{false};
   double crop_ratio_w_{0.0};
   double crop_ratio_h_{0.0};
   std::function<void(QRect, double)> crop_commit_requested_callback_;

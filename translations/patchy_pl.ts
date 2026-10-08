@@ -5974,16 +5974,6 @@
         <translation>Dwusześcienna gładsza (powiększanie)</translation>
     </message>
     <message>
-        <source>Nearest Neighbor</source>
-        <translation>Najbliższy sąsiad</translation>
-    </message>
-    <message>
-        <source>Create a new, larger document with more detail
-Open in Generative Upscale...</source>
-        <translation>Utwórz nowy, większy dokument z większą liczbą szczegółów
-Otwórz w Powiększaniu generatywnym...</translation>
-    </message>
-    <message>
         <source>%1 px x %2 px</source>
         <translation>%1 piksel x %2 piksel</translation>
     </message>
@@ -9435,6 +9425,30 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Color Replacement</source>
         <translation>Zastępowanie koloru</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Automatycznie</translation>
+    </message>
+    <message>
+        <source>Nearest Neighbor (hard edges)</source>
+        <translation>Najbliższy sąsiad (ostre krawędzie)</translation>
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation>Dwuliniowy</translation>
+    </message>
+    <message>
+        <source>Bicubic (smooth gradients)</source>
+        <translation>Dwusześcienna (gładkie gradienty)</translation>
+    </message>
+    <message>
+        <source>Off: the pixel dimensions stay the same and only the print resolution changes, so the image is not scaled.</source>
+        <translation>Wyłączone: wymiary w pikselach pozostają bez zmian, zmienia się tylko rozdzielczość druku, więc obraz nie jest skalowany.</translation>
+    </message>
+    <message>
+        <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
+        <translation>Wymiary w pikselach są zablokowane. Zmieniają się tylko rozdzielczość i rozmiar wydruku.</translation>
     </message>
 </context>
 <context>
@@ -19801,6 +19815,46 @@ Y: %2
         <source>Rasterize the Smart Object before using Perspective Warp</source>
         <translation>Przed użyciem funkcji Wypaczenie perspektywy zrasteryzuj obiekt inteligentny</translation>
     </message>
+    <message>
+        <source>Delete Cropped Pixels</source>
+        <translation>Usuń przycięte piksele</translation>
+    </message>
+    <message>
+        <source>Delete Off-Canvas Layers</source>
+        <translation>Usuń warstwy poza płótnem</translation>
+    </message>
+    <message>
+        <source>Bicubic Smoother</source>
+        <translation>Dwusześcienna gładsza</translation>
+    </message>
+    <message>
+        <source>Bicubic Sharper</source>
+        <translation>Dwusześcienna ostrzejsza</translation>
+    </message>
+    <message>
+        <source>Bicubic Automatic</source>
+        <translation>Dwusześcienna automatyczna</translation>
+    </message>
+    <message>
+        <source>Crop every layer to the new canvas; off, layers keep their pixels beyond it</source>
+        <translation>Przycina każdą warstwę do nowego płótna; wyłączone, warstwy zachowują piksele poza nim</translation>
+    </message>
+    <message>
+        <source>Delete layers that end up fully outside the crop box</source>
+        <translation>Usuwa warstwy pozostające całkowicie poza ramką kadrowania</translation>
+    </message>
+    <message>
+        <source>Crop to Selection (Advanced) cannot straighten a rotated crop box; use Crop to Selection</source>
+        <translation>Przytnij do zaznaczenia (zaawansowane) nie może wyprostować obróconej ramki kadrowania; użyj polecenia Przytnij do zaznaczenia</translation>
+    </message>
+    <message>
+        <source>Nothing to crop: the crop box matches the canvas</source>
+        <translation>Nie ma czego kadrować: ramka kadrowania pokrywa się z płótnem</translation>
+    </message>
+    <message>
+        <source>Cropped, off-canvas layers deleted: %1</source>
+        <translation>Przycięto, usunięto warstwy poza płótnem: %1</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -21240,6 +21294,10 @@ Y: %2
     <message>
         <source>mergeLayers: effectsFrom requires singleVector.</source>
         <translation>mergeLayers: effectsFrom wymaga singleVector.</translation>
+    </message>
+    <message>
+        <source>resizeImage method must be one of %1.</source>
+        <translation>Metoda resizeImage musi być jedną z: %1.</translation>
     </message>
 </context>
 <context>

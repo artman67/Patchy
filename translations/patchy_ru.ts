@@ -5974,16 +5974,6 @@
         <translation>Бикубическая, глаже (увеличение)</translation>
     </message>
     <message>
-        <source>Nearest Neighbor</source>
-        <translation>По соседним пикселям</translation>
-    </message>
-    <message>
-        <source>Create a new, larger document with more detail
-Open in Generative Upscale...</source>
-        <translation>Создайте новый документ большего размера с более подробной информацией.
-Открыть в Generative Upscale...</translation>
-    </message>
-    <message>
         <source>%1 px x %2 px</source>
         <translation>%1 пикселей x %2 пикселей</translation>
     </message>
@@ -9435,6 +9425,30 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Color Replacement</source>
         <translation>Замена цвета</translation>
+    </message>
+    <message>
+        <source>Automatic</source>
+        <translation>Автоматически</translation>
+    </message>
+    <message>
+        <source>Nearest Neighbor (hard edges)</source>
+        <translation>По соседним пикселям (жёсткие края)</translation>
+    </message>
+    <message>
+        <source>Bilinear</source>
+        <translation>Билинейная</translation>
+    </message>
+    <message>
+        <source>Bicubic (smooth gradients)</source>
+        <translation>Бикубическая (плавные градиенты)</translation>
+    </message>
+    <message>
+        <source>Off: the pixel dimensions stay the same and only the print resolution changes, so the image is not scaled.</source>
+        <translation>Выключено: размеры в пикселях не меняются, меняется только разрешение печати, поэтому изображение не масштабируется.</translation>
+    </message>
+    <message>
+        <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
+        <translation>Размеры в пикселях заблокированы. Меняются только разрешение и размер печати.</translation>
     </message>
 </context>
 <context>
@@ -19801,6 +19815,46 @@ Y: %2
         <source>Rasterize the Smart Object before using Perspective Warp</source>
         <translation>Перед использованием «Деформации перспективы» растрируйте смарт-объект</translation>
     </message>
+    <message>
+        <source>Delete Cropped Pixels</source>
+        <translation>Удалять обрезанные пиксели</translation>
+    </message>
+    <message>
+        <source>Delete Off-Canvas Layers</source>
+        <translation>Удалять слои за холстом</translation>
+    </message>
+    <message>
+        <source>Bicubic Smoother</source>
+        <translation>Бикубическая, глаже</translation>
+    </message>
+    <message>
+        <source>Bicubic Sharper</source>
+        <translation>Бикубическая, чётче</translation>
+    </message>
+    <message>
+        <source>Bicubic Automatic</source>
+        <translation>Бикубическая, автоматически</translation>
+    </message>
+    <message>
+        <source>Crop every layer to the new canvas; off, layers keep their pixels beyond it</source>
+        <translation>Обрезает каждый слой по новому холсту; если выключено, слои сохраняют пиксели за его пределами</translation>
+    </message>
+    <message>
+        <source>Delete layers that end up fully outside the crop box</source>
+        <translation>Удаляет слои, полностью оставшиеся за пределами рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Crop to Selection (Advanced) cannot straighten a rotated crop box; use Crop to Selection</source>
+        <translation>Кадрировать по выделению (дополнительно) не может выровнять повёрнутую рамку кадрирования; используйте Кадрировать по выделению</translation>
+    </message>
+    <message>
+        <source>Nothing to crop: the crop box matches the canvas</source>
+        <translation>Нечего кадрировать: рамка кадрирования совпадает с холстом</translation>
+    </message>
+    <message>
+        <source>Cropped, off-canvas layers deleted: %1</source>
+        <translation>Кадрировано, удалены слои за пределами холста: %1</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -21240,6 +21294,10 @@ Y: %2
     <message>
         <source>mergeLayers: effectsFrom requires singleVector.</source>
         <translation>mergeLayers: effectsFrom требует singleVector.</translation>
+    </message>
+    <message>
+        <source>resizeImage method must be one of %1.</source>
+        <translation>Метод resizeImage должен быть одним из %1.</translation>
     </message>
 </context>
 <context>

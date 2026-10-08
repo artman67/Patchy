@@ -919,6 +919,13 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
                                             static_cast<int>(CanvasWidget::TransformInterpolation::Bilinear));
     transform_interpolation_combo_->addItem(tr("Bicubic"),
                                             static_cast<int>(CanvasWidget::TransformInterpolation::Bicubic));
+    // Photoshop's Free Transform set, in its order; the kernels are Image Size's.
+    transform_interpolation_combo_->addItem(tr("Bicubic Smoother"),
+                                            static_cast<int>(CanvasWidget::TransformInterpolation::BicubicSmoother));
+    transform_interpolation_combo_->addItem(tr("Bicubic Sharper"),
+                                            static_cast<int>(CanvasWidget::TransformInterpolation::BicubicSharper));
+    transform_interpolation_combo_->addItem(tr("Bicubic Automatic"),
+                                            static_cast<int>(CanvasWidget::TransformInterpolation::Automatic));
     const auto fallback = static_cast<int>(CanvasWidget::TransformInterpolation::Bicubic);
     const auto index = transform_interpolation_combo_->findData(current.isValid() ? current : QVariant(fallback));
     transform_interpolation_combo_->setCurrentIndex(index >= 0 ? index : transform_interpolation_combo_->findData(fallback));
@@ -1676,6 +1683,28 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   bind_tooltip(crop_height_spin_, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Height of the crop box"));
   configure_toolbar_spinbox(crop_height_spin_, 78);
   crop_size_option_widgets_.push_back(add_option_widget(crop_height_spin_, {CanvasTool::Crop}));
+  // Canvas Size's two layer options, as Photoshop's "Delete Cropped Pixels"
+  // (on by default there too) plus Patchy's own off-canvas layer delete.
+  crop_delete_pixels_check_ = new CheckGlyphBox(tr("Delete Cropped Pixels"), toolbar);
+  crop_delete_pixels_check_->setObjectName(QStringLiteral("cropDeletePixelsCheck"));
+  crop_delete_pixels_check_->setChecked(current_crop_delete_pixels_);
+  bind_tooltip(crop_delete_pixels_check_,
+               QT_TR_NOOP("Crop every layer to the new canvas; off, layers keep their pixels beyond it"));
+  add_option_widget(crop_delete_pixels_check_, {CanvasTool::Crop});
+  connect(crop_delete_pixels_check_, &QCheckBox::toggled, this, [this](bool checked) {
+    current_crop_delete_pixels_ = checked;
+    save_tool_settings();
+  });
+  crop_delete_layers_check_ = new CheckGlyphBox(tr("Delete Off-Canvas Layers"), toolbar);
+  crop_delete_layers_check_->setObjectName(QStringLiteral("cropDeleteLayersCheck"));
+  crop_delete_layers_check_->setChecked(current_crop_delete_layers_);
+  bind_tooltip(crop_delete_layers_check_,
+               QT_TR_NOOP("Delete layers that end up fully outside the crop box"));
+  add_option_widget(crop_delete_layers_check_, {CanvasTool::Crop});
+  connect(crop_delete_layers_check_, &QCheckBox::toggled, this, [this](bool checked) {
+    current_crop_delete_layers_ = checked;
+    save_tool_settings();
+  });
   crop_apply_button_ = new QPushButton(toolbar);
   crop_apply_button_->setObjectName(QStringLiteral("cropApplyButton"));
   crop_apply_button_->setIcon(simple_icon(QStringLiteral("ok"), QColor(160, 220, 165)));
