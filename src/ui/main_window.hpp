@@ -101,6 +101,8 @@ struct AddFontsResult;
 }
 
 struct HueSaturationSettings;
+template <typename Settings>
+struct DestructiveAdjustmentSpec;
 // Same aliases as filter_workflows.hpp (an alias cannot be forward-declared);
 // identical redeclaration is legal and compiler-checked.
 using LevelsSettings = LevelsAdjustment;
@@ -1043,6 +1045,10 @@ private:
   void delete_smart_filter(LayerId layer_id, std::size_t execution_index);
   void visual_filter_gallery_dialog();
   void populate_new_adjustment_layer_menu(QMenu* menu, const QString& object_name_prefix = {});
+  // The shared flow of the destructive Image > Adjustments dialogs; defined and
+  // used only in main_window_destructive_adjustments.cpp.
+  template <typename Settings>
+  void run_destructive_adjustment(const DestructiveAdjustmentSpec<Settings>& spec);
   void new_levels_adjustment_layer();
   void levels_dialog();
   void apply_levels_adjustment(const LevelsSettings& settings, bool allow_identity = false);
