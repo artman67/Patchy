@@ -623,8 +623,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     // canvas context menu (show_canvas_context_menu), a drag opens nothing.
     if (event->buttons() == Qt::RightButton && document_ != nullptr && !spacebar_panning_ &&
         !handling_tablet_event_ && !pen_recently_in_proximity() && !pointer_gesture_active() &&
-        !transforming_layer_ && !warping_layer_ && !puppet_.active && !path_transform_active_ && !perspective_warp_.has_value() &&
-        (event->modifiers() & Qt::AltModifier) == 0) {
+        !modal_session_active() && (event->modifiers() & Qt::AltModifier) == 0) {
       context_press_pos_ = event->pos();
     }
     event->accept();
@@ -3387,16 +3386,6 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   }
 
   if (puppet_.active) {
-    if (event->key() == Qt::Key_Escape) {
-      cancel_puppet_warp();
-      event->accept();
-      return;
-    }
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-      commit_puppet_warp();
-      event->accept();
-      return;
-    }
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
       remove_selected_puppet_pins();
       event->accept();
@@ -3404,30 +3393,22 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
     }
   }
 
-  if (warping_layer_) {
+  // Enter commits and Esc cancels the open modal session (the path transform
+  // and Perspective Warp answer both in their own key handlers above).
+  if (modal_session_active()) {
     if (event->key() == Qt::Key_Escape) {
-      cancel_warp_transform();
+      cancel_modal_session();
       event->accept();
       return;
     }
     if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-      commit_warp_transform();
+      commit_modal_session();
       event->accept();
       return;
     }
   }
 
   if (transforming_layer_) {
-    if (event->key() == Qt::Key_Escape) {
-      cancel_free_transform();
-      event->accept();
-      return;
-    }
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-      commit_free_transform();
-      event->accept();
-      return;
-    }
     // Arrow keys nudge the pending transform (box + preview together), the same way a
     // Move-handle drag does — never the destructive layer nudge below. Shift = 10px.
     // Auto-repeat is allowed (holding an arrow scrolls the box); the move is pending
@@ -3672,8 +3653,8 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   // deselects). Live drags without their own Escape branch (marquee, lasso,
   // move, shape, quick select) keep the selection intact.
   if (event->key() == Qt::Key_Escape && event->modifiers() == Qt::NoModifier && !event->isAutoRepeat() &&
-      document_ != nullptr && !pointer_gesture_active() && !transforming_layer_ && !warping_layer_ &&
-      !puppet_.active && (!selected_layer_ids_.empty() || document_->active_layer_id().has_value())) {
+      document_ != nullptr && !pointer_gesture_active() && !modal_session_active() &&
+      (!selected_layer_ids_.empty() || document_->active_layer_id().has_value())) {
     request_layer_deselection();
     event->accept();
     return;

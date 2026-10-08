@@ -62,8 +62,7 @@ bool CanvasWidget::begin_puppet_warp(const PuppetWarpOptions& options) {
   if (document_ == nullptr) {
     return false;
   }
-  finish_free_transform();
-  finish_warp_transform();
+  commit_modal_session();  // any other open session commits first
   auto* layer = active_pixel_layer();
   // Smart Objects are refused like Liquify (no native Puppet Warp Smart Filter is
   // authored); MainWindow offers Rasterize for text and shape layers first.

@@ -29,6 +29,7 @@
 #include <QMainWindow>
 #include <QPageLayout>
 #include <QPixmap>
+#include <QSet>
 #include <QPoint>
 #include <QPointer>
 #include <QRect>
@@ -431,8 +432,8 @@ private:
 
   friend class MainWindowTestAccess;
   // Layer dialogs (Shape Appearance, Layer Style, adjustment settings) refuse
-  // to open while a Free Transform, Warp, or path transform session is
-  // pending: their edits would land under the session's baked preview and
+  // to open while a modal canvas session (CanvasWidget::modal_session_active)
+  // is pending: their edits would land under the session's baked preview and
   // only surface at commit. Returns true (after a status message) when a
   // session blocks the dialog, like Photoshop greying those commands out.
   bool refuse_layer_dialog_during_transform();
@@ -1789,6 +1790,11 @@ private:
   void end_preview_dialog_edit_lock();
   [[nodiscard]] bool preview_dialog_edit_locked() const noexcept;
   [[nodiscard]] bool document_action_enabled_during_preview_lock(const QAction* action) const;
+  // True while the active canvas has a modal session open (Free Transform,
+  // Warp, Puppet Warp...): update_document_action_state then disables every
+  // document action outside modal_session_allowed_actions.
+  [[nodiscard]] bool modal_canvas_session_active() const;
+  [[nodiscard]] QSet<const QAction*> modal_session_allowed_actions() const;
   bool show_preview_dialog_edit_lock_message();
   void sync_brush_controls_from_canvas();
   void load_recent_files();
@@ -2300,6 +2306,9 @@ private:
   std::vector<QWidget*> document_widgets_;
   HotkeyRegistry hotkey_registry_;
   int preview_dialog_edit_lock_depth_{0};
+  // The modal-session state the document actions were last set for; the
+  // canvas's transform callback refreshes them when it flips.
+  bool modal_session_actions_locked_{false};
   bool scanner_import_active_{false};
   QPointer<QDialog> tile_preview_window_;
   QPointer<AnimationPreviewWindow> animation_preview_window_;

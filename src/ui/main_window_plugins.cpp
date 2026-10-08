@@ -445,7 +445,8 @@ void MainWindow::update_legacy_plugin_repeat_actions() {
   plugins_last_settings_action_->setText(available ? tr("%1 Settings...").arg(name) : tr("Last Plug-in Settings..."));
   // Not document actions: update_document_action_state would re-enable them
   // whenever a document is open; they also need a plug-in that ran.
-  const bool enabled = available && has_active_document() && !preview_dialog_edit_locked();
+  const bool enabled =
+      available && has_active_document() && !preview_dialog_edit_locked() && !modal_canvas_session_active();
   plugins_repeat_last_action_->setEnabled(enabled);
   plugins_last_settings_action_->setEnabled(enabled);
   refresh_action_tooltip(plugins_repeat_last_action_);

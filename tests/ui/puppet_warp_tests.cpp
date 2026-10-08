@@ -84,6 +84,9 @@ void ui_puppet_warp_pins_bend_layer_as_one_undo_step() {
   CHECK(window.findChild<QWidget*>(QStringLiteral("freeTransformApplyButton"))->isVisible());
   CHECK(!window.findChild<QWidget*>(QStringLiteral("transformWarpModeButton"))->isVisible());
   CHECK(canvas->puppet_warp_options().mode == patchy::PuppetWarpMode::Normal);
+  // Like Warp, the session greys document commands and Free Transform.
+  CHECK(!require_action(window, "imageAdjustInvertAction")->isEnabled());
+  CHECK(!require_action(window, "editFreeTransformAction")->isEnabled());
 
   // Clicks on the layer add pins; a click well off the mesh adds none.
   const QPointF left_end(45.5, 60.5);

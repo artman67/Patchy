@@ -2338,9 +2338,19 @@ void ui_transform_controls_finish_on_tool_layer_and_duplicate_changes() {
   QApplication::processEvents();
   CHECK(canvas->free_transform_active());
   const auto layers_before_duplicate = layer_list->count();
-  require_action(window, "layerDuplicateAction")->trigger();
+  // Duplicate waits for the session (Photoshop greys it); Enter commits first.
+  auto* duplicate = require_action(window, "layerDuplicateAction");
+  CHECK(!duplicate->isEnabled());
+  duplicate->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->free_transform_active());
+  CHECK(layer_list->count() == layers_before_duplicate);
+  send_key(*canvas, Qt::Key_Return);
   QApplication::processEvents();
   CHECK(!canvas->free_transform_active());
+  CHECK(duplicate->isEnabled());
+  duplicate->trigger();
+  QApplication::processEvents();
   CHECK(layer_list->count() == layers_before_duplicate + 1);
   CHECK(layer_list->selectedItems().size() == 1);
   const auto duplicated = canvas->active_layer_document_rect();

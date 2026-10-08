@@ -286,7 +286,6 @@ void CanvasWidget::set_document_internal(Document* document, bool preserve_frame
   reset_axis_constrained_stroke();
   deferred_wait_release_.reset();
   cancel_pen_path();  // an in-flight path belongs to the outgoing document
-  cancel_path_transform();
   clear_preview_scaled_document();
   preview_scale_cache_.reset();
   clear_transform_commit_hold();  // a held commit frame belongs to the outgoing state
@@ -339,14 +338,7 @@ void CanvasWidget::set_document_internal(Document* document, bool preserve_frame
           ? layer_edit_target_
           : LayerEditTarget::Content;
   const auto restore_channel_display_mode = mask_display_mode_;
-  cancel_free_transform();
-  if (warping_layer_) {
-    reset_warp_state();
-  }
-  if (puppet_.active) {
-    reset_puppet_warp_state();
-  }
-  reset_perspective_warp_state();
+  discard_modal_session();
   cancel_move_layer_selection();
   move_drag_pending_ = false;
   moving_layer_ = false;
@@ -448,11 +440,7 @@ void CanvasWidget::set_tool(CanvasTool tool) {
     // A pending crop cancels on tool switch (never commits): an accidental
     // switch must not resize the document.
     cancel_crop_session();
-    commit_path_transform();  // tool switches commit, like the pen session
-    finish_free_transform();
-    finish_warp_transform();
-    finish_puppet_warp();
-    finish_perspective_warp();
+    commit_modal_session();  // tool switches commit, like the pen session
     cancel_move_layer_selection();
     move_drag_pending_ = false;
     moving_layer_ = false;
@@ -538,6 +526,162 @@ void CanvasWidget::set_edit_locked(bool locked) noexcept {
   }
   update_tool_cursor();
   update();
+}
+
+// --- Modal editing sessions (see ModalSession in the header) ---
+
+CanvasWidget::ModalSession CanvasWidget::modal_session() const noexcept {
+  if (transforming_layer_) {
+    return ModalSession::FreeTransform;
+  }
+  if (warping_layer_) {
+    return ModalSession::Warp;
+  }
+  if (path_transform_active_) {
+    return ModalSession::PathTransform;
+  }
+  if (puppet_.active) {
+    return ModalSession::PuppetWarp;
+  }
+  if (perspective_warp_.has_value()) {
+    return ModalSession::PerspectiveWarp;
+  }
+  return ModalSession::None;
+}
+
+bool CanvasWidget::modal_session_active() const noexcept {
+  return modal_session() != ModalSession::None;
+}
+
+bool CanvasWidget::layer_transform_session_active() const noexcept {
+  switch (modal_session()) {
+    case ModalSession::FreeTransform:
+    case ModalSession::Warp:
+    case ModalSession::PuppetWarp:
+    case ModalSession::PerspectiveWarp:
+      return true;
+    case ModalSession::None:
+    case ModalSession::PathTransform:
+      return false;
+  }
+  return false;
+}
+
+void CanvasWidget::commit_modal_session() {
+  switch (modal_session()) {
+    case ModalSession::None:
+      break;
+    case ModalSession::FreeTransform:
+      finish_free_transform();
+      break;
+    case ModalSession::Warp:
+      finish_warp_transform();
+      break;
+    case ModalSession::PathTransform:
+      commit_path_transform();
+      break;
+    case ModalSession::PuppetWarp:
+      finish_puppet_warp();
+      break;
+    case ModalSession::PerspectiveWarp:
+      finish_perspective_warp();
+      break;
+  }
+}
+
+void CanvasWidget::cancel_modal_session() {
+  switch (modal_session()) {
+    case ModalSession::None:
+      break;
+    case ModalSession::FreeTransform:
+      cancel_free_transform();
+      break;
+    case ModalSession::Warp:
+      cancel_warp_transform();
+      break;
+    case ModalSession::PathTransform:
+      cancel_path_transform();
+      break;
+    case ModalSession::PuppetWarp:
+      cancel_puppet_warp();
+      break;
+    case ModalSession::PerspectiveWarp:
+      cancel_perspective_warp();
+      break;
+  }
+}
+
+void CanvasWidget::discard_modal_session() {
+  switch (modal_session()) {
+    case ModalSession::None:
+      break;
+    case ModalSession::FreeTransform:
+      cancel_free_transform();
+      break;
+    case ModalSession::Warp:
+      reset_warp_state();  // silently: the warp belonged to the outgoing document
+      break;
+    case ModalSession::PathTransform:
+      cancel_path_transform();
+      break;
+    case ModalSession::PuppetWarp:
+      reset_puppet_warp_state();
+      break;
+    case ModalSession::PerspectiveWarp:
+      reset_perspective_warp_state();
+      break;
+  }
+}
+
+bool CanvasWidget::modal_session_owns_history() const noexcept {
+  switch (modal_session()) {
+    case ModalSession::PuppetWarp:
+    case ModalSession::PerspectiveWarp:
+      return true;
+    case ModalSession::None:
+    case ModalSession::FreeTransform:
+    case ModalSession::Warp:
+    case ModalSession::PathTransform:
+      return false;
+  }
+  return false;
+}
+
+bool CanvasWidget::modal_session_can_step_history(bool backward) const noexcept {
+  switch (modal_session()) {
+    case ModalSession::PuppetWarp:
+      return backward ? puppet_warp_can_undo() : puppet_warp_can_redo();
+    case ModalSession::PerspectiveWarp:
+      return backward;  // Undo stays live (a no-op with no quad step left); no Redo
+    case ModalSession::None:
+    case ModalSession::FreeTransform:
+    case ModalSession::Warp:
+    case ModalSession::PathTransform:
+      return false;
+  }
+  return false;
+}
+
+void CanvasWidget::step_modal_session_history(bool backward) {
+  switch (modal_session()) {
+    case ModalSession::PuppetWarp:
+      if (backward) {
+        undo_puppet_warp_step();
+      } else {
+        redo_puppet_warp_step();
+      }
+      break;
+    case ModalSession::PerspectiveWarp:
+      if (backward) {
+        undo_perspective_warp_step();
+      }
+      break;
+    case ModalSession::None:
+    case ModalSession::FreeTransform:
+    case ModalSession::Warp:
+    case ModalSession::PathTransform:
+      break;
+  }
 }
 
 bool CanvasWidget::edit_locked() const noexcept {
