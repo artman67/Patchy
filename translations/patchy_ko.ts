@@ -10435,6 +10435,46 @@ RGB: %2, %3, %4</translation>
         <source>Crop box reset to the canvas</source>
         <translation>자르기 상자를 캔버스로 재설정했습니다</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>원근 뒤틀기를 사용하기 전에 스마트 개체를 래스터화하세요</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>드래그하여 각 평면 위에 사각형을 그린 다음 뒤틀기를 선택합니다. Enter는 적용하고 Esc는 취소합니다.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>원근 뒤틀기</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>원근 뒤틀기를 적용했습니다</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>원근 뒤틀기를 취소했습니다</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>뒤틀기로 전환하기 전에 사각형을 그리세요</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>사각형 모서리를 드래그합니다. Enter는 적용하고 Esc는 취소합니다.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>곧게 펼 사각형을 선택하세요</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>곧게 펴면 이 사각형이 접히거나 다른 사각형에 닿게 됩니다</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>사각형은 서로 닿거나 겹칠 수 없습니다. 평면 사이에 간격을 두세요.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18602,6 +18642,62 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>원근 뒤틀기</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>레이아웃</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>이미지의 평면 위에 사각형 그리기</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>뒤틀기</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>사각형 모서리를 드래그하여 원근 변경</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>선택한 사각형의 거의 수직인 변을 수직으로 만들기</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>선택한 사각형의 거의 수평인 변을 수평으로 만들기</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>선택한 사각형의 변을 수직 및 수평으로 만들기</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>모든 사각형 제거</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>모든 사각형을 제거하고 레이아웃을 다시 시작</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>원근 뒤틀기 적용</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>원근 뒤틀기 취소</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>빠른 마스크 모드에서는 원근 뒤틀기를 사용할 수 없습니다</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>원근 뒤틀기를 사용하기 전에 스마트 개체를 래스터화하세요</translation>
     </message>
 </context>
 <context>

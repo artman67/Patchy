@@ -3603,31 +3603,36 @@ bool CanvasWidget::prepare_warp_source() {
   // resample_warped_rgba8 converts its source to RGBA8888 on every call;
   // converting once here makes the per-move conversion a no-op.
   warp_source_image_ = warp_source_image_.convertToFormat(QImage::Format_RGBA8888);
-  if (warp_base_cache_.isNull()) {
-    // Hidden via render overrides (set_visible toggles bumped revisions and
-    // cold-invalidated the style-mask caches), banded across workers, and at
-    // zoom <= 50% composited from the preview-scaled document.
-    warp_base_cache_scale_level_ = 0;
-    const std::vector<LayerId> hidden{*warp_layer_id_};
-    if (const auto composite_level = preview_composite_level_for_zoom(view_zoom()); composite_level >= 1) {
-      if (auto* scaled_document = preview_scaled_document_for_level(composite_level)) {
-        const QRect scaled_canvas(0, 0, scaled_document->width(), scaled_document->height());
-        auto base = qimage_from_document_rect_with_hidden_layers_banded(*scaled_document, scaled_canvas, true, hidden)
-                        .convertToFormat(QImage::Format_RGBA8888);
-        if (!base.isNull()) {
-          warp_base_cache_ = std::move(base);
-          warp_base_cache_scale_level_ = composite_level;
-        }
-      }
-    }
-    if (warp_base_cache_.isNull()) {
-      const QRect canvas_rect(0, 0, document_->width(), document_->height());
-      warp_base_cache_ = qimage_from_document_rect_with_hidden_layers_banded(*document_, canvas_rect, true, hidden)
-                             .convertToFormat(QImage::Format_RGBA8888);
-    }
-  }
+  ensure_warp_base_cache(*warp_layer_id_);
   refresh_warp_preview_cache();
   return true;
+}
+
+void CanvasWidget::ensure_warp_base_cache(LayerId hidden_layer_id) {
+  if (!warp_base_cache_.isNull() || document_ == nullptr) {
+    return;
+  }
+  // Hidden via render overrides (set_visible toggles bumped revisions and
+  // cold-invalidated the style-mask caches), banded across workers, and at
+  // zoom <= 50% composited from the preview-scaled document.
+  warp_base_cache_scale_level_ = 0;
+  const std::vector<LayerId> hidden{hidden_layer_id};
+  if (const auto composite_level = preview_composite_level_for_zoom(view_zoom()); composite_level >= 1) {
+    if (auto* scaled_document = preview_scaled_document_for_level(composite_level)) {
+      const QRect scaled_canvas(0, 0, scaled_document->width(), scaled_document->height());
+      auto base = qimage_from_document_rect_with_hidden_layers_banded(*scaled_document, scaled_canvas, true, hidden)
+                      .convertToFormat(QImage::Format_RGBA8888);
+      if (!base.isNull()) {
+        warp_base_cache_ = std::move(base);
+        warp_base_cache_scale_level_ = composite_level;
+      }
+    }
+  }
+  if (warp_base_cache_.isNull()) {
+    const QRect canvas_rect(0, 0, document_->width(), document_->height());
+    warp_base_cache_ = qimage_from_document_rect_with_hidden_layers_banded(*document_, canvas_rect, true, hidden)
+                           .convertToFormat(QImage::Format_RGBA8888);
+  }
 }
 
 std::array<double, 8> CanvasWidget::warp_document_quad() const {
@@ -3653,25 +3658,30 @@ void CanvasWidget::refresh_warp_preview_cache() {
     return;
   }
   const auto warped = resample_warped_rgba8(warp_source_image_, *grid, transform_interpolation_);
-  if (warped.image.isNull()) {
+  set_warp_preview_patches(*warp_layer_id_, warped.image, warped.bounds);
+}
+
+void CanvasWidget::set_warp_preview_patches(LayerId layer_id, const QImage& warped_image, Rect warped_bounds) {
+  warp_preview_patches_.clear();
+  if (document_ == nullptr || warped_image.isNull()) {
     return;
   }
-  const auto* layer = std::as_const(*document_).find_layer(*warp_layer_id_);
+  const auto* layer = std::as_const(*document_).find_layer(layer_id);
   if (layer == nullptr) {
     return;
   }
-  const auto warped_pixels = pixels_from_image_rgba(warped.image);
+  const auto warped_pixels = pixels_from_image_rgba(warped_image);
   // Region-limited over the base cache (which excludes the layer): the warped
   // content only contributes inside its own effect bounds, so recompositing
   // the whole document per handle move - the warp drag's dominant cost - is
   // replaced by one bounded patch render.
   const QRect canvas_rect(0, 0, document_->width(), document_->height());
-  const auto patch_rect = to_qrect(layer_bounds_with_effects(*layer, warped.bounds)).intersected(canvas_rect);
+  const auto patch_rect = to_qrect(layer_bounds_with_effects(*layer, warped_bounds)).intersected(canvas_rect);
   if (patch_rect.isEmpty()) {
     return;
   }
   warp_preview_patches_ = qimage_patches_from_document_region_with_layer_pixels(
-      *document_, QRegion(patch_rect), true, *warp_layer_id_, warped_pixels, warped.bounds);
+      *document_, QRegion(patch_rect), true, layer_id, warped_pixels, warped_bounds);
   for (auto& patch : warp_preview_patches_) {
     patch.image = patch.image.convertToFormat(QImage::Format_RGBA8888);
   }
@@ -3820,12 +3830,16 @@ void CanvasWidget::reset_warp_state() {
   warp_style_ = QStringLiteral("warpCustom");
   warp_style_value_ = 0.0;
   warp_source_image_ = QImage();
+  clear_warp_preview();
+  warp_entry_changed_ = false;
+}
+
+void CanvasWidget::clear_warp_preview() {
   warp_base_cache_ = QImage();
   warp_base_cache_scale_level_ = 0;
   warp_base_display_mip_cache_.clear();
   warp_base_display_mip_source_key_ = 0;
   warp_preview_patches_.clear();
-  warp_entry_changed_ = false;
 }
 
 bool CanvasWidget::bake_warp_into_layer(Layer& layer, const WarpMeshGrid& mesh,

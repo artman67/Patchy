@@ -10495,6 +10495,46 @@ RGB: %2, %3, %4</translation>
         <source>Crop box reset to the canvas</source>
         <translation>Ramka kadrowania przywrócona do obszaru roboczego</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Przed użyciem funkcji Wypaczenie perspektywy zrasteryzuj obiekt inteligentny</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Przeciągnij, aby narysować czworokąt na każdej płaszczyźnie, a następnie wybierz Wypaczenie. Enter zatwierdza, Esc anuluje.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Wypaczenie perspektywy</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Zastosowano wypaczenie perspektywy</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Anulowano wypaczenie perspektywy</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Narysuj czworokąt przed przełączeniem na Wypaczenie</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Przeciągnij narożniki czworokątów. Enter zatwierdza, Esc anuluje.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Zaznacz czworokąt do wyprostowania</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Wyprostowanie złożyłoby ten czworokąt lub zetknęło go z innym czworokątem</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>Czworokąty nie mogą się stykać ani nakładać. Zostaw odstęp między płaszczyznami.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18714,6 +18754,62 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Wysokość ramki kadrowania</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Wypaczenie perspektywy</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Układ</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Narysuj czworokąty na płaszczyznach obrazu</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Wypaczenie</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Przeciągnij narożniki czworokątów, aby zmienić perspektywę</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Ustaw pionowo prawie pionowe boki zaznaczonego czworokąta</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Ustaw poziomo prawie poziome boki zaznaczonego czworokąta</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Ustaw pionowo i poziomo boki zaznaczonego czworokąta</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Usuń wszystkie czworokąty</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Usuń wszystkie czworokąty i zacznij układ od nowa</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Zastosuj wypaczenie perspektywy</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Anuluj wypaczenie perspektywy</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>Wypaczenie perspektywy jest niedostępne w trybie szybkiej maski</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Przed użyciem funkcji Wypaczenie perspektywy zrasteryzuj obiekt inteligentny</translation>
     </message>
 </context>
 <context>

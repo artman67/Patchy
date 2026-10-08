@@ -10454,6 +10454,46 @@ RGB: %2, %3, %4</source>
         <source>Crop box reset to the canvas</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18607,6 +18647,62 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Height of the crop box</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

@@ -215,7 +215,7 @@ bool CanvasWidget::show_canvas_context_menu(QPoint widget_point, QPoint global_p
   close_canvas_context_menu();
   reap_retired_context_menus();
   if (document_ == nullptr || pointer_gesture_active() || transforming_layer_ || warping_layer_ ||
-      path_transform_active_) {
+      path_transform_active_ || perspective_warp_.has_value()) {
     return false;
   }
   if (path_edit_tool_active() && show_path_context_menu(QPointF(widget_point), global_position)) {

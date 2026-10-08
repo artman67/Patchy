@@ -8563,6 +8563,7 @@ void MainWindow::configure_canvas(CanvasWidget* canvas) {
   canvas->set_transform_controls_changed_callback([this, canvas] {
     if (canvas == canvas_) {
       refresh_options_bar();
+      update_undo_redo_actions();  // Perspective Warp sessions own Undo
     }
   });
   canvas->set_smart_object_transform_render_callback([this, canvas](LayerId id) -> bool {
@@ -13649,7 +13650,7 @@ bool MainWindow::refuse_layer_dialog_during_transform() {
     return false;
   }
   if (!canvas_->free_transform_active() && !canvas_->warp_transform_active() &&
-      !canvas_->path_transform_active()) {
+      !canvas_->path_transform_active() && !canvas_->perspective_warp_active()) {
     return false;
   }
   show_status_error(tr("Finish the transform first: press Enter to apply it or Esc to cancel it"));
@@ -13738,6 +13739,7 @@ void MainWindow::update_document_action_state() {
     for (const auto& id : {QStringLiteral("edit.cut"), QStringLiteral("edit.copy"),
                            QStringLiteral("edit.copy_merged"), QStringLiteral("edit.paste"),
                            QStringLiteral("edit.free_transform"), QStringLiteral("edit.warp_transform"),
+                           QStringLiteral("edit.perspective_warp"),
                            QStringLiteral("layer.flip_horizontal"), QStringLiteral("layer.flip_vertical"),
                            QStringLiteral("layer.align_left"), QStringLiteral("layer.align_horizontal_centers"),
                            QStringLiteral("layer.align_right"), QStringLiteral("layer.align_top"),
