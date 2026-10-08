@@ -272,6 +272,63 @@ are not supported by this tool yet.
 
 ---
 
+## pr/puppet-warp
+
+Title: Add Puppet Warp, built on moving least squares
+
+Bending a figure into a new pose (raise an arm, tilt a head) is what Puppet Warp is for, and
+Patchy only had the grid Warp. This adds Edit > Puppet Warp: click to drop pins on the layer,
+drag pins to bend it, and pins you don't touch hold still. The options bar has Mode (Rigid,
+Normal, Distort), Density, Expansion, Show Mesh, Pin Depth, Rotate (Auto or Fixed with an angle)
+and Remove All Pins. Enter applies as one undo step, Esc cancels, and Ctrl+Z inside the session
+steps back pin moves. Smart Objects are refused, as Liquify does.
+
+The patent situation drives the design, and docs/puppet-warp.md has the claim-level record. The
+usual as-rigid-as-possible triangle-mesh solver (Igarashi 2005) is covered in the US by
+University of Tokyo US 8063917 until about 2027-08-07, so this uses moving least squares
+(Schaefer, McPhail, Warren 2006) on a grid instead, in closed form per node. Its rigid,
+similarity and affine forms map onto Rigid, Normal and Distort. Pin rotation and depth live only
+in the options bar: Adobe's patents cover a pop-up next to a pin and a rotation ring around it.
+There are no automatic pins. Rendering goes through the existing warp renderer and keeps its
+exact cell inverse; the renderer gained an optional cell order so pin depth can decide what
+draws in front.
+
+Trade-off: weights use straight-line distance, so a pin can pull a nearby part it isn't attached
+to (a head near a raised arm tilts a little). Pins are not saved in the PSD. Whether "Puppet
+Warp" as a menu name raises a trademark question has not been checked.
+
+If Perspective Warp lands first, rebase this: both PRs pull the warp preview helpers out of
+canvas_widget_transform.cpp into shared functions (`build_warp_base_cache` here,
+`ensure_warp_base_cache` there, and the same `set_warp_preview_patches`). Keep one.
+
+---
+
+## pr/perspective-warp
+
+Title: Add Perspective Warp with separate planes
+
+Straightening converging verticals on a building, or fitting an object into a scene's perspective,
+is what Perspective Warp does, and Patchy had no tool for it. This adds Edit > Perspective Warp.
+In Layout mode you draw a box over each flat surface and pull its corners onto the surface's
+edges. In Warp mode you drag corners: each box bends by its own exact perspective, and the rest
+of the layer follows smoothly through the existing healing membrane solver. Three one-click
+buttons stand a box's leaning sides upright, level them, or both. Enter applies as one undo step,
+Esc cancels, and Ctrl+Z inside the session steps back the last box edit.
+
+Patent limits shape it, recorded in docs/perspective-warp.md: boxes must stay at least 4 px apart
+(Adobe US 9196096 and US 9805499 cover shared-edge planes and their seam fixing, to 2033), and
+there are no "keep this edge straight" locks (Adobe US 9117253, to 2033), vanishing-point handles
+or line detection. The straighten buttons move only that box's own corners once and leave nothing
+locked. So two faces of a building are two boxes with a small gap that blends. Smart Objects are
+refused. Not built: dragging a whole box, Redo inside the session, 16 and 32-bit layers.
+
+Known upstream gap this inherits from Warp Transform: menu commands such as filters are not
+blocked while the session is open.
+
+See the note under pr/puppet-warp about the shared warp preview helpers.
+
+---
+
 Drafted by Claude Opus 5.5 in Claude Code (running in T3 Code), for JT to review and edit before
 filing. Whether to keep this note on the PRs themselves is JT's call: Seth's README says he
 deletes AI-smelling PRs.
