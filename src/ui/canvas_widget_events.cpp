@@ -623,8 +623,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     // canvas context menu (show_canvas_context_menu), a drag opens nothing.
     if (event->buttons() == Qt::RightButton && document_ != nullptr && !spacebar_panning_ &&
         !handling_tablet_event_ && !pen_recently_in_proximity() && !pointer_gesture_active() &&
-        !modal_session_active() && !puppet_.active && !perspective_warp_.has_value() &&
-        (event->modifiers() & Qt::AltModifier) == 0) {
+        !modal_session_active() && (event->modifiers() & Qt::AltModifier) == 0) {
       context_press_pos_ = event->pos();
     }
     event->accept();
@@ -3387,16 +3386,6 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   }
 
   if (puppet_.active) {
-    if (event->key() == Qt::Key_Escape) {
-      cancel_puppet_warp();
-      event->accept();
-      return;
-    }
-    if (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) {
-      commit_puppet_warp();
-      event->accept();
-      return;
-    }
     if (event->key() == Qt::Key_Delete || event->key() == Qt::Key_Backspace) {
       remove_selected_puppet_pins();
       event->accept();
@@ -3405,7 +3394,7 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   }
 
   // Enter commits and Esc cancels the open modal session (the path transform
-  // answers both in handle_path_edit_key above).
+  // and Perspective Warp answer both in their own key handlers above).
   if (modal_session_active()) {
     if (event->key() == Qt::Key_Escape) {
       cancel_modal_session();
@@ -3664,7 +3653,7 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   // deselects). Live drags without their own Escape branch (marquee, lasso,
   // move, shape, quick select) keep the selection intact.
   if (event->key() == Qt::Key_Escape && event->modifiers() == Qt::NoModifier && !event->isAutoRepeat() &&
-      document_ != nullptr && !pointer_gesture_active() && !modal_session_active() && !puppet_.active &&
+      document_ != nullptr && !pointer_gesture_active() && !modal_session_active() &&
       (!selected_layer_ids_.empty() || document_->active_layer_id().has_value())) {
     request_layer_deselection();
     event->accept();

@@ -55,9 +55,8 @@ bool CanvasWidget::begin_perspective_warp() {
     report_status_error(tr("Select an editable pixel layer to warp"));
     return false;
   }
-  // An open transform session commits first, as a tool switch does.
-  finish_free_transform();
-  finish_warp_transform();
+  // An open session commits first, as a tool switch does.
+  commit_modal_session();
   const auto* layer = active_pixel_layer();
   if (layer != nullptr && layer_is_smart_object(*layer)) {
     // No calibrated Photoshop smart-filter descriptor exists for it (Liquify rule).

@@ -1785,7 +1785,7 @@ private:
   [[nodiscard]] bool preview_dialog_edit_locked() const noexcept;
   [[nodiscard]] bool document_action_enabled_during_preview_lock(const QAction* action) const;
   // True while the active canvas has a modal session open (Free Transform,
-  // Warp, path transform): update_document_action_state then disables every
+  // Warp, Puppet Warp...): update_document_action_state then disables every
   // document action outside modal_session_allowed_actions.
   [[nodiscard]] bool modal_canvas_session_active() const;
   [[nodiscard]] QSet<const QAction*> modal_session_allowed_actions() const;

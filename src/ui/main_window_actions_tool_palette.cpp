@@ -1183,7 +1183,6 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
     if (canvas_->layer_transform_session_active()) {
       canvas_->commit_modal_session();
     }
-    canvas_->finish_puppet_warp();
     if (selected != CanvasTool::Text) {
       finish_active_text_editor();
     }

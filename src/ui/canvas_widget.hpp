@@ -998,13 +998,14 @@ public:
   bool begin_path_transform();
   void commit_path_transform();
   void cancel_path_transform();
-  // Modal editing sessions: Free Transform, Warp Transform and the path
-  // transform. At most one is open, and while it is it owns the canvas: Enter
-  // commits it, Esc cancels it, a tool switch commits it, a document switch
-  // discards it, the canvas context menu stays shut, and MainWindow treats the
-  // document as busy. A new session adds a value here and a case to each
-  // switch in canvas_widget.cpp's session block (-Wswitch lists them).
-  enum class ModalSession { None, FreeTransform, Warp, PathTransform };
+  // Modal editing sessions: Free Transform, Warp Transform, the path
+  // transform, Puppet Warp and Perspective Warp. At most one is open, and while
+  // it is it owns the canvas: Enter commits it, Esc cancels it, a tool switch
+  // commits it, a document switch discards it, the canvas context menu stays
+  // shut, and MainWindow treats the document as busy. A new session adds a
+  // value here and a case to each switch in canvas_widget.cpp's session block
+  // (-Wswitch lists them).
+  enum class ModalSession { None, FreeTransform, Warp, PathTransform, PuppetWarp, PerspectiveWarp };
   [[nodiscard]] ModalSession modal_session() const noexcept;
   [[nodiscard]] bool modal_session_active() const noexcept;
   // The sessions that rework a pixel layer and draw its preview themselves
@@ -1012,6 +1013,12 @@ public:
   [[nodiscard]] bool layer_transform_session_active() const noexcept;
   void commit_modal_session();
   void cancel_modal_session();
+  // Puppet Warp pins and Perspective Warp quads keep their own step history:
+  // while such a session is open, Undo and Redo step it and the document
+  // history waits.
+  [[nodiscard]] bool modal_session_owns_history() const noexcept;
+  [[nodiscard]] bool modal_session_can_step_history(bool backward) const noexcept;
+  void step_modal_session_history(bool backward);
   // Rounded-corner radius for the rectangular marquee (0 = sharp corners).
   void set_marquee_corner_radius(int pixels) noexcept;
   [[nodiscard]] int marquee_corner_radius() const noexcept;

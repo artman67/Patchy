@@ -98,6 +98,9 @@ void ui_perspective_warp_session_commits_one_undo_step_and_escape_restores() {
   CHECK(warp_button != nullptr && warp_button->isVisible() && !warp_button->isChecked());
   CHECK(straighten != nullptr && !straighten->isVisible());
   CHECK(remove_all != nullptr && remove_all->isVisible() && !remove_all->isEnabled());
+  // Like Warp, the session greys document commands and Free Transform.
+  CHECK(!require_action(window, "imageAdjustInvertAction")->isEnabled());
+  CHECK(!require_action(window, "editFreeTransformAction")->isEnabled());
   CHECK(window.findChild<QPushButton*>(QStringLiteral("perspectiveWarpApplyButton"))->isVisible());
 
   // Warp needs a quad. Dragging on the canvas lays one out; a second one that

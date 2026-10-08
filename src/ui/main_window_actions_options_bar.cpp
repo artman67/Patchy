@@ -1256,21 +1256,13 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     if (canvas_ == nullptr) {
       return;
     }
-    if (canvas_->puppet_warp_active()) {
-      canvas_->finish_puppet_warp();
-    } else {
-      canvas_->commit_modal_session();
-    }
+    canvas_->commit_modal_session();
   });
   connect(transform_cancel_button_, &QPushButton::clicked, this, [this] {
     if (canvas_ == nullptr) {
       return;
     }
-    if (canvas_->puppet_warp_active()) {
-      canvas_->cancel_puppet_warp();
-    } else {
-      canvas_->cancel_modal_session();
-    }
+    canvas_->cancel_modal_session();
   });
 
   // Perspective Warp session row (Edit > Perspective Warp): the Layout/Warp mode

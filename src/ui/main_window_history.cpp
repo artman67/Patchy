@@ -538,14 +538,9 @@ void MainWindow::undo() {
   if (canvas_ == nullptr || canvas_->pointer_gesture_active()) {
     return;
   }
-  if (canvas_->puppet_warp_active()) {
-    // Inside Puppet Warp, Undo steps back through pin edits only (Photoshop).
-    canvas_->undo_puppet_warp_step();
-    return;
-  }
-  if (canvas_->perspective_warp_active()) {
-    // The session keeps its own quad history; the document history waits.
-    canvas_->undo_perspective_warp_step();
+  if (canvas_->modal_session_owns_history()) {
+    // Puppet and Perspective Warp step their own pin/quad edits (Photoshop).
+    canvas_->step_modal_session_history(/*backward=*/true);
     return;
   }
   finish_pending_shape_appearance_edit();
@@ -565,11 +560,11 @@ void MainWindow::undo() {
 }
 
 void MainWindow::redo() {
-  if (canvas_ == nullptr || canvas_->pointer_gesture_active() || canvas_->perspective_warp_active()) {
+  if (canvas_ == nullptr || canvas_->pointer_gesture_active()) {
     return;
   }
-  if (canvas_->puppet_warp_active()) {
-    canvas_->redo_puppet_warp_step();
+  if (canvas_->modal_session_owns_history()) {
+    canvas_->step_modal_session_history(/*backward=*/false);
     return;
   }
   finish_pending_shape_appearance_edit();
@@ -941,15 +936,16 @@ void MainWindow::update_undo_redo_actions() {
     }
     return;
   }
-  const bool puppet = canvas_ != nullptr && canvas_->puppet_warp_active();
-  // A Perspective Warp session answers Undo from its own quad history (see
-  // undo()); the document's Redo waits until the session ends.
-  const bool perspective_session = canvas_ != nullptr && canvas_->perspective_warp_active();
+  // A session with its own step history answers Undo/Redo (see undo()); the
+  // document history waits until it ends.
+  const bool session_history = canvas_ != nullptr && canvas_->modal_session_owns_history();
   if (undo_action_ != nullptr) {
-    undo_action_->setEnabled(puppet ? canvas_->puppet_warp_can_undo() : perspective_session || !current_session->undo_stack.empty());
+    undo_action_->setEnabled(session_history ? canvas_->modal_session_can_step_history(/*backward=*/true)
+                                             : !current_session->undo_stack.empty());
   }
   if (redo_action_ != nullptr) {
-    redo_action_->setEnabled(puppet ? canvas_->puppet_warp_can_redo() : !perspective_session && !current_session->redo_stack.empty());
+    redo_action_->setEnabled(session_history ? canvas_->modal_session_can_step_history(/*backward=*/false)
+                                             : !current_session->redo_stack.empty());
   }
 }
 

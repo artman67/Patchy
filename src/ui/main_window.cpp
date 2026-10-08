@@ -10356,7 +10356,7 @@ void MainWindow::open_text_character_dialog() {
 
 std::vector<LayerId> MainWindow::text_character_target_layer_ids() const {
   if (canvas_ == nullptr || !has_active_document() || preview_dialog_edit_locked() ||
-      canvas_->layer_transform_session_active() || canvas_->puppet_warp_active()) {
+      canvas_->layer_transform_session_active()) {
     return {};
   }
   // The active layer leads so text_character_target_layer() keeps answering what the panel
@@ -13685,16 +13685,22 @@ bool MainWindow::modal_canvas_session_active() const {
 QSet<const QAction*> MainWindow::modal_session_allowed_actions() const {
   // Tools (picking one commits the session), colors, brush size, view and
   // window commands, the session's own mode switches, and closing the document.
+  // Puppet and Perspective Warp have no mode switch: Free Transform or Warp
+  // would open a second session over them.
+  const auto session = canvas_ != nullptr ? canvas_->modal_session() : CanvasWidget::ModalSession::None;
+  const bool transform_mode_switches =
+      session != CanvasWidget::ModalSession::PuppetWarp && session != CanvasWidget::ModalSession::PerspectiveWarp;
   QSet<const QAction*> allowed;
   for (const auto& command : hotkey_registry_.commands()) {
     if (command.action == nullptr) {
       continue;
     }
+    const bool mode_switch =
+        command.id == QStringLiteral("edit.free_transform") || command.id == QStringLiteral("edit.warp_transform");
     if (command.category == QStringLiteral("tools") || command.category == QStringLiteral("color") ||
         command.category == QStringLiteral("brush") || command.id.startsWith(QStringLiteral("view.")) ||
-        command.id.startsWith(QStringLiteral("window.")) || command.id == QStringLiteral("edit.free_transform") ||
-        command.id == QStringLiteral("edit.warp_transform") || command.id == QStringLiteral("file.close") ||
-        command.id == QStringLiteral("file.close_all")) {
+        command.id.startsWith(QStringLiteral("window.")) || (mode_switch && transform_mode_switches) ||
+        command.id == QStringLiteral("file.close") || command.id == QStringLiteral("file.close_all")) {
       allowed.insert(command.action);
     }
   }
@@ -13710,8 +13716,7 @@ bool MainWindow::refuse_layer_dialog_during_transform() {
   if (canvas_ == nullptr) {
     return false;
   }
-  if (!canvas_->modal_session_active() && !canvas_->puppet_warp_active() &&
-      !canvas_->perspective_warp_active()) {
+  if (!canvas_->modal_session_active()) {
     return false;
   }
   show_status_error(tr("Finish the transform first: press Enter to apply it or Esc to cancel it"));
