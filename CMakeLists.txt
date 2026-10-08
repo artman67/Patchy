@@ -1229,6 +1229,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/legacy_plugin_folder.cpp
       src/ui/tool_cursors.hpp
       src/ui/tool_cursors.cpp
+      src/ui/tool_traits.hpp
+      src/ui/tool_traits.cpp
       src/ui/single_instance.hpp
       src/ui/single_instance.cpp
       src/ui/update_checker.hpp

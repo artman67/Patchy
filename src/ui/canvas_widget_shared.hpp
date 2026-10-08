@@ -11,6 +11,7 @@
 #include "core/layer.hpp"
 #include "core/pixel_tools.hpp"
 #include "ui/canvas_widget.hpp"
+#include "ui/tool_traits.hpp"
 
 #include <QColor>
 #include <QImage>
@@ -200,32 +201,10 @@ constexpr double kSelectionCursorHaloWidth = kSelectionCursorWidth + 2.0;  // +1
 // quick_select_cursor in canvas_widget.cpp.
 void paint_selection_mode_badge(QPainter& painter, CanvasWidget::SelectionMode mode, QPointF center);
 
-// Whether Alt+Left temporarily turns the tool into the color picker; shared by
-// the event code in canvas_widget.cpp and update_tool_cursor in the cursors TU.
-bool tool_uses_alt_left_for_color_pick(CanvasTool tool) noexcept;
-
 // Clamps a document-space point onto the canvas; shared by the event/lasso/
 // zoom code in canvas_widget.cpp and pop_magnetic_anchor in the
 // selection-engines TU.
 QPoint clamped_document_point(const Document& document, QPoint point);
-
-// Whether the tool accepts the Alt+Right-drag brush size/softness gesture;
-// shared by the mouse event code in canvas_widget.cpp and
-// dispatch_tablet_as_mouse in the pen TU.
-bool tool_supports_brush_adjust_drag(CanvasTool tool) noexcept;
-
-// Paint/retouch tools that show the round Size/Soft footprint cursor; past the
-// ~155px display cap they switch to a crosshair plus the canvas-overlay outline
-// (OS/browser cursor pixmaps cannot grow unbounded). Shared by
-// update_tool_cursor in the cursors TU and the hover-outline gates in the brush
-// TU. Quick Select joins the overlay through its own size/cursor path.
-bool tool_uses_brush_footprint_cursor(CanvasTool tool) noexcept;
-
-// Tools whose strokes stamp the active bitmap brush tip; only their cursor and
-// overlay outline trace the tip shape. Every other footprint tool strokes
-// procedurally, so its outline stays the procedural circle even while a tip is
-// selected. Shared by the cursors and brush TUs.
-bool tool_paints_with_brush_tip(CanvasTool tool) noexcept;
 
 // PATCHY_ZOOM_TRACE=1 prints paint/zoom phase timings over 2 ms to stderr (the
 // PATCHY_REV_TRACE pattern): run the real app with it set to attribute slow

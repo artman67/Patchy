@@ -2635,11 +2635,11 @@ void MainWindow::sync_crop_ratio_preset_combo() {
   crop_ratio_preset_combo_->setCurrentIndex(custom_index);
 }
 
-void MainWindow::register_option_action(QWidget* widget, std::initializer_list<CanvasTool> tools) {
+void MainWindow::register_option_action(QWidget* widget, std::vector<CanvasTool> tools) {
   if (widget == nullptr) {
     return;
   }
-  option_actions_.emplace_back(widget, std::vector<CanvasTool>(tools.begin(), tools.end()));
+  option_actions_.emplace_back(widget, std::move(tools));
 }
 
 void MainWindow::refresh_options_bar() {
@@ -3043,10 +3043,8 @@ void MainWindow::apply_selection_modes_to_canvas(CanvasWidget* canvas) {
   if (canvas == nullptr) {
     return;
   }
-  const std::array<CanvasTool, CanvasWidget::kSelectionToolCount> tools{
-      CanvasTool::Marquee, CanvasTool::EllipticalMarquee, CanvasTool::Lasso, CanvasTool::MagneticLasso,
-      CanvasTool::MagicWand, CanvasTool::QuickSelect, CanvasTool::PatchTool};
-  for (const auto tool : tools) {
+  for (std::size_t value = 0; value < kCanvasToolCount; ++value) {
+    const auto tool = static_cast<CanvasTool>(value);
     if (const auto index = CanvasWidget::selection_tool_index(tool); index >= 0) {
       canvas->set_selection_mode_for_tool(tool, selection_modes_[static_cast<std::size_t>(index)]);
     }

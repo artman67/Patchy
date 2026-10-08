@@ -59,6 +59,7 @@
 #include "ui/app_settings.hpp"
 #include "ui/theme_palette.hpp"
 #include "ui/update_checker.hpp"
+#include "ui/tool_traits.hpp"
 #include "ui/visual_filter_gallery_dialog.hpp"
 #include "ui/zoomable_image_preview.hpp"
 #include "ui/zoom_status_bar.hpp"
@@ -76,6 +77,7 @@
 #include <QAbstractItemView>
 #include <QAbstractTextDocumentLayout>
 #include <QAction>
+#include <QActionGroup>
 #include <QApplication>
 #include <QBuffer>
 #include <QByteArray>
@@ -1760,6 +1762,32 @@ void ui_zoom_options_bar_view_buttons_set_view() {
   require_action_by_text(window, QStringLiteral("Fill Screen"))->trigger();
   QApplication::processEvents();
   CHECK(std::abs(canvas->zoom() - fill_zoom) < 0.001);
+}
+
+// Every CanvasTool has exactly one palette action and every palette action is a
+// tool below kCanvasToolCount, so a tool appended without bumping the count or
+// without a palette slot fails here (tool_traits.cpp's static_assert catches a
+// missing table row). The palette wires each action from the tool's row.
+void ui_tool_palette_has_one_action_per_tool() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* brush = window.findChild<QAction*>(QStringLiteral("toolBrushAction"));
+  CHECK(brush != nullptr && brush->actionGroup() != nullptr);
+  std::vector<int> actions_per_tool(patchy::ui::kCanvasToolCount, 0);
+  for (auto* action : brush->actionGroup()->actions()) {
+    bool ok = false;
+    const auto value = action->data().toInt(&ok);
+    CHECK(ok && value >= 0 && static_cast<std::size_t>(value) < patchy::ui::kCanvasToolCount);
+    ++actions_per_tool[static_cast<std::size_t>(value)];
+    const auto& traits = patchy::ui::tool_traits(static_cast<patchy::ui::CanvasTool>(value));
+    CHECK(static_cast<int>(traits.tool) == value);
+    CHECK(action->text() == patchy::ui::MainWindow::tr(traits.name));
+    const auto* command = window.hotkey_registry().find_command(QString::fromLatin1(traits.hotkey_id));
+    CHECK(command != nullptr && command->action == action);
+  }
+  for (const auto count : actions_per_tool) {
+    CHECK(count == 1);
+  }
 }
 
 void ui_tool_palette_icons_render_sheet() {
@@ -4068,6 +4096,7 @@ std::vector<patchy::test::TestCase> canvas_view_tools_tests() {
       {"ui_tool_cycle_hotkeys_walk_each_flyout", ui_tool_cycle_hotkeys_walk_each_flyout},
       {"ui_tool_flyout_double_click_opens_menu", ui_tool_flyout_double_click_opens_menu},
       {"ui_tool_flyout_right_click_opens_menu", ui_tool_flyout_right_click_opens_menu},
+      {"ui_tool_palette_has_one_action_per_tool", ui_tool_palette_has_one_action_per_tool},
       {"ui_tool_palette_icons_render_sheet", ui_tool_palette_icons_render_sheet},
       {"ui_filled_shape_preview_clears_after_commit", ui_filled_shape_preview_clears_after_commit},
       {"ui_toolbar_spin_boxes_select_all_on_focus", ui_toolbar_spin_boxes_select_all_on_focus},

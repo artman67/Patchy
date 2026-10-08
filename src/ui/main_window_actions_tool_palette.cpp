@@ -67,6 +67,7 @@
 #include "ui/pattern_manager_dialog.hpp"
 #include "ui/photo_pattern_presets.hpp"
 #include "ui/style_library.hpp"
+#include "ui/tool_traits.hpp"
 #include "ui/print_dialog.hpp"
 #include "ui/smart_object_render.hpp"
 #include "ui/scanner_import.hpp"
@@ -251,274 +252,14 @@ namespace patchy::ui {
 
 namespace {
 
-const char* tool_action_source(CanvasTool tool) {
-  switch (tool) {
-    case CanvasTool::Move:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Move");
-    case CanvasTool::Marquee:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Marquee");
-    case CanvasTool::EllipticalMarquee:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Elliptical Marquee");
-    case CanvasTool::Lasso:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Lasso");
-    case CanvasTool::MagneticLasso:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Magnetic Lasso");
-    case CanvasTool::MagicWand:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Magic Wand");
-    case CanvasTool::QuickSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Quick Select");
-    case CanvasTool::Brush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush");
-    case CanvasTool::MixerBrush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Mixer Brush");
-    case CanvasTool::Clone:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Clone");
-    case CanvasTool::PatternStamp:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pattern Stamp");
-    case CanvasTool::HistoryBrush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "History Brush");
-    case CanvasTool::Healing:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Healing Brush");
-    case CanvasTool::Smudge:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Smudge");
-    case CanvasTool::Dodge:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Dodge");
-    case CanvasTool::Burn:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Burn");
-    case CanvasTool::Sponge:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Sponge");
-    case CanvasTool::BlurBrush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Blur");
-    case CanvasTool::SharpenBrush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Sharpen");
-    case CanvasTool::Eraser:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Eraser");
-    case CanvasTool::Gradient:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Gradient");
-    case CanvasTool::Line:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Line");
-    case CanvasTool::Rectangle:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rect");
-    case CanvasTool::Ellipse:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Ellipse");
-    case CanvasTool::Fill:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Fill");
-    case CanvasTool::Eyedropper:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pick");
-    case CanvasTool::Text:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Type");
-    case CanvasTool::Pan:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Hand");
-    case CanvasTool::Zoom:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Zoom");
-    case CanvasTool::Pen:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pen");
-    case CanvasTool::PathSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Path Select");
-    case CanvasTool::DirectSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Direct Select");
-    case CanvasTool::Polygon:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Polygon");
-    case CanvasTool::CustomShape:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Custom Shape");
-    case CanvasTool::SpotHealing:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Spot Healing");
-    case CanvasTool::PatchTool:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Patch");
-    case CanvasTool::Crop:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Crop");
-    case CanvasTool::AddAnchor:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Add Anchor");
-    case CanvasTool::DeleteAnchor:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Delete Anchor");
-    case CanvasTool::ConvertPoint:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Convert Point");
-    case CanvasTool::RotateView:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rotate View");
-    case CanvasTool::ColorReplacement:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Color Replacement");
-  }
-  return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Tool");
-}
-
-QString tool_hotkey_id(CanvasTool tool) {
-  switch (tool) {
-    case CanvasTool::Move:
-      return QStringLiteral("tools.move");
-    case CanvasTool::Marquee:
-      return QStringLiteral("tools.marquee");
-    case CanvasTool::EllipticalMarquee:
-      return QStringLiteral("tools.elliptical_marquee");
-    case CanvasTool::Lasso:
-      return QStringLiteral("tools.lasso");
-    case CanvasTool::MagneticLasso:
-      return QStringLiteral("tools.magnetic_lasso");
-    case CanvasTool::MagicWand:
-      return QStringLiteral("tools.magic_wand");
-    case CanvasTool::QuickSelect:
-      return QStringLiteral("tools.quick_select");
-    case CanvasTool::Brush:
-      return QStringLiteral("tools.brush");
-    case CanvasTool::MixerBrush:
-      return QStringLiteral("tools.mixer_brush");
-    case CanvasTool::Clone:
-      return QStringLiteral("tools.clone");
-    case CanvasTool::PatternStamp:
-      return QStringLiteral("tools.pattern_stamp");
-    case CanvasTool::HistoryBrush:
-      return QStringLiteral("tools.history_brush");
-    case CanvasTool::Healing:
-      return QStringLiteral("tools.healing");
-    case CanvasTool::Smudge:
-      return QStringLiteral("tools.smudge");
-    case CanvasTool::Dodge:
-      return QStringLiteral("tools.dodge");
-    case CanvasTool::Burn:
-      return QStringLiteral("tools.burn");
-    case CanvasTool::Sponge:
-      return QStringLiteral("tools.sponge");
-    case CanvasTool::BlurBrush:
-      return QStringLiteral("tools.blur");
-    case CanvasTool::SharpenBrush:
-      return QStringLiteral("tools.sharpen");
-    case CanvasTool::Eraser:
-      return QStringLiteral("tools.eraser");
-    case CanvasTool::Gradient:
-      return QStringLiteral("tools.gradient");
-    case CanvasTool::Line:
-      return QStringLiteral("tools.line");
-    case CanvasTool::Rectangle:
-      return QStringLiteral("tools.rect");
-    case CanvasTool::Ellipse:
-      return QStringLiteral("tools.ellipse");
-    case CanvasTool::Fill:
-      return QStringLiteral("tools.fill");
-    case CanvasTool::Eyedropper:
-      return QStringLiteral("tools.eyedropper");
-    case CanvasTool::Text:
-      return QStringLiteral("tools.type");
-    case CanvasTool::Pan:
-      return QStringLiteral("tools.hand");
-    case CanvasTool::Zoom:
-      return QStringLiteral("tools.zoom");
-    case CanvasTool::Pen:
-      return QStringLiteral("tools.pen");
-    case CanvasTool::PathSelect:
-      return QStringLiteral("tools.path_select");
-    case CanvasTool::DirectSelect:
-      return QStringLiteral("tools.direct_select");
-    case CanvasTool::Polygon:
-      return QStringLiteral("tools.polygon");
-    case CanvasTool::CustomShape:
-      return QStringLiteral("tools.custom_shape");
-    case CanvasTool::SpotHealing:
-      return QStringLiteral("tools.spot_healing");
-    case CanvasTool::PatchTool:
-      return QStringLiteral("tools.patch");
-    case CanvasTool::Crop:
-      return QStringLiteral("tools.crop");
-    case CanvasTool::AddAnchor:
-      return QStringLiteral("tools.add_anchor");
-    case CanvasTool::DeleteAnchor:
-      return QStringLiteral("tools.delete_anchor");
-    case CanvasTool::ConvertPoint:
-      return QStringLiteral("tools.convert_point");
-    case CanvasTool::RotateView:
-      return QStringLiteral("tools.rotate_view");
-    case CanvasTool::ColorReplacement:
-      return QStringLiteral("tools.color_replacement");
-  }
-  return QStringLiteral("tools.unknown");
-}
-
-// Second tooltip line for the tools whose gestures are not obvious from the
-// name; the hotkey registry composes "Name (Key)" above it and translates
-// the source at compose time (kActionTooltipDetailProperty). nullptr keeps
-// the plain "Name (Key)" tooltip.
-const char* tool_tooltip_detail_source(CanvasTool tool) {
-  switch (tool) {
-    case CanvasTool::Move:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "%CTRL%+click selects a layer, Shift+click toggles it. %CTRL%+drag selects layers in a "
-             "rectangle; hold Shift before dragging to add. %ALT%+drag duplicates. Shift constrains layer movement.");
-    case CanvasTool::Pen:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click to place points, drag for curves. On a path: click a segment to add a "
-             "point, click a point to delete it, %ALT%+click converts it, %CTRL% moves points.");
-    case CanvasTool::PathSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Select and move whole shapes. %CTRL%+T transforms the path.");
-    case CanvasTool::DirectSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Select and drag points and handles. Delete removes the selected points.");
-    case CanvasTool::AddAnchor:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a path segment to insert a point.");
-    case CanvasTool::DeleteAnchor:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to remove it.");
-    case CanvasTool::ConvertPoint:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Click a point to switch it between corner and smooth.");
-    case CanvasTool::RotateView:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Drag to turn the view. Shift snaps to 15 degrees; Esc resets.");
-    case CanvasTool::HistoryBrush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Paints pixels back from the history source state. Right-click a "
-             "History panel row to make it the source.");
-    case CanvasTool::ColorReplacement:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Paints the foreground color over pixels that match the sampled "
-             "color and keeps their shading. %ALT%+click picks the foreground color.");
-    default:
-      return nullptr;
-  }
-}
-
-// Status-bar sentence shown when the tool is picked; nullptr shows the tool
-// name. Reserved for tools whose workflow the name alone does not explain.
-const char* tool_activation_hint_source(CanvasTool tool) {
-  switch (tool) {
-    case CanvasTool::Move:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Move: %CTRL%+click selects a layer, Shift+click toggles it. %CTRL%+drag selects a "
-             "rectangle; Shift adds. Drag selected artwork to move it, %ALT%+drag to duplicate it.");
-    case CanvasTool::Pen:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pen: click to add points, drag for curves. On a path, click a segment to add a "
-             "point, click a point to delete it, %ALT%+click converts it, %CTRL%+drag selects or "
-             "moves points.");
-    case CanvasTool::PathSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Path Select: click a shape to select it, drag to move it. %CTRL%+T transforms the "
-             "path, Delete removes the selected points.");
-    case CanvasTool::DirectSelect:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Direct Select: click or marquee points, drag points or handles. Shift adds, "
-             "arrows nudge, Delete removes, %CTRL%+T transforms the selected points.");
-    case CanvasTool::Crop:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Crop: drag the handles to crop or extend the canvas (%ALT% resizes about the "
-             "center), drag inside to lay out a new box, drag outside it to rotate. Enter crops, Esc "
-             "resets the box.");
-    case CanvasTool::AddAnchor:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Add Anchor Point: click a path segment to insert a point.");
-    case CanvasTool::DeleteAnchor:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Delete Anchor Point: click a point to remove it.");
-    case CanvasTool::ConvertPoint:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Convert Point: click a point to switch it between corner and smooth.");
-    case CanvasTool::HistoryBrush:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "History Brush: paint to restore the active layer from the history source "
-             "state, the document as opened unless you right-click a History panel row to change it.");
-    case CanvasTool::ColorReplacement:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Color Replacement: paint over a color to replace it with the "
-             "foreground color. Tolerance sets how close a pixel must be to the sampled color.");
-    case CanvasTool::PatchTool:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Patch: draw around the area to fix, then drag the selection to a clean source area, or press Enter to remove the object automatically");
-    case CanvasTool::Marquee:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rectangular Marquee: drag to select. Drag a handle to resize the selection, or drag "
-             "inside it to move it.");
-    case CanvasTool::EllipticalMarquee:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Elliptical Marquee: drag to select. Drag a handle to resize the selection, or drag "
-             "inside it to move it.");
-    case CanvasTool::RotateView:
-      return QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Rotate View: drag to turn the canvas view; Shift snaps to 15 degrees. "
-             "Double-click the tool or press Esc to reset.");
-    default:
-      return nullptr;
-  }
-}
-
 QString tool_action_object_name(CanvasTool tool) {
-  auto name = QString::fromLatin1(tool_action_source(tool));
+  auto name = QString::fromLatin1(tool_traits(tool).name);
   name.remove(QLatin1Char(' '));
   return QStringLiteral("tool") + name + QStringLiteral("Action");
+}
+
+QKeySequence tool_default_shortcut(const ToolTraits& traits) {
+  return traits.default_key != 0 ? QKeySequence(traits.default_key) : QKeySequence();
 }
 
 class MouseDoubleClickFilter final : public QObject {
@@ -709,136 +450,7 @@ private:
 QIcon tool_icon(CanvasTool tool) {
   static const int icon_resources = ::qInitResources_icons();
   (void)icon_resources;
-  const char* name = "tool-move";
-  switch (tool) {
-    case CanvasTool::Move:
-      name = "tool-move";
-      break;
-    case CanvasTool::Marquee:
-      name = "tool-marquee";
-      break;
-    case CanvasTool::EllipticalMarquee:
-      name = "tool-marquee-ellipse";
-      break;
-    case CanvasTool::Lasso:
-      name = "tool-lasso";
-      break;
-    case CanvasTool::MagneticLasso:
-      name = "tool-magnetic-lasso";
-      break;
-    case CanvasTool::MagicWand:
-      name = "tool-wand";
-      break;
-    case CanvasTool::QuickSelect:
-      name = "tool-quick-select";
-      break;
-    case CanvasTool::Brush:
-      name = "tool-brush";
-      break;
-    case CanvasTool::MixerBrush:
-      name = "tool-mixer-brush";
-      break;
-    case CanvasTool::Clone:
-      name = "tool-clone";
-      break;
-    case CanvasTool::PatternStamp:
-      name = "tool-pattern-stamp";
-      break;
-    case CanvasTool::HistoryBrush:
-      name = "tool-history-brush";
-      break;
-    case CanvasTool::Healing:
-      name = "tool-healing";
-      break;
-    case CanvasTool::Smudge:
-      name = "tool-smudge";
-      break;
-    case CanvasTool::Dodge:
-      name = "tool-dodge";
-      break;
-    case CanvasTool::Burn:
-      name = "tool-burn";
-      break;
-    case CanvasTool::Sponge:
-      name = "tool-sponge";
-      break;
-    case CanvasTool::BlurBrush:
-      name = "tool-blur";
-      break;
-    case CanvasTool::SharpenBrush:
-      name = "tool-sharpen";
-      break;
-    case CanvasTool::Eraser:
-      name = "tool-eraser";
-      break;
-    case CanvasTool::Gradient:
-      name = "tool-gradient";
-      break;
-    case CanvasTool::Fill:
-      name = "tool-fill";
-      break;
-    case CanvasTool::Line:
-      name = "tool-line";
-      break;
-    case CanvasTool::Rectangle:
-      name = "tool-rect";
-      break;
-    case CanvasTool::Ellipse:
-      name = "tool-ellipse";
-      break;
-    case CanvasTool::Eyedropper:
-      name = "tool-eyedropper";
-      break;
-    case CanvasTool::Text:
-      name = "tool-text";
-      break;
-    case CanvasTool::Pan:
-      name = "tool-pan";
-      break;
-    case CanvasTool::Zoom:
-      name = "tool-zoom";
-      break;
-    case CanvasTool::Pen:
-      name = "tool-pen";
-      break;
-    case CanvasTool::PathSelect:
-      name = "tool-path-select";
-      break;
-    case CanvasTool::DirectSelect:
-      name = "tool-direct-select";
-      break;
-    case CanvasTool::Polygon:
-      name = "tool-polygon";
-      break;
-    case CanvasTool::CustomShape:
-      name = "tool-custom-shape";
-      break;
-    case CanvasTool::SpotHealing:
-      name = "tool-spot-healing";
-      break;
-    case CanvasTool::PatchTool:
-      name = "tool-patch";
-      break;
-    case CanvasTool::Crop:
-      name = "tool-crop";
-      break;
-    case CanvasTool::AddAnchor:
-      name = "tool-add-anchor";
-      break;
-    case CanvasTool::DeleteAnchor:
-      name = "tool-delete-anchor";
-      break;
-    case CanvasTool::ConvertPoint:
-      name = "tool-convert-point";
-      break;
-    case CanvasTool::RotateView:
-      name = "tool-rotate-view";
-      break;
-    case CanvasTool::ColorReplacement:
-      name = "tool-color-replacement";
-      break;
-  }
-  return themed_svg_icon(QLatin1String(name));
+  return themed_svg_icon(QLatin1String(tool_traits(tool).icon));
 }
 
 }  // namespace
@@ -867,17 +479,19 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   // The palette is ordered in clusters split by separators: select, paint,
   // retouch, draw/type, view. Tools sharing a slot get a flyout button.
   const auto create_flyout_tool_action =
-      [this, tool_group](QMenu* menu, const QString& label, CanvasTool tool, QKeySequence shortcut) {
-        auto* action = new QAction(label, this);
-        bind_action_text(action, tool_action_source(tool));
+      [this, tool_group](QMenu* menu, CanvasTool tool) {
+        const auto& traits = tool_traits(tool);
+        auto* action = new QAction(tr(traits.name), this);
+        bind_action_text(action, traits.name);
         action->setIcon(tool_icon(tool));
         action->setCheckable(true);
         action->setData(static_cast<int>(tool));
         action->setObjectName(tool_action_object_name(tool));
-        if (const auto* detail = tool_tooltip_detail_source(tool); detail != nullptr) {
-          action->setProperty(kActionTooltipDetailProperty, QString::fromLatin1(detail));
+        if (traits.tooltip_detail != nullptr) {
+          action->setProperty(kActionTooltipDetailProperty, QString::fromLatin1(traits.tooltip_detail));
         }
-        register_hotkey(action, tool_hotkey_id(tool), shortcut, QStringLiteral("tools"));
+        register_hotkey(action, QString::fromLatin1(traits.hotkey_id), tool_default_shortcut(traits),
+                        QStringLiteral("tools"));
         tool_group->addAction(action);
         menu->addAction(action);
         addAction(action);
@@ -943,14 +557,12 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
     });
   };
 
-  move_tool_action_ = add_tool_action(tool_palette, tool_group, tr("Move"), CanvasTool::Move, QKeySequence(Qt::Key_V));
+  move_tool_action_ = add_tool_action(tool_palette, tool_group, CanvasTool::Move);
   auto* marquee_menu = new QMenu(tr("Marquee Tools"), tool_palette);
   marquee_menu->setObjectName(QStringLiteral("marqueeToolMenu"));
   bind_widget_text(marquee_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Marquee Tools"));
-  auto* rect_marquee_action =
-      create_flyout_tool_action(marquee_menu, tr("Marquee"), CanvasTool::Marquee, QKeySequence(Qt::Key_M));
-  auto* elliptical_marquee_action = create_flyout_tool_action(
-      marquee_menu, tr("Elliptical Marquee"), CanvasTool::EllipticalMarquee, QKeySequence());
+  auto* rect_marquee_action = create_flyout_tool_action(marquee_menu, CanvasTool::Marquee);
+  auto* elliptical_marquee_action = create_flyout_tool_action(marquee_menu, CanvasTool::EllipticalMarquee);
   auto* marquee_tool_button = new QToolButton(tool_palette);
   marquee_tool_button->setObjectName(QStringLiteral("marqueeToolButton"));
   configure_tool_flyout(tool_palette, marquee_menu, marquee_tool_button, rect_marquee_action,
@@ -960,9 +572,8 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* lasso_menu = new QMenu(tr("Lasso Tools"), tool_palette);
   lasso_menu->setObjectName(QStringLiteral("lassoToolMenu"));
   bind_widget_text(lasso_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Lasso Tools"));
-  auto* lasso_action = create_flyout_tool_action(lasso_menu, tr("Lasso"), CanvasTool::Lasso, QKeySequence(Qt::Key_L));
-  auto* magnetic_lasso_action = create_flyout_tool_action(lasso_menu, tr("Magnetic Lasso"), CanvasTool::MagneticLasso,
-                                                          QKeySequence());
+  auto* lasso_action = create_flyout_tool_action(lasso_menu, CanvasTool::Lasso);
+  auto* magnetic_lasso_action = create_flyout_tool_action(lasso_menu, CanvasTool::MagneticLasso);
   auto* lasso_tool_button = new QToolButton(tool_palette);
   lasso_tool_button->setObjectName(QStringLiteral("lassoToolButton"));
   configure_tool_flyout(tool_palette, lasso_menu, lasso_tool_button, lasso_action,
@@ -972,17 +583,15 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* wand_menu = new QMenu(tr("Wand Tools"), tool_palette);
   wand_menu->setObjectName(QStringLiteral("wandToolMenu"));
   bind_widget_text(wand_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Wand Tools"));
-  auto* magic_wand_action =
-      create_flyout_tool_action(wand_menu, tr("Magic Wand"), CanvasTool::MagicWand, QKeySequence(Qt::Key_W));
-  auto* quick_select_action =
-      create_flyout_tool_action(wand_menu, tr("Quick Select"), CanvasTool::QuickSelect, QKeySequence());
+  auto* magic_wand_action = create_flyout_tool_action(wand_menu, CanvasTool::MagicWand);
+  auto* quick_select_action = create_flyout_tool_action(wand_menu, CanvasTool::QuickSelect);
   auto* wand_tool_button = new QToolButton(tool_palette);
   wand_tool_button->setObjectName(QStringLiteral("wandToolButton"));
   configure_tool_flyout(tool_palette, wand_menu, wand_tool_button, magic_wand_action,
                         {magic_wand_action, quick_select_action},
                         QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Cycle Wand Tools"),
                         "toolCycleWandAction", "tools.cycle.wand", QKeySequence(Qt::SHIFT | Qt::Key_W));
-  add_tool_action(tool_palette, tool_group, tr("Crop"), CanvasTool::Crop, QKeySequence(Qt::Key_C));
+  add_tool_action(tool_palette, tool_group, CanvasTool::Crop);
   tool_palette->addSeparator();
 
   // The Brush Tools flyout: Brush (B, the default) plus Color Replacement,
@@ -990,24 +599,21 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* brush_menu = new QMenu(tr("Brush Tools"), tool_palette);
   brush_menu->setObjectName(QStringLiteral("brushToolMenu"));
   bind_widget_text(brush_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush Tools"));
-  auto* brush_action = create_flyout_tool_action(brush_menu, tr("Brush"), CanvasTool::Brush, QKeySequence(Qt::Key_B));
+  auto* brush_action = create_flyout_tool_action(brush_menu, CanvasTool::Brush);
   brush_action->setChecked(true);
-  auto* color_replacement_action = create_flyout_tool_action(brush_menu, tr("Color Replacement"),
-                                                             CanvasTool::ColorReplacement, QKeySequence());
+  auto* color_replacement_action = create_flyout_tool_action(brush_menu, CanvasTool::ColorReplacement);
   auto* brush_tool_button = new QToolButton(tool_palette);
   brush_tool_button->setObjectName(QStringLiteral("brushToolButton"));
   configure_tool_flyout(tool_palette, brush_menu, brush_tool_button, brush_action,
                         {brush_action, color_replacement_action},
                         QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Cycle Brush Tools"),
                         "toolCycleBrushAction", "tools.cycle.brush", QKeySequence(Qt::SHIFT | Qt::Key_B));
-  add_tool_action(tool_palette, tool_group, tr("Eraser"), CanvasTool::Eraser, QKeySequence(Qt::Key_E));
+  add_tool_action(tool_palette, tool_group, CanvasTool::Eraser);
   auto* gradient_menu = new QMenu(tr("Fill Tools"), tool_palette);
   gradient_menu->setObjectName(QStringLiteral("gradientToolMenu"));
   bind_widget_text(gradient_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Fill Tools"));
-  auto* gradient_action =
-      create_flyout_tool_action(gradient_menu, tr("Gradient"), CanvasTool::Gradient, QKeySequence(Qt::Key_G));
-  auto* fill_action =
-      create_flyout_tool_action(gradient_menu, tr("Fill"), CanvasTool::Fill, QKeySequence());
+  auto* gradient_action = create_flyout_tool_action(gradient_menu, CanvasTool::Gradient);
+  auto* fill_action = create_flyout_tool_action(gradient_menu, CanvasTool::Fill);
   auto* gradient_tool_button = new QToolButton(tool_palette);
   gradient_tool_button->setObjectName(QStringLiteral("gradientToolButton"));
   configure_tool_flyout(tool_palette, gradient_menu, gradient_tool_button, gradient_action,
@@ -1019,9 +625,8 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* stamp_menu = new QMenu(tr("Stamp Tools"), tool_palette);
   stamp_menu->setObjectName(QStringLiteral("stampToolMenu"));
   bind_widget_text(stamp_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Stamp Tools"));
-  auto* clone_action = create_flyout_tool_action(stamp_menu, tr("Clone"), CanvasTool::Clone, QKeySequence(Qt::Key_S));
-  auto* pattern_stamp_action = create_flyout_tool_action(stamp_menu, tr("Pattern Stamp"), CanvasTool::PatternStamp,
-                                                         QKeySequence());
+  auto* clone_action = create_flyout_tool_action(stamp_menu, CanvasTool::Clone);
+  auto* pattern_stamp_action = create_flyout_tool_action(stamp_menu, CanvasTool::PatternStamp);
   auto* stamp_tool_button = new QToolButton(tool_palette);
   stamp_tool_button->setObjectName(QStringLiteral("stampToolButton"));
   configure_tool_flyout(tool_palette, stamp_menu, stamp_tool_button, clone_action,
@@ -1030,17 +635,13 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
                         "toolCycleStampAction", "tools.cycle.stamp", QKeySequence(Qt::SHIFT | Qt::Key_S));
   // Photoshop pairs the History Brush with the Art History Brush in a flyout;
   // Patchy has only the first, so it is a plain button with no Shift+Y cycle.
-  add_tool_action(tool_palette, tool_group, tr("History Brush"), CanvasTool::HistoryBrush,
-                  QKeySequence(Qt::Key_Y));
+  add_tool_action(tool_palette, tool_group, CanvasTool::HistoryBrush);
   auto* healing_menu = new QMenu(tr("Healing Tools"), tool_palette);
   healing_menu->setObjectName(QStringLiteral("healingToolMenu"));
   bind_widget_text(healing_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Healing Tools"));
-  auto* healing_action = create_flyout_tool_action(healing_menu, tr("Healing Brush"), CanvasTool::Healing,
-                                                   QKeySequence(Qt::Key_J));
-  auto* spot_healing_action = create_flyout_tool_action(healing_menu, tr("Spot Healing"), CanvasTool::SpotHealing,
-                                                        QKeySequence());
-  auto* patch_action =
-      create_flyout_tool_action(healing_menu, tr("Patch"), CanvasTool::PatchTool, QKeySequence());
+  auto* healing_action = create_flyout_tool_action(healing_menu, CanvasTool::Healing);
+  auto* spot_healing_action = create_flyout_tool_action(healing_menu, CanvasTool::SpotHealing);
+  auto* patch_action = create_flyout_tool_action(healing_menu, CanvasTool::PatchTool);
   auto* healing_tool_button = new QToolButton(tool_palette);
   healing_tool_button->setObjectName(QStringLiteral("healingToolButton"));
   configure_tool_flyout(tool_palette, healing_menu, healing_tool_button, healing_action,
@@ -1051,13 +652,10 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* detail_menu = new QMenu(tr("Detail Tools"), tool_palette);
   detail_menu->setObjectName(QStringLiteral("detailToolMenu"));
   bind_widget_text(detail_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Detail Tools"));
-  auto* smudge_action =
-      create_flyout_tool_action(detail_menu, tr("Smudge"), CanvasTool::Smudge, QKeySequence());
-  auto* mixer_brush_action = create_flyout_tool_action(
-      detail_menu, tr("Mixer Brush"), CanvasTool::MixerBrush, QKeySequence());
-  auto* blur_action = create_flyout_tool_action(detail_menu, tr("Blur"), CanvasTool::BlurBrush, QKeySequence());
-  auto* sharpen_action =
-      create_flyout_tool_action(detail_menu, tr("Sharpen"), CanvasTool::SharpenBrush, QKeySequence());
+  auto* smudge_action = create_flyout_tool_action(detail_menu, CanvasTool::Smudge);
+  auto* mixer_brush_action = create_flyout_tool_action(detail_menu, CanvasTool::MixerBrush);
+  auto* blur_action = create_flyout_tool_action(detail_menu, CanvasTool::BlurBrush);
+  auto* sharpen_action = create_flyout_tool_action(detail_menu, CanvasTool::SharpenBrush);
   auto* detail_button = new QToolButton(tool_palette);
   detail_button->setObjectName(QStringLiteral("detailToolButton"));
   configure_tool_flyout(tool_palette, detail_menu, detail_button, smudge_action,
@@ -1068,11 +666,9 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* tone_menu = new QMenu(tr("Toning Tools"), tool_palette);
   tone_menu->setObjectName(QStringLiteral("toneToolMenu"));
   bind_widget_text(tone_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Toning Tools"));
-  auto* dodge_action =
-      create_flyout_tool_action(tone_menu, tr("Dodge"), CanvasTool::Dodge, QKeySequence(Qt::Key_O));
-  auto* burn_action = create_flyout_tool_action(tone_menu, tr("Burn"), CanvasTool::Burn, QKeySequence());
-  auto* sponge_action =
-      create_flyout_tool_action(tone_menu, tr("Sponge"), CanvasTool::Sponge, QKeySequence());
+  auto* dodge_action = create_flyout_tool_action(tone_menu, CanvasTool::Dodge);
+  auto* burn_action = create_flyout_tool_action(tone_menu, CanvasTool::Burn);
+  auto* sponge_action = create_flyout_tool_action(tone_menu, CanvasTool::Sponge);
   auto* tone_button = new QToolButton(tool_palette);
   tone_button->setObjectName(QStringLiteral("toneToolButton"));
   configure_tool_flyout(tool_palette, tone_menu, tone_button, dodge_action,
@@ -1086,14 +682,10 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* pen_menu = new QMenu(tr("Pen Tools"), tool_palette);
   pen_menu->setObjectName(QStringLiteral("penToolMenu"));
   bind_widget_text(pen_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Pen Tools"));
-  auto* pen_action =
-      create_flyout_tool_action(pen_menu, tr("Pen"), CanvasTool::Pen, QKeySequence(Qt::Key_P));
-  auto* add_anchor_action =
-      create_flyout_tool_action(pen_menu, tr("Add Anchor"), CanvasTool::AddAnchor, QKeySequence());
-  auto* delete_anchor_action = create_flyout_tool_action(pen_menu, tr("Delete Anchor"),
-                                                         CanvasTool::DeleteAnchor, QKeySequence());
-  auto* convert_point_action = create_flyout_tool_action(pen_menu, tr("Convert Point"),
-                                                         CanvasTool::ConvertPoint, QKeySequence());
+  auto* pen_action = create_flyout_tool_action(pen_menu, CanvasTool::Pen);
+  auto* add_anchor_action = create_flyout_tool_action(pen_menu, CanvasTool::AddAnchor);
+  auto* delete_anchor_action = create_flyout_tool_action(pen_menu, CanvasTool::DeleteAnchor);
+  auto* convert_point_action = create_flyout_tool_action(pen_menu, CanvasTool::ConvertPoint);
   auto* pen_button = new QToolButton(tool_palette);
   pen_button->setObjectName(QStringLiteral("penToolButton"));
   configure_tool_flyout(tool_palette, pen_menu, pen_button, pen_action,
@@ -1105,10 +697,8 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* path_select_menu = new QMenu(tr("Path Tools"), tool_palette);
   path_select_menu->setObjectName(QStringLiteral("pathSelectToolMenu"));
   bind_widget_text(path_select_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Path Tools"));
-  auto* path_select_action = create_flyout_tool_action(path_select_menu, tr("Path Select"),
-                                                       CanvasTool::PathSelect, QKeySequence(Qt::Key_A));
-  auto* direct_select_action =
-      create_flyout_tool_action(path_select_menu, tr("Direct Select"), CanvasTool::DirectSelect, QKeySequence());
+  auto* path_select_action = create_flyout_tool_action(path_select_menu, CanvasTool::PathSelect);
+  auto* direct_select_action = create_flyout_tool_action(path_select_menu, CanvasTool::DirectSelect);
   auto* path_select_button = new QToolButton(tool_palette);
   path_select_button->setObjectName(QStringLiteral("pathSelectToolButton"));
   configure_tool_flyout(tool_palette, path_select_menu, path_select_button, path_select_action,
@@ -1118,15 +708,11 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   auto* shape_menu = new QMenu(tr("Shape Tools"), tool_palette);
   shape_menu->setObjectName(QStringLiteral("shapeToolMenu"));
   bind_widget_text(shape_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Shape Tools"));
-  auto* line_tool_action =
-      create_flyout_tool_action(shape_menu, tr("Line"), CanvasTool::Line, QKeySequence());  // Ctrl+Shift+U belongs to Desaturate
-  auto* rect_tool_action = create_flyout_tool_action(shape_menu, tr("Rect"), CanvasTool::Rectangle, QKeySequence(Qt::Key_U));
-  auto* ellipse_tool_action =
-      create_flyout_tool_action(shape_menu, tr("Ellipse"), CanvasTool::Ellipse, QKeySequence());
-  auto* polygon_tool_action =
-      create_flyout_tool_action(shape_menu, tr("Polygon"), CanvasTool::Polygon, QKeySequence());
-  auto* custom_shape_tool_action = create_flyout_tool_action(
-      shape_menu, tr("Custom Shape"), CanvasTool::CustomShape, QKeySequence());
+  auto* line_tool_action = create_flyout_tool_action(shape_menu, CanvasTool::Line);
+  auto* rect_tool_action = create_flyout_tool_action(shape_menu, CanvasTool::Rectangle);
+  auto* ellipse_tool_action = create_flyout_tool_action(shape_menu, CanvasTool::Ellipse);
+  auto* polygon_tool_action = create_flyout_tool_action(shape_menu, CanvasTool::Polygon);
+  auto* custom_shape_tool_action = create_flyout_tool_action(shape_menu, CanvasTool::CustomShape);
   auto* shape_tool_button = new QToolButton(tool_palette);
   shape_tool_button->setObjectName(QStringLiteral("shapeToolButton"));
   configure_tool_flyout(tool_palette, shape_menu, shape_tool_button, rect_tool_action,
@@ -1134,19 +720,18 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
                          polygon_tool_action, custom_shape_tool_action},
                         QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Cycle Shape Tools"),
                         "toolCycleShapeAction", "tools.cycle.shape", QKeySequence(Qt::SHIFT | Qt::Key_U));
-  type_tool_action_ = add_tool_action(tool_palette, tool_group, tr("Type"), CanvasTool::Text, QKeySequence(Qt::Key_T));
+  type_tool_action_ = add_tool_action(tool_palette, tool_group, CanvasTool::Text);
   tool_palette->addSeparator();
 
-  add_tool_action(tool_palette, tool_group, tr("Pick"), CanvasTool::Eyedropper, QKeySequence(Qt::Key_I));
+  add_tool_action(tool_palette, tool_group, CanvasTool::Eyedropper);
   // The View Tools flyout pairs the Hand with Rotate View, as in Photoshop.
   // R belongs to Rotate View (Photoshop's default); Smudge ships unbound and
   // Shift+H walks the flyout (Shift+R stays on the Detail flyout).
   auto* view_menu = new QMenu(tr("View Tools"), tool_palette);
   view_menu->setObjectName(QStringLiteral("viewToolMenu"));
   bind_widget_text(view_menu, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "View Tools"));
-  auto* hand_action = create_flyout_tool_action(view_menu, tr("Hand"), CanvasTool::Pan, QKeySequence(Qt::Key_H));
-  auto* rotate_view_action =
-      create_flyout_tool_action(view_menu, tr("Rotate View"), CanvasTool::RotateView, QKeySequence(Qt::Key_R));
+  auto* hand_action = create_flyout_tool_action(view_menu, CanvasTool::Pan);
+  auto* rotate_view_action = create_flyout_tool_action(view_menu, CanvasTool::RotateView);
   auto* view_tool_button = new QToolButton(tool_palette);
   view_tool_button->setObjectName(QStringLiteral("viewToolButton"));
   // Double-clicking the Rotate View tool resets the view angle (Photoshop);
@@ -1161,7 +746,7 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
                           reset_view_rotation();
                           return true;
                         });
-  auto* zoom_tool_action = add_tool_action(tool_palette, tool_group, tr("Zoom"), CanvasTool::Zoom, QKeySequence(Qt::Key_Z));
+  auto* zoom_tool_action = add_tool_action(tool_palette, tool_group, CanvasTool::Zoom);
   if (auto* zoom_button = qobject_cast<QToolButton*>(tool_palette->widgetForAction(zoom_tool_action));
       zoom_button != nullptr) {
     zoom_button->setObjectName(QStringLiteral("zoomToolButton"));
@@ -1201,7 +786,7 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
     refresh_options_bar();
     refresh_document_info();
     // Tools whose gestures the name does not explain get a one-line hint.
-    if (const auto* hint = tool_activation_hint_source(selected); hint != nullptr) {
+    if (const auto* hint = tool_traits(selected).activation_hint; hint != nullptr) {
       statusBar()->showMessage(resolve_modifier_names(tr(hint)));
     } else {
       statusBar()->showMessage(tool_name(selected));
@@ -1266,18 +851,19 @@ void MainWindow::build_tool_palette(ActionBuildContext& ctx) {
   ctx.swap_colors_action = swap_colors_action;
 }
 
-QAction* MainWindow::add_tool_action(QToolBar* palette, QActionGroup* group, QString label, CanvasTool tool,
-                                     QKeySequence shortcut) {
-  auto* action = palette->addAction(label);
-  bind_action_text(action, tool_action_source(tool));
+QAction* MainWindow::add_tool_action(QToolBar* palette, QActionGroup* group, CanvasTool tool) {
+  const auto& traits = tool_traits(tool);
+  auto* action = palette->addAction(tr(traits.name));
+  bind_action_text(action, traits.name);
   action->setIcon(tool_icon(tool));
   action->setCheckable(true);
   action->setData(static_cast<int>(tool));
   action->setObjectName(tool_action_object_name(tool));
-  if (const auto* detail = tool_tooltip_detail_source(tool); detail != nullptr) {
-    action->setProperty(kActionTooltipDetailProperty, QString::fromLatin1(detail));
+  if (traits.tooltip_detail != nullptr) {
+    action->setProperty(kActionTooltipDetailProperty, QString::fromLatin1(traits.tooltip_detail));
   }
-  register_hotkey(action, tool_hotkey_id(tool), shortcut, QStringLiteral("tools"));
+  register_hotkey(action, QString::fromLatin1(traits.hotkey_id), tool_default_shortcut(traits),
+                  QStringLiteral("tools"));
   group->addAction(action);
   register_document_action(action);
   return action;

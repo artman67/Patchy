@@ -379,7 +379,7 @@ void CanvasWidget::update_tool_cursor() {
                             ? *alt_color_pick_cursor_override_
                             : (QApplication::keyboardModifiers() & Qt::AltModifier) != 0;
   if (tool_ == CanvasTool::Eyedropper ||
-      (alt_held && tool_uses_alt_left_for_color_pick(tool_))) {
+      (alt_held && tool_has(tool_, kToolAltClickPicksColor))) {
     setCursor(eyedropper_cursor());
     return;
   }
@@ -430,12 +430,12 @@ void CanvasWidget::update_tool_cursor() {
     }
     return;
   }
-  if (tool_paints_with_brush_tip(tool_) && brush_tip_ != nullptr) {
+  if (tool_has(tool_, kToolBrushTip) && brush_tip_ != nullptr) {
     if (apply_brush_tip_cursor()) {
       return;
     }
   }
-  if (tool_uses_brush_footprint_cursor(tool_)) {
+  if (tool_has(tool_, kToolPaintsStrokes)) {
     const auto use_cached_brush_cursor = [&](bool one_pixel, int diameter, int extent) {
       if (brush_cursor_cache_.has_value() && brush_cursor_cache_->tool == tool_ &&
           brush_cursor_cache_->brush_size == brush_size_ &&
@@ -497,7 +497,7 @@ void CanvasWidget::update_tool_cursor() {
       return;
     }
     const auto diameter = std::max(3, static_cast<int>(std::round(static_cast<double>(brush_size_) * zoom_)));
-    const bool square = brush_shape_ == patchy::BrushShape::Square && tool_paints_with_brush_tip(tool_);
+    const bool square = brush_shape_ == patchy::BrushShape::Square && tool_has(tool_, kToolBrushTip);
     const auto span = footprint_span(diameter, square, brush_base_angle_degrees_ + shown_view_rotation());
     const auto extent = std::clamp(span + 5, 17, kMaxBrushCursorExtent);
     if (use_cached_brush_cursor(false, diameter, extent)) {

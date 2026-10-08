@@ -89,90 +89,6 @@ bool wheel_trace_enabled() noexcept {
   return enabled;
 }
 
-bool tool_supports_off_canvas_brush_strokes(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::MixerBrush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Clone:
-    case CanvasTool::Healing:
-    case CanvasTool::SpotHealing:
-    case CanvasTool::Smudge:
-    case CanvasTool::Dodge:
-    case CanvasTool::Burn:
-    case CanvasTool::Sponge:
-    case CanvasTool::BlurBrush:
-    case CanvasTool::SharpenBrush:
-    case CanvasTool::ColorReplacement:
-    case CanvasTool::Eraser:
-      return true;
-    default:
-      return false;
-  }
-}
-
-// Painting tools where Shift+click extends the previous stroke with a straight
-// segment from its end point (Photoshop behaviour).
-bool tool_supports_shift_click_stroke_connect(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::MixerBrush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Clone:
-    case CanvasTool::Healing:
-    case CanvasTool::SpotHealing:
-    case CanvasTool::Smudge:
-    case CanvasTool::Dodge:
-    case CanvasTool::Burn:
-    case CanvasTool::Sponge:
-    case CanvasTool::BlurBrush:
-    case CanvasTool::SharpenBrush:
-    case CanvasTool::ColorReplacement:
-    case CanvasTool::Eraser:
-      return true;
-    default:
-      return false;
-  }
-}
-
-// Color Replacement rides the same stroke flow (snapshot, one undo step,
-// refusals); local_adjustment_brush_segment hands it to its own engine.
-bool is_local_adjustment_tool(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Dodge:
-    case CanvasTool::Burn:
-    case CanvasTool::Sponge:
-    case CanvasTool::BlurBrush:
-    case CanvasTool::SharpenBrush:
-    case CanvasTool::ColorReplacement:
-      return true;
-    default:
-      return false;
-  }
-}
-
-// Tools whose opacity the bare digit keys adjust while the canvas has focus.
-bool tool_supports_opacity_digit_keys(CanvasTool tool) noexcept {
-  switch (tool) {
-    case CanvasTool::Brush:
-    case CanvasTool::PatternStamp:
-    case CanvasTool::HistoryBrush:
-    case CanvasTool::Clone:
-    case CanvasTool::Healing:
-    case CanvasTool::Smudge:
-    case CanvasTool::Eraser:
-    case CanvasTool::Gradient:
-    case CanvasTool::Line:
-    case CanvasTool::Rectangle:
-    case CanvasTool::Ellipse:
-      return true;
-    default:
-      return false;
-  }
-}
-
 constexpr int kAirbrushTimerIntervalMs = 50;
 
 }  // namespace
@@ -220,7 +136,7 @@ bool CanvasWidget::eventFilter(QObject* watched, QEvent* event) {
         // click would select (GitHub issue 73); refresh the outline from the
         // folded modifiers at the last pointer position, no motion needed.
         update_move_hover_outline(last_mouse_position_, modifiers);
-      } else if (key_event->key() == Qt::Key_Alt && tool_uses_alt_left_for_color_pick(tool_) &&
+      } else if (key_event->key() == Qt::Key_Alt && tool_has(tool_, kToolAltClickPicksColor) &&
                  !painting_ && !drawing_shape_) {
         // Alt is the temporary-eyedropper modifier for paint/shape/fill tools;
         // swap to (or back from) the eyedropper cursor the instant it toggles.
@@ -557,7 +473,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
   // tablet path is excluded here.
   if (event->button() == Qt::RightButton && (event->modifiers() & Qt::AltModifier) != 0 &&
       !handling_tablet_event_ && !edit_locked_ && !spacebar_panning_ && !painting_ && !drawing_shape_ &&
-      !transforming_layer_ && tool_supports_brush_adjust_drag(tool_)) {
+      !transforming_layer_ && tool_has(tool_, kToolBrushSize)) {
     begin_brush_adjust_drag(event->pos());
     event->accept();
     return;
@@ -750,51 +666,15 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
   const auto document_point = document_position(event->pos());
   const auto document_point_f = document_position_f(event->position());
   const auto effective_tool = effective_tool_for_input();
-  const auto quick_mask_tool_is_unavailable = [](CanvasTool tool) {
-    switch (tool) {
-      case CanvasTool::Move:
-      case CanvasTool::Marquee:
-      case CanvasTool::EllipticalMarquee:
-      case CanvasTool::Lasso:
-      case CanvasTool::MagneticLasso:
-      case CanvasTool::MagicWand:
-      case CanvasTool::QuickSelect:
-      case CanvasTool::Clone:
-      case CanvasTool::PatternStamp:
-      case CanvasTool::HistoryBrush:
-      case CanvasTool::Healing:
-      case CanvasTool::SpotHealing:
-      case CanvasTool::PatchTool:
-      case CanvasTool::Smudge:
-      case CanvasTool::MixerBrush:
-      case CanvasTool::Dodge:
-      case CanvasTool::Burn:
-      case CanvasTool::Sponge:
-      case CanvasTool::BlurBrush:
-      case CanvasTool::SharpenBrush:
-      case CanvasTool::ColorReplacement:
-      case CanvasTool::Text:
-      case CanvasTool::Pen:
-      case CanvasTool::AddAnchor:
-      case CanvasTool::DeleteAnchor:
-      case CanvasTool::ConvertPoint:
-      case CanvasTool::PathSelect:
-      case CanvasTool::DirectSelect:
-      case CanvasTool::Crop:
-        return true;
-      default:
-        return false;
-    }
-  };
   if (quick_mask_active_ && event->button() == Qt::LeftButton &&
-      quick_mask_tool_is_unavailable(effective_tool)) {
+      tool_has(effective_tool, kToolBlockedOnMasks)) {
     report_status_error(tr("This tool is unavailable in Quick Mask mode"));
     event->accept();
     return;
   }
   if (layer_edit_target_ == LayerEditTarget::SmartFilterMask &&
       event->button() == Qt::LeftButton &&
-      quick_mask_tool_is_unavailable(effective_tool)) {
+      tool_has(effective_tool, kToolBlockedOnMasks)) {
     report_status_error(tr("This tool is unavailable while editing a Smart Filter mask"));
     event->accept();
     return;
@@ -812,7 +692,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
   const bool color_pick_press =
       event->button() == Qt::LeftButton &&
       (tool_ == CanvasTool::Eyedropper ||
-       ((event->modifiers() & Qt::AltModifier) != 0 && tool_uses_alt_left_for_color_pick(tool_)));
+       ((event->modifiers() & Qt::AltModifier) != 0 && tool_has(tool_, kToolAltClickPicksColor)));
   if (color_pick_press) {
     begin_color_pick(event->pos(), event->globalPosition().toPoint());
     event->accept();
@@ -823,13 +703,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
                                    layer_edit_target_ == LayerEditTarget::ComponentGreen ||
                                    layer_edit_target_ == LayerEditTarget::ComponentBlue;
   if (event->button() == Qt::LeftButton && channel_view_active &&
-      (effective_tool == CanvasTool::Move || effective_tool == CanvasTool::Clone ||
-       effective_tool == CanvasTool::Healing || effective_tool == CanvasTool::SpotHealing ||
-       effective_tool == CanvasTool::PatchTool || effective_tool == CanvasTool::PatternStamp ||
-       effective_tool == CanvasTool::HistoryBrush ||
-       effective_tool == CanvasTool::Smudge || effective_tool == CanvasTool::MixerBrush ||
-       is_local_adjustment_tool(effective_tool) ||
-       effective_tool == CanvasTool::Text || effective_tool == CanvasTool::Crop)) {
+      tool_has(effective_tool, kToolBlockedInChannelView)) {
     report_status_error(tr("This tool is unavailable while viewing a document channel"));
     event->accept();
     return;
@@ -848,7 +722,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
                                          tool_ == CanvasTool::Crop ||
                                          tool_ == CanvasTool::Zoom ||
                                          (event->button() == Qt::LeftButton &&
-                                          tool_supports_off_canvas_brush_strokes(effective_tool));
+                                          tool_has(effective_tool, kToolPaintsStrokes));
     if (!allows_off_canvas_press) {
       set_move_transform_controls_layer(std::nullopt);
       return;
@@ -859,7 +733,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
   // previous stroke's end point with a straight brush segment.
   std::optional<QPointF> connect_from;
   if (event->button() == Qt::LeftButton && (event->modifiers() & Qt::ShiftModifier) != 0 &&
-      last_stroke_end_document_.has_value() && tool_supports_shift_click_stroke_connect(effective_tool)) {
+      last_stroke_end_document_.has_value() && tool_has(effective_tool, kToolPaintsStrokes)) {
     connect_from = last_stroke_end_document_;
   }
 
@@ -918,7 +792,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     return;
   }
 
-  if (is_local_adjustment_tool(effective_tool)) {
+  if (tool_has(effective_tool, kToolLocalAdjustment)) {
     if (editing_grayscale_target()) {
       report_status_error(effective_tool == CanvasTool::ColorReplacement
                               ? tr("Color Replacement is unavailable while editing a grayscale channel")
@@ -1727,14 +1601,14 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
       dirty = smudge_brush_segment(last_document_position_, document_point);
       last_document_position_ = document_point;
       last_document_position_f_ = document_point_f;
-    } else if (is_local_adjustment_tool(effective_tool)) {
+    } else if (tool_has(effective_tool, kToolLocalAdjustment)) {
       const auto constrained_point = axis_constrained_stroke_point(document_point, event->modifiers());
       dirty = local_adjustment_brush_segment(last_document_position_, constrained_point);
       last_document_position_ = constrained_point;
       last_document_position_f_ = QPointF(constrained_point);
     } else if (effective_brush_input().size == 1) {
       auto constrained_point = axis_constrained_stroke_point(document_point, event->modifiers());
-      if (stroke_stabilizer_.active() && tool_uses_stroke_stabilizer(effective_tool)) {
+      if (stroke_stabilizer_.active() && tool_has(effective_tool, kToolSmoothing)) {
         const auto smoothed = stabilized_stroke_point(QPointF(constrained_point), effective_tool);
         constrained_point = QPoint(static_cast<int>(std::lround(smoothed.x())),
                                    static_cast<int>(std::lround(smoothed.y())));
@@ -2341,7 +2215,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
       dirty = clone_brush_segment(last_document_position_, constrained_point);
       last_document_position_ = constrained_point;
       last_document_position_f_ = QPointF(constrained_point);
-    } else if (is_local_adjustment_tool(effective_tool)) {
+    } else if (tool_has(effective_tool, kToolLocalAdjustment)) {
       const auto constrained_point = axis_constrained_stroke_point(document_point, event->modifiers());
       dirty = local_adjustment_brush_segment(last_document_position_, constrained_point);
       last_document_position_ = constrained_point;
@@ -2352,7 +2226,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
                effective_tool == CanvasTool::Eraser) {
       if (effective_brush_input().size == 1) {
         auto constrained_point = axis_constrained_stroke_point(document_point, event->modifiers());
-        if (stroke_stabilizer_.active() && tool_uses_stroke_stabilizer(effective_tool)) {
+        if (stroke_stabilizer_.active() && tool_has(effective_tool, kToolSmoothing)) {
           // Catch-up on Stroke End releases at the raw point; otherwise the
           // stroke ends wherever the leash left the output.
           const auto final_point =
@@ -2365,7 +2239,7 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
         last_document_position_f_ = QPointF(constrained_point);
       } else {
         auto constrained_point = axis_constrained_stroke_point(document_point_f, event->modifiers());
-        if (stroke_stabilizer_.active() && tool_uses_stroke_stabilizer(effective_tool)) {
+        if (stroke_stabilizer_.active() && tool_has(effective_tool, kToolSmoothing)) {
           const auto final_point =
               stroke_stabilizer_.finish(constrained_point.x(), constrained_point.y());
           constrained_point = QPointF(final_point.x, final_point.y);
@@ -3058,7 +2932,7 @@ void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event) {
        tool_ == CanvasTool::MagneticLasso || tool_ == CanvasTool::MagicWand ||
        tool_ == CanvasTool::QuickSelect || tool_ == CanvasTool::Clone ||
        tool_ == CanvasTool::Healing ||
-       tool_ == CanvasTool::Smudge || is_local_adjustment_tool(tool_) || tool_ == CanvasTool::Text)) {
+       tool_ == CanvasTool::Smudge || tool_has(tool_, kToolLocalAdjustment) || tool_ == CanvasTool::Text)) {
     report_status_error(tr("This tool is unavailable in Quick Mask mode"));
     event->accept();
     return;
@@ -3069,7 +2943,7 @@ void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event) {
        tool_ == CanvasTool::MagneticLasso || tool_ == CanvasTool::MagicWand ||
        tool_ == CanvasTool::QuickSelect || tool_ == CanvasTool::Clone ||
        tool_ == CanvasTool::Healing ||
-       tool_ == CanvasTool::Smudge || is_local_adjustment_tool(tool_) || tool_ == CanvasTool::Text)) {
+       tool_ == CanvasTool::Smudge || tool_has(tool_, kToolLocalAdjustment) || tool_ == CanvasTool::Text)) {
     report_status_error(tr("This tool is unavailable while editing a Smart Filter mask"));
     event->accept();
     return;
@@ -3765,14 +3639,13 @@ bool CanvasWidget::handle_opacity_digit_key(int key, Qt::KeyboardModifiers modif
   // Shift+digits for Flow. Other painting tools keep the historical bare-digit
   // Opacity path.
   if (auto_repeat || key < Qt::Key_0 || key > Qt::Key_9 ||
-      !tool_supports_opacity_digit_keys(tool_)) {
+      !tool_has(tool_, kToolOpacityDigitKeys)) {
     return false;
   }
   const auto semantic_modifiers = modifiers & ~Qt::KeypadModifier;
   const auto shift = semantic_modifiers == Qt::ShiftModifier;
   if ((semantic_modifiers != Qt::NoModifier && !shift) ||
-      (shift && tool_ != CanvasTool::Brush && tool_ != CanvasTool::PatternStamp &&
-       tool_ != CanvasTool::HistoryBrush)) {
+      (shift && !tool_has(tool_, kToolFlow))) {
     return false;
   }
   const auto targets_flow =
@@ -3971,7 +3844,7 @@ void CanvasWidget::timerEvent(QTimerEvent* event) {
   }
   if (event->timerId() == stabilizer_timer_.timerId()) {
     const auto effective_tool = effective_tool_for_input();
-    if (!painting_ || !stroke_stabilizer_.active() || !tool_uses_stroke_stabilizer(effective_tool)) {
+    if (!painting_ || !stroke_stabilizer_.active() || !tool_has(effective_tool, kToolSmoothing)) {
       stabilizer_timer_.stop();
     } else if (const auto ticked = stroke_stabilizer_.tick(kStrokeStabilizerTickSeconds);
                ticked.has_value()) {
@@ -4185,24 +4058,8 @@ bool CanvasWidget::can_begin_pixel_edit(bool report) {
 CanvasTool CanvasWidget::effective_tool_for_input() const noexcept {
   if (active_pen_input_sample_.has_value() && pen_input_settings_.enabled && pen_input_settings_.use_eraser_tip &&
       active_pen_input_sample_->pointer_type == PenInputSample::PointerType::Eraser) {
-    switch (tool_) {
-      case CanvasTool::Brush:
-      case CanvasTool::MixerBrush:
-      case CanvasTool::PatternStamp:
-      case CanvasTool::HistoryBrush:
-      case CanvasTool::Clone:
-      case CanvasTool::Healing:
-      case CanvasTool::SpotHealing:
-      case CanvasTool::Smudge:
-      case CanvasTool::Dodge:
-      case CanvasTool::Burn:
-      case CanvasTool::Sponge:
-      case CanvasTool::BlurBrush:
-      case CanvasTool::SharpenBrush:
-      case CanvasTool::ColorReplacement:
-        return CanvasTool::Eraser;
-      default:
-        break;
+    if (tool_has(tool_, kToolPaintsStrokes)) {
+      return CanvasTool::Eraser;
     }
   }
   return tool_;

@@ -1758,7 +1758,7 @@ private:
   void sync_transform_controls_from_canvas();
   [[nodiscard]] CanvasWidget::PuppetWarpOptions puppet_warp_options_from_ui() const;
   void sync_puppet_warp_controls_from_canvas();
-  void register_option_action(QWidget* widget, std::initializer_list<CanvasTool> tools);
+  void register_option_action(QWidget* widget, std::vector<CanvasTool> tools);
   void register_retranslation(std::function<void()> callback);
   void retranslate_ui();
   void retranslate_bound_children();
@@ -1810,8 +1810,7 @@ private:
                                      bool is_folder, const QPoint& global_position);
   void reveal_path_in_file_explorer(const QString& path, bool is_file);
   void open_recent_document(QString path);
-  QAction* add_tool_action(QToolBar* palette, QActionGroup* group, QString label, CanvasTool tool,
-                           QKeySequence shortcut);
+  QAction* add_tool_action(QToolBar* palette, QActionGroup* group, CanvasTool tool);
   // Rebuilds the History panel from the active session's stacks (oldest state
   // at the top, current state highlighted, redone-away future states dimmed),
   // or clears it when no session is active.
