@@ -3547,6 +3547,67 @@ void ui_levels_exception_restores_preview_pixels_and_unlocks_edits() {
   CHECK(require_action(window, "imageAdjustLevelsAction")->isEnabled());
 }
 
+// Cancelling a destructive adjustment dialog after its live preview changed the
+// layer puts back the exact original pixels without an undo step, for every
+// dialog that runs through MainWindow::run_destructive_adjustment.
+void ui_destructive_adjustment_cancel_restores_original_pixels() {
+  struct Case {
+    const char* action;
+    const char* dialog;
+    const char* cancelled_message;
+    std::function<void(QDialog&)> change_settings;
+  };
+  const auto set_spin = [](const char* name, int value) {
+    return [name, value](QDialog& dialog) {
+      auto* spin = dialog.findChild<QSpinBox*>(QString::fromLatin1(name));
+      CHECK(spin != nullptr);
+      spin->setValue(value);
+    };
+  };
+  const std::vector<Case> cases{
+      {"imageAdjustLevelsAction", "patchyLevelsDialog", "Cancelled Levels", set_spin("levelsBlackOutputSpin", 200)},
+      {"imageAdjustCurvesAction", "patchyCurvesDialog", "Cancelled Curves",
+       [](QDialog& dialog) {
+         auto* graph = dialog.findChild<QWidget*>(QStringLiteral("curvesGraph"));
+         CHECK(graph != nullptr);
+         click_curves_graph(*graph, 128, 230);
+       }},
+      {"imageAdjustHueSaturationAction", "patchyHueSaturationDialog", "Cancelled Hue/Saturation",
+       set_spin("hueSaturationHueSpin", 120)},
+      {"imageAdjustColorBalanceAction", "patchyColorBalanceDialog", "Cancelled Color Balance",
+       set_spin("colorBalanceCyanRedSpin", 100)},
+  };
+  for (const auto& test_case : cases) {
+    patchy::Document source(48, 32, patchy::PixelFormat::rgba8());
+    source.add_pixel_layer("Paint", solid_pixels(48, 32, patchy::PixelFormat::rgba8(), QColor(40, 60, 80)));
+    patchy::ui::MainWindow window;
+    window.add_document_session(std::move(source), QStringLiteral("Cancel"));
+    show_window(window);
+    auto& document = patchy::ui::MainWindowTestAccess::document(window);
+    const auto original = std::as_const(document).layers().front().pixels();
+    const auto layer_is_original = [&] {
+      const auto& current = std::as_const(document).layers().front().pixels();
+      return std::equal(original.data().begin(), original.data().end(), current.data().begin(),
+                        current.data().end());
+    };
+    bool saw_preview = false;
+    QTimer::singleShot(0, [&] {
+      auto* dialog = patchy::test::ui::find_top_level_dialog(QString::fromLatin1(test_case.dialog));
+      CHECK(dialog != nullptr);
+      test_case.change_settings(*dialog);
+      saw_preview = process_events_until([&] { return !layer_is_original(); }, 3000);
+      dialog->reject();
+    });
+    require_action(window, test_case.action)->trigger();
+    QApplication::processEvents();
+    CHECK(saw_preview);
+    CHECK(layer_is_original());
+    CHECK(std::as_const(document).layers().size() == 1);
+    CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == 0);
+    CHECK(window.statusBar()->currentMessage() == QString::fromUtf8(test_case.cancelled_message));
+  }
+}
+
 std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
   return {
       {"ui_image_adjustments_menu_applies_active_layer_filters",
@@ -3628,5 +3689,7 @@ std::vector<patchy::test::TestCase> image_adjustments_curves_tests() {
        ui_curves_clipped_adjustment_reedit_disables_auto},
       {"ui_color_balance_dialog_adjusts_selected_pixels", ui_color_balance_dialog_adjusts_selected_pixels},
       {"ui_levels_exception_restores_preview_pixels_and_unlocks_edits", ui_levels_exception_restores_preview_pixels_and_unlocks_edits},
+      {"ui_destructive_adjustment_cancel_restores_original_pixels",
+       ui_destructive_adjustment_cancel_restores_original_pixels},
   };
 }
