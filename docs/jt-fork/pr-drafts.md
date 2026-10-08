@@ -41,6 +41,69 @@ No behavior changes.
 
 ---
 
+# Structural refactors (offer these first; the feature PRs can be rebased onto them)
+
+The three `pr/refactor-*` branches each apply to upstream `main` alone, and all three also merge
+together cleanly. None of them touches docs (JT's call: Seth may want doc lines added). JT's `jt`
+branch already runs all three with every fork feature converted to them (the `port/*` branches).
+If Seth takes them, rebase the feature branches onto his `main` and replace their copied code with
+the helpers, the way the `port/*` commits did.
+
+## pr/refactor-destructive-adjustments
+
+Title: Share one flow across the destructive Image > Adjustments dialogs
+
+Each destructive adjustment dialog (Levels, Curves, Hue/Saturation, Color Balance) carried its own
+copy of the same flow: validate the layer, live preview, restore on cancel, cancellable progress,
+one undo step, status messages. Adding an adjustment meant copying about 150 lines. This moves
+that flow into one `run_destructive_adjustment(spec)` member template; each dialog now describes
+only its name, its dialog call and its pixel function, with three small hooks for the real
+differences (Hue/Saturation and Color Balance still finish by adding an adjustment layer, as they
+do today; Curves still restores the whole layer). No strings, undo labels or status messages
+change. One behavior-neutral difference: Levels no longer writes the original pixels back a
+second time when its progress bar is cancelled. Adds one test that cancelling every dialog
+restores the pixels byte for byte with no undo step.
+
+## pr/refactor-tool-capabilities
+
+Title: Replace the scattered per-tool switches with one tool traits table
+
+Tool behavior lived in about 30 hand-written switches and lists across 14 files (names, hotkey
+ids, icons, hints, which tools show Size/Flow/Opacity controls, Alt-click color pick, Quick Mask
+and channel-view blocking, and so on), and they had drifted apart. This puts them in one
+`kToolTraits` table in `src/ui/tool_traits.{hpp,cpp}`, one row per `CanvasTool`, with a
+`static_assert` that every tool has exactly one row and a UI test that every tool has exactly one
+palette action. A new tool is now one row plus its palette slot.
+
+Behavior is unchanged: before converting, every replaced predicate and every visible per-tool
+string, hotkey, icon and options-bar widget was recorded for all tools and compared after the
+change, byte for byte. The drift found along the way is preserved, not fixed, and listed here for
+Seth to decide: Pattern Stamp and Mixer Brush get the Size/Soft boxes but not the sliders;
+the Brush Preset menu shows for only some brush tools; opacity number keys work for Gradient but
+not Fill; Line gets Alt-click color pick but Polygon and Custom Shape don't; the Quick Mask
+double-click block list is shorter than the press list; and several palette names differ from the
+status-bar names (Clone / Clone Stamp, Pick / Eyedropper, Hand / Pan and others).
+
+## pr/refactor-canvas-sessions (2 commits)
+
+Title: Route canvas session checks through one predicate, and lock document commands during a transform
+
+Free Transform, Warp and the path transform each appeared in about 20 hand-written "is a session
+running?" checks, and no two lists matched. Commit 1 is a pure refactor: a `ModalSession` enum
+with `modal_session()`, `modal_session_active()` and commit/cancel/discard hooks, written as
+switches so `-Wswitch` flags every hook a new session misses.
+
+Commit 2 fixes a real bug the scattered lists caused: filters and adjustments could run during a
+Warp, and pressing Enter then overwrote their result. While a session is open, document commands
+are now disabled the way Photoshop greys them out (filters, adjustments, Layer, Select and Image
+menus, cut/copy/paste, align, Save and Export); tools, colors, brush size, View and Window
+commands, Close, and switching between Free Transform and Warp stay available. Two existing tests
+expected Align and Duplicate Layer to work mid-transform and are updated to the new rule. Adds
+`ui_warp_session_blocks_filters_until_committed`. Script API filter calls are not blocked by this
+change.
+
+---
+
 ## pr/rotate-view
 
 Title: Add the Rotate View tool (R) so the canvas can be turned while painting
