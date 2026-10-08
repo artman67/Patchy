@@ -543,6 +543,11 @@ void MainWindow::undo() {
     canvas_->undo_puppet_warp_step();
     return;
   }
+  if (canvas_->perspective_warp_active()) {
+    // The session keeps its own quad history; the document history waits.
+    canvas_->undo_perspective_warp_step();
+    return;
+  }
   finish_pending_shape_appearance_edit();
   finish_pending_layer_opacity_edit();
   finish_pending_layer_fill_opacity_edit();
@@ -560,7 +565,7 @@ void MainWindow::undo() {
 }
 
 void MainWindow::redo() {
-  if (canvas_ == nullptr || canvas_->pointer_gesture_active()) {
+  if (canvas_ == nullptr || canvas_->pointer_gesture_active() || canvas_->perspective_warp_active()) {
     return;
   }
   if (canvas_->puppet_warp_active()) {
@@ -937,11 +942,14 @@ void MainWindow::update_undo_redo_actions() {
     return;
   }
   const bool puppet = canvas_ != nullptr && canvas_->puppet_warp_active();
+  // A Perspective Warp session answers Undo from its own quad history (see
+  // undo()); the document's Redo waits until the session ends.
+  const bool perspective_session = canvas_ != nullptr && canvas_->perspective_warp_active();
   if (undo_action_ != nullptr) {
-    undo_action_->setEnabled(puppet ? canvas_->puppet_warp_can_undo() : !current_session->undo_stack.empty());
+    undo_action_->setEnabled(puppet ? canvas_->puppet_warp_can_undo() : perspective_session || !current_session->undo_stack.empty());
   }
   if (redo_action_ != nullptr) {
-    redo_action_->setEnabled(puppet ? canvas_->puppet_warp_can_redo() : !current_session->redo_stack.empty());
+    redo_action_->setEnabled(puppet ? canvas_->puppet_warp_can_redo() : !perspective_session && !current_session->redo_stack.empty());
   }
 }
 

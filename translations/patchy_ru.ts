@@ -11040,6 +11040,46 @@ RGB: %2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>Марионеточная деформация применена</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Перед использованием «Деформации перспективы» растрируйте смарт-объект</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Перетаскиванием нарисуйте четырёхугольник на каждой плоскости, затем выберите «Деформация». Enter применяет изменения, Esc отменяет.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Деформация перспективы</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Деформация перспективы применена</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Деформация перспективы отменена</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Нарисуйте четырёхугольник перед переключением в режим «Деформация»</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Перетаскивайте углы четырёхугольников. Enter применяет изменения, Esc отменяет.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Выберите четырёхугольник для выпрямления</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Выпрямление сложит этот четырёхугольник или заставит его коснуться другого</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>Четырёхугольники не могут касаться или перекрываться. Оставьте зазор между плоскостями.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19704,6 +19744,62 @@ Y: %2
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>Перед использованием «Марионеточной деформации» растрируйте смарт-объект</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Деформация перспективы</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Макет</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Нарисовать четырёхугольники на плоскостях изображения</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Деформация</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Перетащить углы четырёхугольников, чтобы изменить перспективу</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Сделать почти вертикальные стороны выбранного четырёхугольника вертикальными</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Сделать почти горизонтальные стороны выбранного четырёхугольника горизонтальными</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Сделать стороны выбранного четырёхугольника вертикальными и горизонтальными</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Удалить все четырёхугольники</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Удалить все четырёхугольники и начать макет заново</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Применить деформацию перспективы</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Отменить деформацию перспективы</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>«Деформация перспективы» недоступна в режиме быстрой маски</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Перед использованием «Деформации перспективы» растрируйте смарт-объект</translation>
     </message>
 </context>
 <context>

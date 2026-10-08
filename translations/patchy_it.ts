@@ -11010,6 +11010,46 @@ RGB: %2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>Alterazione burattino applicata</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rasterizza l&apos;oggetto avanzato prima di usare Alterazione prospettica</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Trascina per disegnare un quadrilatero su ogni piano, poi scegli Altera. Enter applica, Esc annulla.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Alterazione prospettica</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Alterazione prospettica applicata</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Alterazione prospettica annullata</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Disegna un quadrilatero prima di passare ad Altera</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Trascina gli angoli dei quadrilateri. Enter applica, Esc annulla.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Seleziona un quadrilatero da raddrizzare</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Il raddrizzamento ripiegherebbe questo quadrilatero o gli farebbe toccare un altro quadrilatero</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>I quadrilateri non possono toccarsi né sovrapporsi. Lascia uno spazio tra i piani.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19648,6 +19688,62 @@ Convertiti in immagini: %1.</translation>
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>Rasterizza l&apos;oggetto avanzato prima di usare Alterazione burattino</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Alterazione prospettica</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Layout</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Disegna quadrilateri sui piani dell&apos;immagine</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Altera</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Trascina gli angoli dei quadrilateri per cambiare la prospettiva</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Rendi verticali i lati quasi verticali del quadrilatero selezionato</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Rendi orizzontali i lati quasi orizzontali del quadrilatero selezionato</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Rendi verticali e orizzontali i lati del quadrilatero selezionato</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Rimuovi tutti i quadrilateri</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Rimuovi tutti i quadrilateri e ricomincia il layout</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Applica alterazione prospettica</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Annulla alterazione prospettica</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>Alterazione prospettica non è disponibile in modalità Maschera veloce</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rasterizza l&apos;oggetto avanzato prima di usare Alterazione prospettica</translation>
     </message>
 </context>
 <context>

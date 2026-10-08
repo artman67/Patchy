@@ -42,6 +42,7 @@ std::vector<patchy::test::TestCase> smart_filter_tests();
 std::vector<patchy::test::TestCase> smart_object_tests();
 std::vector<patchy::test::TestCase> warp_tests();
 std::vector<patchy::test::TestCase> puppet_warp_tests();
+std::vector<patchy::test::TestCase> perspective_warp_tests();
 std::vector<patchy::test::TestCase> import_print_resolution_tests();
 std::vector<patchy::test::TestCase> divide_photos_tests();
 std::vector<patchy::test::TestCase> folder_open_export_tests();

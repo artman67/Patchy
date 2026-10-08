@@ -11010,6 +11010,46 @@ RGB: %2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>Deformación de posición libre aplicada</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rasterice el objeto inteligente antes de usar Deformación de perspectiva</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Arrastre para dibujar un cuadrilátero sobre cada plano y después elija Deformar. Enter aplica, Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Deformación de perspectiva</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Deformación de perspectiva aplicada</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Deformación de perspectiva cancelada</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Dibuje un cuadrilátero antes de cambiar a Deformar</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Arrastre las esquinas de los cuadriláteros. Enter aplica, Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Seleccione un cuadrilátero para enderezarlo</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Enderezar plegaría este cuadrilátero o haría que tocara otro cuadrilátero</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>Los cuadriláteros no pueden tocarse ni superponerse. Deje un espacio entre los planos.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19648,6 +19688,62 @@ Convertido en imágenes: %1.</translation>
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>Rasterice el objeto inteligente antes de usar Deformación de posición libre</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Deformación de perspectiva</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Diseño</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Dibujar cuadriláteros sobre los planos de la imagen</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Deformar</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Arrastrar las esquinas de los cuadriláteros para cambiar la perspectiva</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Poner verticales los lados casi verticales del cuadrilátero seleccionado</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Poner horizontales los lados casi horizontales del cuadrilátero seleccionado</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Poner verticales y horizontales los lados del cuadrilátero seleccionado</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Quitar todos los cuadriláteros</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Quitar todos los cuadriláteros y empezar el diseño de nuevo</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Aplicar deformación de perspectiva</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Cancelar deformación de perspectiva</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>Deformación de perspectiva no está disponible en el modo Máscara rápida</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rasterice el objeto inteligente antes de usar Deformación de perspectiva</translation>
     </message>
 </context>
 <context>

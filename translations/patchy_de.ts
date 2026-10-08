@@ -11010,6 +11010,46 @@ RGB: %2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>Formgitter angewendet</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rastern Sie das Smartobjekt, bevor Sie Perspektivische Verformung verwenden</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Ziehen Sie über jeder Fläche ein Viereck auf und wählen Sie dann Verkrümmen. Enter wendet an, Esc bricht ab.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Perspektivische Verformung</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Perspektivische Verformung angewendet</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Perspektivische Verformung abgebrochen</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Zeichnen Sie ein Viereck, bevor Sie zu Verkrümmen wechseln</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Ziehen Sie die Ecken der Vierecke. Enter wendet an, Esc bricht ab.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Wählen Sie ein Viereck zum Begradigen aus</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Das Begradigen würde dieses Viereck umklappen oder ein anderes Viereck berühren lassen</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>Vierecke dürfen sich nicht berühren oder überlappen. Lassen Sie eine Lücke zwischen den Flächen.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19648,6 +19688,62 @@ In Bilder umgewandelt: %1.</translation>
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>Rastern Sie das Smartobjekt, bevor Sie Formgitter verwenden</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Perspektivische Verformung</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Layout</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Vierecke über die Flächen des Bildes zeichnen</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Verkrümmen</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Die Ecken der Vierecke ziehen, um die Perspektive zu ändern</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Nahezu senkrechte Seiten des ausgewählten Vierecks senkrecht ausrichten</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Nahezu waagerechte Seiten des ausgewählten Vierecks waagerecht ausrichten</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Seiten des ausgewählten Vierecks senkrecht und waagerecht ausrichten</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Alle Vierecke entfernen</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Alle Vierecke entfernen und das Layout neu beginnen</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Perspektivische Verformung anwenden</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Perspektivische Verformung abbrechen</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>Perspektivische Verformung ist im Maskierungsmodus nicht verfügbar</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rastern Sie das Smartobjekt, bevor Sie Perspektivische Verformung verwenden</translation>
     </message>
 </context>
 <context>

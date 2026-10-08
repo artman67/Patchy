@@ -10980,6 +10980,46 @@ Mixed selection</source>
         <source>Applied Puppet Warp</source>
         <translation>パペットワープを適用しました</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>遠近法ワープを使用する前にスマートオブジェクトをラスタライズしてください</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>ドラッグして各平面に四角形を描き、ワープを選択します。Enter で適用、Esc でキャンセルします。</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>遠近法ワープ</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>遠近法ワープを適用しました</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>遠近法ワープをキャンセルしました</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>ワープに切り替える前に四角形を描いてください</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>四角形のコーナーをドラッグします。Enter で適用、Esc でキャンセルします。</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>まっすぐにする四角形を選択してください</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>まっすぐにすると、この四角形が折り返されるか、別の四角形に接してしまいます</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>四角形同士を接したり重ねたりすることはできません。平面の間に隙間を空けてください。</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19592,6 +19632,62 @@ Baked into images: %1.</source>
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>パペットワープを使用する前にスマートオブジェクトをラスタライズしてください</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>遠近法ワープ</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>レイアウト</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>画像の平面上に四角形を描きます</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>ワープ</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>四角形のコーナーをドラッグして遠近感を変更します</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>選択した四角形のほぼ垂直な辺を垂直にします</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>選択した四角形のほぼ水平な辺を水平にします</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>選択した四角形の辺を垂直および水平にします</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>すべての四角形を削除</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>すべての四角形を削除してレイアウトをやり直します</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>遠近法ワープを適用</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>遠近法ワープをキャンセル</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>クイックマスクモードでは遠近法ワープを使用できません</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>遠近法ワープを使用する前にスマートオブジェクトをラスタライズしてください</translation>
     </message>
 </context>
 <context>

@@ -11010,6 +11010,46 @@ RGB: %2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>Distorção de fantoches aplicada</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rasterize o objeto inteligente antes de usar Distorção de perspectiva</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Arraste para desenhar um quadrilátero sobre cada plano e depois escolha Distorção. Enter aplica; Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Distorção de perspectiva</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Distorção de perspectiva aplicada</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Distorção de perspectiva cancelada</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Desenhe um quadrilátero antes de mudar para Distorção</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Arraste os cantos dos quadriláteros. Enter aplica; Esc cancela.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Selecione um quadrilátero para endireitar</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Endireitar dobraria este quadrilátero ou o faria tocar outro quadrilátero</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>Os quadriláteros não podem se tocar nem se sobrepor. Deixe um espaço entre os planos.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19648,6 +19688,62 @@ Y: %2
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>Rasterize o objeto inteligente antes de usar Distorção de fantoches</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Distorção de perspectiva</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Layout</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Desenhar quadriláteros sobre os planos da imagem</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Distorção</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Arrastar os cantos dos quadriláteros para mudar a perspectiva</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Deixar verticais os lados quase verticais do quadrilátero selecionado</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Deixar horizontais os lados quase horizontais do quadrilátero selecionado</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Deixar verticais e horizontais os lados do quadrilátero selecionado</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Remover todos os quadriláteros</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Remover todos os quadriláteros e recomeçar o layout</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Aplicar distorção de perspectiva</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Cancelar distorção de perspectiva</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>Distorção de perspectiva não está disponível no modo Máscara Rápida</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Rasterize o objeto inteligente antes de usar Distorção de perspectiva</translation>
     </message>
 </context>
 <context>

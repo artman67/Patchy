@@ -957,6 +957,9 @@ private:
   void transform_active_layer_dialog();
   void warp_transform_active_layer();
   void puppet_warp_active_layer();
+  // Edit > Perspective Warp: rasterize prompt for text/shape layers (Liquify's
+  // rule), Smart Object refusal, then the canvas session.
+  void perspective_warp_active_layer();
   void add_text_at(QPoint document_point, QRect requested_text_box = {}, bool show_editor = true);
   void edit_text_layer(LayerId id);
   void cancel_text_editor(QTextEdit* editor, std::optional<LayerId> layer_id);
@@ -2032,6 +2035,11 @@ private:
   QComboBox* puppet_warp_rotate_combo_{nullptr};
   UnitSpinBox* puppet_warp_rotate_angle_spin_{nullptr};
   QPushButton* puppet_warp_remove_all_button_{nullptr};
+  // Perspective Warp session row; perspective_warp_option_actions_ holds all of it.
+  QPushButton* perspective_warp_layout_button_{nullptr};
+  QPushButton* perspective_warp_warp_button_{nullptr};
+  QPushButton* perspective_warp_remove_all_button_{nullptr};
+  std::vector<QPushButton*> perspective_warp_straighten_buttons_;
   // Crop tool options: a Style combo (Ratio: preset combo + ratio pair +
   // Clear; Size: unit Width/Height fields that mirror and resize the box,
   // plus a link button), and the session apply/reset pair (enabled only
@@ -2522,6 +2530,7 @@ private:
   std::vector<QWidget*> warp_option_actions_;
   std::vector<QWidget*> puppet_warp_option_actions_;
   std::vector<QWidget*> transform_session_actions_;
+  std::vector<QWidget*> perspective_warp_option_actions_;
   QWidget* options_flow_container_{nullptr};
   std::vector<std::function<void()>> retranslation_callbacks_;
   bool updating_transform_controls_{false};

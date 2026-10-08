@@ -10980,6 +10980,46 @@ RGB：%2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>已套用操控彎曲</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>使用透視彎曲前請先點陣化智慧型物件</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>拖曳以在每個平面上繪製四邊形，然後選擇彎曲。按 Enter 套用，按 Esc 取消。</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>透視彎曲</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>已套用透視彎曲</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>已取消透視彎曲</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>切換到彎曲前請先繪製四邊形</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>拖曳四邊形的角落。按 Enter 套用，按 Esc 取消。</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>請選取要拉直的四邊形</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>拉直會使此四邊形翻折或碰觸另一個四邊形</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>四邊形不能互相碰觸或重疊。請在平面之間保留間隙。</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19592,6 +19632,62 @@ Baked into images: %1.</source>
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>使用操控彎曲前請先點陣化智慧型物件</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>透視彎曲</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>版面</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>在影像的平面上繪製四邊形</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>彎曲</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>拖曳四邊形的角落以變更透視</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>將所選四邊形接近垂直的邊設為垂直</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>將所選四邊形接近水平的邊設為水平</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>將所選四邊形的邊設為垂直和水平</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>移除所有四邊形</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>移除所有四邊形並重新開始版面</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>套用透視彎曲</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>取消透視彎曲</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>快速遮色片模式中無法使用透視彎曲</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>使用透視彎曲前請先點陣化智慧型物件</translation>
     </message>
 </context>
 <context>

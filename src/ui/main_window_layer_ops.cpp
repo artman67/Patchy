@@ -1309,6 +1309,37 @@ void MainWindow::puppet_warp_active_layer() {
   refresh_options_bar();
 }
 
+void MainWindow::perspective_warp_active_layer() {
+  if (canvas_ == nullptr || !has_active_document()) {
+    return;
+  }
+  if (canvas_->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr) {
+    finish_active_text_editor();
+  }
+  if (canvas_->quick_mask_active()) {
+    show_status_error(tr("Perspective Warp is unavailable in Quick Mask mode"));
+    return;
+  }
+  select_only_layer_if_none_active();
+  const auto active = document().active_layer_id();
+  const auto* layer = active.has_value() ? std::as_const(document()).find_layer(*active) : nullptr;
+  if (layer == nullptr) {
+    show_status_error(tr("Select a pixel layer to warp"));
+    return;
+  }
+  // Liquify's rules: no Smart Objects (Photoshop's smart-filter descriptor is
+  // uncalibrated), and text or shape layers are rasterized first.
+  if (layer_is_smart_object(*layer)) {
+    show_status_error(tr("Rasterize the Smart Object before using Perspective Warp"));
+    return;
+  }
+  if (!prompt_rasterize_procedural_layer(*active, tr("Perspective Warp"), false)) {
+    return;
+  }
+  canvas_->begin_perspective_warp();  // refusal reasons land in the status bar
+  refresh_options_bar();
+}
+
 void MainWindow::add_layer() {
   auto& doc = document();
   const auto name = default_new_layer_name(doc);

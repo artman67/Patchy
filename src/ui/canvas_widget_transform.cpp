@@ -3636,9 +3636,7 @@ bool CanvasWidget::prepare_warp_source() {
   // resample_warped_rgba8 converts its source to RGBA8888 on every call;
   // converting once here makes the per-move conversion a no-op.
   warp_source_image_ = warp_source_image_.convertToFormat(QImage::Format_RGBA8888);
-  if (warp_base_cache_.isNull()) {
-    build_warp_base_cache(*warp_layer_id_);
-  }
+  ensure_warp_base_cache(*warp_layer_id_);
   refresh_warp_preview_cache();
   return true;
 }
@@ -3668,6 +3666,12 @@ void CanvasWidget::build_warp_base_cache(LayerId hidden_layer_id) {
     const QRect canvas_rect(0, 0, document_->width(), document_->height());
     warp_base_cache_ = qimage_from_document_rect_with_hidden_layers_banded(*document_, canvas_rect, true, hidden)
                            .convertToFormat(QImage::Format_RGBA8888);
+  }
+}
+
+void CanvasWidget::ensure_warp_base_cache(LayerId hidden_layer_id) {
+  if (warp_base_cache_.isNull()) {
+    build_warp_base_cache(hidden_layer_id);
   }
 }
 
@@ -3866,12 +3870,16 @@ void CanvasWidget::reset_warp_state() {
   warp_style_ = QStringLiteral("warpCustom");
   warp_style_value_ = 0.0;
   warp_source_image_ = QImage();
+  clear_warp_preview();
+  warp_entry_changed_ = false;
+}
+
+void CanvasWidget::clear_warp_preview() {
   warp_base_cache_ = QImage();
   warp_base_cache_scale_level_ = 0;
   warp_base_display_mip_cache_.clear();
   warp_base_display_mip_source_key_ = 0;
   warp_preview_patches_.clear();
-  warp_entry_changed_ = false;
 }
 
 bool CanvasWidget::bake_warp_into_layer(Layer& layer, const WarpMeshGrid& mesh,

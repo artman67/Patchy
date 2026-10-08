@@ -1,6 +1,6 @@
 # Warp: warped smart objects, warp styles, the Warp Transform tool, and Warp Text
 
-Deep reference for all warp machinery. Smart-object fundamentals (model, I/O, locks) live in docs/smart-objects.md; text-layer fundamentals live in docs/text-tool.md. Both warp consumers share `generate_style_warp_mesh` / `apply_warp_distortion` (core/warp_mesh) — a change there affects smart-object warps AND Warp Text.
+Deep reference for all warp machinery. Perspective Warp is a separate session that shares the warp preview members and `resample_warped_rgba8`; see [perspective-warp.md](perspective-warp.md). Smart-object fundamentals (model, I/O, locks) live in docs/smart-objects.md; text-layer fundamentals live in docs/text-tool.md. Both warp consumers share `generate_style_warp_mesh` / `apply_warp_distortion` (core/warp_mesh) — a change there affects smart-object warps AND Warp Text.
 
 Puppet Warp ([puppet-warp.md](puppet-warp.md)) also renders through `resample_warped_rgba8` (its optional `cell_order`) and reuses the warp preview base cache.
 

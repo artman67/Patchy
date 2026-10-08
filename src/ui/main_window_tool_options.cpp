@@ -2655,6 +2655,7 @@ void MainWindow::refresh_options_bar() {
   const bool warp_session = edit_allowed && canvas_ != nullptr && canvas_->warp_transform_active();
   const bool puppet_session = edit_allowed && canvas_ != nullptr && canvas_->puppet_warp_active();
   const bool transform_session_active = free_transform_session || warp_session || puppet_session;
+  const bool perspective_session = edit_allowed && canvas_ != nullptr && canvas_->perspective_warp_active();
   // Every widget gets ONE setVisible with its final state, hides before shows.
   // Showing a child of a visible parent activates the parent layouts
   // synchronously (Qt), so a show-then-hide pass (per-tool show, then the
@@ -2667,7 +2668,8 @@ void MainWindow::refresh_options_bar() {
     // click), so they hide instead of stacking next to the session controls and
     // wrapping the bar onto a second row (which shifted the canvas down).
     const auto tool_matches = tools.empty() || std::find(tools.begin(), tools.end(), current_tool_) != tools.end();
-    return tool_matches && !transform_session_active && vector_option_widget_visible(mode_rules, widget) &&
+    return tool_matches && !transform_session_active && !perspective_session &&
+           vector_option_widget_visible(mode_rules, widget) &&
            crop_option_widget_visible(widget);
   };
   for (const auto& [widget, tools] : option_actions_) {
@@ -2756,6 +2758,26 @@ void MainWindow::refresh_options_bar() {
       widget->setEnabled(visible);
     }
   }
+  // Perspective Warp owns the row the same way; the straighten trio shows in
+  // Warp mode and needs a selected quad.
+  const bool perspective_warp_mode =
+      perspective_session && canvas_->perspective_warp_mode() == CanvasWidget::PerspectiveWarpMode::Warp;
+  for (auto* widget : perspective_warp_option_actions_) {
+    if (widget == nullptr) {
+      continue;
+    }
+    const bool straighten = std::find(perspective_warp_straighten_buttons_.begin(),
+                                      perspective_warp_straighten_buttons_.end(),
+                                      widget) != perspective_warp_straighten_buttons_.end();
+    widget->setVisible(perspective_session && (!straighten || perspective_warp_mode));
+    widget->setEnabled(perspective_session &&
+                       (!straighten || canvas_->perspective_warp_selected_quad() >= 0) &&
+                       (widget != perspective_warp_remove_all_button_ || canvas_->perspective_warp_quad_count() > 0));
+  }
+  if (perspective_warp_layout_button_ != nullptr && perspective_warp_warp_button_ != nullptr) {
+    perspective_warp_layout_button_->setChecked(perspective_session && !perspective_warp_mode);
+    perspective_warp_warp_button_->setChecked(perspective_warp_mode);
+  }
   if (transform_warp_mode_button_ != nullptr) {
     // setChecked never emits clicked, so no blocker is needed; this also restores
     // the visual state after a refused switch (text layer, undecodable source).
@@ -2772,7 +2794,8 @@ void MainWindow::refresh_options_bar() {
   // which re-entrant refreshes (layer-list updates) still find the child.
   auto* inline_text_editor =
       canvas_ != nullptr ? canvas_->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) : nullptr;
-  const bool text_session_active = !transform_session_active && inline_text_editor != nullptr &&
+  const bool text_session_active = !transform_session_active && !perspective_session &&
+                                   inline_text_editor != nullptr &&
                                    !inline_text_editor->property(kTextEditorFinishedProperty).toBool();
   for (auto* button : {text_apply_button_, text_cancel_button_}) {
     if (button != nullptr) {

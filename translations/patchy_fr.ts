@@ -11010,6 +11010,46 @@ RVB : %2, %3, %4</translation>
         <source>Applied Puppet Warp</source>
         <translation>Déformation de la marionnette appliquée</translation>
     </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Pixellisez l&apos;objet dynamique avant d&apos;utiliser Déformation de la perspective</translation>
+    </message>
+    <message>
+        <source>Drag to draw a quad over each plane, then choose Warp. Enter applies, Esc cancels.</source>
+        <translation>Faites glisser pour tracer un quadrilatère sur chaque plan, puis choisissez Déformation. Enter applique, Esc annule.</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Déformation de la perspective</translation>
+    </message>
+    <message>
+        <source>Applied Perspective Warp</source>
+        <translation>Déformation de la perspective appliquée</translation>
+    </message>
+    <message>
+        <source>Perspective Warp cancelled</source>
+        <translation>Déformation de la perspective annulée</translation>
+    </message>
+    <message>
+        <source>Draw a quad before switching to Warp</source>
+        <translation>Tracez un quadrilatère avant de passer en mode Déformation</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners. Enter applies, Esc cancels.</source>
+        <translation>Faites glisser les coins des quadrilatères. Enter applique, Esc annule.</translation>
+    </message>
+    <message>
+        <source>Select a quad to straighten</source>
+        <translation>Sélectionnez un quadrilatère à redresser</translation>
+    </message>
+    <message>
+        <source>Straightening would fold this quad or make it touch another quad</source>
+        <translation>Le redressement replierait ce quadrilatère ou lui ferait toucher un autre quadrilatère</translation>
+    </message>
+    <message>
+        <source>Quads can&apos;t touch or overlap. Leave a gap between planes.</source>
+        <translation>Les quadrilatères ne peuvent ni se toucher ni se chevaucher. Laissez un espace entre les plans.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -19648,6 +19688,62 @@ Convertis en images : %1.</translation>
     <message>
         <source>Rasterize the Smart Object before using Puppet Warp</source>
         <translation>Pixellisez l&apos;objet dynamique avant d&apos;utiliser Déformation de la marionnette</translation>
+    </message>
+    <message>
+        <source>Perspective Warp</source>
+        <translation>Déformation de la perspective</translation>
+    </message>
+    <message>
+        <source>Layout</source>
+        <translation>Disposition</translation>
+    </message>
+    <message>
+        <source>Draw quads over the planes of the image</source>
+        <translation>Tracer des quadrilatères sur les plans de l&apos;image</translation>
+    </message>
+    <message>
+        <source>Warp</source>
+        <translation>Déformation</translation>
+    </message>
+    <message>
+        <source>Drag the quad corners to change the perspective</source>
+        <translation>Faire glisser les coins des quadrilatères pour modifier la perspective</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-vertical sides vertical</source>
+        <translation>Rendre verticaux les côtés presque verticaux du quadrilatère sélectionné</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s near-horizontal sides horizontal</source>
+        <translation>Rendre horizontaux les côtés presque horizontaux du quadrilatère sélectionné</translation>
+    </message>
+    <message>
+        <source>Make the selected quad&apos;s sides vertical and horizontal</source>
+        <translation>Rendre verticaux et horizontaux les côtés du quadrilatère sélectionné</translation>
+    </message>
+    <message>
+        <source>Remove All Quads</source>
+        <translation>Supprimer tous les quadrilatères</translation>
+    </message>
+    <message>
+        <source>Remove every quad and start the layout again</source>
+        <translation>Supprimer tous les quadrilatères et recommencer la disposition</translation>
+    </message>
+    <message>
+        <source>Apply Perspective Warp</source>
+        <translation>Appliquer la déformation de la perspective</translation>
+    </message>
+    <message>
+        <source>Cancel Perspective Warp</source>
+        <translation>Annuler la déformation de la perspective</translation>
+    </message>
+    <message>
+        <source>Perspective Warp is unavailable in Quick Mask mode</source>
+        <translation>Déformation de la perspective n&apos;est pas disponible en mode Masque</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Perspective Warp</source>
+        <translation>Pixellisez l&apos;objet dynamique avant d&apos;utiliser Déformation de la perspective</translation>
     </message>
 </context>
 <context>

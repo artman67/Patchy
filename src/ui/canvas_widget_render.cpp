@@ -999,8 +999,12 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
   const bool draw_transform_overlay =
       transforming_layer_ && !transform_base_cache_.isNull() &&
       (!transform_source_image_.isNull() || !transform_multi_snapshot_.isNull());
+  // Perspective Warp's Layout mode shows the untouched layer, so only its Warp
+  // mode draws the shared warp preview.
   const bool draw_warp_overlay =
-      (warping_layer_ || puppet_.active) && (!warp_preview_patches_.empty() || !warp_base_cache_.isNull());
+      (warping_layer_ || puppet_.active ||
+       (perspective_warp_.has_value() && perspective_warp_->mode == PerspectiveWarpMode::Warp)) &&
+      (!warp_preview_patches_.empty() || !warp_base_cache_.isNull());
 
   painter.save();
   painter.setClipRect(target_rect);
@@ -1137,6 +1141,8 @@ void CanvasWidget::paintEvent(QPaintEvent* event) {
     draw_warp_transform(painter);
   } else if (puppet_.active) {
     draw_puppet_warp(painter);
+  } else if (perspective_warp_.has_value()) {
+    draw_perspective_warp(painter);
   } else {
     draw_move_transform_controls(painter);
   }

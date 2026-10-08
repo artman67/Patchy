@@ -285,12 +285,13 @@ bool CanvasWidget::event(QEvent* event) {
     }
     if (key_event->modifiers() == Qt::NoModifier &&
         (key_event->key() == Qt::Key_Backspace || key_event->key() == Qt::Key_Delete)) {
-      // While a magnetic-lasso trace is live (Backspace pops the last anchor) or guides
+      // While a magnetic-lasso trace is live (Backspace pops the last anchor), a
+      // Perspective Warp session runs (they remove the selected quad), or guides
       // are selected (Delete/Backspace removes them), the canvas owns these keys.
       // Accepting the override suppresses the app-level shortcuts (layer.clear binds
       // Backspace on macOS and Delete everywhere) so keyPressEvent receives a plain key
       // event instead of QShortcutMap consuming it first.
-      if (magnetic_lasso_active() || pen_session_active_ || (puppet_.active && !puppet_.selected.empty()) ||
+      if (magnetic_lasso_active() || pen_session_active_ || (puppet_.active && !puppet_.selected.empty()) || perspective_warp_.has_value() ||
           (path_edit_tool_active() && path_edit_has_selection()) ||
           (!guides_locked_ && has_selected_guides())) {
         event->accept();
@@ -622,7 +623,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     // canvas context menu (show_canvas_context_menu), a drag opens nothing.
     if (event->buttons() == Qt::RightButton && document_ != nullptr && !spacebar_panning_ &&
         !handling_tablet_event_ && !pen_recently_in_proximity() && !pointer_gesture_active() &&
-        !transforming_layer_ && !warping_layer_ && !puppet_.active && !path_transform_active_ &&
+        !transforming_layer_ && !warping_layer_ && !puppet_.active && !path_transform_active_ && !perspective_warp_.has_value() &&
         (event->modifiers() & Qt::AltModifier) == 0) {
       context_press_pos_ = event->pos();
     }
@@ -676,6 +677,10 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
     // the options-bar buttons, or a tool/layer switch end it.
     handle_puppet_warp_press(event);
     event->accept();
+    return;
+  }
+
+  if (handle_perspective_warp_press(event)) {
     return;
   }
 
@@ -1587,6 +1592,10 @@ void CanvasWidget::mouseMoveEvent(QMouseEvent* event) {
     return;
   }
 
+  if (handle_perspective_warp_move(event)) {
+    return;
+  }
+
   if (pen_family_tool_active()) {
     handle_pen_move(event, document_position_f(event->position()));
     last_mouse_position_ = event->pos();
@@ -2245,6 +2254,10 @@ void CanvasWidget::mouseReleaseEvent(QMouseEvent* event) {
   if (edit_locked_ && !zooming_) {
     clear_move_hover_outline();
     event->accept();
+    return;
+  }
+
+  if (handle_perspective_warp_release(event)) {
     return;
   }
 
@@ -3033,6 +3046,12 @@ void CanvasWidget::mouseDoubleClickEvent(QMouseEvent* event) {
     event->accept();
     return;
   }
+  if (perspective_warp_.has_value()) {
+    // Just a second press (the base class replays it as one): it must not
+    // reach the text and shape editor branches below.
+    QWidget::mouseDoubleClickEvent(event);
+    return;
+  }
   if (quick_mask_active_ && event->button() == Qt::LeftButton &&
       (tool_ == CanvasTool::Move || tool_ == CanvasTool::Marquee ||
        tool_ == CanvasTool::EllipticalMarquee || tool_ == CanvasTool::Lasso ||
@@ -3139,6 +3158,11 @@ void CanvasWidget::keyPressEvent(QKeyEvent* event) {
   }
   if (move_layer_selection_gesture_ && event->key() == Qt::Key_Escape) {
     cancel_move_layer_selection();
+    event->accept();
+    return;
+  }
+
+  if (handle_perspective_warp_key(event)) {
     event->accept();
     return;
   }
@@ -3829,6 +3853,10 @@ void CanvasWidget::cancel_pointer_gestures() {
   }
   dragging_transform_ = dragging_warp_handle_ = false;
   puppet_.dragging = false;
+  if (perspective_warp_.has_value()) {
+    perspective_warp_->drag_quad = perspective_warp_->drag_corner = -1;
+    perspective_warp_->drawing_quad = false;
+  }
   transform_drag_uses_proxy_preview_ = false;
   path_transform_drag_handle_ = TransformHandle::None;
   path_drag_mode_ = PathEditDrag::None;
