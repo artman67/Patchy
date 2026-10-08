@@ -940,6 +940,7 @@ private:
   void clear_internal_clipboard_on_external_change();
   void transform_active_layer_dialog();
   void warp_transform_active_layer();
+  void puppet_warp_active_layer();
   void add_text_at(QPoint document_point, QRect requested_text_box = {}, bool show_editor = true);
   void edit_text_layer(LayerId id);
   void cancel_text_editor(QTextEdit* editor, std::optional<LayerId> layer_id);
@@ -1703,6 +1704,8 @@ private:
   [[nodiscard]] bool is_text_option_widget(QWidget* widget) const;
   void apply_transform_controls_from_ui();
   void sync_transform_controls_from_canvas();
+  [[nodiscard]] CanvasWidget::PuppetWarpOptions puppet_warp_options_from_ui() const;
+  void sync_puppet_warp_controls_from_canvas();
   void register_option_action(QWidget* widget, std::initializer_list<CanvasTool> tools);
   void register_retranslation(std::function<void()> callback);
   void retranslate_ui();
@@ -1963,6 +1966,17 @@ private:
   QPushButton* transform_cancel_button_{nullptr};
   QComboBox* warp_style_combo_{nullptr};
   QDoubleSpinBox* warp_bend_spin_{nullptr};
+  // Puppet Warp options (shown only during the session). Pin rotation and depth
+  // live here and nowhere on the canvas (docs/puppet-warp.md patent boundary).
+  QComboBox* puppet_warp_mode_combo_{nullptr};
+  QComboBox* puppet_warp_density_combo_{nullptr};
+  UnitSpinBox* puppet_warp_expansion_spin_{nullptr};
+  QCheckBox* puppet_warp_show_mesh_check_{nullptr};
+  QPushButton* puppet_warp_pin_forward_button_{nullptr};
+  QPushButton* puppet_warp_pin_backward_button_{nullptr};
+  QComboBox* puppet_warp_rotate_combo_{nullptr};
+  UnitSpinBox* puppet_warp_rotate_angle_spin_{nullptr};
+  QPushButton* puppet_warp_remove_all_button_{nullptr};
   // Crop tool options: a Style combo (Ratio: preset combo + ratio pair +
   // Clear; Size: unit Width/Height fields that mirror and resize the box,
   // plus a link button), and the session apply/reset pair (enabled only
@@ -2432,6 +2446,7 @@ private:
   std::vector<std::pair<QWidget*, std::vector<CanvasTool>>> option_actions_;
   std::vector<QWidget*> transform_option_actions_;
   std::vector<QWidget*> warp_option_actions_;
+  std::vector<QWidget*> puppet_warp_option_actions_;
   std::vector<QWidget*> transform_session_actions_;
   QWidget* options_flow_container_{nullptr};
   std::vector<std::function<void()>> retranslation_callbacks_;

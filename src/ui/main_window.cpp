@@ -8563,6 +8563,7 @@ void MainWindow::configure_canvas(CanvasWidget* canvas) {
   canvas->set_transform_controls_changed_callback([this, canvas] {
     if (canvas == canvas_) {
       refresh_options_bar();
+      update_undo_redo_actions();  // Puppet Warp's in-session pin steps
     }
   });
   canvas->set_smart_object_transform_render_callback([this, canvas](LayerId id) -> bool {
@@ -10334,7 +10335,7 @@ void MainWindow::open_text_character_dialog() {
 
 std::vector<LayerId> MainWindow::text_character_target_layer_ids() const {
   if (canvas_ == nullptr || !has_active_document() || preview_dialog_edit_locked() ||
-      canvas_->free_transform_active() || canvas_->warp_transform_active()) {
+      canvas_->free_transform_active() || canvas_->warp_transform_active() || canvas_->puppet_warp_active()) {
     return {};
   }
   // The active layer leads so text_character_target_layer() keeps answering what the panel
@@ -13649,7 +13650,7 @@ bool MainWindow::refuse_layer_dialog_during_transform() {
     return false;
   }
   if (!canvas_->free_transform_active() && !canvas_->warp_transform_active() &&
-      !canvas_->path_transform_active()) {
+      !canvas_->puppet_warp_active() && !canvas_->path_transform_active()) {
     return false;
   }
   show_status_error(tr("Finish the transform first: press Enter to apply it or Esc to cancel it"));

@@ -10435,6 +10435,26 @@ Mixed selection</source>
         <source>Crop box reset to the canvas</source>
         <translation>切り抜き枠をカンバスに戻しました</translation>
     </message>
+    <message>
+        <source>Click the mesh to add pins, then drag them. %ALT%-click a pin to remove it. Enter applies, Esc cancels.</source>
+        <translation>メッシュをクリックしてピンを追加し、ドラッグします。%ALT% キーを押しながらピンをクリックすると削除します。Enter で適用、Esc でキャンセルします。</translation>
+    </message>
+    <message>
+        <source>Puppet Warp cancelled</source>
+        <translation>パペットワープをキャンセルしました</translation>
+    </message>
+    <message>
+        <source>The mesh is empty. Raise the Expansion to cover the layer.</source>
+        <translation>メッシュが空です。レイヤーを覆うように拡張を大きくしてください。</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>パペットワープ</translation>
+    </message>
+    <message>
+        <source>Applied Puppet Warp</source>
+        <translation>パペットワープを適用しました</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::ChannelPanel</name>
@@ -18602,6 +18622,119 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>Puppet Warp</source>
+        <translation>パペットワープ</translation>
+    </message>
+    <message>
+        <source>How rigidly the mesh holds its shape</source>
+        <translation>メッシュが形状を保つ硬さ</translation>
+    </message>
+    <message>
+        <source>Density:</source>
+        <translation>密度:</translation>
+    </message>
+    <message>
+        <source>Mesh spacing</source>
+        <translation>メッシュの間隔</translation>
+    </message>
+    <message>
+        <source>Rigid</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>剛性</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>標準</translation>
+    </message>
+    <message>
+        <source>Distort</source>
+        <comment>Puppet Warp mode</comment>
+        <translation>変形</translation>
+    </message>
+    <message>
+        <source>Fewer Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>ポイント数を少なく</translation>
+    </message>
+    <message>
+        <source>Normal</source>
+        <comment>Puppet Warp density</comment>
+        <translation>標準</translation>
+    </message>
+    <message>
+        <source>More Points</source>
+        <comment>Puppet Warp density</comment>
+        <translation>ポイント数を多く</translation>
+    </message>
+    <message>
+        <source>Expansion:</source>
+        <translation>拡張:</translation>
+    </message>
+    <message>
+        <source>Grow or shrink the mesh beyond the layer&apos;s edge</source>
+        <translation>メッシュをレイヤーの端より広げるか狭めます</translation>
+    </message>
+    <message>
+        <source>Show Mesh</source>
+        <translation>メッシュを表示</translation>
+    </message>
+    <message>
+        <source>Pin Depth:</source>
+        <translation>ピンの深さ:</translation>
+    </message>
+    <message>
+        <source>Bring the selected pins forward where the warp overlaps</source>
+        <translation>ワープが重なる部分で選択したピンを前面へ移動します</translation>
+    </message>
+    <message>
+        <source>Send the selected pins backward where the warp overlaps</source>
+        <translation>ワープが重なる部分で選択したピンを背面へ移動します</translation>
+    </message>
+    <message>
+        <source>Rotate:</source>
+        <translation>回転:</translation>
+    </message>
+    <message>
+        <source>Rotation of the selected pins</source>
+        <translation>選択したピンの回転</translation>
+    </message>
+    <message>
+        <source>Auto</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>自動</translation>
+    </message>
+    <message>
+        <source>Fixed</source>
+        <comment>Puppet Warp pin rotation</comment>
+        <translation>固定</translation>
+    </message>
+    <message>
+        <source>Fixed rotation angle of the selected pins</source>
+        <translation>選択したピンの固定回転角度</translation>
+    </message>
+    <message>
+        <source>Remove all pins</source>
+        <translation>すべてのピンを削除</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable in Quick Mask mode</source>
+        <translation>クイックマスクモードではパペットワープを使用できません</translation>
+    </message>
+    <message>
+        <source>Puppet Warp is unavailable while viewing a document channel</source>
+        <translation>ドキュメントチャンネルの表示中はパペットワープを使用できません</translation>
+    </message>
+    <message>
+        <source>Rasterize the Smart Object before using Puppet Warp</source>
+        <translation>パペットワープを使用する前にスマートオブジェクトをラスタライズしてください</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <comment>Puppet Warp</comment>
+        <translation>モード:</translation>
     </message>
 </context>
 <context>

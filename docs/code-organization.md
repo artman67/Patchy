@@ -59,7 +59,7 @@ Session data must outlive canvas event delivery. `~MainWindow` detaches every ca
 `render/raster_view_context.hpp` scopes full paint bounds and transient style-mask
 behavior to a viewport renderer's compositor call; normal renders have no context.
 
-`CanvasWidget` is split into `canvas_widget_*.cpp` files for events, render, view, guides, selection, selection engines, brush, draw tools, transform, move, pen, vector tools, and cursors. Free transform and warp remain together in `canvas_widget_transform.cpp` because they share pending-session state. Promote cross-TU helpers to `canvas_widget_shared.{hpp,cpp}`.
+`CanvasWidget` is split into `canvas_widget_*.cpp` files for events, render, view, guides, selection, selection engines, brush, draw tools, transform, puppet warp, move, pen, vector tools, and cursors. Free transform and warp remain together in `canvas_widget_transform.cpp` because they share pending-session state. Promote cross-TU helpers to `canvas_widget_shared.{hpp,cpp}`.
 
 `canvas_widget.cpp` keeps construction, document lifecycle, setters, smart-filter-mask targeting, callback plumbing, and picking helpers. Patent-constraint comments for Quick Select solve-on-release and Magnetic Lasso finish-time region construction stay verbatim with their functions in `canvas_widget_selection_engines.cpp`.
 

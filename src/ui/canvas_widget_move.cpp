@@ -214,7 +214,7 @@ void CanvasWidget::reap_retired_context_menus() {
 bool CanvasWidget::show_canvas_context_menu(QPoint widget_point, QPoint global_position) {
   close_canvas_context_menu();
   reap_retired_context_menus();
-  if (document_ == nullptr || pointer_gesture_active() || transforming_layer_ || warping_layer_ ||
+  if (document_ == nullptr || pointer_gesture_active() || transforming_layer_ || warping_layer_ || puppet_.active ||
       path_transform_active_) {
     return false;
   }
@@ -328,7 +328,7 @@ void CanvasWidget::add_backdrop_color_menu_entries(QMenu& menu) {
 
 bool CanvasWidget::add_move_layer_menu_entries(QMenu& menu, QPoint widget_point) {
   if (document_ == nullptr || tool_ != CanvasTool::Move || edit_locked_ || pointer_gesture_active() ||
-      transforming_layer_ || warping_layer_ || path_transform_active_) {
+      transforming_layer_ || warping_layer_ || puppet_.active || path_transform_active_) {
     return false;
   }
   // Off-canvas artwork lists too; the pasteboard is no different from the canvas
@@ -364,7 +364,7 @@ bool CanvasWidget::add_move_layer_menu_entries(QMenu& menu, QPoint widget_point)
   const auto select = [this, menu_ptr, source_document = document_](std::vector<LayerId> ids, LayerId active) {
     if (canvas_context_menu_ != menu_ptr || document_ != source_document || !isVisible() ||
         tool_ != CanvasTool::Move || edit_locked_ || pointer_gesture_active() ||
-        transforming_layer_ || warping_layer_ || path_transform_active_) {
+        transforming_layer_ || warping_layer_ || puppet_.active || path_transform_active_) {
       return;
     }
     // The document can change while a popup is open. Validate the leaf IDs in
