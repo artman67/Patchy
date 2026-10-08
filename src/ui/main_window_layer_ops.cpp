@@ -4261,7 +4261,8 @@ void MainWindow::set_align_to_canvas(bool align_to_canvas) {
 }
 
 void MainWindow::refresh_layer_alignment_action_states() {
-  const bool document_ready = has_active_document() && canvas_ != nullptr && !preview_dialog_edit_locked();
+  const bool document_ready = has_active_document() && canvas_ != nullptr && !preview_dialog_edit_locked() &&
+                              !canvas_->modal_session_active();
   const int units = document_ready ? canvas_->alignment_unit_count({}) : 0;
   for (auto* action : layer_align_actions_) {
     if (action != nullptr) {
