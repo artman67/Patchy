@@ -53,7 +53,7 @@ void CanvasWidget::invalidate_vector_preview() noexcept {
 bool CanvasWidget::vector_preview_available_for_view() const noexcept {
   return vector_preview_enabled_ && document_ != nullptr && isVisible() &&
       view_zoom() > 1.0 && !pointer_gesture_active() &&
-      !transforming_layer_ && !warping_layer_ && !puppet_.active && !tiling_preview_enabled_ &&
+      !layer_transform_session_active() && !puppet_.active && !tiling_preview_enabled_ &&
       layer_edit_target_ == LayerEditTarget::Content && !quick_mask_active_ &&
       mask_display_mode_ == MaskDisplayMode::None && !curves_clipping_mode_ &&
       !processing_operation_active();

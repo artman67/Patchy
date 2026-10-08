@@ -1776,9 +1776,7 @@ bool alignment_session_ready(ScriptEngineHost& host, CanvasWidget* canvas, const
       return false;
     }
   }
-  if (canvas->free_transform_active() || canvas->warp_transform_active() || canvas->puppet_warp_active() ||
-      canvas->path_transform_active() ||
-      canvas->perspective_warp_active()) {
+  if (canvas->modal_session_active() || canvas->puppet_warp_active() || canvas->perspective_warp_active()) {
     host.throw_js_error(
         ScriptEngineHost::tr("%1: finish the pending transform first.").arg(QLatin1String(verb)));
     return false;

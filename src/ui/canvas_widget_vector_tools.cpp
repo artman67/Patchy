@@ -1545,11 +1545,11 @@ bool CanvasWidget::handle_path_edit_key(QKeyEvent* event) {
     // Photoshop's second-stage Escape: with no anchors selected (and no pen
     // session - handle_pen_key already consumed that), Esc dismisses the
     // targeted path display via the Paths panel. Sessions whose own Escape
-    // handlers run later in keyPressEvent (guide drags, warp/free transform,
+    // handlers run later in keyPressEvent (guide drags, modal sessions,
     // text-rect drags) keep priority - never swallow their cancel key.
     if (event->key() == Qt::Key_Escape && panel_path_targeted_ &&
-        path_display_dismiss_callback_ && !dragging_guide_ && !warping_layer_ && !puppet_.active &&
-        !transforming_layer_ && !dragging_text_rect_) {
+        path_display_dismiss_callback_ && !dragging_guide_ && !modal_session_active() && !puppet_.active &&
+        !dragging_text_rect_) {
       path_display_dismiss_callback_();
       return true;
     }
@@ -2152,6 +2152,7 @@ bool CanvasWidget::begin_path_transform() {
                         "rotate. Enter commits, Esc cancels."));
   }
   update();
+  notify_transform_controls_changed();
   return true;
 }
 
@@ -2427,6 +2428,7 @@ void CanvasWidget::commit_path_transform() {
   path_transform_original_ = VectorPath{};
   path_transform_subset_.clear();
   update();
+  notify_transform_controls_changed();
 }
 
 void CanvasWidget::cancel_path_transform() {
@@ -2441,6 +2443,7 @@ void CanvasWidget::cancel_path_transform() {
     status_callback_(tr("Cancelled the path transform"));
   }
   update();
+  notify_transform_controls_changed();
 }
 
 void CanvasWidget::draw_path_transform_overlay(QPainter& painter) {

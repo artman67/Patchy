@@ -8572,11 +8572,15 @@ void MainWindow::configure_canvas(CanvasWidget* canvas) {
   });
   canvas->set_view_changed_callback([this, canvas] { handle_canvas_view_changed(canvas); });
   canvas->set_transform_controls_changed_callback([this, canvas] {
-    if (canvas == canvas_) {
-      refresh_options_bar();
-      update_undo_redo_actions();  // Puppet Warp's in-session pin steps
-      update_undo_redo_actions();  // Perspective Warp sessions own Undo
+    if (canvas != canvas_) {
+      return;
     }
+    if (canvas->modal_session_active() != modal_session_actions_locked_) {
+      update_document_action_state();  // refreshes the options bar too
+    } else {
+      refresh_options_bar();
+    }
+    update_undo_redo_actions();  // Puppet and Perspective Warp keep in-session undo steps
   });
   canvas->set_smart_object_transform_render_callback([this, canvas](LayerId id) -> bool {
     auto* owner_session = session_for_canvas(canvas);
@@ -10352,7 +10356,7 @@ void MainWindow::open_text_character_dialog() {
 
 std::vector<LayerId> MainWindow::text_character_target_layer_ids() const {
   if (canvas_ == nullptr || !has_active_document() || preview_dialog_edit_locked() ||
-      canvas_->free_transform_active() || canvas_->warp_transform_active() || canvas_->puppet_warp_active()) {
+      canvas_->layer_transform_session_active() || canvas_->puppet_warp_active()) {
     return {};
   }
   // The active layer leads so text_character_target_layer() keeps answering what the panel
@@ -13674,6 +13678,29 @@ bool MainWindow::document_action_enabled_during_preview_lock(const QAction* acti
   return false;
 }
 
+bool MainWindow::modal_canvas_session_active() const {
+  return canvas_ != nullptr && canvas_->modal_session_active();
+}
+
+QSet<const QAction*> MainWindow::modal_session_allowed_actions() const {
+  // Tools (picking one commits the session), colors, brush size, view and
+  // window commands, the session's own mode switches, and closing the document.
+  QSet<const QAction*> allowed;
+  for (const auto& command : hotkey_registry_.commands()) {
+    if (command.action == nullptr) {
+      continue;
+    }
+    if (command.category == QStringLiteral("tools") || command.category == QStringLiteral("color") ||
+        command.category == QStringLiteral("brush") || command.id.startsWith(QStringLiteral("view.")) ||
+        command.id.startsWith(QStringLiteral("window.")) || command.id == QStringLiteral("edit.free_transform") ||
+        command.id == QStringLiteral("edit.warp_transform") || command.id == QStringLiteral("file.close") ||
+        command.id == QStringLiteral("file.close_all")) {
+      allowed.insert(command.action);
+    }
+  }
+  return allowed;
+}
+
 bool MainWindow::show_preview_dialog_edit_lock_message() {
   show_status_error(tr("Finish the open dialog before editing the document"));
   return true;
@@ -13683,8 +13710,8 @@ bool MainWindow::refuse_layer_dialog_during_transform() {
   if (canvas_ == nullptr) {
     return false;
   }
-  if (!canvas_->free_transform_active() && !canvas_->warp_transform_active() &&
-      !canvas_->puppet_warp_active() && !canvas_->path_transform_active() && !canvas_->perspective_warp_active()) {
+  if (!canvas_->modal_session_active() && !canvas_->puppet_warp_active() &&
+      !canvas_->perspective_warp_active()) {
     return false;
   }
   show_status_error(tr("Finish the transform first: press Enter to apply it or Esc to cancel it"));
@@ -13725,9 +13752,17 @@ void MainWindow::register_document_widget(QWidget* widget) {
 void MainWindow::update_document_action_state() {
   const bool has_document = has_active_document();
   const bool locked = preview_dialog_edit_locked();
+  // A modal canvas session (Free Transform, Warp...) holds the layer until Enter
+  // or Esc, so commands that would edit the document wait, as in Photoshop:
+  // the commit would overwrite or orphan their result.
+  const bool session = modal_canvas_session_active();
+  modal_session_actions_locked_ = session;
+  const auto session_allowed = session ? modal_session_allowed_actions() : QSet<const QAction*>{};
   for (auto* action : document_actions_) {
     if (action != nullptr) {
-      action->setEnabled(has_document && (!locked || document_action_enabled_during_preview_lock(action)));
+      const bool view_command = document_action_enabled_during_preview_lock(action);
+      action->setEnabled(has_document && (!locked || view_command) &&
+                         (!session || view_command || session_allowed.contains(action)));
     }
   }
   for (auto* widget : document_widgets_) {
@@ -13914,7 +13949,7 @@ void MainWindow::refresh_convert_for_smart_filters_action_state() {
       active_layer->pixels().format().bit_depth == BitDepth::UInt8 &&
       active_layer->pixels().format().channels >= 3U;
   filter_convert_smart_filters_action_->setEnabled(
-      has_document && !preview_dialog_edit_locked() && !channel_view && eligible);
+      has_document && !preview_dialog_edit_locked() && !modal_canvas_session_active() && !channel_view && eligible);
 }
 
 void MainWindow::show_about() {

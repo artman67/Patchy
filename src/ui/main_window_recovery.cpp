@@ -33,8 +33,8 @@ bool MainWindow::any_canvas_interaction_active() const {
   for (const auto& target_session : sessions_) {
     const auto* canvas = target_session != nullptr ? target_session->canvas : nullptr;
     if (canvas != nullptr &&
-        (canvas->pointer_gesture_active() || canvas->free_transform_active() || canvas->warp_transform_active() ||
-         canvas->puppet_warp_active() || canvas->perspective_warp_active() || canvas->path_transform_active() || canvas->crop_session_has_changes() ||
+        (canvas->pointer_gesture_active() || canvas->modal_session_active() || canvas->puppet_warp_active() ||
+         canvas->perspective_warp_active() || canvas->crop_session_has_changes() ||
          canvas->findChild<QTextEdit*>(QStringLiteral("inlineTextEditor")) != nullptr)) {
       return true;
     }
