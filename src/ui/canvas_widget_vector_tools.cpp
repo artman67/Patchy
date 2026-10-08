@@ -2152,6 +2152,7 @@ bool CanvasWidget::begin_path_transform() {
                         "rotate. Enter commits, Esc cancels."));
   }
   update();
+  notify_transform_controls_changed();
   return true;
 }
 
@@ -2427,6 +2428,7 @@ void CanvasWidget::commit_path_transform() {
   path_transform_original_ = VectorPath{};
   path_transform_subset_.clear();
   update();
+  notify_transform_controls_changed();
 }
 
 void CanvasWidget::cancel_path_transform() {
@@ -2441,6 +2443,7 @@ void CanvasWidget::cancel_path_transform() {
     status_callback_(tr("Cancelled the path transform"));
   }
   update();
+  notify_transform_controls_changed();
 }
 
 void CanvasWidget::draw_path_transform_overlay(QPainter& painter) {

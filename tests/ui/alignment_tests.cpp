@@ -451,10 +451,10 @@ void ui_layer_align_refuses_during_transform_lock_and_gesture() {
   require_action(scene.window, "editFreeTransformAction")->trigger();
   QApplication::processEvents();
   CHECK(scene.canvas->free_transform_active());
+  // The session greys the Align commands (Photoshop); a trigger does nothing.
+  CHECK(!require_action(scene.window, "layerAlignLeftAction")->isEnabled());
   require_action(scene.window, "layerAlignLeftAction")->trigger();
   QApplication::processEvents();
-  CHECK(scene.window.statusBar()->currentMessage() ==
-        QStringLiteral("Finish the transform first: press Enter to apply it or Esc to cancel it"));
   CHECK(scene.bounds("B").x == 60);
   send_key(*scene.canvas, Qt::Key_Escape);
   QApplication::processEvents();

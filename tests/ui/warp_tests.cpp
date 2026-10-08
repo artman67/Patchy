@@ -486,6 +486,68 @@ void ui_warp_transform_bends_pixel_layer_and_undoes() {
   CHECK(restored->bounds().height == original_bounds.height);
 }
 
+void ui_warp_session_blocks_filters_until_committed() {
+  // A filter run mid-session used to land on the layer and then vanish when
+  // Enter baked the cage from the pre-session pixels. Photoshop greys the
+  // document commands until the session ends; so does Patchy.
+  patchy::ui::MainWindow window;
+  show_window(window);
+  patchy::Document built(120, 90, patchy::PixelFormat::rgba8());
+  patchy::PixelBuffer pixels(48, 36, patchy::PixelFormat::rgba8());
+  for (std::int32_t y = 0; y < 36; ++y) {
+    for (std::int32_t x = 0; x < 48; ++x) {
+      auto* px = pixels.pixel(x, y);
+      px[0] = static_cast<std::uint8_t>(40 + x * 4);
+      px[1] = 60;
+      px[2] = 90;
+      px[3] = 255;
+    }
+  }
+  patchy::Layer layer(built.allocate_layer_id(), "warp me", std::move(pixels));
+  layer.set_bounds(patchy::Rect{30, 25, 48, 36});
+  built.add_layer(std::move(layer));
+  const auto layer_id = built.layers().back().id();
+  built.set_active_layer(layer_id);
+  window.add_document_session(std::move(built), QStringLiteral("Warp"));
+  QApplication::processEvents();
+  auto& document = patchy::ui::MainWindowTestAccess::document(window);
+  auto* canvas = patchy::ui::MainWindowTestAccess::canvas(window);
+  CHECK(canvas != nullptr);
+  const auto undo_depth_before = patchy::ui::MainWindowTestAccess::active_session_undo_depth(window);
+  auto* invert = require_action(window, "imageAdjustInvertAction");
+  CHECK(invert->isEnabled());
+
+  require_action(window, "editWarpTransformAction")->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->warp_transform_active());
+  canvas->set_warp_handle_document_position(0, canvas->warp_handle_document_position(0) + QPointF(-12.0, -9.0));
+
+  // Filters and adjustments are disabled; view commands and the session's own
+  // mode switch stay live.
+  CHECK(!invert->isEnabled());
+  auto* filter_menu = window.findChild<QMenu*>(QStringLiteral("filterMenu"));
+  CHECK(filter_menu != nullptr);
+  for (auto* action : filter_menu->actions()) {
+    CHECK(action->isSeparator() || !action->isEnabled());
+  }
+  CHECK(require_action(window, "viewZoomInAction")->isEnabled());
+  CHECK(require_action(window, "editFreeTransformAction")->isEnabled());
+
+  // Triggering it anyway (a shortcut, a stale menu) leaves the layer alone.
+  const auto pixel_before = std::as_const(document).find_layer(layer_id)->pixels().pixel(5, 5)[0];
+  invert->trigger();
+  QApplication::processEvents();
+  CHECK(canvas->warp_transform_active());
+  CHECK(std::as_const(document).find_layer(layer_id)->pixels().pixel(5, 5)[0] == pixel_before);
+
+  // Enter commits the warp alone (one undo step); the commands come back.
+  send_key(*canvas, Qt::Key_Return);
+  QApplication::processEvents();
+  CHECK(!canvas->warp_transform_active());
+  CHECK(patchy::ui::MainWindowTestAccess::active_session_undo_depth(window) == undo_depth_before + 1);
+  CHECK(invert->isEnabled());
+}
+
 void ui_warp_transform_on_smart_object_writes_mesh_and_survives_resave() {
   patchy::ui::MainWindow window;
   show_window(window);
@@ -2520,6 +2582,7 @@ std::vector<patchy::test::TestCase> warp_tests() {
       {"ui_warped_smart_object_free_transform_rerenders", ui_warped_smart_object_free_transform_rerenders},
       {"ui_warped_smart_object_edit_commit_keeps_warp", ui_warped_smart_object_edit_commit_keeps_warp},
       {"ui_warp_transform_bends_pixel_layer_and_undoes", ui_warp_transform_bends_pixel_layer_and_undoes},
+      {"ui_warp_session_blocks_filters_until_committed", ui_warp_session_blocks_filters_until_committed},
       {"ui_warp_transform_on_smart_object_writes_mesh_and_survives_resave",
        ui_warp_transform_on_smart_object_writes_mesh_and_survives_resave},
       {"ui_warp_transform_refuses_text_layer", ui_warp_transform_refuses_text_layer},
