@@ -448,8 +448,8 @@ std::shared_ptr<const patchy::ScaledBrushTip> CanvasWidget::scaled_brush_tip_for
 
 void CanvasWidget::apply_brush_tip_to_options(EditOptions& options, int brush_size, int brush_softness) const {
   // The procedural footprint rides along even when no stamp applies (no tip, no dynamics).
-  options.brush_shape = brush_tip_ == nullptr && tool_paints_with_brush_tip(tool_) ? brush_shape_
-                                                                                   : patchy::BrushShape::Round;
+  options.brush_shape = brush_tip_ == nullptr && tool_has(tool_, kToolBrushTip) ? brush_shape_
+                                                                                : patchy::BrushShape::Round;
   auto scaled = scaled_brush_tip_for(brush_size, brush_softness);
   if (scaled == nullptr) {
     return;
@@ -603,7 +603,7 @@ int CanvasWidget::active_outline_brush_size() const noexcept {
 }
 
 QSize CanvasWidget::brush_outline_display_size() const {
-  if (brush_tip_ != nullptr && tool_paints_with_brush_tip(tool_)) {
+  if (brush_tip_ != nullptr && tool_has(tool_, kToolBrushTip)) {
     const auto scaled = scaled_brush_tip_for(brush_size_, brush_softness_);
     if (scaled != nullptr && !scaled->empty()) {
       return QSize(std::max(3, static_cast<int>(std::round(scaled->width * zoom_))),
@@ -616,7 +616,7 @@ QSize CanvasWidget::brush_outline_display_size() const {
 }
 
 bool CanvasWidget::brush_outline_uses_overlay() const {
-  if (tool_ != CanvasTool::QuickSelect && !tool_uses_brush_footprint_cursor(tool_)) {
+  if (tool_ != CanvasTool::QuickSelect && !tool_has(tool_, kToolPaintsStrokes)) {
     return false;
   }
   if (active_outline_brush_size() <= 1) {
@@ -635,7 +635,7 @@ QRect CanvasWidget::brush_hover_outline_rect() const {
 }
 
 void CanvasWidget::track_brush_hover_position(QPoint widget_position) {
-  if (tool_ != CanvasTool::QuickSelect && !tool_uses_brush_footprint_cursor(tool_)) {
+  if (tool_ != CanvasTool::QuickSelect && !tool_has(tool_, kToolPaintsStrokes)) {
     brush_hover_position_valid_ = false;
     return;
   }
@@ -670,7 +670,7 @@ void CanvasWidget::draw_brush_hover_outline(QPainter& painter) const {
   }
   painter.save();
   const QPoint center = brush_hover_widget_position_;
-  if (brush_tip_ != nullptr && tool_paints_with_brush_tip(tool_)) {
+  if (brush_tip_ != nullptr && tool_has(tool_, kToolBrushTip)) {
     const auto display = brush_outline_display_size();
     const auto key = QStringLiteral("%1:%2x%3:%4:%5")
                          .arg(reinterpret_cast<quintptr>(brush_tip_.get()))
@@ -694,7 +694,7 @@ void CanvasWidget::draw_brush_hover_outline(QPainter& painter) const {
     // Large procedural brush: the same outline the cursor draws, just unbounded.
     painter.setRenderHint(QPainter::Antialiasing, true);
     const auto radius = std::max(2.0, static_cast<double>(active_outline_brush_size()) * zoom_ / 2.0);
-    const bool square = brush_shape_ == patchy::BrushShape::Square && tool_paints_with_brush_tip(tool_);
+    const bool square = brush_shape_ == patchy::BrushShape::Square && tool_has(tool_, kToolBrushTip);
     const auto draw_footprint = [&](double half) {
       if (square) {
         painter.save();
@@ -808,10 +808,7 @@ void CanvasWidget::draw_brush_adjust_overlay(QPainter& painter) const {
   const auto radius = std::max(1.5, static_cast<double>(brush_size_) * zoom_ / 2.0);
   painter.save();
   painter.setRenderHint(QPainter::Antialiasing, true);
-  if ((tool_ == CanvasTool::Brush || tool_ == CanvasTool::MixerBrush ||
-       tool_ == CanvasTool::PatternStamp ||
-       tool_ == CanvasTool::Eraser) &&
-      brush_tip_ != nullptr) {
+  if (tool_has(tool_, kToolBrushTip) && brush_tip_ != nullptr) {
     // A bitmap tip previews as its actual red-tinted footprint instead of a disc.
     const auto stamp = brush_tip_stamp_image(brush_size_, brush_softness_);
     if (!stamp.isNull()) {
@@ -967,13 +964,6 @@ void CanvasWidget::reset_brush_smoothing() noexcept {
   brush_smoothing_last_rendered_position_ = {};
 }
 
-bool CanvasWidget::tool_uses_stroke_stabilizer(CanvasTool tool) noexcept {
-  // Photoshop scopes Smoothing to the Brush, Mixer Brush, and Eraser tools (a
-  // pen's eraser end resolves to Eraser through effective_tool_for_input()).
-  // Smudge, Pattern Stamp, shapes, and mask/selection tools stay unsmoothed.
-  return tool == CanvasTool::Brush || tool == CanvasTool::MixerBrush || tool == CanvasTool::Eraser;
-}
-
 double CanvasWidget::stroke_stabilizer_leash_radius() const noexcept {
   // The one place the Smoothing percent becomes a leash radius: 0..100% maps
   // to 0..100 px. With Adjust for Zoom ON that is DOCUMENT pixels (Photoshop's
@@ -989,7 +979,7 @@ double CanvasWidget::stroke_stabilizer_leash_radius() const noexcept {
 void CanvasWidget::begin_stroke_stabilizer(QPointF document_point, CanvasTool effective_tool) {
   patchy::StrokeStabilizerConfig config;
   config.leash_radius =
-      tool_uses_stroke_stabilizer(effective_tool) ? stroke_stabilizer_leash_radius() : 0.0;
+      tool_has(effective_tool, kToolSmoothing) ? stroke_stabilizer_leash_radius() : 0.0;
   config.pulled_string = brush_smoothing_pulled_string_;
   config.catch_up = brush_smoothing_catch_up_;
   config.catch_up_on_end = brush_smoothing_catch_up_end_;
@@ -1006,7 +996,7 @@ void CanvasWidget::begin_stroke_stabilizer(QPointF document_point, CanvasTool ef
 QPointF CanvasWidget::stabilized_stroke_point(QPointF constrained_point, CanvasTool effective_tool) {
   // Smoothing 0 (or a non-smoothed tool) never consults the stabilizer, so no
   // conversion can perturb the historical stroke path.
-  if (!stroke_stabilizer_.active() || !tool_uses_stroke_stabilizer(effective_tool)) {
+  if (!stroke_stabilizer_.active() || !tool_has(effective_tool, kToolSmoothing)) {
     return constrained_point;
   }
   const auto smoothed = stroke_stabilizer_.move(constrained_point.x(), constrained_point.y());
@@ -1042,7 +1032,7 @@ void CanvasWidget::invalidate_stroke_leash_overlay() {
 
 void CanvasWidget::draw_stroke_leash_overlay(QPainter& painter) const {
   if (!painting_ || !stroke_stabilizer_.active() || brush_smoothing_ <= 0 ||
-      !tool_uses_stroke_stabilizer(effective_tool_for_input())) {
+      !tool_has(effective_tool_for_input(), kToolSmoothing)) {
     return;
   }
   const auto raw = stroke_stabilizer_.raw();
@@ -1171,7 +1161,7 @@ bool CanvasWidget::brush_uses_dab_stroke(const EffectiveBrushInput& brush, bool 
   // Flow must be tied to a spatial dab cadence, not to the number of mouse
   // move events delivered by the platform. Airbrush also uses this path so its
   // moving stroke and stationary timer share the same flat stamp footprint.
-  if (!erase && (tool_ == CanvasTool::Brush || tool_ == CanvasTool::PatternStamp) &&
+  if (!erase && tool_has(tool_, kToolFlow) &&
       (brush_flow_ < 100 || (tool_ == CanvasTool::Brush && brush_build_up_))) {
     return true;
   }
