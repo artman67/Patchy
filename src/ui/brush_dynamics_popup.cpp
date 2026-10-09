@@ -581,62 +581,27 @@ BrushDynamicsButton::BrushDynamicsButton(QWidget* parent) : QToolButton(parent) 
   popup_clock_.start();
   connect(this, &QToolButton::clicked, this, &BrushDynamicsButton::show_popup);
   retranslate();
-  set_active_entry(nullptr);
+  setEnabled(false);
 }
 
 void BrushDynamicsButton::retranslate() {
   setText(tr("Dynamics"));
-  setToolTip(!round_session_ ? tr("Brush dynamics and effects for the active brush tip")
-             : tip_id_ == builtin_square_brush_tip_id()
-                 ? tr("Brush dynamics and effects for the Square brush "
-                      "(this session only; resets on the next launch)")
-                 : tr("Brush dynamics and effects for the Round brush "
-                      "(this session only; resets on the next launch)"));
+  setToolTip(tr("Brush dynamics and effects for the current brush "
+                "(this session only; resets on the next launch)"));
 }
 
-void BrushDynamicsButton::set_active_entry(const BrushTipEntry* entry) {
-  if (entry == nullptr) {
-    if (popup_ != nullptr) {
-      popup_->close();
-    }
-    tip_id_.clear();
-    round_session_ = false;
-    dynamics_ = {};
-    base_angle_degrees_ = 0.0;
-    base_roundness_ = 100.0;
-    setEnabled(false);
-    retranslate();
-    refresh_active_indicator();
-    return;
-  }
-  if (popup_ != nullptr && entry->id == tip_id_) {
-    // Our own edit echoing back through the library's changed(); the open popup owns the values.
-    return;
-  }
-  tip_id_ = entry->id;
-  round_session_ = false;
-  dynamics_ = entry->dynamics;
-  base_angle_degrees_ = entry->base_angle_degrees;
-  base_roundness_ = entry->base_roundness;
-  setEnabled(true);
-  retranslate();
-  refresh_active_indicator();
-}
-
-void BrushDynamicsButton::set_round_session(const QString& round_tip_id,
+void BrushDynamicsButton::set_working_brush(const QString& tip_key,
                                             const patchy::BrushDynamics& dynamics,
                                             double base_angle_degrees, double base_roundness) {
-  if (popup_ != nullptr && tip_id_ == round_tip_id) {
-    // Our own edit echoing back through MainWindow's re-apply; the open popup owns the values.
+  if (popup_ != nullptr && tip_id_ == tip_key) {
+    // Our own edit echoing back through the working brush; the open popup owns the values.
     return;
   }
-  tip_id_ = round_tip_id;
-  round_session_ = true;
+  tip_id_ = tip_key;
   dynamics_ = dynamics;
   base_angle_degrees_ = base_angle_degrees;
   base_roundness_ = base_roundness;
-  setEnabled(true);
-  retranslate();
+  setEnabled(!tip_id_.isEmpty());
   refresh_active_indicator();
 }
 

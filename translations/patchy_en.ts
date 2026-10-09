@@ -9302,15 +9302,7 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
+        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

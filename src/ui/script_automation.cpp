@@ -4,6 +4,7 @@
 #include "ui/main_window.hpp"
 #include "ui/canvas_widget.hpp"
 #include "ui/brush_automation.hpp"
+#include "ui/current_brush.hpp"
 #include "ui/mcp_activity.hpp"
 #include "ui/qt_geometry.hpp"
 #include "core/layer_metadata.hpp"
@@ -140,7 +141,8 @@ QJsonObject ScriptEngineHost::automation_state() const {
           {"currentBrush", window_.canvas_ ? QJsonValue(QJsonObject{
             {"tool", window_.canvas_->tool() == CanvasTool::MixerBrush ? "mixer" : window_.canvas_->tool() == CanvasTool::Eraser ? "eraser" : "brush"},
             {"tipId", window_.canvas_->current_script_brush().tip_id},
-            {"presetId", window_.active_automation_preset_id_}}) : QJsonValue(QJsonValue::Null)}};
+            {"presetId", window_.current_brush().base().kind == BrushBase::Kind::Preset
+                             ? window_.current_brush().base().id : QString()}}) : QJsonValue(QJsonValue::Null)}};
 }
 
 QString ScriptEngineHost::automation_fingerprint() const {

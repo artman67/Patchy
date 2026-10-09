@@ -317,6 +317,18 @@ const QString& CanvasWidget::brush_tip_id() const noexcept {
   return brush_tip_id_;
 }
 
+const std::shared_ptr<const patchy::BrushTip>& CanvasWidget::brush_tip() const noexcept {
+  return brush_tip_;
+}
+
+void CanvasWidget::set_brush_spacing_override(std::optional<double> spacing) noexcept {
+  script_brush_spacing_ = spacing;
+}
+
+std::optional<double> CanvasWidget::brush_spacing_override() const noexcept {
+  return script_brush_spacing_;
+}
+
 bool CanvasWidget::has_brush_tip() const noexcept {
   return brush_tip_ != nullptr;
 }

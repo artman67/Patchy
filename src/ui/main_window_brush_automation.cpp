@@ -4,9 +4,12 @@
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_picker.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_presets.hpp"
+#include "ui/current_brush.hpp"
 #include "ui/script_engine.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/localization.hpp"
+#include <QCheckBox>
 #include <QComboBox>
 #include <QAbstractItemView>
 #include <QDialogButtonBox>
@@ -16,6 +19,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QStatusBar>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <algorithm>
@@ -53,43 +57,88 @@ void MainWindow::refresh_automation_brush_presets() {
   const auto index = brush_preset_combo_->findData(selected);
   brush_preset_combo_->setCurrentIndex(index >= 0 ? index : 0);
 }
+void MainWindow::pick_brush_preset(const QString& preset_id) {
+  if (!canvas_) return;
+  const auto* preset = find_brush_preset(preset_id);
+  if (preset == nullptr) {
+    try {
+      auto& library = brush_automation_library(); library.refresh();
+      auto s = library.resolve(QJsonObject{{"presetId", preset_id}});
+      if (!library.preset(preset_id)["includeColors"].toBool()) {
+        s.color = canvas_->primary_color(); s.background = canvas_->secondary_color();
+      }
+      activate_automation_brush(s);
+    } catch (const std::exception& e) { show_status_error(tr("Brush preset operation failed: %1").arg(translate_data_text(e.what()))); }
+    return;
+  }
+  // A built-in preset is a complete brush: its procedural tip with no dynamics (so it never
+  // leaves a stale bitmap tip or a surprising dynamics setup behind) and no pen mapping.
+  if (preset_pen_override_) { preset_pen_override_.reset(); apply_pen_input_settings(canvas_); }
+  auto brush = working_brush_from_preset(*preset);
+  if (eraser_brush_settings_active_) {
+    // The Eraser keeps its own size group; the preset fills it and the working brush keeps its.
+    stored_eraser_brush_settings_ = {preset->size, preset->opacity, preset->flow, preset->softness, preset->build_up};
+    canvas_->set_brush_build_up(preset->build_up); canvas_->set_brush_size(preset->size);
+    canvas_->set_brush_opacity(preset->opacity); canvas_->set_brush_flow(preset->flow);
+    canvas_->set_brush_softness(preset->softness);
+    const auto& working = current_brush().brush();
+    brush.size = working.size; brush.opacity = working.opacity; brush.flow = working.flow;
+    brush.softness = working.softness; brush.airbrush = working.airbrush;
+  }
+  current_brush().pick(brush, BrushBase::Kind::Preset, preset->id);
+  save_tool_settings();
+  statusBar()->showMessage(tr("Brush preset: %1").arg(brush_preset_display_name(*preset)));
+}
 void MainWindow::activate_automation_brush(const ScriptStroke& input) {
   if (!canvas_) brush_input::invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "active document"));
   auto s = input;
   activate_tool(s.mixer ? CanvasTool::MixerBrush : s.erase ? CanvasTool::Eraser : CanvasTool::Brush);
-  active_preset_tip_ = s.tip;
-  active_automation_preset_id_ = s.preset_id;
-  active_automation_brush_ = s;
-  active_brush_tip_id_ = s.tip_id;
-  if (s.tip_id.isEmpty()) active_brush_tip_id_ = builtin_round_brush_tip_id();
-  round_brush_dynamics_ = s.dynamics; round_brush_base_angle_degrees_ = s.angle;
-  round_brush_base_roundness_ = s.roundness;
+  // The canvas takes the complete brush, including its pen mapping, Mixer and Smoothing values.
   canvas_->apply_script_brush(s);
+  preset_pen_override_ = canvas_->pen_input_settings();
   current_mixer_wet_ = s.wet; current_mixer_load_ = s.load; current_mixer_mix_ = s.mix;
   current_mixer_flow_ = s.flow;
   current_brush_smoothing_ = s.smoothing; current_brush_smoothing_pulled_string_ = s.pulled_string;
   current_brush_smoothing_catch_up_ = s.catch_up; current_brush_smoothing_catch_up_end_ = s.catch_up_end;
   current_brush_smoothing_zoom_adjust_ = s.zoom_adjust;
-  stash_active_brush_settings(); sync_brush_controls_from_canvas();
-  if (brush_dynamics_button_) brush_dynamics_button_->set_round_session(
-      is_builtin_brush_tip_id(active_brush_tip_id_) ? active_brush_tip_id_ : builtin_round_brush_tip_id(),
-      s.dynamics, s.angle, s.roundness);
-  if (brush_tip_picker_) brush_tip_picker_->set_current_tip_id(active_brush_tip_id_);
-  if (brush_tip_picker_ && s.tip) brush_tip_picker_->set_working_preview(
-      s.label.isEmpty() ? tr("Working brush") : s.label, brush_tip_thumbnail(*s.tip, 32));
-  if (brush_preset_combo_) {
-    const QSignalBlocker block(brush_preset_combo_);
-    brush_preset_combo_->setProperty("lastBrushPresetId", s.preset_id);
-    brush_preset_combo_->setCurrentIndex(brush_preset_combo_->findData(s.preset_id));
+  if (mixer_sample_all_layers_check_) {
+    const QSignalBlocker block(mixer_sample_all_layers_check_);
+    mixer_sample_all_layers_check_->setChecked(s.sample_all_layers);
   }
+  WorkingBrush brush;
+  brush.tip_id = s.tip_id.isEmpty() && !s.tip ? builtin_round_brush_tip_id() : s.tip_id;
+  // A tip outside the library (a saved preset's embedded tip, a captured working tip) travels
+  // with the brush.
+  if (s.tip && !is_builtin_brush_tip_id(s.tip_id) && !brush_tip_library().find_entry(s.tip_id)) brush.snapshot_tip = s.tip;
+  brush.spacing = s.spacing; brush.angle = s.angle; brush.roundness = s.roundness; brush.dynamics = s.dynamics;
+  if (s.erase) {
+    // The Eraser keeps its own size group.
+    stored_eraser_brush_settings_ = {s.size, s.opacity, s.flow, s.softness, s.airbrush};
+    const auto& working = current_brush().brush();
+    brush.size = working.size; brush.opacity = working.opacity; brush.flow = working.flow;
+    brush.softness = working.softness; brush.airbrush = working.airbrush;
+  } else {
+    brush.size = s.size; brush.opacity = s.opacity; brush.flow = s.flow;
+    brush.softness = s.softness; brush.airbrush = s.airbrush;
+  }
+  current_brush().pick(brush, s.preset_id.isEmpty() ? BrushBase::Kind::Tip : BrushBase::Kind::Preset,
+                       s.preset_id.isEmpty() ? brush.tip_id : s.preset_id);
+  sync_brush_controls_from_canvas();
   canvas_->refresh_tool_cursor(); refresh_document_info();
+}
+QString MainWindow::save_working_brush_as_preset(const QString& name) {
+  if (!canvas_) brush_input::invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "active document"));
+  fold_canvas_brush_values();
+  const auto id = brush_automation_library().save(name, canvas_->current_script_brush(), false);
+  if (!eraser_brush_settings_active_) current_brush().rebase(BrushBase::Kind::Preset, id);
+  return id;
 }
 void MainWindow::save_current_automation_brush() {
   if (!canvas_) return;
   bool accepted = false;
   const auto name = QInputDialog::getText(this, tr("Save Brush Preset"), tr("Name:"), QLineEdit::Normal, {}, &accepted);
   if (!accepted || name.trimmed().isEmpty()) return;
-  try { (void)brush_automation_library().save(name, canvas_->current_script_brush(), false); }
+  try { (void)save_working_brush_as_preset(name); }
   catch (const std::exception& e) { show_status_error(tr("Could not save brush preset: %1").arg(translate_data_text(e.what()))); }
 }
 void MainWindow::manage_automation_brush_presets() {

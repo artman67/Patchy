@@ -23,6 +23,7 @@
 #include "psd/psd_binary.hpp"
 #include "psd/psd_layer_effects.hpp"
 #include "core/style_presets.hpp"
+#include "ui/brush_automation.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
 #include "ui/brush_tip_picker.hpp"
@@ -647,7 +648,7 @@ void ui_brush_dynamics_round_brush_session() {
   clear_brush_tip_test_state();
 }
 
-void ui_brush_dynamics_popup_edits_apply_and_persist() {
+void ui_brush_dynamics_popup_edits_working_brush_not_tip() {
   clear_brush_tip_test_state();
   patchy::ui::MainWindow window;
   show_window(window);
@@ -749,8 +750,19 @@ void ui_brush_dynamics_popup_edits_apply_and_persist() {
   CHECK(dynamics.wet_edges);
   CHECK(std::abs(canvas->brush_base_angle_degrees() - 30.0) < 1e-9);
 
-  // The edit persisted to the tip's sidecar on disk.
+  // The popup edits the working brush only: the tip's stored defaults stay as they were.
+  CHECK(window.current_brush().modified());
   QFile sidecar(brush_tip_test_storage_dir() + QStringLiteral("/") + tip_id + QStringLiteral(".json"));
+  CHECK(sidecar.open(QIODevice::ReadOnly));
+  const auto untouched = QJsonDocument::fromJson(sidecar.readAll()).object();
+  sidecar.close();  // Atomic replacement requires readers to release Windows file handles.
+  CHECK(!untouched.contains(QStringLiteral("baseAngle")));
+  CHECK(untouched.value(QStringLiteral("dynamics")).toObject().value(QStringLiteral("sizeJitter")).toDouble() == 0.0);
+  CHECK(library.find_entry(tip_id)->dynamics.size_jitter == 0.0);
+
+  // Storing them as the tip's defaults (the Brush Tips manager's explicit edit) writes the sidecar.
+  CHECK(library.set_tip_dynamics(tip_id, canvas->brush_dynamics(), canvas->brush_base_angle_degrees(),
+                                 canvas->brush_base_roundness()));
   CHECK(sidecar.open(QIODevice::ReadOnly));
   const auto object = QJsonDocument::fromJson(sidecar.readAll()).object();
   CHECK(object.value(QStringLiteral("baseAngle")).toDouble() == 30.0);
@@ -793,7 +805,7 @@ void ui_brush_dynamics_popup_edits_apply_and_persist() {
   clear_brush_tip_test_state();
 }
 
-void ui_brush_dynamics_popup_control_edits_persist() {
+void ui_brush_dynamics_popup_control_edits_round_trip() {
   clear_brush_tip_test_state();
   patchy::ui::MainWindow window;
   show_window(window);
@@ -867,8 +879,10 @@ void ui_brush_dynamics_popup_control_edits_persist() {
   CHECK(dynamics.scatter_control == patchy::BrushDynamicControl::Fade);
   CHECK(dynamics.scatter_fade_steps == 40);
   CHECK(dynamics.roundness_control == patchy::BrushDynamicControl::GlobalDefault);  // untouched
+  CHECK(!library.find_entry(tip_id)->dynamics.active());  // the popup never edits the tip
 
-  // The sidecar carries the new tokens...
+  // Stored as the tip's defaults, the sidecar carries the new tokens...
+  CHECK(library.set_tip_dynamics(tip_id, canvas->brush_dynamics(), 0.0, 100.0));
   QFile sidecar(brush_tip_test_storage_dir() + QStringLiteral("/") + tip_id + QStringLiteral(".json"));
   CHECK(sidecar.open(QIODevice::ReadOnly));
   const auto dynamics_json =
@@ -897,11 +911,14 @@ void ui_brush_dynamics_popup_control_edits_persist() {
   CHECK(reloaded->dynamics.flow_fade_steps == 45);
 
   // An Off-only override is not active() (no per-dab work) but must still light the button
-  // badge as a deliberate setup.
+  // badge as a deliberate setup. Picking the tip loads its stored dynamics.
   patchy::BrushDynamics off_only;
   off_only.size_control = patchy::BrushDynamicControl::Off;
   CHECK(library.set_tip_dynamics(tip_id, off_only, 0.0, 100.0));
+  window.set_active_brush_tip(tip_id, false);
   QApplication::processEvents();
+  CHECK(canvas->brush_dynamics().size_control == patchy::BrushDynamicControl::Off);
+  CHECK(!window.current_brush().modified());
   CHECK(!off_only.active());
   CHECK(button->property("dynamicsActive").toBool());
   clear_brush_tip_test_state();
@@ -1516,6 +1533,66 @@ void ui_brush_tip_resets_to_round_on_startup() {
   clear_brush_tip_test_state();
 }
 
+// CurrentBrush is the one owner: options-bar and API edits reach the canvas through its
+// changed() fan-out, a pick records the base, and edits after it mark the brush modified.
+void ui_current_brush_tracks_base_and_reaches_canvas() {
+  clear_brush_tip_test_state();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  require_action_by_text(window, QStringLiteral("Brush"))->trigger();
+  auto& brush = window.current_brush();
+  auto* preset_combo = window.findChild<QComboBox*>(QStringLiteral("brushPresetCombo"));
+  auto* size_spin = window.findChild<QSpinBox*>(QStringLiteral("brushSizeSpin"));
+  auto* opacity_spin = window.findChild<QSpinBox*>(QStringLiteral("brushOpacitySpin"));
+  CHECK(preset_combo != nullptr && size_spin != nullptr && opacity_spin != nullptr);
+
+  preset_combo->setCurrentIndex(preset_combo->findData(QStringLiteral("ink")));
+  CHECK(brush.base().kind == patchy::ui::BrushBase::Kind::Preset);
+  CHECK(brush.base().id == QStringLiteral("ink"));
+  CHECK(!brush.modified());
+  CHECK(canvas->brush_opacity() == 92);
+
+  // A panel-style edit: one changed() reaches the canvas and the options bar.
+  patchy::ui::BrushEdit edit;
+  edit.size = 40;
+  patchy::BrushDynamics dynamics;
+  dynamics.scatter = 1.5;
+  edit.dynamics = dynamics;
+  brush.edit(edit);
+  CHECK(canvas->brush_size() == 40);
+  CHECK(std::abs(canvas->brush_dynamics().scatter - 1.5) < 1e-9);
+  CHECK(size_spin->value() == 40);
+  CHECK(brush.modified());
+  CHECK(brush.base().id == QStringLiteral("ink"));
+
+  // Options-bar edits route through the owner too; the Eraser keeps its own size group.
+  opacity_spin->setValue(55);
+  CHECK(brush.brush().opacity == 55);
+  require_action_by_text(window, QStringLiteral("Eraser"))->trigger();
+  size_spin->setValue(9);
+  CHECK(canvas->brush_size() == 9);
+  CHECK(brush.brush().size == 40);
+  require_action_by_text(window, QStringLiteral("Brush"))->trigger();
+  CHECK(canvas->brush_size() == 40);
+  CHECK(canvas->brush_opacity() == 55);
+
+  // Saving the working brush makes it the new, unmodified base.
+  const auto saved_id = window.save_working_brush_as_preset(QStringLiteral("Current brush probe"));
+  CHECK(brush.base().id == saved_id);
+  CHECK(!brush.modified());
+  CHECK(preset_combo->currentData().toString() == saved_id);
+  window.brush_automation_library().remove(saved_id);
+
+  // A bare tip pick records the tip as the base.
+  window.set_active_brush_tip(patchy::ui::builtin_square_brush_tip_id(), false);
+  CHECK(brush.base().kind == patchy::ui::BrushBase::Kind::Tip);
+  CHECK(brush.base().id == patchy::ui::builtin_square_brush_tip_id());
+  CHECK(!brush.modified());
+  CHECK(canvas->brush_shape() == patchy::BrushShape::Square);
+  clear_brush_tip_test_state();
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part2() {
@@ -1531,8 +1608,8 @@ std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part2() {
       {"ui_brush_tip_manager_edits_dynamics", ui_brush_tip_manager_edits_dynamics},
       {"ui_brush_tip_picker_popup_resizes_and_persists", ui_brush_tip_picker_popup_resizes_and_persists},
       {"ui_brush_dynamics_round_brush_session", ui_brush_dynamics_round_brush_session},
-      {"ui_brush_dynamics_popup_edits_apply_and_persist", ui_brush_dynamics_popup_edits_apply_and_persist},
-      {"ui_brush_dynamics_popup_control_edits_persist", ui_brush_dynamics_popup_control_edits_persist},
+      {"ui_brush_dynamics_popup_edits_working_brush_not_tip", ui_brush_dynamics_popup_edits_working_brush_not_tip},
+      {"ui_brush_dynamics_popup_control_edits_round_trip", ui_brush_dynamics_popup_control_edits_round_trip},
       {"ui_brush_dynamics_button_toggles_popup_closed", ui_brush_dynamics_button_toggles_popup_closed},
       {"ui_brush_dynamics_stroke_scatters_with_seed", ui_brush_dynamics_stroke_scatters_with_seed},
       {"ui_brush_color_dynamics_reaches_stroke_compositor",
@@ -1540,5 +1617,6 @@ std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part2() {
       {"ui_brush_dynamics_abr_import_carries_dynamics", ui_brush_dynamics_abr_import_carries_dynamics},
       {"ui_default_brush_tips_seed_once_and_render_sheet", ui_default_brush_tips_seed_once_and_render_sheet},
       {"ui_brush_tip_resets_to_round_on_startup", ui_brush_tip_resets_to_round_on_startup},
+      {"ui_current_brush_tracks_base_and_reaches_canvas", ui_current_brush_tracks_base_and_reaches_canvas},
   };
 }

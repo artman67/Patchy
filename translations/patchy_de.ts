@@ -9312,16 +9312,8 @@ RGB: %2, %3, %4</translation>
         <translation>Dynamik</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>Pinseldynamik und Effekte für den runden Pinsel (nur in dieser Sitzung; wird beim nächsten Start zurückgesetzt)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>Pinseldynamik und Effekte für die aktive Pinselspitze</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>Pinseldynamik und Effekte für den quadratischen Pinsel (nur in dieser Sitzung; wird beim nächsten Start zurückgesetzt)</translation>
+        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
+        <translation>Pinseldynamik und Effekte für den aktuellen Pinsel (nur in dieser Sitzung; wird beim nächsten Start zurückgesetzt)</translation>
     </message>
 </context>
 <context>

@@ -9312,16 +9312,8 @@ RVB : %2, %3, %4</translation>
         <translation>Dynamique</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>Dynamique de forme et effets pour la forme Rond (cette session uniquement ; réinitialisé au prochain lancement)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>Dynamique de forme et effets pour la pointe de forme active</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>Dynamique de forme et effets pour la forme Carré (cette session uniquement ; réinitialisé au prochain lancement)</translation>
+        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
+        <translation>Dynamique de forme et effets pour la forme actuelle (cette session uniquement ; réinitialisé au prochain lancement)</translation>
     </message>
 </context>
 <context>

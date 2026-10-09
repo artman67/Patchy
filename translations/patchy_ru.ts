@@ -9342,16 +9342,8 @@ RGB: %2, %3, %4</translation>
         <translation>Динамика</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>Динамика и эффекты активного отпечатка кисти</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>Динамика и эффекты кисти для квадратной кисти (только в этом сеансе; сбрасывается при следующем запуске)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>Динамика и эффекты кисти для круглой кисти (только в этом сеансе; сбрасывается при следующем запуске)</translation>
+        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
+        <translation>Динамика и эффекты кисти для текущей кисти (только в этом сеансе; сбрасывается при следующем запуске)</translation>
     </message>
 </context>
 <context>

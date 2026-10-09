@@ -941,6 +941,8 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/brush_presets.cpp
       src/ui/brush_automation.cpp
       src/ui/main_window_brush_automation.cpp
+      src/ui/current_brush.hpp
+      src/ui/current_brush.cpp
       src/ui/script_brush.cpp
       src/ui/brush_tip_library.hpp
       src/ui/brush_tip_library.cpp

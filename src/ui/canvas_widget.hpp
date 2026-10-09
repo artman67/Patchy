@@ -548,15 +548,21 @@ public:
   // Bitmap brush tip for Brush, Mixer Brush, Pattern Stamp, and Eraser;
   // null tip = procedural round/soft brush.
   // The id is an opaque library key kept here so the options bar and settings stay in sync.
+  // Setting a tip clears the spacing override.
   void set_brush_tip(std::shared_ptr<const patchy::BrushTip> tip, const QString& tip_id);
   [[nodiscard]] const QString& brush_tip_id() const noexcept;
   [[nodiscard]] bool has_brush_tip() const noexcept;
+  [[nodiscard]] const std::shared_ptr<const patchy::BrushTip>& brush_tip() const noexcept;
+  // Dab spacing as a fraction of size, overriding the tip's own (saved presets and scripts
+  // carry one); nullopt = the tip's spacing and the procedural paths.
+  void set_brush_spacing_override(std::optional<double> spacing) noexcept;
+  [[nodiscard]] std::optional<double> brush_spacing_override() const noexcept;
   // Procedural footprint painted while no bitmap tip is set (Brush, Eraser). A hard,
   // unrotated Square snaps to the pixel grid; see square_brush_coverage in core/pixel_tools.
   void set_brush_shape(patchy::BrushShape shape);
   [[nodiscard]] patchy::BrushShape brush_shape() const noexcept;
-  // Per-dab tip dynamics + static tip shape, applied per tip by MainWindow (bitmap tips read
-  // them from the library entry; the Round brush carries session-only values). Dynamics only
+  // Per-dab tip dynamics + static tip shape, pushed by MainWindow from the working brush
+  // (ui/current_brush). Dynamics only
   // affect Brush strokes: erase strokes strip them, and a dynamics-active Round brush stamps
   // through a synthesized disc tip since the capsule renderer has no dab loop.
   void set_brush_dynamics(const patchy::BrushDynamics& dynamics) noexcept;

@@ -117,6 +117,8 @@ struct ImageSequenceNaming;
 // create_actions() build-phase context (main_window_actions_internal.hpp).
 struct ActionBuildContext;
 class BrushDynamicsButton;
+class CurrentBrush;
+struct BrushEdit;
 class BrushTipLibrary;
 class BrushAutomationLibrary;
 class BrushTipPicker;
@@ -190,7 +192,17 @@ public:
   [[nodiscard]] const HotkeyRegistry& hotkey_registry() const noexcept { return hotkey_registry_; }
   [[nodiscard]] BrushTipLibrary& brush_tip_library();
   [[nodiscard]] BrushAutomationLibrary& brush_automation_library();
+  // The working brush (tip, size, opacity, flow, soft, airbrush, tip shape, spacing, dynamics)
+  // with its base preset/tip and modified state. Edits go through it; picks go through
+  // set_active_brush_tip, pick_brush_preset and activate_automation_brush.
+  [[nodiscard]] CurrentBrush& current_brush();
+  // A built-in preset id or a saved preset id; while the Eraser is active its own size group
+  // takes the preset's size, opacity, flow, soft and airbrush.
+  void pick_brush_preset(const QString& preset_id);
   void activate_automation_brush(const ScriptStroke& brush);
+  // Saves the active tool's current brush as a new saved preset and records it as the base.
+  // Returns the new id; throws std::exception on invalid input or a write failure.
+  QString save_working_brush_as_preset(const QString& name);
   void refresh_automation_brush_presets();
   void manage_automation_brush_presets();
   void save_current_automation_brush();
@@ -387,8 +399,8 @@ private:
     std::vector<PatternResource> pattern_resources{};
   };
 
-  // Defaults match the Round startup preset (brush_presets.cpp); load_tool_settings()
-  // re-derives them from the preset on every launch.
+  // The Eraser's own size group. Defaults match the Round startup preset (brush_presets.cpp);
+  // load_tool_settings() re-derives them from the preset on every launch.
   struct BrushToolSettings {
     int size{12};
     int opacity{100};
@@ -1425,7 +1437,15 @@ private:
   // showed instead of repeating variation 1; another selection starts fresh.
   std::uint64_t remove_object_last_selection_hash_{0};
   int remove_object_last_attempt_{-1};
-  void apply_brush_tip_to_canvas(CanvasWidget* canvas);
+  // Pushes the flagged CurrentBrush::Change parts of the working brush to the canvas (the size
+  // group only while it is active); the single place working-brush values reach a canvas.
+  void push_current_brush_to_canvas(CanvasWidget* canvas, unsigned changes);
+  void on_current_brush_changed(unsigned changes);
+  // Folds the active canvas's live size group (Alt-drag, number keys, direct setters) back into
+  // the working brush or the Eraser group.
+  void fold_canvas_brush_values();
+  // An options-bar edit of the active size group: the working brush, or the Eraser's group.
+  void edit_brush_option(const BrushEdit& edit);
   void import_brush_tips_from_abr();
   void open_brush_tip_manager();
   void expand_selection_dialog();
@@ -1595,7 +1615,6 @@ private:
   // Restart the debounce so the live tool-option sliders flush to disk once,
   // after the drag settles, instead of on every intermediate value.
   void schedule_save_tool_settings();
-  [[nodiscard]] BrushToolSettings& active_stored_brush_settings();
   void stash_active_brush_settings();
   void apply_active_brush_settings_to_canvas();
   void apply_pattern_stamp_settings_to_canvas(CanvasWidget* canvas);
@@ -2023,21 +2042,27 @@ private:
   QComboBox* brush_preset_combo_{nullptr};
   BrushTipLibrary* brush_tip_library_{nullptr};
   BrushAutomationLibrary* brush_automation_library_{nullptr};
-  std::shared_ptr<const BrushTip> active_preset_tip_;
-  QString active_automation_preset_id_;
-  std::optional<ScriptStroke> active_automation_brush_;
+  CurrentBrush* current_brush_{nullptr};
+  // A saved preset's or script's pen mapping, kept until the next tip or built-in preset pick
+  // and re-applied to each activated canvas.
+  std::optional<CanvasWidget::PenInputSettings> preset_pen_override_;
   PatternLibrary* pattern_library_{nullptr};
   GradientLibrary* gradient_library_{nullptr};
   CustomShapeLibrary* custom_shape_library_{nullptr};
   StyleLibrary* style_library_{nullptr};
   BrushTipPicker* brush_tip_picker_{nullptr};
   BrushDynamicsButton* brush_dynamics_button_{nullptr};
-  QString active_brush_tip_id_;
-  // Session-only dynamics for the procedural Round brush. Deliberately never persisted: every
-  // launch starts with a plain Round brush, so a weird leftover setup cannot confuse anyone.
-  patchy::BrushDynamics round_brush_dynamics_{};
-  double round_brush_base_angle_degrees_{0.0};
-  double round_brush_base_roundness_{100.0};
+  // The options-bar size-group controls; they show the active group (working brush or Eraser).
+  struct BrushOptionControls {
+    QSpinBox* size{nullptr};
+    QSlider* size_slider{nullptr};
+    QSpinBox* opacity{nullptr};
+    QSlider* opacity_slider{nullptr};
+    QSpinBox* flow{nullptr};
+    QCheckBox* airbrush{nullptr};
+    QSpinBox* softness{nullptr};
+    QSlider* softness_slider{nullptr};
+  } brush_controls_{};
   QComboBox* gradient_method_combo_{nullptr};
   QSpinBox* gradient_opacity_spin_{nullptr};
   QSlider* gradient_opacity_slider_{nullptr};
@@ -2286,10 +2311,9 @@ private:
   std::optional<int> pending_layer_fill_opacity_value_;
   CanvasTool current_tool_{CanvasTool::Brush};
   CanvasTool tool_before_eraser_toggle_{CanvasTool::Brush};
-  // The current canvas holds the live size/opacity/softness for one settings
-  // group; the other group's values wait here. The eraser is its own group so
-  // it keeps settings independent of the other painting tools.
-  BrushToolSettings stored_paint_brush_settings_{};
+  // The paint group lives in CurrentBrush; the eraser is its own group so it keeps settings
+  // independent of the other painting tools. While it is active the canvas holds its live
+  // values and stash_active_brush_settings() folds them back here.
   BrushToolSettings stored_eraser_brush_settings_{};
   bool eraser_brush_settings_active_{false};
   int current_mixer_wet_{50};

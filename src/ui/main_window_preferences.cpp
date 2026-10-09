@@ -1999,7 +1999,7 @@ void MainWindow::handle_pen_button_action(PenButtonAction action) {
       break;
     case PenButtonAction::IncreaseBrushSize:
     case PenButtonAction::DecreaseBrushSize: {
-      if (auto* brush_size = findChild<QSpinBox*>(QStringLiteral("brushSizeSpin")); brush_size != nullptr) {
+      if (auto* brush_size = brush_controls_.size; brush_size != nullptr) {
         const int direction = action == PenButtonAction::IncreaseBrushSize ? 1 : -1;
         const int value = brush_size->value();
         brush_size->setValue(value + direction * proportional_brush_step(value, direction, false));

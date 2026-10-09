@@ -15,8 +15,6 @@ class QSpinBox;
 
 namespace patchy::ui {
 
-struct BrushTipEntry;
-
 // The dynamics editing form (Tip Shape / Shape Dynamics / Scattering / Transfer / texture /
 // dual brush / color / effects + Reset), shared by the options-bar Dynamics popup and the
 // Brush Tips manager's editor. Emits edited() on every user change; hosts read the values back
@@ -97,24 +95,20 @@ private:
 };
 
 // Options-bar "Dynamics" button for the Brush tool: opens a popup hosting a BrushDynamicsPanel
-// for the active bitmap tip, or for the procedural Round brush's session-only dynamics. Edits
-// are debounced and emitted via dynamics_edited; MainWindow persists bitmap-tip values to the
-// library sidecar, while Round values live in the window for the session and reset on launch.
+// for the working brush (ui/current_brush). Edits are debounced and emitted via
+// dynamics_edited; they change the working brush only, never a tip's stored defaults.
 class BrushDynamicsButton : public QToolButton {
   Q_OBJECT
 
 public:
   explicit BrushDynamicsButton(QWidget* parent = nullptr);
 
-  // Loads the button's model from the active tip entry (null = clear/disable). While the
-  // popup is open for the same tip, the reload is skipped so a library changed() echo of our
-  // own edit does not fight the open controls.
-  void set_active_entry(const BrushTipEntry* entry);
-  // Loads the button's model for the procedural Round brush's session-only dynamics; the id is
-  // the builtin round key MainWindow routes on. Same popup/edit flow as a bitmap tip.
-  void set_round_session(const QString& round_tip_id, const patchy::BrushDynamics& dynamics,
+  // Loads the button's model from the working brush; tip_key is working_brush_tip_key(). While
+  // the popup is open for the same tip the reload is skipped, so the echo of our own edit does
+  // not fight the open controls.
+  void set_working_brush(const QString& tip_key, const patchy::BrushDynamics& dynamics,
                          double base_angle_degrees, double base_roundness);
-  // True while a bitmap tip is active; MainWindow::refresh_options_bar combines this with the
+  // True once a model is loaded; MainWindow::refresh_options_bar combines this with the
   // document-editability flag instead of blanket-enabling the button.
   [[nodiscard]] bool has_active_tip() const noexcept { return !tip_id_.isEmpty(); }
   void retranslate();
@@ -129,7 +123,6 @@ private:
   void refresh_active_indicator();
 
   QString tip_id_;
-  bool round_session_{false};  // model is the Round brush's session dynamics, not a library tip
   patchy::BrushDynamics dynamics_{};
   double base_angle_degrees_{0.0};
   double base_roundness_{100.0};

@@ -5,6 +5,7 @@
 // inside namespace patchy::ui), so the qualified name
 // patchy::ui::MainWindowTestAccess must not change.
 
+#include "ui/current_brush.hpp"
 #include "ui/custom_shape_library.hpp"
 #include "ui/divide_photos_dialog.hpp"
 #include "ui/document_float_window.hpp"
@@ -228,9 +229,11 @@ public:
 
   static void set_round_brush_session(MainWindow& window, BrushDynamics dynamics,
                                       double base_angle_degrees, double base_roundness) {
-    window.round_brush_dynamics_ = std::move(dynamics);
-    window.round_brush_base_angle_degrees_ = base_angle_degrees;
-    window.round_brush_base_roundness_ = base_roundness;
+    BrushEdit edit;
+    edit.dynamics = std::move(dynamics);
+    edit.angle = base_angle_degrees;
+    edit.roundness = base_roundness;
+    window.current_brush().edit(edit);
   }
 
   static bool save_document(MainWindow& window) {

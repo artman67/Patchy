@@ -9312,16 +9312,8 @@ RGB: %2, %3, %4</translation>
         <translation>Dinámica</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>Dinámica y efectos de pincel para el pincel Redondo (solo en esta sesión; se restablecen en el próximo inicio)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>Dinámica y efectos de pincel para la punta de pincel activa</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>Dinámica y efectos de pincel para el pincel Cuadrado (solo en esta sesión; se restablecen en el próximo inicio)</translation>
+        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
+        <translation>Dinámica y efectos de pincel para el pincel actual (solo en esta sesión; se restablecen en el próximo inicio)</translation>
     </message>
 </context>
 <context>
