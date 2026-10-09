@@ -258,7 +258,7 @@ bool CanvasWidget::set_perspective_warp_corner(int quad, int corner, QPointF doc
   }
   session.planes = std::move(planes);
   if (session.mode == PerspectiveWarpMode::Warp) {
-    refresh_perspective_warp_preview();
+    queue_warp_preview_refresh();
   }
   update();
   return true;

@@ -3616,6 +3616,8 @@ bool CanvasWidget::begin_warp_transform() {
   warp_style_ = QStringLiteral("warpCustom");
   warp_style_value_ = 0.0;
   warp_base_cache_ = QImage();
+  warp_below_cache_ = QImage();
+  warp_below_cache_key_ = 0;
   warp_base_cache_scale_level_ = 0;
   warp_base_display_mip_cache_.clear();
   warp_base_display_mip_source_key_ = 0;
@@ -3709,9 +3711,26 @@ void CanvasWidget::set_warp_handle_document_position(int index, QPointF document
   warp_mesh_.ys[static_cast<std::size_t>(index)] = content[1];
   warp_style_ = QStringLiteral("warpCustom");
   warp_style_value_ = 0.0;
-  refresh_warp_preview_cache();
-  update();
+  queue_warp_preview_refresh();
   notify_transform_controls_changed();
+}
+
+void CanvasWidget::queue_warp_preview_refresh() {
+  warp_preview_refresh_queued_ = true;
+  update();
+}
+
+void CanvasWidget::flush_warp_preview_refresh() {
+  if (!std::exchange(warp_preview_refresh_queued_, false)) {
+    return;
+  }
+  if (warping_layer_) {
+    refresh_warp_preview_cache();
+  } else if (puppet_.active) {
+    refresh_puppet_warp_preview();
+  } else if (perspective_warp_.has_value() && perspective_warp_->mode == PerspectiveWarpMode::Warp) {
+    refresh_perspective_warp_preview();
+  }
 }
 
 bool CanvasWidget::prepare_warp_source() {
@@ -3735,6 +3754,8 @@ void CanvasWidget::build_warp_base_cache(LayerId hidden_layer_id) {
   // cold-invalidated the style-mask caches), banded across workers, and at
   // zoom <= 50% composited from the preview-scaled document.
   warp_base_cache_ = QImage();
+  warp_below_cache_ = QImage();
+  warp_below_cache_key_ = 0;
   warp_base_cache_scale_level_ = 0;
   if (document_ == nullptr) {
     return;
@@ -3809,8 +3830,19 @@ void CanvasWidget::set_warp_preview_patches(LayerId layer_id, const QImage& warp
   if (patch_rect.isEmpty()) {
     return;
   }
-  warp_preview_patches_ = qimage_patches_from_document_region_with_layer_pixels(
-      *document_, QRegion(patch_rect), true, layer_id, warped_pixels, warped_bounds);
+  // Everything under a top-level layer stays put while it warps: render it once and
+  // start each repaint from it (the lower stack was most of a warp frame's cost).
+  if (const auto below_key = layers_below_backdrop_revision(*document_, layer_id);
+      below_key != warp_below_cache_key_ || below_key == 0) {
+    warp_below_cache_ = below_key == 0 ? QImage() : render_layers_below_backdrop(*document_, layer_id);
+    warp_below_cache_key_ = below_key;
+  }
+  warp_preview_patches_ =
+      warp_below_cache_.isNull()
+          ? qimage_patches_from_document_region_with_layer_pixels(*document_, QRegion(patch_rect), true, layer_id,
+                                                                  warped_pixels, warped_bounds)
+          : qimage_patches_over_backdrop_with_layer_pixels(*document_, QRegion(patch_rect), warp_below_cache_,
+                                                           layer_id, warped_pixels, warped_bounds);
   for (auto& patch : warp_preview_patches_) {
     patch.image = patch.image.convertToFormat(QImage::Format_RGBA8888);
   }
@@ -3965,6 +3997,8 @@ void CanvasWidget::reset_warp_state() {
 
 void CanvasWidget::clear_warp_preview() {
   warp_base_cache_ = QImage();
+  warp_below_cache_ = QImage();
+  warp_below_cache_key_ = 0;
   warp_base_cache_scale_level_ = 0;
   warp_base_display_mip_cache_.clear();
   warp_base_display_mip_source_key_ = 0;
@@ -4165,6 +4199,8 @@ bool CanvasWidget::resume_pending_warp_session() {
   warp_style_value_ = pending_warp_style_value_;
   warp_source_image_ = pending_warp_source_image_;
   warp_base_cache_ = QImage();
+  warp_below_cache_ = QImage();
+  warp_below_cache_key_ = 0;
   warp_base_cache_scale_level_ = 0;
   warp_base_display_mip_cache_.clear();
   warp_base_display_mip_source_key_ = 0;

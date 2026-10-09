@@ -807,6 +807,7 @@ void CanvasWidget::document_changed_impl(QRegion document_region, bool includes_
 
 void CanvasWidget::paintEvent(QPaintEvent* event) {
   ZoomTraceScope trace("paint", zoom_);
+  flush_warp_preview_refresh();
   QPainter painter(this);
   const auto widget_exposed_rect = event != nullptr ? event->rect() : rect();
   painter.fillRect(widget_exposed_rect, backdrop_color());

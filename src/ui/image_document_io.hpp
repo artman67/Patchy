@@ -168,6 +168,19 @@ bool promote_flat_alpha_to_layer_mask(Document& document);
 [[nodiscard]] std::vector<RenderedDocumentPatch> qimage_patches_from_document_region_with_layer_pixels(
     const Document& document, const QRegion& document_region, bool preserve_alpha, LayerId layer_id,
     const PixelBuffer& layer_pixels, Rect layer_bounds);
+// Live warp previews redraw one layer while everything below it stays put. For a
+// top-level, unclipped layer (layer_below_backdrop_index), render_layers_below_backdrop
+// renders the stack under it once per session, and the patch form starts each repaint
+// from that image instead of compositing the lower layers again: same bytes, since the
+// compositor stores 8-bit pixels after every layer. Other layers fall back to the full
+// render.
+[[nodiscard]] std::optional<std::size_t> layer_below_backdrop_index(const Document& document, LayerId layer_id);
+// Changes whenever anything the backdrop shows changes; 0 when the layer is not eligible.
+[[nodiscard]] std::uint64_t layers_below_backdrop_revision(const Document& document, LayerId layer_id);
+[[nodiscard]] QImage render_layers_below_backdrop(const Document& document, LayerId layer_id);
+[[nodiscard]] std::vector<RenderedDocumentPatch> qimage_patches_over_backdrop_with_layer_pixels(
+    const Document& document, const QRegion& document_region, const QImage& backdrop, LayerId layer_id,
+    const PixelBuffer& layer_pixels, Rect layer_bounds);
 // One-rect form rendered in horizontal bands across workers. PREVIEW-ONLY
 // (live Free Transform drags): band-windowed style blurs can differ ~1-2/255
 // from the unbanded render, so the result must never reach a commit or the
