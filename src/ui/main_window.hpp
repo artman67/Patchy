@@ -529,6 +529,16 @@ private:
   void resize_window_from_global_point(QPoint global_position);
   void set_window_screen_size(QSize physical_size);
   void create_docks();
+  // One builder per right-column panel, called by create_docks() in column order
+  // (main_window_dock_builders.cpp). Channels tabs behind Layers and Paths behind
+  // Channels, so both take the Layers dock to raise it back to the front.
+  [[nodiscard]] QDockWidget* create_layers_dock();
+  void create_layer_list(QWidget* layers_panel);
+  void create_channels_dock(QDockWidget* layers_dock);
+  void create_paths_dock(QDockWidget* layers_dock);
+  void create_history_dock();
+  void create_properties_dock();
+  void create_info_dock();
   void create_palette_dock();
   void create_color_dock();
   // Window menu show/hide toggles for the right-side panels, grouped with the

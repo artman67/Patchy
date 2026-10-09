@@ -22,8 +22,8 @@ Both panels are views of `CurrentBrush`. They never touch a canvas:
   writes with `CurrentBrush::edit`.
 
 The wiring lives in `main_window_brush.cpp` (`wire_brush_panels`, `sync_brush_panels`,
-`new_brush_preset_from_panel`); dock creation in `main_window_docks.cpp` (`create_brush_docks`,
-`show_brush_settings_panel`); the Window menu toggles are rows in `add_panel_toggles_to_window_menu`
+`new_brush_preset_from_panel`); dock creation in `main_window_dock_builders.cpp` (`create_brush_docks`) and
+`main_window_docks.cpp` (`show_brush_settings_panel`); the Window menu toggles are rows in `add_panel_toggles_to_window_menu`
 ([color-picker.md](color-picker.md), "Window menu panel toggles").
 
 ## Docks

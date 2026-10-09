@@ -102,7 +102,7 @@ Blocking refusals and failed operations use `MainWindow::show_status_error` or `
 
 ## Standing UI rules
 
-- Right-column dock panels (measured minimum width, collapse pins, tab groups, floating chrome, the saved panel arrangement and Window > Reset Panel Layout) follow [dock-panels.md](dock-panels.md); read it before changing `main_window_docks.cpp`.
+- Right-column dock panels (measured minimum width, collapse pins, tab groups, floating chrome, the saved panel arrangement and Window > Reset Panel Layout) follow [dock-panels.md](dock-panels.md); read it before changing `main_window_docks.cpp` or `main_window_dock_builders.cpp`.
 - The layer context menu always keeps **Edit Layer Styles...** as its first item; `ui_layer_context_menu_keeps_edit_styles_on_top` enforces this.
 - The canvas right mouse button opens context menus and never pans; the builder and the rule live in [tools.md](tools.md), "Canvas right-click menu".
 - The menu-bar Layer menu groups its new-layer, layer-mask, and move/flip sets into the `layerNewMenu`, `layerMaskMenu`, and `layerArrangeMenu` submenus so the whole menu fits a short browser viewport in the wasm build; `ui_main_window_renders_color_controls` bounds its direct row count at 23, so add new Layer commands inside an existing submenu or group rather than as top-level rows. The Layer Mask submenu mirrors the layer context menu's item order and separators; keep the two in step.

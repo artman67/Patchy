@@ -1,6 +1,6 @@
 # Dock panels
 
-Read this before changing the right-column panels (Color, Brushes, Brush Settings, Layers, Channels, Paths, History, Properties, Info, Palette), their title bars, tab groups, floating chrome, or the saved panel arrangement. The code lives in `src/ui/main_window_docks.cpp`.
+Read this before changing the right-column panels (Color, Brushes, Brush Settings, Layers, Channels, Paths, History, Properties, Info, Palette), their title bars, tab groups, floating chrome, or the saved panel arrangement. The machinery (title bars, collapse, width handles, floating chrome, the saved arrangement) lives in `src/ui/main_window_docks.cpp`; `create_docks()` and its one-builder-per-panel functions live in `src/ui/main_window_dock_builders.cpp`.
 
 ## Width and height
 

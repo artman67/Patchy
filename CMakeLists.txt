@@ -1084,7 +1084,9 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/main_window_channels.cpp
       src/ui/main_window_chrome.cpp
       src/ui/main_window_destructive_adjustments.cpp
+      src/ui/main_window_dock_builders.cpp
       src/ui/main_window_docks.cpp
+      src/ui/main_window_docks_internal.hpp
       src/ui/main_window_filters.cpp
       src/ui/main_window_document_dialogs.cpp
       src/ui/main_window_files.cpp
