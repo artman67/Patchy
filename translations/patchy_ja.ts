@@ -8893,6 +8893,42 @@ Mixed selection</source>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>ピクセル数は固定されています。変わるのは印刷解像度と印刷サイズだけです。</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>ブラシの投影</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>ブラシポーズ</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>湿潤とミックスのジッター</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>テクスチャを保護</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>傾きの比率</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>デュアルブラシのモード</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>デュアルブラシの散布と反転</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>間隔オフ</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>このファイルには使用できるブラシがありません</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9570,6 +9606,14 @@ Mixed selection</source>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>「%1」からブラシ先端を読み込めませんでした。</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Patchy に対応する機能がない Photoshop の設定は省略されました: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>テクスチャパターンがファイルにもパターンライブラリにも見つからないため、生成した粒子で代用します: %1</translation>
     </message>
 </context>
 <context>

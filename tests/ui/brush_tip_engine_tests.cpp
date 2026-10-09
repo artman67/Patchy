@@ -1,6 +1,10 @@
-// Brush-engine features that only show through the real canvas: the working brush's settings
-// must reach the stamp path that MainWindow::push_current_brush_to_canvas feeds.
+// Brush-engine features that only show through the real canvas or the libraries: the working
+// brush's settings must reach the stamp path that MainWindow::push_current_brush_to_canvas feeds,
+// and .abr imports must land in the brush and pattern libraries MainWindow wires together.
 
+#include "psd/psd_binary.hpp"
+#include "psd/psd_descriptor.hpp"
+#include "psd/psd_patterns.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/canvas_widget.hpp"
 #include "ui/current_brush.hpp"
@@ -12,11 +16,17 @@
 #include <QAction>
 #include <QApplication>
 #include <QColor>
+#include <QDir>
+#include <QFile>
 #include <QImage>
 #include <QJsonObject>
 #include <QPoint>
+#include <QTemporaryDir>
 
+#include <memory>
 #include <optional>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include "ui_test_access.hpp"
@@ -314,6 +324,232 @@ void ui_brush_texture_pattern_reaches_stroke() {
   restore_default_working_brush(window);
 }
 
+// --- A small v10 .abr built with the descriptor writer ---
+
+using patchy::psd::DescriptorValue;
+
+DescriptorValue abr_value(DescriptorValue::Type type) {
+  DescriptorValue value;
+  value.type = type;
+  return value;
+}
+
+DescriptorValue abr_text(std::string text) {
+  auto value = abr_value(DescriptorValue::Type::String);
+  value.string_value = std::move(text);
+  return value;
+}
+
+DescriptorValue abr_number(double number) {
+  auto value = abr_value(DescriptorValue::Type::Double);
+  value.double_value = number;
+  return value;
+}
+
+DescriptorValue abr_bool(bool flag) {
+  auto value = abr_value(DescriptorValue::Type::Bool);
+  value.bool_value = flag;
+  return value;
+}
+
+DescriptorValue abr_object(std::string class_id, std::vector<std::pair<std::string, DescriptorValue>> items) {
+  auto object = std::make_shared<patchy::psd::DescriptorObject>();
+  object->class_id = std::move(class_id);
+  object->class_id_long_form = object->class_id.size() != 4U;
+  for (auto& [key, item] : items) {
+    object->key_order.push_back({key, key.size() != 4U});
+    object->values[key] = std::move(item);
+  }
+  auto value = abr_value(DescriptorValue::Type::Object);
+  value.object_value = std::move(object);
+  return value;
+}
+
+DescriptorValue abr_list(std::vector<DescriptorValue> items) {
+  auto value = abr_value(DescriptorValue::Type::List);
+  value.list_value = std::move(items);
+  return value;
+}
+
+void abr_block(patchy::psd::BigEndianWriter& file, const char* key, const std::vector<std::uint8_t>& block) {
+  for (const auto* text : {"8BIM", key}) {
+    for (int i = 0; i < 4; ++i) {
+      file.write_u8(static_cast<std::uint8_t>(text[i]));
+    }
+  }
+  file.write_u32(static_cast<std::uint32_t>(block.size()));
+  file.write_bytes(block);
+  while (file.bytes().size() % 4U != 0U) {
+    file.write_u8(0);
+  }
+}
+
+std::vector<std::uint8_t> abr_descriptor_block(const DescriptorValue& root) {
+  patchy::psd::BigEndianWriter writer;
+  writer.write_u32(16);
+  patchy::psd::write_descriptor(writer, *root.object_value);
+  return writer.bytes();
+}
+
+// A computed "Soft Oval" (40 px, size captured) inside folder "Inks", and a sampled "Grain Ink"
+// textured with an embedded pattern plus a "Ghost Ink" whose pattern is nowhere; spacing is
+// turned off on one tip so the import reports it.
+QByteArray make_ui_test_abr(const std::string& pattern_id) {
+  const auto computed = abr_object(
+      "brushPreset", {{"Nm  ", abr_text("Soft Oval")},
+                      {"Brsh", abr_object("computedBrush", {{"Dmtr", abr_number(40.0)},
+                                                            {"Hrdn", abr_number(0.0)},
+                                                            {"Rndn", abr_number(50.0)},
+                                                            {"Spcn", abr_number(25.0)},
+                                                            {"Intr", abr_bool(false)}})},
+                      {"useBrushSize", abr_bool(true)}});
+  const auto textured = [&pattern_id](const char* name, const std::string& id, const char* pattern_name) {
+    return abr_object(
+        "brushPreset",
+        {{"Nm  ", abr_text(name)},
+         {"Brsh", abr_object("sampledBrush", {{"Dmtr", abr_number(8.0)}, {"sampledData", abr_text("tip")}})},
+         {"useBrushSize", abr_bool(false)},
+         {"useTexture", abr_bool(true)},
+         {"textureDepth", abr_number(100.0)},
+         {"Txtr", abr_object("Ptrn", {{"Nm  ", abr_text(pattern_name)}, {"Idnt", abr_text(id)}})}});
+  };
+  const auto desc = abr_descriptor_block(abr_object(
+      "null", {{"Brsh", abr_list({computed, textured("Grain Ink", pattern_id, "Grain"),
+                                  textured("Ghost Ink", "pat-ghost-missing", "Ghost")})}}));
+  const auto hierarchy = abr_descriptor_block(abr_object(
+      "null", {{"hierarchy", abr_list({abr_object("Grup", {{"Nm  ", abr_text("Inks")}}), abr_object("preset", {}),
+                                       abr_object("groupEnd", {}), abr_object("preset", {}),
+                                       abr_object("preset", {})})}}));
+  patchy::psd::BigEndianWriter samp;
+  {
+    patchy::psd::BigEndianWriter entry;
+    entry.write_u8(3);
+    for (const char c : std::string("tip")) {
+      entry.write_u8(static_cast<std::uint8_t>(c));
+    }
+    for (int i = 4; i < 47; ++i) {
+      entry.write_u8(0);
+    }
+    for (const auto bound : {0U, 0U, 8U, 8U}) {
+      entry.write_u32(bound);
+    }
+    entry.write_u16(8);
+    entry.write_u8(0);
+    for (int i = 0; i < 64; ++i) {
+      entry.write_u8(255);
+    }
+    samp.write_u32(static_cast<std::uint32_t>(entry.bytes().size()));
+    samp.write_bytes(entry.bytes());
+    while (samp.bytes().size() % 4U != 0U) {
+      samp.write_u8(0);
+    }
+  }
+  patchy::PatternResource grain;
+  grain.id = pattern_id;
+  grain.name = "Grain";
+  grain.tile = patchy::PixelBuffer(4, 4, patchy::PixelFormat::rgba8());
+  for (int y = 0; y < 4; ++y) {
+    for (int x = 0; x < 4; ++x) {
+      auto* px = grain.tile.pixel(x, y);
+      px[0] = px[1] = px[2] = static_cast<std::uint8_t>((x + y) % 2 == 0 ? 255 : 0);
+      px[3] = 255;
+    }
+  }
+  const std::vector<patchy::PatternResource> patterns{grain};
+
+  patchy::psd::BigEndianWriter file;
+  file.write_u16(10);
+  file.write_u16(1);
+  abr_block(file, "samp", samp.bytes());
+  abr_block(file, "patt", patchy::psd::serialize_patterns_block(patterns));
+  abr_block(file, "desc", desc);
+  abr_block(file, "phry", hierarchy);
+  const auto bytes = file.bytes();
+  return QByteArray(reinterpret_cast<const char*>(bytes.data()), static_cast<qsizetype>(bytes.size()));
+}
+
+// The import through MainWindow's own libraries: preset folders nest under the file's folder,
+// the computed tip imports, the embedded pattern joins the Pattern library and textures the
+// brush, picking the tip applies its captured size, and one line each reports the unmapped
+// settings and the pattern found nowhere.
+void ui_abr_import_fills_folders_patterns_and_size() {
+  clear_brush_tip_test_state();
+  QTemporaryDir scratch;
+  CHECK(scratch.isValid());
+  const auto path = QDir(scratch.path()).filePath(QStringLiteral("Test Set.abr"));
+  const std::string pattern_id = "patchy-test-abr-embedded-grain";
+  {
+    QFile file(path);
+    CHECK(file.open(QIODevice::WriteOnly));
+    CHECK(file.write(make_ui_test_abr(pattern_id)) > 0);
+  }
+
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto& patterns = window.pattern_library();
+  const auto qt_pattern_id = QString::fromStdString(pattern_id);
+  if (const auto* stale = patterns.find_entry_by_pattern_id(qt_pattern_id); stale != nullptr) {
+    CHECK(patterns.remove_pattern(stale->storage_id));
+  }
+
+  auto& library = window.brush_tip_library();
+  QString error;
+  QStringList warnings;
+  const auto first_id = library.import_abr(path, error, warnings);
+  CHECK(!first_id.isEmpty());
+  CHECK(error.isEmpty());
+
+  const auto find = [&library](const QString& name) -> const patchy::ui::BrushTipEntry* {
+    for (const auto& entry : library.entries()) {
+      if (entry.name == name) {
+        return &entry;
+      }
+    }
+    return nullptr;
+  };
+  const auto* oval = find(QStringLiteral("Soft Oval"));
+  const auto* grain_ink = find(QStringLiteral("Grain Ink"));
+  CHECK(oval != nullptr && grain_ink != nullptr && find(QStringLiteral("Ghost Ink")) != nullptr);
+  CHECK(oval->folder == QStringLiteral("Test Set / Inks"));
+  CHECK(grain_ink->folder == QStringLiteral("Test Set"));
+  CHECK(oval->default_size == std::optional<int>(40));
+  CHECK(!grain_ink->default_size.has_value());
+  CHECK(oval->base_roundness == 50.0);
+
+  const auto* pattern_entry = patterns.find_entry_by_pattern_id(qt_pattern_id);
+  CHECK(pattern_entry != nullptr);
+  CHECK(pattern_entry->folder == QStringLiteral("Test Set"));
+  CHECK(grain_ink->dynamics.texture_pattern_id == pattern_id);
+
+  int unmapped_lines = 0;
+  int missing_pattern_lines = 0;
+  for (const auto& warning : warnings) {
+    unmapped_lines += warning.contains(QStringLiteral("no Patchy equivalent")) &&
+                              warning.contains(QStringLiteral("Spacing turned off"))
+                          ? 1
+                          : 0;
+    missing_pattern_lines += warning.contains(QStringLiteral("Ghost")) ? 1 : 0;
+  }
+  CHECK(unmapped_lines == 1);
+  CHECK(missing_pattern_lines == 1);
+
+  // The captured size survives a reload and applies on pick; the pattern reaches the canvas.
+  const auto oval_id = oval->id;
+  const auto grain_id = grain_ink->id;
+  library.refresh_from_disk();
+  CHECK(library.find_entry(oval_id)->default_size == std::optional<int>(40));
+  window.set_active_brush_tip(oval_id, false);
+  CHECK(window.current_brush().brush().size == 40);
+  window.set_active_brush_tip(grain_id, false);
+  CHECK(window.current_brush().brush().size == 40);  // a tip without a captured size keeps it
+  CHECK(require_canvas(window)->has_brush_texture_pattern());
+
+  if (const auto* imported = patterns.find_entry_by_pattern_id(qt_pattern_id); imported != nullptr) {
+    CHECK(patterns.remove_pattern(imported->storage_id));
+  }
+  restore_default_working_brush(window);
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_tip_engine_tests() {
@@ -322,5 +558,6 @@ std::vector<patchy::test::TestCase> brush_tip_engine_tests() {
       {"ui_static_tip_flip_persists_and_reaches_strokes", ui_static_tip_flip_persists_and_reaches_strokes},
       {"ui_brush_tip_settings_json_round_trip", ui_brush_tip_settings_json_round_trip},
       {"ui_brush_texture_pattern_reaches_stroke", ui_brush_texture_pattern_reaches_stroke},
+      {"ui_abr_import_fills_folders_patterns_and_size", ui_abr_import_fills_folders_patterns_and_size},
   };
 }

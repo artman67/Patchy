@@ -1,5 +1,7 @@
 #include "ui/brush_tip_library.hpp"
 
+#include "ui/pattern_library.hpp"
+
 #include "psd/abr_reader.hpp"
 #include "ui/default_brush_tips.hpp"
 #include "ui/app_settings.hpp"
@@ -26,6 +28,8 @@ namespace {
 
 constexpr int kMaxTipDimension = 4096;
 constexpr std::size_t kTipCacheLimit = 16;
+// Photoshop presets reach 5000 px; the working brush clamps a picked size to its own maximum.
+constexpr int kMaxStoredBrushSize = 5000;
 
 QString automation_storage_dir(QString requested) {
   if (requested.isEmpty() && !qEnvironmentVariableIsEmpty("PATCHY_BRUSH_SETTINGS_FILE"))
@@ -313,6 +317,10 @@ void BrushTipLibrary::reload() {
         if (object.contains(QStringLiteral("toolAirbrush"))) {
           entry.tool_airbrush = object.value(QStringLiteral("toolAirbrush")).toBool(false);
         }
+        if (object.contains(QStringLiteral("defaultSize"))) {
+          entry.default_size =
+              std::clamp(object.value(QStringLiteral("defaultSize")).toInt(25), 1, kMaxStoredBrushSize);
+        }
       }
     }
     entry.size = mask.size();
@@ -396,6 +404,9 @@ bool BrushTipLibrary::write_sidecar(const BrushTipEntry& entry) const {
   if (entry.tool_airbrush.has_value()) {
     object.insert(QStringLiteral("toolAirbrush"), *entry.tool_airbrush);
   }
+  if (entry.default_size.has_value()) {
+    object.insert(QStringLiteral("defaultSize"), std::clamp(*entry.default_size, 1, kMaxStoredBrushSize));
+  }
   QSaveFile file(json_path(entry.id));
   if (!file.open(QIODevice::WriteOnly)) {
     return false;
@@ -408,7 +419,8 @@ QString BrushTipLibrary::add_tip_internal(const QString& name, const QImage& cov
                                           const QString& folder, const patchy::BrushDynamics& dynamics,
                                           double base_angle_degrees, double base_roundness,
                                           std::optional<int> tool_flow_percent,
-                                          std::optional<bool> tool_airbrush) {
+                                          std::optional<bool> tool_airbrush,
+                                          std::optional<int> default_size) {
   auto tip = brush_tip_from_coverage_image(coverage_mask, spacing);
   if (tip.empty()) {
     return {};
@@ -437,6 +449,9 @@ QString BrushTipLibrary::add_tip_internal(const QString& name, const QImage& cov
   entry.dynamics = dynamics;
   entry.tool_flow_percent = tool_flow_percent;
   entry.tool_airbrush = tool_airbrush;
+  if (default_size.has_value()) {
+    entry.default_size = std::clamp(*default_size, 1, kMaxStoredBrushSize);
+  }
   entry.size = QSize(tip.width, tip.height);
   entry.thumbnail = brush_tip_thumbnail(tip, 48);
   if (!write_sidecar(entry)) {
@@ -466,11 +481,10 @@ QString BrushTipLibrary::import_abr(const QString& path, QString& error, QString
     return {};
   }
   const auto bytes = file.readAll();
+  const auto span = std::span<const std::uint8_t>(reinterpret_cast<const std::uint8_t*>(bytes.constData()),
+                                                  static_cast<std::size_t>(bytes.size()));
   std::string parse_error;
-  const auto result = psd::read_abr(
-      std::span<const std::uint8_t>(reinterpret_cast<const std::uint8_t*>(bytes.constData()),
-                                    static_cast<std::size_t>(bytes.size())),
-      parse_error);
+  const auto result = psd::read_abr(span, parse_error);
   if (!result.has_value()) {
     error = translate_data_text(parse_error);
     return {};
@@ -479,8 +493,24 @@ QString BrushTipLibrary::import_abr(const QString& path, QString& error, QString
     warnings.append(translate_data_text(warning));
   }
 
-  // Imported sets land in their own folder so large ABRs stay organized.
-  const auto folder = QFileInfo(path).completeBaseName().trimmed();
+  // Imported sets land in their own folder so large ABRs stay organized; the file's own preset
+  // folders nest below it as "File / Group / Sub" (the library has one folder level).
+  const auto file_folder = QFileInfo(path).completeBaseName().trimmed();
+  if (pattern_library_ != nullptr) {
+    // Embedded texture patterns join the Pattern library under their Photoshop id, decoded one
+    // at a time; a pattern already there (same id) is kept as it is.
+    for (const auto& record : result->patterns) {
+      const auto pattern_id = QString::fromStdString(record.id);
+      if (pattern_library_->find_entry_by_pattern_id(pattern_id) != nullptr) {
+        continue;
+      }
+      if (const auto pattern = psd::decode_abr_pattern(span, record); pattern.has_value()) {
+        (void)pattern_library_->add_pattern(QString::fromStdString(pattern->name), pattern->tile, file_folder,
+                                            pattern_id);
+      }
+    }
+  }
+  QStringList missing_patterns;
   QString first_id;
   int brush_index = 0;
   for (const auto& brush : result->brushes) {
@@ -489,6 +519,23 @@ QString BrushTipLibrary::import_abr(const QString& path, QString& error, QString
     if (name.isEmpty()) {
       name = tr("Brush %1").arg(brush_index);
     }
+    auto folder = file_folder;
+    for (const auto& group : brush.group_path) {
+      const auto part = QString::fromStdString(group).trimmed();
+      if (!part.isEmpty()) {
+        folder += QStringLiteral(" / ") + part;
+      }
+    }
+    const auto& dynamics = brush.dynamics;
+    if (dynamics.texture_enabled && !dynamics.texture_pattern_id.empty() &&
+        (pattern_library_ == nullptr ||
+         pattern_library_->find_entry_by_pattern_id(QString::fromStdString(dynamics.texture_pattern_id)) == nullptr)) {
+      const auto label = QString::fromStdString(
+          dynamics.texture_pattern_name.empty() ? dynamics.texture_pattern_id : dynamics.texture_pattern_name);
+      if (!missing_patterns.contains(label)) {
+        missing_patterns.append(label);
+      }
+    }
     patchy::BrushTip tip;
     tip.width = brush.width;
     tip.height = brush.height;
@@ -496,7 +543,7 @@ QString BrushTipLibrary::import_abr(const QString& path, QString& error, QString
     tip.default_spacing = clamp_spacing(brush.spacing);
     const auto id = add_tip_internal(name, coverage_image_from_brush_tip(tip), tip.default_spacing, folder,
                                      brush.dynamics, brush.base_angle_degrees, brush.base_roundness,
-                                     brush.tool_flow_percent, brush.tool_airbrush);
+                                     brush.tool_flow_percent, brush.tool_airbrush, brush.diameter);
     if (id.isEmpty()) {
       warnings.append(tr("Could not save brush \"%1\".").arg(name));
       continue;
@@ -504,6 +551,19 @@ QString BrushTipLibrary::import_abr(const QString& path, QString& error, QString
     if (first_id.isEmpty()) {
       first_id = id;
     }
+  }
+  if (!result->unmapped_settings.empty()) {
+    QStringList settings;
+    for (const auto& setting : result->unmapped_settings) {
+      settings.append(translate_data_text(setting));
+    }
+    warnings.append(tr("Photoshop settings with no Patchy equivalent were left out: %1")
+                        .arg(settings.join(QStringLiteral(", "))));
+  }
+  if (!missing_patterns.isEmpty()) {
+    warnings.append(tr("Texture patterns not found in the file or the Pattern library, so a generated "
+                       "grain stands in: %1")
+                        .arg(missing_patterns.join(QStringLiteral(", "))));
   }
   if (first_id.isEmpty()) {
     if (error.isEmpty()) {

@@ -1059,17 +1059,25 @@ void abr_v6_fixture_parses_brushes_names_and_spacing() {
   CHECK(result->warnings.empty());
   CHECK(result->brushes.size() == 148);
 
+  // Presets pair with their 'samp' tip by uuid ('sampledData'), not file order: this set's
+  // first preset (Dmtr 78) names the third stored tip, a 55x78 tree.
   const auto& first = result->brushes.front();
   CHECK(first.name == "Individual Tree 001");
-  CHECK(first.width == 36);
-  CHECK(first.height == 36);
+  CHECK(first.width == 55);
+  CHECK(first.height == 78);
   CHECK(first.spacing > 0.09 && first.spacing < 0.11);
-  CHECK(first.mask.size() == 36U * 36U);
+  CHECK(first.mask.size() == 55U * 78U);
   std::uint64_t mask_sum = 0;
   for (const auto value : first.mask) {
     mask_sum += value;
   }
-  CHECK(mask_sum == 81333U);
+  CHECK(mask_sum == 224708U);
+  // The set was saved without "Capture Brush Size in Preset" (useBrushSize false).
+  CHECK(!first.diameter.has_value());
+  // Its 'phry' hierarchy nests the trees two folders deep.
+  CHECK((first.group_path == std::vector<std::string>{"Flora", "Individual Trees"}));
+  CHECK((result->brushes.back().group_path == std::vector<std::string>{"Cartouches", "Objects"}));
+  CHECK(result->unmapped_settings.empty());
 
   CHECK(result->brushes.back().name == "Canons, Flags, & Guns");
   for (const auto& brush : result->brushes) {
@@ -1493,7 +1501,7 @@ void abr_rejects_corrupt_truncated_and_empty_files() {
       {std::uint16_t{1}, std::vector<std::uint8_t>(14, std::uint8_t{0})},
   };
   CHECK(!patchy::psd::read_abr(make_abr_v12_file(1, computed_only), error).has_value());
-  CHECK(error.find("no sampled") != std::string::npos);
+  CHECK(error.find("no usable brushes") != std::string::npos);
 
   // Entry size larger than the file.
   patchy::psd::BigEndianWriter truncated;
@@ -1521,6 +1529,279 @@ void abr_rejects_corrupt_truncated_and_empty_files() {
     } else {
       CHECK(!error.empty());
     }
+  }
+}
+
+// --- Descriptor-object builders for synthesized v6 files (written by write_descriptor) ---
+
+patchy::psd::DescriptorValue abr_text(std::string text) {
+  patchy::psd::DescriptorValue value;
+  value.type = patchy::psd::DescriptorValue::Type::String;
+  value.string_value = std::move(text);
+  return value;
+}
+
+patchy::psd::DescriptorValue abr_number(double number) {
+  patchy::psd::DescriptorValue value;
+  value.type = patchy::psd::DescriptorValue::Type::Double;
+  value.double_value = number;
+  return value;
+}
+
+patchy::psd::DescriptorValue abr_bool(bool flag) {
+  patchy::psd::DescriptorValue value;
+  value.type = patchy::psd::DescriptorValue::Type::Bool;
+  value.bool_value = flag;
+  return value;
+}
+
+patchy::psd::DescriptorValue abr_enum(std::string type, std::string id) {
+  patchy::psd::DescriptorValue value;
+  value.type = patchy::psd::DescriptorValue::Type::Enum;
+  value.enum_type = std::move(type);
+  value.enum_value = std::move(id);
+  value.enum_value_long_form = value.enum_value.size() != 4U;
+  return value;
+}
+
+patchy::psd::DescriptorValue abr_object(std::string class_id,
+                                        std::vector<std::pair<std::string, patchy::psd::DescriptorValue>> items) {
+  auto object = std::make_shared<patchy::psd::DescriptorObject>();
+  object->class_id = std::move(class_id);
+  object->class_id_long_form = object->class_id.size() != 4U;
+  for (auto& [key, item] : items) {
+    object->key_order.push_back({key, key.size() != 4U});
+    object->values[key] = std::move(item);
+  }
+  patchy::psd::DescriptorValue value;
+  value.type = patchy::psd::DescriptorValue::Type::Object;
+  value.object_value = std::move(object);
+  return value;
+}
+
+patchy::psd::DescriptorValue abr_list(std::vector<patchy::psd::DescriptorValue> items) {
+  patchy::psd::DescriptorValue value;
+  value.type = patchy::psd::DescriptorValue::Type::List;
+  value.list_value = std::move(items);
+  return value;
+}
+
+std::vector<std::uint8_t> abr_versioned_descriptor(const patchy::psd::DescriptorValue& root) {
+  patchy::psd::BigEndianWriter writer;
+  writer.write_u32(16);
+  patchy::psd::write_descriptor(writer, *root.object_value);
+  return writer.bytes();
+}
+
+// One subversion-1 'samp' entry: Pascal uuid + zero padding to the 47-byte key, then a raw
+// 8-bit size x size mask filled with `value`.
+void append_abr_sample(patchy::psd::BigEndianWriter& samp, std::string_view id, std::int32_t size,
+                       std::uint8_t value) {
+  patchy::psd::BigEndianWriter entry;
+  entry.write_u8(static_cast<std::uint8_t>(id.size()));
+  write_desc_ascii(entry, id);
+  for (auto i = id.size() + 1U; i < 47U; ++i) {
+    entry.write_u8(0);
+  }
+  entry.write_u32(0);
+  entry.write_u32(0);
+  entry.write_u32(static_cast<std::uint32_t>(size));
+  entry.write_u32(static_cast<std::uint32_t>(size));
+  entry.write_u16(8);
+  entry.write_u8(0);
+  for (std::int32_t i = 0; i < size * size; ++i) {
+    entry.write_u8(value);
+  }
+  samp.write_u32(static_cast<std::uint32_t>(entry.bytes().size()));
+  samp.write_bytes(entry.bytes());
+  while (samp.bytes().size() % 4U != 0U) {
+    samp.write_u8(0);
+  }
+}
+
+void abr_v6_computed_tips_hierarchy_patterns_and_unmapped_settings() {
+  // Three presets in desc order: a soft computed round tip and two sampled tips whose 'samp'
+  // entries are stored in the opposite order (pairing must follow 'sampledData', not position).
+  const auto computed = abr_object(
+      "brushPreset",
+      {{"Nm  ", abr_text("Soft Oval")},
+       {"Brsh", abr_object("computedBrush", {{"Dmtr", abr_number(40.0)},
+                                             {"Hrdn", abr_number(0.0)},
+                                             {"Angl", abr_number(30.0)},
+                                             {"Rndn", abr_number(50.0)},
+                                             {"Spcn", abr_number(30.0)},
+                                             {"Intr", abr_bool(false)},
+                                             {"flipX", abr_bool(true)},
+                                             {"flipY", abr_bool(false)}})},
+       {"useBrushSize", abr_bool(true)}});
+  const auto textured = abr_object(
+      "brushPreset",
+      {{"Nm  ", abr_text("Grain Ink")},
+       {"Brsh", abr_object("sampledBrush", {{"Dmtr", abr_number(12.0)},
+                                            {"Spcn", abr_number(25.0)},
+                                            {"Intr", abr_bool(true)},
+                                            {"flipY", abr_bool(true)},
+                                            {"sampledData", abr_text("tip-b")}})},
+       {"useBrushSize", abr_bool(true)},
+       {"Nose", abr_bool(true)},
+       {"useTexture", abr_bool(true)},
+       {"textureBlendMode", abr_enum("BlnM", "CBrn")},
+       {"textureDepth", abr_number(80.0)},
+       {"textureBrightness", abr_number(20.0)},
+       {"textureContrast", abr_number(-10.0)},
+       {"Txtr", abr_object("Ptrn", {{"Nm  ", abr_text("Burlap")}, {"Idnt", abr_text("pat-1")}})},
+       {"brushProjection", abr_bool(true)},
+       {"someFutureKey", abr_bool(true)},
+       {"useBrushPose", abr_bool(false)}});
+  const auto plain = abr_object(
+      "brushPreset", {{"Nm  ", abr_text("Plain Tip")},
+                      {"Brsh", abr_object("sampledBrush", {{"Dmtr", abr_number(4.0)},
+                                                           {"sampledData", abr_text("tip-a")}})},
+                      {"useBrushSize", abr_bool(false)}});
+  const auto desc = abr_versioned_descriptor(
+      abr_object("null", {{"Brsh", abr_list({computed, textured, plain})}}));
+
+  patchy::psd::BigEndianWriter samp;
+  append_abr_sample(samp, "tip-a", 4, 255);
+  append_abr_sample(samp, "tip-b", 2, 200);
+  append_abr_sample(samp, "tip-dual", 3, 255);  // a Dual Brush secondary tip no preset names
+
+  // Folders: Inks { Soft Oval, Wet { Grain Ink } }, then Plain Tip at the top level.
+  const auto hierarchy = abr_versioned_descriptor(abr_object(
+      "null", {{"hierarchy", abr_list({abr_object("Grup", {{"Nm  ", abr_text("Inks")}}),
+                                       abr_object("preset", {}),
+                                       abr_object("Grup", {{"Nm  ", abr_text("Wet")}}),
+                                       abr_object("preset", {}),
+                                       abr_object("groupEnd", {}),
+                                       abr_object("groupEnd", {}),
+                                       abr_object("preset", {})})}}));
+
+  patchy::PatternResource unused;
+  unused.id = "pat-unused";
+  unused.name = "Unused";
+  unused.tile = patchy::PixelBuffer(2, 2, patchy::PixelFormat::rgba8());
+  patchy::PatternResource burlap;
+  burlap.id = "pat-1";
+  burlap.name = "Burlap";
+  burlap.tile = patchy::PixelBuffer(3, 2, patchy::PixelFormat::rgba8());
+  for (std::int32_t y = 0; y < 2; ++y) {
+    for (std::int32_t x = 0; x < 3; ++x) {
+      auto* px = burlap.tile.pixel(x, y);
+      px[0] = px[1] = px[2] = static_cast<std::uint8_t>(40 * (x + 1));
+      px[3] = 255;
+    }
+  }
+  const std::vector<patchy::PatternResource> patterns{unused, burlap};
+  const auto patt = patchy::psd::serialize_patterns_block(patterns);
+
+  patchy::psd::BigEndianWriter file;
+  file.write_u16(10);  // the 'patt'/'phry' era of the v6 layout
+  file.write_u16(1);
+  const auto write_block = [&file](std::string_view key, const std::vector<std::uint8_t>& block) {
+    write_desc_ascii(file, "8BIM");
+    write_desc_ascii(file, key);
+    file.write_u32(static_cast<std::uint32_t>(block.size()));
+    file.write_bytes(block);
+    while (file.bytes().size() % 4U != 0U) {
+      file.write_u8(0);
+    }
+  };
+  write_block("samp", samp.bytes());
+  write_block("patt", patt);
+  write_block("desc", desc);
+  write_block("phry", hierarchy);
+
+  std::string error;
+  const auto bytes = file.bytes();
+  const auto result = patchy::psd::read_abr(bytes, error);
+  CHECK(result.has_value());
+  CHECK(error.empty());
+  CHECK(result->brushes.size() == 3);  // the unnamed secondary tip stays out
+  const auto approx = [](double value, double expected) { return std::abs(value - expected) < 1e-9; };
+
+  const auto& oval = result->brushes[0];
+  CHECK(oval.name == "Soft Oval");
+  CHECK(oval.computed);
+  CHECK(oval.width == 256 && oval.height == 256);
+  CHECK(oval.mask == patchy::psd::render_computed_brush_mask(256, 0.0));
+  CHECK(approx(oval.base_angle_degrees, 30.0));
+  CHECK(approx(oval.base_roundness, 50.0));
+  CHECK(approx(oval.spacing, 0.30));
+  CHECK(oval.diameter == 40);
+  CHECK(oval.dynamics.tip_flip_x && !oval.dynamics.tip_flip_y);
+  CHECK((oval.group_path == std::vector<std::string>{"Inks"}));
+
+  const auto& ink = result->brushes[1];
+  CHECK(ink.name == "Grain Ink");
+  CHECK(!ink.computed);
+  CHECK(ink.width == 2 && ink.mask.front() == 200U);  // tip-b, though stored second
+  CHECK(ink.diameter == 12);
+  CHECK(ink.dynamics.noise);
+  CHECK(ink.dynamics.tip_flip_y);
+  CHECK(ink.dynamics.texture_enabled);
+  CHECK(ink.dynamics.texture_mode == patchy::BrushTextureMode::ColorBurn);
+  CHECK(approx(ink.dynamics.texture_brightness, 20.0));
+  CHECK(approx(ink.dynamics.texture_contrast, -10.0));
+  CHECK(ink.dynamics.texture_pattern_id == "pat-1");
+  CHECK(ink.dynamics.texture_pattern_name == "Burlap");
+  CHECK((ink.group_path == std::vector<std::string>{"Inks", "Wet"}));
+
+  const auto& tip = result->brushes[2];
+  CHECK(tip.name == "Plain Tip");
+  CHECK(tip.width == 4);
+  CHECK(!tip.diameter.has_value());  // saved without "Capture Brush Size in Preset"
+  CHECK(tip.group_path.empty());
+
+  // Only the referenced embedded pattern is offered, and it decodes on demand.
+  CHECK(result->patterns.size() == 1);
+  CHECK(result->patterns.front().id == "pat-1");
+  const auto decoded = patchy::psd::decode_abr_pattern(bytes, result->patterns.front());
+  CHECK(decoded.has_value());
+  CHECK(decoded->name == "Burlap");
+  CHECK(decoded->tile.width() == 3 && decoded->tile.height() == 2);
+  CHECK(decoded->tile.pixel(2, 1)[0] == 120U);
+
+  // One summary of what Patchy cannot honor: labels for known features, raw keys otherwise.
+  CHECK((result->unmapped_settings ==
+         std::vector<std::string>{"Brush Projection", "Spacing turned off", "someFutureKey"}));
+}
+
+void abr_v1_computed_brush_imports_as_rendered_tip() {
+  patchy::psd::BigEndianWriter computed;
+  computed.write_u32(0);    // misc
+  computed.write_u16(50);   // spacing %
+  computed.write_u16(20);   // diameter
+  computed.write_u16(60);   // roundness %
+  computed.write_u16(static_cast<std::uint16_t>(-45));  // angle
+  computed.write_u16(100);  // hardness %
+  const std::vector<std::pair<std::uint16_t, std::vector<std::uint8_t>>> entries = {
+      {std::uint16_t{1}, computed.bytes()},
+  };
+  std::string error;
+  const auto result = patchy::psd::read_abr(make_abr_v12_file(1, entries), error);
+  CHECK(result.has_value());
+  CHECK(result->brushes.size() == 1);
+  const auto& brush = result->brushes.front();
+  CHECK(brush.computed);
+  CHECK(brush.diameter == 20);
+  CHECK(brush.spacing == 0.5);
+  CHECK(brush.base_roundness == 60.0);
+  CHECK(brush.base_angle_degrees == -45.0);
+  CHECK(brush.mask == patchy::psd::render_computed_brush_mask(256, 1.0));
+}
+
+void abr_computed_brush_mask_follows_hardness() {
+  const auto hard = patchy::psd::render_computed_brush_mask(64, 1.0);
+  const auto soft = patchy::psd::render_computed_brush_mask(64, 0.0);
+  const auto at = [](const std::vector<std::uint8_t>& mask, int x, int y) {
+    return mask[static_cast<std::size_t>(y) * 64U + static_cast<std::size_t>(x)];
+  };
+  CHECK(at(hard, 32, 32) == 255U && at(soft, 32, 32) > 250U);
+  CHECK(at(hard, 0, 0) == 0U && at(soft, 0, 0) == 0U);  // round, not square
+  CHECK(at(hard, 32 + 24, 32) == 255U);                  // hard stays solid to the rim
+  CHECK(at(soft, 32 + 24, 32) < 64U);                    // soft has faded most of the way
+  for (int x = 33; x < 63; ++x) {
+    CHECK(at(soft, x, 32) <= at(soft, x - 1, 32));  // monotonic falloff
   }
 }
 
@@ -1568,6 +1849,10 @@ std::vector<patchy::test::TestCase> pat_asl_abr_tests() {
       {"abr_v1_parses_sampled_brush_and_skips_computed", abr_v1_parses_sampled_brush_and_skips_computed},
       {"abr_v2_parses_named_rle_and_16bit_brushes", abr_v2_parses_named_rle_and_16bit_brushes},
       {"abr_rejects_corrupt_truncated_and_empty_files", abr_rejects_corrupt_truncated_and_empty_files},
+      {"abr_v6_computed_tips_hierarchy_patterns_and_unmapped_settings",
+       abr_v6_computed_tips_hierarchy_patterns_and_unmapped_settings},
+      {"abr_v1_computed_brush_imports_as_rendered_tip", abr_v1_computed_brush_imports_as_rendered_tip},
+      {"abr_computed_brush_mask_follows_hardness", abr_computed_brush_mask_follows_hardness},
       {"psd_descriptor_rejects_runaway_nesting", psd_descriptor_rejects_runaway_nesting},
   };
 }

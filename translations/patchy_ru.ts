@@ -8953,6 +8953,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>Размеры в пикселях заблокированы. Меняются только разрешение и размер печати.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Проекция кисти</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Положение кисти</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Колебание влажности и смешивания</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Защита текстуры</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Масштаб наклона</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Режим двойной кисти</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Рассеивание и отражение двойной кисти</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Интервалы отключены</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>Файл не содержит пригодных кистей</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9630,6 +9666,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Не удалось импортировать отпечатки кистей из «%1».</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Параметры Photoshop без аналога в Patchy пропущены: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Узоры текстуры не найдены ни в файле, ни в библиотеке узоров, поэтому используется сгенерированное зерно: %1</translation>
     </message>
 </context>
 <context>

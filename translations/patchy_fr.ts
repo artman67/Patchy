@@ -8923,6 +8923,42 @@ RVB : %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>Les dimensions en pixels sont verrouillées. Seules la résolution et la taille d&apos;impression changent.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Projection du pinceau</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Position du pinceau</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Variation d&apos;humidité et de mélange</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Protéger la texture</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Échelle d&apos;inclinaison</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Mode du pinceau double</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Diffusion et retournement du pinceau double</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Espacement désactivé</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>Le fichier ne contient aucun pinceau utilisable</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9600,6 +9636,14 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Aucune pointe de forme n&apos;a pu être importée depuis « %1 ».</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Les réglages Photoshop sans équivalent dans Patchy ont été ignorés : %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Motifs de texture introuvables dans le fichier et dans la bibliothèque de motifs ; un grain généré les remplace : %1</translation>
     </message>
 </context>
 <context>

@@ -8923,6 +8923,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>As dimensões em pixels estão travadas. Só a resolução e o tamanho de impressão mudam.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Projeção do pincel</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Pose do pincel</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Variação de umidade e mistura</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Proteger textura</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Escala de inclinação</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Modo do pincel duplo</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Dispersão e inversão do pincel duplo</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Espaçamento desativado</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>O arquivo não contém pincéis utilizáveis</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9600,6 +9636,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Nenhuma ponta de pincel pôde ser importada de &quot;%1&quot;.</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Configurações do Photoshop sem equivalente no Patchy foram deixadas de fora: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Padrões de textura não encontrados no arquivo nem na biblioteca de padrões; um grão gerado os substitui: %1</translation>
     </message>
 </context>
 <context>

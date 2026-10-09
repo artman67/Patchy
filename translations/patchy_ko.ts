@@ -8893,6 +8893,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>픽셀 크기가 잠겨 있습니다. 인쇄 해상도와 인쇄 크기만 바뀝니다.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>브러시 투영</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>브러시 포즈</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>습도 및 혼합 지터</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>텍스처 보호</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>기울기 비율</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>이중 브러시 모드</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>이중 브러시 분산 및 뒤집기</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>간격 끔</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>파일에 사용할 수 있는 브러시가 없습니다</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9570,6 +9606,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>&quot;%1&quot;에서 브러시 팁을 가져올 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Patchy에 해당 기능이 없는 Photoshop 설정은 제외되었습니다: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>파일이나 패턴 라이브러리에서 텍스처 패턴을 찾을 수 없어 생성된 그레인으로 대체합니다: %1</translation>
     </message>
 </context>
 <context>
