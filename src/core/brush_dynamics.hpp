@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <string>
 
 namespace patchy {
 
@@ -29,6 +30,28 @@ enum class BrushTextureStyle : std::uint8_t {
   Canvas,
   Speckle,
 };
+
+// How Brush Texture combines the static texture value with the tip's own coverage (Photoshop's
+// texture Mode list, in its order). Every mode is a fixed function of (coverage, texture, depth):
+// no stroke input reaches it, and the dab's opacity/flow multipliers apply only afterwards.
+// Append only: the tokens persist in brush sidecars.
+enum class BrushTextureMode : std::uint8_t {
+  Multiply = 0,
+  Subtract,
+  Darken,
+  Overlay,
+  ColorDodge,
+  ColorBurn,
+  LinearBurn,
+  HardMix,
+  LinearHeight,
+  Height,
+};
+
+// Combines tip coverage (0..1) with a texture value (0..1, 1 = the surface's high points that take
+// paint) at depth (0..1). Multiply is the historical formula, bit for bit.
+[[nodiscard]] float combine_brush_texture(BrushTextureMode mode, float coverage, float texture,
+                                          float depth) noexcept;
 
 // Photoshop-style per-dab brush tip dynamics (Shape Dynamics + Scattering + Transfer).
 // Default-constructed = disabled: the stamp engine takes its historical path bit-for-bit and
@@ -74,6 +97,14 @@ struct BrushDynamics {
   double texture_depth{0.5};
   bool texture_invert{false};
   std::uint32_t texture_seed{0x5A17C9E3U};
+  BrushTextureMode texture_mode{BrushTextureMode::Multiply};
+  double texture_brightness{0.0};  // Photoshop -150..150, applied to the texture before Invert
+  double texture_contrast{0.0};    // Photoshop -50..100
+  // A Pattern library tile used as the texture source (grayscale luminance, world-anchored at
+  // the document origin, scaled by texture_scale). Empty, or an id the library no longer has,
+  // falls back to the procedural texture_style grain. The name only labels a missing pattern.
+  std::string texture_pattern_id{};
+  std::string texture_pattern_name{};
 
   // One fixed secondary computed mask. It is deliberately not a component graph: a single
   // repeated round mask combines with the primary coverage using multiplication.

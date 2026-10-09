@@ -733,6 +733,7 @@ PatternLibrary& MainWindow::pattern_library() {
     connect(pattern_library_, &PatternLibrary::changed, this, [this] {
       refresh_pattern_stamp_pattern_combo();
       apply_pattern_stamp_settings_to_canvas(canvas_);
+      push_current_brush_to_canvas(canvas_, CurrentBrush::Dynamics);  // a Brush Texture pattern
       schedule_save_tool_settings();
     });
     // Seed code-generated defaults once. A user deletion stays deleted across
@@ -827,6 +828,9 @@ void MainWindow::push_current_brush_to_canvas(CanvasWidget* canvas, unsigned cha
     // Brush strokes only: erase strokes strip them, and a dynamics-active Round or Square
     // stamps through a synthesized disc or square tip inside CanvasWidget.
     canvas->set_brush_dynamics(brush.dynamics);
+    const auto& pattern_id = brush.dynamics.texture_pattern_id;
+    canvas->set_brush_texture_pattern(
+        pattern_id.empty() ? std::nullopt : pattern_library().resource(QString::fromStdString(pattern_id)));
   }
   if (!eraser_brush_settings_active_) {
     if ((changes & CurrentBrush::Size) != 0U) canvas->set_brush_size(brush.size);

@@ -373,6 +373,26 @@ void CanvasWidget::set_brush_dynamics_test_seed(std::optional<quint32> seed) noe
   brush_dynamics_test_seed_ = seed;
 }
 
+void CanvasWidget::set_brush_texture_pattern(std::optional<PatternResource> pattern) {
+  if (!pattern.has_value() || pattern->tile.width() <= 0 || pattern->tile.height() <= 0) {
+    brush_texture_pattern_id_.clear();
+    brush_texture_tile_.reset();
+    return;
+  }
+  auto tile = patchy::make_brush_texture_tile(pattern->tile);
+  if (tile.empty()) {
+    brush_texture_pattern_id_.clear();
+    brush_texture_tile_.reset();
+    return;
+  }
+  brush_texture_pattern_id_ = pattern->id;
+  brush_texture_tile_ = std::make_shared<const patchy::BrushTextureTile>(std::move(tile));
+}
+
+bool CanvasWidget::has_brush_texture_pattern() const noexcept {
+  return brush_texture_tile_ != nullptr;
+}
+
 namespace {
 
 // Photoshop's default spacing for round brushes; only used while the Round brush stamps.
@@ -480,6 +500,12 @@ void CanvasWidget::apply_brush_tip_to_options(EditOptions& options, int brush_si
   }
   options.brush_dynamics = brush_dynamics_;
   options.brush_dynamics.seed = stroke_dynamics_seed_;
+  if (brush_texture_tile_ != nullptr && !brush_dynamics_.texture_pattern_id.empty() &&
+      brush_dynamics_.texture_pattern_id == brush_texture_pattern_id_) {
+    // The member keeps the tile alive for the paint call; a mismatched or missing pattern
+    // leaves the pointer null, which selects the procedural grain.
+    options.brush_texture_tile = brush_texture_tile_.get();
+  }
   if (pen_input_settings_.enabled && active_pen_input_sample_.has_value()) {
     // Fill every pen input; the core selects per control (missing inputs stay at their
     // full-value defaults so a mouse paints like Photoshop does without a pen).

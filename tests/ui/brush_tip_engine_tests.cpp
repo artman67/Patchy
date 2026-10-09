@@ -5,6 +5,7 @@
 #include "ui/canvas_widget.hpp"
 #include "ui/current_brush.hpp"
 #include "ui/main_window.hpp"
+#include "ui/pattern_library.hpp"
 
 #include "test_harness.hpp"
 
@@ -208,15 +209,109 @@ void ui_static_tip_flip_persists_and_reaches_strokes() {
 void ui_brush_tip_settings_json_round_trip() {
   patchy::BrushDynamics dynamics;
   dynamics.noise = true;
-  CHECK(!patchy::ui::brush_dynamics_is_default(dynamics));
+  dynamics.texture_mode = patchy::BrushTextureMode::LinearHeight;
+  dynamics.texture_brightness = -40.0;
+  dynamics.texture_contrast = 75.0;
+  dynamics.texture_pattern_id = "b2a4c1d0-1111-2222-3333-444455556666";
+  dynamics.texture_pattern_name = "Burlap";
   const auto json = patchy::ui::brush_dynamics_to_json(dynamics);
   CHECK(json.value(QStringLiteral("noise")).toBool());
+  CHECK(json.value(QStringLiteral("textureMode")).toString() == QStringLiteral("linearHeight"));
+  CHECK(json.value(QStringLiteral("texturePatternName")).toString() == QStringLiteral("Burlap"));
   const auto read = patchy::ui::brush_dynamics_from_json(json);
   CHECK(read.noise);
+  CHECK(read.texture_mode == patchy::BrushTextureMode::LinearHeight);
+  CHECK(read.texture_brightness == -40.0 && read.texture_contrast == 75.0);
+  CHECK(read.texture_pattern_id == dynamics.texture_pattern_id);
   CHECK(patchy::ui::brush_dynamics_to_json(read) == json);
+
+  // Each new field alone is a non-default setting (sidecars get written for it).
+  const auto non_default = [](auto&& mutate) {
+    patchy::BrushDynamics single;
+    mutate(single);
+    return !patchy::ui::brush_dynamics_is_default(single);
+  };
+  CHECK(non_default([](patchy::BrushDynamics& d) { d.noise = true; }));
+  CHECK(non_default([](patchy::BrushDynamics& d) { d.texture_mode = patchy::BrushTextureMode::Height; }));
+  CHECK(non_default([](patchy::BrushDynamics& d) { d.texture_brightness = 1.0; }));
+  CHECK(non_default([](patchy::BrushDynamics& d) { d.texture_contrast = -1.0; }));
+  CHECK(non_default([](patchy::BrushDynamics& d) { d.texture_pattern_id = "x"; }));
+  CHECK(non_default([](patchy::BrushDynamics& d) { d.texture_pattern_name = "x"; }));
+
+  // Older sidecars without the keys, and unknown tokens, read as the defaults.
   auto legacy = json;
-  legacy.remove(QStringLiteral("noise"));
-  CHECK(!patchy::ui::brush_dynamics_from_json(legacy).noise);
+  for (const auto* key : {"noise", "textureMode", "textureBrightness", "textureContrast",
+                          "texturePatternId", "texturePatternName"}) {
+    legacy.remove(QLatin1String(key));
+  }
+  CHECK(patchy::ui::brush_dynamics_is_default(patchy::ui::brush_dynamics_from_json(legacy)));
+  legacy.insert(QStringLiteral("textureMode"), QStringLiteral("notAMode"));
+  CHECK(patchy::ui::brush_dynamics_from_json(legacy).texture_mode == patchy::BrushTextureMode::Multiply);
+}
+
+// A Pattern library tile named by the working brush textures its strokes; deleting the pattern
+// falls back to the procedural grain without failing.
+void ui_brush_texture_pattern_reaches_stroke() {
+  clear_brush_tip_test_state();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  require_action_by_text(window, QStringLiteral("Brush"))->trigger();
+  canvas->set_zoom(1.0);
+  canvas->set_primary_color(Qt::black);
+  QApplication::processEvents();
+
+  // 8 px vertical stripes: document columns x % 16 < 8 are white (take paint), the rest black.
+  const QString pattern_id = QStringLiteral("patchy-test-brush-texture-stripes");
+  patchy::PixelBuffer stripes(16, 16, patchy::PixelFormat::rgba8());
+  for (int y = 0; y < 16; ++y) {
+    for (int x = 0; x < 16; ++x) {
+      auto* px = stripes.pixel(x, y);
+      const auto value = static_cast<std::uint8_t>(x < 8 ? 255 : 0);
+      px[0] = value;
+      px[1] = value;
+      px[2] = value;
+      px[3] = 255;
+    }
+  }
+  auto& patterns = window.pattern_library();
+  if (const auto* stale = patterns.find_entry_by_pattern_id(pattern_id); stale != nullptr) {
+    CHECK(patterns.remove_pattern(stale->storage_id));
+  }
+  const auto storage_id = patterns.add_pattern(QStringLiteral("Brush Texture Stripes"), stripes,
+                                               QStringLiteral("Tests"), pattern_id);
+  CHECK(!storage_id.isEmpty());
+
+  window.set_active_brush_tip(patchy::ui::builtin_square_brush_tip_id(), false);
+  patchy::ui::BrushEdit edit;
+  edit.size = 40;
+  edit.softness = 0;
+  patchy::BrushDynamics dynamics;
+  dynamics.texture_enabled = true;
+  dynamics.texture_depth = 1.0;
+  dynamics.texture_pattern_id = pattern_id.toStdString();
+  edit.dynamics = dynamics;
+  window.current_brush().edit(edit);
+  CHECK(canvas->has_brush_texture_pattern());
+
+  const auto dark = [canvas](QPoint point) { return canvas_pixel(*canvas, point).lightness() < 128; };
+  click_canvas(*canvas, QPoint(100, 100));
+  CHECK(dark(QPoint(98, 100)));    // 98 % 16 = 2: white stripe takes paint
+  CHECK(!dark(QPoint(106, 100)));  // 106 % 16 = 10: black stripe stays empty
+
+  // Without the pattern the stroke keeps painting with the procedural grain.
+  CHECK(patterns.remove_pattern(storage_id));
+  QApplication::processEvents();
+  CHECK(!canvas->has_brush_texture_pattern());
+  click_canvas(*canvas, QPoint(200, 100));
+  int painted = 0;
+  for (int x = 185; x <= 215; ++x) {
+    painted += dark(QPoint(x, 100)) ? 1 : 0;
+  }
+  CHECK(painted > 0);
+
+  save_widget_artifact("ui_brush_texture_pattern_reaches_stroke", *canvas);
+  restore_default_working_brush(window);
 }
 
 }  // namespace
@@ -226,5 +321,6 @@ std::vector<patchy::test::TestCase> brush_tip_engine_tests() {
       {"ui_working_brush_spacing_drives_procedural_dabs", ui_working_brush_spacing_drives_procedural_dabs},
       {"ui_static_tip_flip_persists_and_reaches_strokes", ui_static_tip_flip_persists_and_reaches_strokes},
       {"ui_brush_tip_settings_json_round_trip", ui_brush_tip_settings_json_round_trip},
+      {"ui_brush_texture_pattern_reaches_stroke", ui_brush_texture_pattern_reaches_stroke},
   };
 }

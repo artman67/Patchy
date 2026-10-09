@@ -930,6 +930,111 @@ void tool_brush_noise_grains_soft_edges_without_rng_draws() {
   CHECK(rng_after(true) == rng_after(false));
 }
 
+void brush_texture_modes_combine_static_values() {
+  using Mode = patchy::BrushTextureMode;
+  constexpr std::array modes{Mode::Multiply,   Mode::Subtract,  Mode::Darken,     Mode::Overlay,
+                             Mode::ColorDodge, Mode::ColorBurn, Mode::LinearBurn, Mode::HardMix,
+                             Mode::LinearHeight, Mode::Height};
+  std::vector<std::vector<float>> responses;
+  for (const auto mode : modes) {
+    // A mask never adds paint where the tip has none, and every result stays a coverage.
+    CHECK(patchy::combine_brush_texture(mode, 0.0F, 1.0F, 1.0F) == 0.0F);
+    std::vector<float> response;
+    for (const auto v : {0.1F, 0.4F, 0.6F, 0.9F, 1.0F}) {
+      for (const auto t : {0.0F, 0.3F, 0.6F, 1.0F}) {
+        const auto result = patchy::combine_brush_texture(mode, v, t, 0.7F);
+        CHECK(result >= 0.0F && result <= 1.0F);
+        response.push_back(result);
+      }
+    }
+    responses.push_back(std::move(response));
+  }
+  // Multiply is the historical expression, bit for bit.
+  const auto v = 0.73F;
+  const auto t = 0.41F;
+  const auto d = 0.65F;
+  CHECK(patchy::combine_brush_texture(Mode::Multiply, v, t, d) == v * (1.0F - d * (1.0F - t)));
+  // Zero depth leaves the depth-blended modes untouched; white texture leaves the subtractive ones.
+  for (const auto mode : {Mode::Multiply, Mode::Subtract, Mode::Darken, Mode::Overlay, Mode::ColorBurn,
+                          Mode::LinearBurn, Mode::HardMix}) {
+    CHECK(std::abs(patchy::combine_brush_texture(mode, 0.6F, 0.2F, 0.0F) - 0.6F) < 1e-6F);
+  }
+  for (const auto mode : {Mode::Multiply, Mode::Subtract, Mode::Darken}) {
+    CHECK(std::abs(patchy::combine_brush_texture(mode, 0.6F, 1.0F, 1.0F) - 0.6F) < 1e-6F);
+  }
+  // The modes are distinct functions, not aliases.
+  for (std::size_t a = 0; a < responses.size(); ++a) {
+    for (std::size_t b = a + 1; b < responses.size(); ++b) {
+      CHECK(responses[a] != responses[b]);
+    }
+  }
+}
+
+void tool_brush_texture_pattern_tile_drives_coverage() {
+  // Vertical stripes: document columns x % 4 in {0, 1} are white (take paint), {2, 3} black.
+  patchy::PixelBuffer stripes(4, 4, patchy::PixelFormat::rgba8());
+  for (std::int32_t y = 0; y < 4; ++y) {
+    for (std::int32_t x = 0; x < 4; ++x) {
+      auto* px = stripes.pixel(x, y);
+      const auto value = static_cast<std::uint8_t>(x < 2 ? 255 : 0);
+      px[0] = value;
+      px[1] = value;
+      px[2] = value;
+      px[3] = 255;
+    }
+  }
+  const auto tile = patchy::make_brush_texture_tile(stripes);
+  CHECK(tile.width == 4 && tile.height == 4);
+  CHECK(tile.gray[0] == 255U && tile.gray[2] == 0U);
+  stripes.pixel(2, 0)[3] = 0;  // transparency reads as white: no texture there
+  CHECK(patchy::make_brush_texture_tile(stripes).gray[2] == 255U);
+
+  const auto scaled = make_solid_scaled_tip(21);
+  const auto render = [&scaled](const patchy::BrushDynamics& dynamics,
+                                const patchy::BrushTextureTile* source) {
+    auto document = make_tool_document();
+    const auto layer_id = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 21;
+    options.brush_tip = &scaled;
+    options.brush_dynamics = dynamics;
+    options.brush_texture_tile = source;
+    patchy::BrushTipStrokeState state;
+    (void)patchy::paint_brush_segment(document, layer_id, 24.0, 24.0, 24.0, 24.0, options, false, state);
+    const auto data = std::as_const(*document.find_layer(layer_id)).pixels().data();
+    return std::vector<std::uint8_t>(data.begin(), data.end());
+  };
+  const auto alpha_at = [](const std::vector<std::uint8_t>& bytes, int x, int y) {
+    return bytes[(static_cast<std::size_t>(y) * 64U + static_cast<std::size_t>(x)) * 4U + 3U];
+  };
+  patchy::BrushDynamics textured;
+  textured.texture_enabled = true;
+  textured.texture_depth = 1.0;
+  textured.texture_pattern_id = "stripes";
+  const auto striped = render(textured, &tile);
+  CHECK(alpha_at(striped, 24, 24) == 255U);  // x % 4 == 0: white column
+  CHECK(alpha_at(striped, 25, 24) == 255U);
+  CHECK(alpha_at(striped, 26, 24) == 0U);  // black columns take no paint
+  CHECK(alpha_at(striped, 27, 24) == 0U);
+
+  // A missing pattern falls back to the procedural grain, exactly.
+  auto procedural = textured;
+  procedural.texture_pattern_id.clear();
+  CHECK(render(textured, nullptr) == render(procedural, nullptr));
+  CHECK(render(textured, nullptr) != striped);
+
+  // Full Brightness lifts the whole texture to white: the plain stamp comes back.
+  auto bright = textured;
+  bright.texture_brightness = 150.0;
+  CHECK(render(bright, &tile) == render(patchy::BrushDynamics{}, nullptr));
+  // Contrast -50 flattens the stripes to mid-gray: every column takes the same paint.
+  auto flat = textured;
+  flat.texture_contrast = -50.0;
+  const auto flattened = render(flat, &tile);
+  CHECK(alpha_at(flattened, 24, 24) == alpha_at(flattened, 26, 24));
+  CHECK(alpha_at(flattened, 24, 24) > 0U && alpha_at(flattened, 24, 24) < 255U);
+}
+
 void mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero() {
   // Since the 2026-08-14 claim review the mixer runs limited continuous pickup:
   // ONE running canvas-only average, transient foreground lerp, linear mixing
@@ -1985,6 +2090,8 @@ std::vector<patchy::test::TestCase> brush_engine_tests() {
       {"tool_brush_tip_inactive_dynamics_change_nothing", tool_brush_tip_inactive_dynamics_change_nothing},
       {"tool_brush_texture_and_dual_brush_render_deterministically",
        tool_brush_texture_and_dual_brush_render_deterministically},
+      {"brush_texture_modes_combine_static_values", brush_texture_modes_combine_static_values},
+      {"tool_brush_texture_pattern_tile_drives_coverage", tool_brush_texture_pattern_tile_drives_coverage},
       {"tool_brush_noise_grains_soft_edges_without_rng_draws",
        tool_brush_noise_grains_soft_edges_without_rng_draws},
       {"mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero",

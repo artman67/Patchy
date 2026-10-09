@@ -15,6 +15,7 @@
 #include <QUuid>
 
 #include <algorithm>
+#include <array>
 #include <limits>
 #include <span>
 #include <utility>
@@ -99,6 +100,26 @@ QString automation_storage_dir(QString requested) {
   if (token == QStringLiteral("canvas")) return patchy::BrushTextureStyle::Canvas;
   if (token == QStringLiteral("speckle")) return patchy::BrushTextureStyle::Speckle;
   return patchy::BrushTextureStyle::FineGrain;
+}
+
+// Persisted texture Mode tokens, in BrushTextureMode order. Never rename one.
+constexpr std::array<const char*, 10> kTextureModeTokens{
+    "multiply", "subtract", "darken", "overlay", "colorDodge",
+    "colorBurn", "linearBurn", "hardMix", "linearHeight", "height"};
+
+[[nodiscard]] QString texture_mode_token(patchy::BrushTextureMode mode) {
+  const auto index = static_cast<std::size_t>(mode);
+  return QLatin1String(index < kTextureModeTokens.size() ? kTextureModeTokens[index]
+                                                        : kTextureModeTokens[0]);
+}
+
+[[nodiscard]] patchy::BrushTextureMode texture_mode_from_token(const QString& token) {
+  for (std::size_t index = 0; index < kTextureModeTokens.size(); ++index) {
+    if (token == QLatin1String(kTextureModeTokens[index])) {
+      return static_cast<patchy::BrushTextureMode>(index);
+    }
+  }
+  return patchy::BrushTextureMode::Multiply;
 }
 
 // Crops to the non-zero bounding box; returns false when the mask is entirely empty.
@@ -554,7 +575,10 @@ namespace {
          a.hue_jitter == b.hue_jitter && a.saturation_jitter == b.saturation_jitter &&
          a.brightness_jitter == b.brightness_jitter && a.purity == b.purity &&
          a.color_per_tip == b.color_per_tip && a.wet_edges == b.wet_edges &&
-         a.tip_flip_x == b.tip_flip_x && a.tip_flip_y == b.tip_flip_y && a.noise == b.noise;
+         a.tip_flip_x == b.tip_flip_x && a.tip_flip_y == b.tip_flip_y && a.noise == b.noise &&
+         a.texture_mode == b.texture_mode && a.texture_brightness == b.texture_brightness &&
+         a.texture_contrast == b.texture_contrast && a.texture_pattern_id == b.texture_pattern_id &&
+         a.texture_pattern_name == b.texture_pattern_name;
 }
 
 }  // namespace
@@ -755,6 +779,13 @@ QJsonObject brush_dynamics_to_json(const patchy::BrushDynamics& dynamics) {
   object.insert(QStringLiteral("tipFlipX"), dynamics.tip_flip_x);
   object.insert(QStringLiteral("tipFlipY"), dynamics.tip_flip_y);
   object.insert(QStringLiteral("noise"), dynamics.noise);
+  object.insert(QStringLiteral("textureMode"), texture_mode_token(dynamics.texture_mode));
+  object.insert(QStringLiteral("textureBrightness"), dynamics.texture_brightness);
+  object.insert(QStringLiteral("textureContrast"), dynamics.texture_contrast);
+  object.insert(QStringLiteral("texturePatternId"),
+                QString::fromStdString(dynamics.texture_pattern_id));
+  object.insert(QStringLiteral("texturePatternName"),
+                QString::fromStdString(dynamics.texture_pattern_name));
   return object;
 }
 
@@ -851,6 +882,15 @@ patchy::BrushDynamics brush_dynamics_from_json(const QJsonObject& object) {
   dynamics.tip_flip_x = object.value(QStringLiteral("tipFlipX")).toBool(false);
   dynamics.tip_flip_y = object.value(QStringLiteral("tipFlipY")).toBool(false);
   dynamics.noise = object.value(QStringLiteral("noise")).toBool(false);
+  dynamics.texture_mode = texture_mode_from_token(object.value(QStringLiteral("textureMode")).toString());
+  dynamics.texture_brightness =
+      std::clamp(object.value(QStringLiteral("textureBrightness")).toDouble(0.0), -150.0, 150.0);
+  dynamics.texture_contrast =
+      std::clamp(object.value(QStringLiteral("textureContrast")).toDouble(0.0), -50.0, 100.0);
+  dynamics.texture_pattern_id =
+      object.value(QStringLiteral("texturePatternId")).toString().toStdString();
+  dynamics.texture_pattern_name =
+      object.value(QStringLiteral("texturePatternName")).toString().toStdString();
   return dynamics;
 }
 
@@ -922,7 +962,12 @@ bool brush_dynamics_is_default(const patchy::BrushDynamics& dynamics) {
          dynamics.brightness_jitter == defaults.brightness_jitter &&
          dynamics.purity == defaults.purity && dynamics.color_per_tip == defaults.color_per_tip &&
          dynamics.wet_edges == defaults.wet_edges && dynamics.tip_flip_x == defaults.tip_flip_x &&
-         dynamics.tip_flip_y == defaults.tip_flip_y && dynamics.noise == defaults.noise;
+         dynamics.tip_flip_y == defaults.tip_flip_y && dynamics.noise == defaults.noise &&
+         dynamics.texture_mode == defaults.texture_mode &&
+         dynamics.texture_brightness == defaults.texture_brightness &&
+         dynamics.texture_contrast == defaults.texture_contrast &&
+         dynamics.texture_pattern_id == defaults.texture_pattern_id &&
+         dynamics.texture_pattern_name == defaults.texture_pattern_name;
   // seed / pen_* are per-stroke inputs, deliberately ignored.
 }
 

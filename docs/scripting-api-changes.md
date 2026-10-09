@@ -1,5 +1,13 @@
 # Scripting API compatibility
 
+2026-10-08 additive (API 1): brush `dynamics` objects carry the new tip settings: `noise`,
+`tipFlipX`/`tipFlipY` (static Brush Tip Shape flips), `textureMode` (`"multiply"` default,
+`"subtract"`, `"darken"`, `"overlay"`, `"colorDodge"`, `"colorBurn"`, `"linearBurn"`,
+`"hardMix"`, `"linearHeight"`, `"height"`), `textureBrightness` (-150..150),
+`textureContrast` (-50..100), and `texturePatternId`/`texturePatternName` (a Pattern library
+tile as the texture; empty or unknown ids keep the procedural `textureStyle`). Omitted keys keep
+their defaults, so existing scripts paint as before. See docs/brushes.md.
+
 2026-10-07 additive (API 1): `doc.resizeImage(width, height, {method})` takes a resampling
 method id: `"automatic"` (default), `"nearest"`, `"bilinear"`, `"bicubic"`, `"bicubicSmoother"`,
 `"bicubicSharper"`; an unknown id throws. Behavioral correction in the same change: a resize
