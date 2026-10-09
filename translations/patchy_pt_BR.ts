@@ -18713,6 +18713,10 @@ Y: %2
         <source>Bicubic Automatic</source>
         <translation>Bicúbico automático</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Redefinir layout dos &amp;painéis</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

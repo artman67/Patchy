@@ -18657,6 +18657,10 @@ Baked into images: %1.</source>
         <source>Bicubic Automatic</source>
         <translation>環迴增值法：自動</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>重設面板配置(&amp;P)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

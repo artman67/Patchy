@@ -18657,6 +18657,10 @@ Baked into images: %1.</source>
         <source>Bicubic Automatic</source>
         <translation>バイキュービック法(自動)</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>パネルレイアウトをリセット(&amp;P)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
