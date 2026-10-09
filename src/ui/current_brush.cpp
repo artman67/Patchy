@@ -34,6 +34,35 @@ QString working_brush_tip_key(const WorkingBrush& brush) {
   return brush.snapshot_tip != nullptr ? QStringLiteral("snapshot:") + brush.tip_id : brush.tip_id;
 }
 
+QJsonObject working_brush_to_json(const WorkingBrush& brush) {
+  QJsonObject object{{"tipId", brush.tip_id},        {"size", brush.size},
+                     {"opacity", brush.opacity},     {"flow", brush.flow},
+                     {"softness", brush.softness},   {"airbrush", brush.airbrush},
+                     {"angle", brush.angle},         {"roundness", brush.roundness},
+                     {"dynamics", brush_dynamics_to_json(brush.dynamics)}};
+  if (brush.spacing) {
+    object["spacing"] = *brush.spacing;
+  }
+  return object;
+}
+
+WorkingBrush working_brush_from_json(const QJsonObject& object) {
+  WorkingBrush brush;
+  brush.tip_id = object["tipId"].toString();
+  brush.size = std::clamp(object["size"].toInt(brush.size), 1, kMaxBrushSize);
+  brush.opacity = std::clamp(object["opacity"].toInt(brush.opacity), 1, 100);
+  brush.flow = std::clamp(object["flow"].toInt(brush.flow), 1, 100);
+  brush.softness = std::clamp(object["softness"].toInt(brush.softness), 0, 100);
+  brush.airbrush = object["airbrush"].toBool(brush.airbrush);
+  brush.angle = std::clamp(object["angle"].toDouble(brush.angle), -180.0, 360.0);
+  brush.roundness = std::clamp(object["roundness"].toDouble(brush.roundness), 1.0, 100.0);
+  if (object.contains("spacing")) {
+    brush.spacing = std::clamp(object["spacing"].toDouble(0.25), 0.01, 10.0);
+  }
+  brush.dynamics = brush_dynamics_from_json(object["dynamics"].toObject());
+  return brush;
+}
+
 CurrentBrush::CurrentBrush(QObject* parent) : QObject(parent) {
   brush_.tip_id = builtin_round_brush_tip_id();
   base_ = BrushBase{BrushBase::Kind::Preset, QStringLiteral("round"), brush_};
@@ -116,6 +145,11 @@ void CurrentBrush::pick_tip(const QString& tip_id, const BrushTipEntry* entry,
 void CurrentBrush::rebase(BrushBase::Kind kind, const QString& id) {
   base_ = BrushBase{kind, id, brush_};
   emit changed(Base);
+}
+
+void CurrentBrush::restore(const WorkingBrush& brush, const BrushBase& base) {
+  base_ = base;
+  replace(brush, All);
 }
 
 void CurrentBrush::replace(WorkingBrush next, unsigned changes) {

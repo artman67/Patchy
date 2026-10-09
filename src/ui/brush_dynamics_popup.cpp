@@ -586,8 +586,7 @@ BrushDynamicsButton::BrushDynamicsButton(QWidget* parent) : QToolButton(parent) 
 
 void BrushDynamicsButton::retranslate() {
   setText(tr("Dynamics"));
-  setToolTip(tr("Brush dynamics and effects for the current brush "
-                "(this session only; resets on the next launch)"));
+  setToolTip(tr("Brush dynamics and effects for the current brush"));
 }
 
 void BrushDynamicsButton::set_working_brush(const QString& tip_key,

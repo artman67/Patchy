@@ -9342,8 +9342,8 @@ RGB: %2, %3, %4</translation>
         <translation>Динамика</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
-        <translation>Динамика и эффекты кисти для текущей кисти (только в этом сеансе; сбрасывается при следующем запуске)</translation>
+        <source>Brush dynamics and effects for the current brush</source>
+        <translation>Динамика и эффекты кисти для текущей кисти</translation>
     </message>
 </context>
 <context>

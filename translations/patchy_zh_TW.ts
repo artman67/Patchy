@@ -9282,8 +9282,8 @@ RGB：%2, %3, %4</translation>
         <translation>動態</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
-        <translation>目前筆刷的筆刷動態與效果 (僅限本次工作階段,下次啟動時會重設)</translation>
+        <source>Brush dynamics and effects for the current brush</source>
+        <translation>目前筆刷的筆刷動態與效果</translation>
     </message>
 </context>
 <context>

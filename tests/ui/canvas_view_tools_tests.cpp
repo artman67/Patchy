@@ -225,8 +225,8 @@ void ui_startup_defaults_to_round_brush() {
   SettingsValueRestorer saved_gradient_stops(QStringLiteral("tools/gradientStops"));
   {
     auto settings = patchy::ui::app_settings();
-    // Stale brush state from an earlier session. A launch must reset all of it
-    // (only the eraser size may survive a restart).
+    // Dead legacy brush keys from an earlier version restore nothing (the working brush
+    // lives under tools/workingBrush; only the eraser size survives from these).
     settings.setValue(QStringLiteral("tools/brushPreset"), QStringLiteral("airbrush"));
     settings.setValue(QStringLiteral("tools/brushSize"), 56);
     settings.setValue(QStringLiteral("tools/brushOpacity"), 12);

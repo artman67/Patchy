@@ -9312,8 +9312,8 @@ RGB: %2, %3, %4</translation>
         <translation>Dinámica</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
-        <translation>Dinámica y efectos de pincel para el pincel actual (solo en esta sesión; se restablecen en el próximo inicio)</translation>
+        <source>Brush dynamics and effects for the current brush</source>
+        <translation>Dinámica y efectos de pincel para el pincel actual</translation>
     </message>
 </context>
 <context>

@@ -3,6 +3,7 @@
 #include "core/brush_dynamics.hpp"
 #include "core/brush_tip.hpp"
 
+#include <QJsonObject>
 #include <QObject>
 #include <QString>
 
@@ -41,6 +42,11 @@ struct WorkingBrush {
 [[nodiscard]] WorkingBrush working_brush_from_preset(const BrushPreset& preset);
 // Identifies the working brush's tip, so a host can drop a late edit meant for an earlier tip.
 [[nodiscard]] QString working_brush_tip_key(const WorkingBrush& brush);
+
+// The brush in the scripting vocabulary (tipId, size, opacity, flow, softness, airbrush, angle,
+// roundness, spacing, dynamics) without a snapshot tip's pixels. Reading clamps every value.
+[[nodiscard]] QJsonObject working_brush_to_json(const WorkingBrush& brush);
+[[nodiscard]] WorkingBrush working_brush_from_json(const QJsonObject& object);
 
 // A partial edit; only the fields that are set change.
 struct BrushEdit {
@@ -103,6 +109,8 @@ public:
   void pick_tip(const QString& tip_id, const BrushTipEntry* entry, bool apply_tool_settings);
   // Records the current brush as the base without changing it (after saving it as a preset).
   void rebase(BrushBase::Kind kind, const QString& id);
+  // Puts back a remembered brush and base (startup), modified state included.
+  void restore(const WorkingBrush& brush, const BrushBase& base);
 
 signals:
   // Change flags for what may differ; listeners may ignore them and re-read brush().

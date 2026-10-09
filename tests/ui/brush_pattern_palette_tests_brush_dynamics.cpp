@@ -638,13 +638,6 @@ void ui_brush_dynamics_round_brush_session() {
     save_widget_artifact("ui_brush_dynamics_round_scatter_stroke", *canvas);
     canvas->set_brush_dynamics_test_seed(std::nullopt);
   }
-  // Session-only by design: a fresh window starts with a plain Round brush again.
-  {
-    patchy::ui::MainWindow window;
-    show_window(window);
-    auto* canvas = require_canvas(window);
-    CHECK(!canvas->brush_dynamics().active());
-  }
   clear_brush_tip_test_state();
 }
 
@@ -1503,7 +1496,7 @@ void ui_default_brush_tips_seed_once_and_render_sheet() {
   clear_brush_tip_test_state();
 }
 
-void ui_brush_tip_resets_to_round_on_startup() {
+void ui_working_brush_survives_restart() {
   clear_brush_tip_test_state();
   QString tip_id;
   {
@@ -1513,19 +1506,44 @@ void ui_brush_tip_resets_to_round_on_startup() {
     tip_id = library.add_tip(QStringLiteral("Session Bar"), make_bar_tip_image(), 0.5);
     CHECK(!tip_id.isEmpty());
     window.set_active_brush_tip(tip_id, false);
-    CHECK(require_canvas(window)->has_brush_tip());
-    process_events_for(400);  // any debounced tool-settings save must not record the tip
-    CHECK(!patchy::ui::app_settings().contains(QStringLiteral("tools/brushTip")));
+    patchy::ui::BrushEdit edit;
+    edit.size = 37;
+    patchy::BrushDynamics dynamics;
+    dynamics.scatter = 1.25;
+    edit.dynamics = dynamics;
+    window.current_brush().edit(edit);
+    process_events_for(400);  // the debounced tool-settings save
+    CHECK(!patchy::ui::app_settings().contains(QStringLiteral("tools/brushTip")));  // dead key
   }
   {
-    // A fresh launch always starts with the procedural Round tip at 100% opacity /
-    // 0% soft, even though a bitmap tip was active when the last window closed.
+    // The next launch picks up the working brush, its base and its modified state.
+    patchy::ui::MainWindow window;
+    show_window(window);
+    auto* canvas = require_canvas(window);
+    CHECK(canvas->has_brush_tip());
+    CHECK(canvas->brush_tip_id() == tip_id);
+    CHECK(canvas->brush_size() == 37);
+    CHECK(std::abs(canvas->brush_dynamics().scatter - 1.25) < 1e-9);
+    CHECK(window.current_brush().base().kind == patchy::ui::BrushBase::Kind::Tip);
+    CHECK(window.current_brush().base().id == tip_id);
+    CHECK(window.current_brush().modified());
+    auto* picker = window.findChild<patchy::ui::BrushTipPicker*>(QStringLiteral("brushTipPicker"));
+    CHECK(picker != nullptr);
+    CHECK(picker->current_tip_id() == tip_id);
+  }
+  {
+    // A remembered tip that no longer exists falls back to the Round startup preset.
+    patchy::ui::BrushTipLibrary storage(brush_tip_test_storage_dir());
+    CHECK(storage.remove_tip(tip_id));
+  }
+  {
     patchy::ui::MainWindow window;
     show_window(window);
     auto* canvas = require_canvas(window);
     CHECK(!canvas->has_brush_tip());
-    CHECK(canvas->brush_opacity() == 100);
-    CHECK(canvas->brush_softness() == 0);
+    CHECK(canvas->brush_size() == 25);
+    CHECK(!canvas->brush_dynamics().active());
+    CHECK(window.current_brush().base().id == QStringLiteral("round"));
     auto* picker = window.findChild<patchy::ui::BrushTipPicker*>(QStringLiteral("brushTipPicker"));
     CHECK(picker != nullptr);
     CHECK(picker->current_tip_id() == patchy::ui::builtin_round_brush_tip_id());
@@ -1616,7 +1634,7 @@ std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part2() {
        ui_brush_color_dynamics_reaches_stroke_compositor},
       {"ui_brush_dynamics_abr_import_carries_dynamics", ui_brush_dynamics_abr_import_carries_dynamics},
       {"ui_default_brush_tips_seed_once_and_render_sheet", ui_default_brush_tips_seed_once_and_render_sheet},
-      {"ui_brush_tip_resets_to_round_on_startup", ui_brush_tip_resets_to_round_on_startup},
+      {"ui_working_brush_survives_restart", ui_working_brush_survives_restart},
       {"ui_current_brush_tracks_base_and_reaches_canvas", ui_current_brush_tracks_base_and_reaches_canvas},
   };
 }

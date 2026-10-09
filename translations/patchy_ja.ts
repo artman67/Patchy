@@ -9282,8 +9282,8 @@ Mixed selection</source>
         <translation>ダイナミクス</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
-        <translation>現在のブラシのダイナミクスと効果（このセッション限定。次回起動時にリセットされます）</translation>
+        <source>Brush dynamics and effects for the current brush</source>
+        <translation>現在のブラシのダイナミクスと効果</translation>
     </message>
 </context>
 <context>

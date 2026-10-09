@@ -9282,8 +9282,8 @@ RGB: %2, %3, %4</translation>
         <translation>동적 설정</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
-        <translation>현재 브러시에 대한 브러시 동적 설정 및 효과(이 세션에만 해당, 다음 실행 시 재설정됨)</translation>
+        <source>Brush dynamics and effects for the current brush</source>
+        <translation>현재 브러시에 대한 브러시 동적 설정 및 효과</translation>
     </message>
 </context>
 <context>

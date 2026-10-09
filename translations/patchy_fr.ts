@@ -9312,8 +9312,8 @@ RVB : %2, %3, %4</translation>
         <translation>Dynamique</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush (this session only; resets on the next launch)</source>
-        <translation>Dynamique de forme et effets pour la forme actuelle (cette session uniquement ; réinitialisé au prochain lancement)</translation>
+        <source>Brush dynamics and effects for the current brush</source>
+        <translation>Dynamique de forme et effets pour la forme actuelle</translation>
     </message>
 </context>
 <context>

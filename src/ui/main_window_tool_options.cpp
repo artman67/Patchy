@@ -1836,18 +1836,56 @@ void MainWindow::load_tool_settings() {
     return;
   }
   auto settings = app_settings();
-  // Standard Brush tip, opacity, flow, Airbrush, and softness are deliberately not
-  // restored: every launch starts from the Round startup preset (round tip,
-  // 100% opacity, 100% flow, Airbrush off, 0% soft) so a leftover bitmap tip or
-  // a barely-visible paint rate cannot leave the brush in a confusing state.
-  // The eraser resets the same way; only its size is kept across restarts.
+  // The working brush (with its base) is remembered under tools/workingBrush. A remembered
+  // tip that no longer exists, or no remembered brush, starts from the Round startup preset.
+  // The eraser starts from that preset too; only its size is kept across restarts.
+  const auto restore_working_brush = [this, &settings] {
+    const auto state =
+        QJsonDocument::fromJson(settings.value(QStringLiteral("tools/workingBrush")).toString().toUtf8())
+            .object();
+    if (state.isEmpty()) {
+      return false;
+    }
+    auto brush = working_brush_from_json(state["brush"].toObject());
+    const auto base_object = state["base"].toObject();
+    BrushBase base{base_object["kind"].toString() == QStringLiteral("tip") ? BrushBase::Kind::Tip
+                                                                            : BrushBase::Kind::Preset,
+                   base_object["id"].toString(), working_brush_from_json(base_object["brush"].toObject())};
+    const auto resolve_tip = [this, &base](WorkingBrush& candidate) {
+      if (is_builtin_brush_tip_id(candidate.tip_id) ||
+          (brush_tip_library().find_entry(candidate.tip_id) != nullptr &&
+           brush_tip_library().tip(candidate.tip_id) != nullptr)) {
+        return true;
+      }
+      // A saved preset's embedded tip comes back from that preset.
+      if (base.kind == BrushBase::Kind::Preset && find_brush_preset(base.id) == nullptr) {
+        try {
+          candidate.snapshot_tip =
+              brush_automation_library().resolve(QJsonObject{{"presetId", base.id}}).tip;
+        } catch (const std::exception&) {
+        }
+      }
+      return candidate.snapshot_tip != nullptr;
+    };
+    if (!resolve_tip(brush)) {
+      return false;
+    }
+    if (!resolve_tip(base.settings)) {
+      base.settings = brush;
+    }
+    current_brush().restore(brush, base);
+    return true;
+  };
   stored_eraser_brush_settings_ = BrushToolSettings{};
-  if (const auto* preset = find_brush_preset(default_startup_brush_preset_id()); preset != nullptr) {
+  preset_pen_override_.reset();
+  apply_pen_input_settings(canvas_);
+  const auto* preset = find_brush_preset(default_startup_brush_preset_id());
+  if (preset != nullptr) {
     stored_eraser_brush_settings_ =
         BrushToolSettings{preset->size, preset->opacity, preset->flow, preset->softness,
                           preset->build_up};
-    preset_pen_override_.reset();
-    apply_pen_input_settings(canvas_);
+  }
+  if (!restore_working_brush() && preset != nullptr) {
     current_brush().pick(working_brush_from_preset(*preset), BrushBase::Kind::Preset, preset->id);
   }
   stored_eraser_brush_settings_.size =
@@ -2226,9 +2264,18 @@ void MainWindow::save_tool_settings() const {
     tool_settings_save_timer_->stop();
   }
   auto settings = app_settings();
-  // Standard Brush tip/opacity/flow/Airbrush/softness (and the paint brush size) reset to
-  // the Round startup preset on every launch (see load_tool_settings()), so the
-  // eraser size is the only brush value worth persisting.
+  // The working brush and its base persist as one JSON value (see load_tool_settings()); the
+  // eraser keeps only its size.
+  if (current_brush_ != nullptr) {
+    const auto& base = current_brush_->base();
+    const QJsonObject state{
+        {"brush", working_brush_to_json(current_brush_->brush())},
+        {"base", QJsonObject{{"kind", base.kind == BrushBase::Kind::Tip ? "tip" : "preset"},
+                             {"id", base.id},
+                             {"brush", working_brush_to_json(base.settings)}}}};
+    settings.setValue(QStringLiteral("tools/workingBrush"),
+                      QString::fromUtf8(QJsonDocument(state).toJson(QJsonDocument::Compact)));
+  }
   const auto eraser_size =
       eraser_brush_settings_active_ ? canvas_->brush_size() : stored_eraser_brush_settings_.size;
   settings.setValue(QStringLiteral("tools/eraserSize"), eraser_size);
