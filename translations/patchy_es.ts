@@ -9590,6 +9590,14 @@ RGB: %2, %3, %4</translation>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>Arrastre para ajustar el ángulo de la punta; arrastre un punto para cambiar la redondez</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>Ruido</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>Añade grano a los bordes suaves de la punta del pincel. El grano permanece fijo en el lienzo; las puntas duras apenas cambian.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9732,6 +9740,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Smoothing</source>
         <translation>Suavizado</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Ruido</translation>
     </message>
 </context>
 <context>

@@ -9590,6 +9590,14 @@ RVB : %2, %3, %4</translation>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>Faites glisser pour régler l’angle de la pointe ; faites glisser un point pour modifier l’arrondi</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>Bruit</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>Ajoute du grain aux bords doux de la forme de pinceau. Le grain reste fixe sur la zone de travail ; les formes dures changent à peine.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9732,6 +9740,10 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Smoothing</source>
         <translation>Lissage</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Bruit</translation>
     </message>
 </context>
 <context>

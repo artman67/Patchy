@@ -9560,6 +9560,14 @@ RGB: %2, %3, %4</translation>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>드래그하여 끝의 각도를 설정하고, 점을 드래그하여 원형률을 바꿉니다</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>노이즈</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>브러시 팁의 부드러운 가장자리에 그레인을 추가합니다. 그레인은 캔버스에 고정되며 단단한 팁은 거의 바뀌지 않습니다.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9702,6 +9710,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Smoothing</source>
         <translation>보정</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>노이즈</translation>
     </message>
 </context>
 <context>

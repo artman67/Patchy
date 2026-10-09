@@ -527,6 +527,22 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
                         QStringLiteral("dynamicsFlowFadeStepsSpin"), false);
   }
 
+  // Noise: static grain on the soft parts of each dab.
+  {
+    auto* grid = make_page(BrushSection::Noise);
+    noise_check_ = bound(new QCheckBox(this), QT_TR_NOOP("Noise"),
+                         QT_TR_NOOP("Adds grain to the soft edges of the brush tip. The grain stays put on the "
+                                    "canvas; hard tips barely change."));
+    noise_check_->setObjectName(QStringLiteral("dynamicsNoiseCheck"));
+    grid->addWidget(noise_check_, 0, 0);
+    auto* about = make_label(QT_TR_NOOP("Adds grain to the soft edges of the brush tip. The grain stays put on the "
+                                        "canvas; hard tips barely change."));
+    about->setObjectName(QStringLiteral("dynamicsNoiseHint"));
+    about->setWordWrap(true);
+    grid->addWidget(about, 1, 0);
+    about->setVisible(presentation_ == Presentation::Pages);
+  }
+
   // Wet Edges: the independent coverage-edge treatment.
   {
     auto* grid = make_page(BrushSection::WetEdges);
@@ -556,7 +572,7 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
     // The Brush Settings section list carries these enable flags; set_values keeps the hidden
     // boxes in step so dynamics() reads them back.
     for (auto* check : {texture_enabled_check_, dual_brush_enabled_check_, color_dynamics_enabled_check_,
-                        wet_edges_check_}) {
+                        noise_check_, wet_edges_check_}) {
       check->setVisible(false);
     }
     hide();
@@ -611,7 +627,7 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
   }
   for (auto* check : {flip_x_check_, flip_y_check_, both_axes_check_, texture_enabled_check_,
                       texture_invert_check_, dual_brush_enabled_check_,
-                      color_dynamics_enabled_check_, color_per_tip_check_, wet_edges_check_}) {
+                      color_dynamics_enabled_check_, color_per_tip_check_, noise_check_, wet_edges_check_}) {
     connect(check, &QCheckBox::toggled, this, emit_edited);
   }
   refresh_control_dependent_widgets();
@@ -733,6 +749,7 @@ void BrushDynamicsPanel::set_values(const patchy::BrushDynamics& dynamics, doubl
   brightness_jitter_spin_->setValue(percent_from_fraction(dynamics.brightness_jitter));
   purity_spin_->setValue(static_cast<int>(std::lround(dynamics.purity * 100.0)));
   color_per_tip_check_->setChecked(dynamics.color_per_tip);
+  noise_check_->setChecked(dynamics.noise);
   wet_edges_check_->setChecked(dynamics.wet_edges);
   refresh_control_dependent_widgets();
   loading_ = false;
@@ -791,6 +808,7 @@ patchy::BrushDynamics BrushDynamicsPanel::dynamics() const {
   dynamics.brightness_jitter = fraction_from_percent(brightness_jitter_spin_->value());
   dynamics.purity = fraction_from_percent(purity_spin_->value());
   dynamics.color_per_tip = color_per_tip_check_->isChecked();
+  dynamics.noise = noise_check_->isChecked();
   dynamics.wet_edges = wet_edges_check_->isChecked();
   return dynamics;
 }

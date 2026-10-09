@@ -9560,6 +9560,14 @@ RGB：%2, %3, %4</translation>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>拖动以设置笔尖角度；拖动圆点可改变圆度</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>杂色</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>为画笔笔尖的柔和边缘添加颗粒。颗粒固定在画布上；硬笔尖几乎不受影响。</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9702,6 +9710,10 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Smoothing</source>
         <translation>平滑</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>杂色</translation>
     </message>
 </context>
 <context>

@@ -800,10 +800,12 @@ void BrushSettingsPanel::refresh_locks() {
 
 void BrushSettingsPanel::clear_brush_controls() {
   flush_pending_edit();
-  // Photoshop's Clear Brush Controls: every dynamics section off, locked ones kept.
+  // Photoshop's Clear Brush Controls: every dynamics section off, locked ones kept; the tip
+  // shape (its flips ride in the dynamics) stays.
   auto next = picked_over(brush_.brush(), [this] {
     auto cleared = brush_.brush();
     cleared.dynamics = {};
+    copy_brush_section(BrushSection::TipShape, brush_.brush(), cleared);
     return cleared;
   }(), brush_.locks());
   BrushEdit edit;

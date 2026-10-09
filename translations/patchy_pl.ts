@@ -9620,6 +9620,14 @@ RGB: %2, %3, %4</translation>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>Przeciągnij, aby ustawić kąt końcówki; przeciągnij punkt, aby zmienić okrągłość</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>Szum</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>Dodaje ziarno do miękkich krawędzi końcówki pędzla. Ziarno pozostaje nieruchome na płótnie; twarde końcówki prawie się nie zmieniają.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9762,6 +9770,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Smoothing</source>
         <translation>Wygładzanie</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Szum</translation>
     </message>
 </context>
 <context>

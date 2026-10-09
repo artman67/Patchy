@@ -82,7 +82,10 @@ patchy::BrushDynamics fully_customized_dynamics() {
     if (it.value().isBool()) {
       it.value() = !it.value().toBool();
     } else if (it.value().isString()) {
-      it.value() = it.key() == QStringLiteral("textureStyle") ? QStringLiteral("canvas") : QStringLiteral("penPressure");
+      it.value() = it.key() == QStringLiteral("textureStyle")    ? QStringLiteral("canvas")
+                   : it.key() == QStringLiteral("textureMode")   ? QStringLiteral("overlay")
+                   : it.key().startsWith(QStringLiteral("texturePattern")) ? QStringLiteral("probe")
+                                                                 : QStringLiteral("penPressure");
     } else if (it.key() == QStringLiteral("count")) {
       it.value() = 3;
     } else if (it.key().endsWith(QStringLiteral("FadeSteps"))) {
@@ -306,15 +309,27 @@ void ui_brush_section_locks_merge_picked_brush() {
   for (const auto section : patchy::ui::kBrushSections) {
     all |= patchy::ui::brush_section_bit(section);
   }
-  const auto locked_all = patchy::ui::picked_over(current, picked, all);
-  CHECK(patchy::ui::brush_dynamics_to_json(locked_all.dynamics) ==
+  CHECK(!current.dynamics.texture_pattern_id.empty() && current.dynamics.noise && current.dynamics.tip_flip_x);
+  patchy::ui::WorkingBrush copied_all = picked;
+  for (const auto section : patchy::ui::kBrushSections) {
+    patchy::ui::copy_brush_section(section, current, copied_all);
+  }
+  CHECK(patchy::ui::brush_dynamics_to_json(copied_all.dynamics) ==
         patchy::ui::brush_dynamics_to_json(current.dynamics));
+  // Locking everything keeps all of it except Brush Tip Shape, which is never locked.
+  const auto locked_all = patchy::ui::picked_over(current, picked, all);
+  auto expected = current.dynamics;
+  expected.tip_flip_x = picked.dynamics.tip_flip_x;
+  expected.tip_flip_y = picked.dynamics.tip_flip_y;
+  CHECK(patchy::ui::brush_dynamics_to_json(locked_all.dynamics) == patchy::ui::brush_dynamics_to_json(expected));
   CHECK(locked_all.airbrush);
-  CHECK(locked_all.angle == picked.angle);  // Brush Tip Shape is never locked
+  CHECK(locked_all.angle == picked.angle);
   const auto texture_only =
       patchy::ui::picked_over(current, picked, patchy::ui::brush_section_bit(BrushSection::Texture));
   CHECK(texture_only.dynamics.texture_enabled == current.dynamics.texture_enabled);
   CHECK(texture_only.dynamics.texture_scale == current.dynamics.texture_scale);
+  CHECK(texture_only.dynamics.texture_pattern_id == current.dynamics.texture_pattern_id);
+  CHECK(!texture_only.dynamics.noise);
   CHECK(texture_only.dynamics.scatter == 0.0);
   CHECK(!texture_only.airbrush);
   CHECK(patchy::ui::brush_dynamics_to_json(patchy::ui::picked_over(current, picked, 0U).dynamics) ==
@@ -390,7 +405,9 @@ void ui_brush_settings_sections_grey_out_per_tool() {
   auto* sections = panel.findChild<QTreeWidget*>(QStringLiteral("brushSettingsSectionList"));
   CHECK(sections != nullptr);
   const auto enabled = [sections](BrushSection section) {
-    return !sections->topLevelItem(static_cast<int>(section))->isDisabled();
+    const auto row = std::find(patchy::ui::kBrushSections.begin(), patchy::ui::kBrushSections.end(), section) -
+                     patchy::ui::kBrushSections.begin();
+    return !sections->topLevelItem(static_cast<int>(row))->isDisabled();
   };
   for (const auto section : patchy::ui::kBrushSections) {
     CHECK(enabled(section));
@@ -401,6 +418,7 @@ void ui_brush_settings_sections_grey_out_per_tool() {
   CHECK(enabled(BrushSection::Smoothing));
   CHECK(!enabled(BrushSection::ShapeDynamics));
   CHECK(!enabled(BrushSection::BuildUp));
+  CHECK(!enabled(BrushSection::Noise));
   CHECK(!window.findChild<QToolButton*>(QStringLiteral("brushDynamicsButton"))->isVisible());
   save_widget_artifact("ui_brush_settings_panel_eraser", panel);
   require_action_by_text(window, QStringLiteral("Pattern Stamp"))->trigger();

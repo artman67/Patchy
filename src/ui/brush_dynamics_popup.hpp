@@ -46,8 +46,8 @@ private:
 };
 
 // The dynamics editing form, one page per Brush Settings section (Brush Tip Shape angle and
-// roundness, Shape Dynamics, Scattering, Texture, Dual Brush, Color Dynamics, Transfer, Wet
-// Edges). AllSections stacks the pages in titled groups with a Reset button (the Brush Tips
+// roundness, Shape Dynamics, Scattering, Texture, Dual Brush, Color Dynamics, Transfer, Noise,
+// Wet Edges). AllSections stacks the pages in titled groups with a Reset button (the Brush Tips
 // manager's "Edit Dynamics..." dialog); Pages leaves them for the Brush Settings panel to
 // place, whose section list carries the enable flags. Emits edited() on every user change;
 // hosts read the values back through the getters.
@@ -139,6 +139,7 @@ private:
   QSpinBox* brightness_jitter_spin_{nullptr};
   QSpinBox* purity_spin_{nullptr};
   QCheckBox* color_per_tip_check_{nullptr};
+  QCheckBox* noise_check_{nullptr};
   QCheckBox* wet_edges_check_{nullptr};
   bool loading_{false};
 };

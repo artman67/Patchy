@@ -9560,6 +9560,14 @@ Mixed selection</source>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>ドラッグして先端の角度を設定します。点をドラッグすると真円率が変わります</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>ノイズ</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>ブラシ先端のソフトな縁に粒状感を加えます。粒状感はカンバス上で固定され、ハードな先端はほとんど変化しません。</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9702,6 +9710,10 @@ Mixed selection</source>
     <message>
         <source>Smoothing</source>
         <translation>滑らかさ</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>ノイズ</translation>
     </message>
 </context>
 <context>

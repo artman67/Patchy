@@ -25,13 +25,14 @@ enum class BrushSection {
   WetEdges,
   BuildUp,
   Smoothing,
+  Noise,
 };
 
-inline constexpr std::array<BrushSection, 10> kBrushSections{
+inline constexpr std::array<BrushSection, 11> kBrushSections{
     BrushSection::TipShape,      BrushSection::ShapeDynamics, BrushSection::Scattering,
     BrushSection::Texture,       BrushSection::DualBrush,     BrushSection::ColorDynamics,
-    BrushSection::Transfer,      BrushSection::WetEdges,      BrushSection::BuildUp,
-    BrushSection::Smoothing};
+    BrushSection::Transfer,      BrushSection::Noise,         BrushSection::WetEdges,
+    BrushSection::BuildUp,       BrushSection::Smoothing};
 
 // A set of sections (locks, sections a tool honors).
 using BrushSectionMask = unsigned;
@@ -49,7 +50,7 @@ inline constexpr BrushSectionMask kAllBrushSections = (1U << kBrushSections.size
 [[nodiscard]] bool brush_section_lockable(BrushSection section);
 
 // Copies one section's settings from `from` into `to`. Brush Tip Shape carries the static
-// angle, roundness and spacing (the tip, size and softness belong to the pick itself), Build-up
+// angle, roundness, flips and spacing (the tip, size and softness belong to the pick itself), Build-up
 // the Airbrush flag; Smoothing lives outside the working brush, so it copies nothing. Every
 // BrushDynamics field belongs to exactly one section: a new field must be added here
 // (ui_brush_section_locks_merge_picked_brush checks the mapping covers the persisted form).
@@ -57,7 +58,7 @@ void copy_brush_section(BrushSection section, const WorkingBrush& from, WorkingB
 // True when the section's settings equal a default-constructed brush's.
 [[nodiscard]] bool brush_section_is_default(BrushSection section, const WorkingBrush& brush);
 // The enable flag a section carries in the brush itself (Texture, Dual Brush, Color Dynamics,
-// Wet Edges, Build-up); empty for sections whose checkbox is derived from their values.
+// Noise, Wet Edges, Build-up); empty for sections whose checkbox is derived from their values.
 [[nodiscard]] std::optional<bool> brush_section_enabled_flag(BrushSection section,
                                                              const WorkingBrush& brush);
 void set_brush_section_enabled_flag(BrushSection section, WorkingBrush& brush, bool enabled);

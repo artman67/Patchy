@@ -9620,6 +9620,14 @@ RGB: %2, %3, %4</translation>
         <source>Drag to set the tip angle; drag a dot to change its roundness</source>
         <translation>Перетащите, чтобы задать угол отпечатка; перетащите точку, чтобы изменить форму</translation>
     </message>
+    <message>
+        <source>Noise</source>
+        <translation>Шум</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>Добавляет зерно на мягкие края отпечатка кисти. Зерно остаётся на месте на холсте; жёсткие кисти почти не меняются.</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9762,6 +9770,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Smoothing</source>
         <translation>Сглаживание</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Шум</translation>
     </message>
 </context>
 <context>

@@ -29,6 +29,8 @@ const char* brush_section_title_source(BrushSection section) {
       return QT_TRANSLATE_NOOP("patchy::ui::BrushSettingsPanel", "Build-up");
     case BrushSection::Smoothing:
       return QT_TRANSLATE_NOOP("patchy::ui::BrushSettingsPanel", "Smoothing");
+    case BrushSection::Noise:
+      return QT_TRANSLATE_NOOP("patchy::ui::BrushSettingsPanel", "Noise");
   }
   return "";
 }
@@ -55,6 +57,8 @@ QString brush_section_key(BrushSection section) {
       return QStringLiteral("buildUp");
     case BrushSection::Smoothing:
       return QStringLiteral("smoothing");
+    case BrushSection::Noise:
+      return QStringLiteral("noise");
   }
   return {};
 }
@@ -80,6 +84,8 @@ void copy_brush_section(BrushSection section, const WorkingBrush& from, WorkingB
       to.angle = from.angle;
       to.roundness = from.roundness;
       to.spacing = from.spacing;
+      b.tip_flip_x = a.tip_flip_x;
+      b.tip_flip_y = a.tip_flip_y;
       return;
     case BrushSection::ShapeDynamics:
       b.size_jitter = a.size_jitter;
@@ -113,6 +119,11 @@ void copy_brush_section(BrushSection section, const WorkingBrush& from, WorkingB
       b.texture_depth = a.texture_depth;
       b.texture_invert = a.texture_invert;
       b.texture_seed = a.texture_seed;
+      b.texture_mode = a.texture_mode;
+      b.texture_brightness = a.texture_brightness;
+      b.texture_contrast = a.texture_contrast;
+      b.texture_pattern_id = a.texture_pattern_id;
+      b.texture_pattern_name = a.texture_pattern_name;
       return;
     case BrushSection::DualBrush:
       b.dual_brush_enabled = a.dual_brush_enabled;
@@ -141,6 +152,9 @@ void copy_brush_section(BrushSection section, const WorkingBrush& from, WorkingB
       b.flow_control = a.flow_control;
       b.flow_fade_steps = a.flow_fade_steps;
       return;
+    case BrushSection::Noise:
+      b.noise = a.noise;
+      return;
     case BrushSection::WetEdges:
       b.wet_edges = a.wet_edges;
       return;
@@ -166,6 +180,8 @@ std::optional<bool> brush_section_enabled_flag(BrushSection section, const Worki
       return brush.dynamics.dual_brush_enabled;
     case BrushSection::ColorDynamics:
       return brush.dynamics.color_dynamics_enabled;
+    case BrushSection::Noise:
+      return brush.dynamics.noise;
     case BrushSection::WetEdges:
       return brush.dynamics.wet_edges;
     case BrushSection::BuildUp:
@@ -185,6 +201,9 @@ void set_brush_section_enabled_flag(BrushSection section, WorkingBrush& brush, b
       return;
     case BrushSection::ColorDynamics:
       brush.dynamics.color_dynamics_enabled = enabled;
+      return;
+    case BrushSection::Noise:
+      brush.dynamics.noise = enabled;
       return;
     case BrushSection::WetEdges:
       brush.dynamics.wet_edges = enabled;
