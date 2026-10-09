@@ -265,6 +265,8 @@ constexpr int kHistoryDockExpandedMinimumHeight = 90;
 constexpr int kHistoryDockPreferredHeight = 190;
 constexpr int kPropertiesDockMaximumHeight = 230;
 constexpr int kPaletteDockPreferredHeight = 320;
+// A panel that starts closed lists its built-in tab partners here (restore_panel_layout).
+constexpr auto kBuiltInTabPartnersProperty = "patchy.builtInTabPartners";
 
 // The docks that share one width as the right panel stack. Every dock in the
 // column must be listed: one left out keeps its own minimum width and renders
@@ -2029,15 +2031,41 @@ void MainWindow::restore_panel_layout() {
   // Layout returns to it, and it places panels the saved layout predates.
   default_panel_layout_ = saveState(kPanelLayoutVersion);
   default_panel_placements_.clear();
-  for (auto* dock : findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly)) {
+  pending_panel_sections_.clear();
+  // Column order, so panels a saved layout lacks are placed (and tabbed) top to bottom.
+  auto docks = findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly);
+  const auto column_index = [](const QDockWidget* dock) {
+    const auto& column = right_dock_stack_names();
+    return std::distance(column.begin(), std::find(column.begin(), column.end(), dock->objectName()));
+  };
+  std::stable_sort(docks.begin(), docks.end(),
+                   [&](const QDockWidget* a, const QDockWidget* b) { return column_index(a) < column_index(b); });
+  for (auto* dock : docks) {
     DefaultPanelPlacement placement;
     placement.name = dock->objectName();
     placement.area = dockWidgetArea(dock);
     for (const auto* partner : tabifiedDockWidgets(dock)) {
       placement.tab_partners.append(partner->objectName());
     }
+    // Qt reports no tab partners for a panel that starts closed (it has no tab bar yet); such
+    // panels name them in kBuiltInTabPartnersProperty.
+    for (const auto& partner : dock->property(kBuiltInTabPartnersProperty).toStringList()) {
+      if (!placement.tab_partners.contains(partner)) {
+        placement.tab_partners.append(partner);
+      }
+    }
     const auto* toggle = dock_collapse_toggle(dock);
     placement.expanded = toggle == nullptr || toggle->isChecked();
+    // The right column's built-in order, top to bottom: the panels whose sections follow.
+    const auto& column = right_dock_stack_names();
+    const auto position = std::find(column.begin(), column.end(), placement.name);
+    if (placement.area == Qt::RightDockWidgetArea && position != column.end()) {
+      for (auto later = std::next(position); later != column.end(); ++later) {
+        if (!placement.tab_partners.contains(*later)) {
+          placement.followers.append(*later);
+        }
+      }
+    }
     default_panel_placements_.push_back(std::move(placement));
   }
 
@@ -2067,6 +2095,7 @@ void MainWindow::restore_panel_layout() {
   // new section at the end of their default area.
   if (settings.contains(QLatin1StringView(kPanelLayoutDocksKey))) {
     auto placed = settings.value(QLatin1StringView(kPanelLayoutDocksKey)).toStringList();
+    QStringList newly_placed;
     for (const auto& placement : default_panel_placements_) {
       auto* dock = findChild<QDockWidget*>(placement.name);
       if (dock == nullptr || placed.contains(placement.name)) {
@@ -2075,8 +2104,10 @@ void MainWindow::restore_panel_layout() {
       QDockWidget* partner = nullptr;
       for (const auto& name : placement.tab_partners) {
         auto* candidate = findChild<QDockWidget*>(name);
+        // A partner placed here a moment ago counts even while closed (the brush panels start
+        // closed and must stay one group).
         if (candidate != nullptr && placed.contains(name) && candidate->window() == this &&
-            !candidate->isHidden()) {
+            (!candidate->isHidden() || newly_placed.contains(name))) {
           partner = candidate;
           break;
         }
@@ -2085,16 +2116,119 @@ void MainWindow::restore_panel_layout() {
       const bool hidden = dock->isHidden();
       removeDockWidget(dock);
       if (partner != nullptr) {
+        // Tabifying onto a closed partner leaves the two as separate sections once shown;
+        // join them while both are shown, then close the partner again.
+        const bool partner_hidden = partner->isHidden();
+        partner->show();
+        dock->show();
         tabifyDockWidget(partner, dock);
+        partner->setVisible(!partner_hidden);
       } else {
+        // A new section at the bottom of its area for now; the first show moves it above the
+        // section of its built-in successor.
         addDockWidget(placement.area, dock);
+        if (!placement.followers.isEmpty()) {
+          pending_panel_sections_.emplace_back(placement.name, placement.followers);
+        }
       }
       dock->setVisible(!hidden);
       placed.append(placement.name);
+      newly_placed.append(placement.name);
     }
   }
   // Qt reports no top-level change for panels it puts in a floating
   // tab-group window.
+  sync_panel_collapse_toggles();
+}
+
+void MainWindow::place_new_panel_sections() {
+  const auto pending = std::exchange(pending_panel_sections_, {});
+  for (const auto& [name, followers] : pending) {
+    auto* dock = findChild<QDockWidget*>(name);
+    if (dock == nullptr || dock->window() != this || dock->isFloating()) {
+      continue;
+    }
+    const auto area = dockWidgetArea(dock);
+    const auto dock_group = tabifiedDockWidgets(dock);
+    // The area's docked sections (tab groups count once), top to bottom by their visible tab.
+    struct Section {
+      int top{0};
+      QList<QDockWidget*> docks;
+      QDockWidget* current{nullptr};
+    };
+    std::vector<Section> sections;
+    for (auto* candidate : findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly)) {
+      if (candidate == dock || dock_group.contains(candidate) || candidate->isFloating() ||
+          dockWidgetArea(candidate) != area || candidate->isHidden()) {
+        continue;
+      }
+      const auto partners = tabifiedDockWidgets(candidate);
+      const auto known = std::any_of(sections.begin(), sections.end(), [&](const Section& section) {
+        return section.docks.contains(candidate);
+      });
+      if (known) {
+        continue;
+      }
+      Section section;
+      section.docks.append(candidate);
+      for (auto* partner : partners) {
+        if (!partner->isFloating() && partner->window() == this) {
+          section.docks.append(partner);
+        }
+      }
+      // Qt parks the hidden tabs of a group off screen; the shown one gives the position.
+      section.top = std::numeric_limits<int>::max();
+      for (auto* member : section.docks) {
+        const auto top_left = member->mapTo(this, QPoint(0, 0));
+        if (!member->isHidden() && top_left.x() >= 0 && top_left.y() >= 0 && top_left.y() < section.top) {
+          section.top = top_left.y();
+          section.current = member;
+        }
+      }
+      if (section.current != nullptr) {
+        sections.push_back(std::move(section));
+      }
+    }
+    std::sort(sections.begin(), sections.end(),
+              [](const Section& a, const Section& b) { return a.top < b.top; });
+    auto first_moved = sections.end();
+    for (const auto& follower : followers) {
+      first_moved = std::find_if(sections.begin(), sections.end(), [&](const Section& section) {
+        return std::any_of(section.docks.begin(), section.docks.end(),
+                           [&](const QDockWidget* member) { return member->objectName() == follower; });
+      });
+      if (first_moved != sections.end()) {
+        break;
+      }
+    }
+    if (first_moved == sections.end()) {
+      continue;  // nothing of its built-in successors is docked here: it stays at the bottom
+    }
+    // QMainWindow can only append a section, so re-append everything from the successor on
+    // below the new panel, keeping each section's tabs, front tab and height.
+    QList<QDockWidget*> resized;
+    QList<int> heights;
+    for (auto it = first_moved; it != sections.end(); ++it) {
+      const auto height = it->current->height();
+      std::vector<std::pair<QDockWidget*, bool>> members;
+      for (auto* member : it->docks) {
+        members.emplace_back(member, member->isHidden());
+        removeDockWidget(member);
+      }
+      auto* first = members.front().first;
+      addDockWidget(area, first);
+      for (std::size_t index = 1; index < members.size(); ++index) {
+        tabifyDockWidget(first, members[index].first);
+      }
+      for (const auto& [member, hidden] : members) {
+        member->setVisible(!hidden);
+      }
+      it->current->raise();
+      resized.append(it->current);
+      heights.append(height);
+    }
+    resizeDocks(resized, heights, Qt::Vertical);
+  }
   sync_panel_collapse_toggles();
 }
 

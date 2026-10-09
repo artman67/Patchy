@@ -482,6 +482,7 @@ private:
   void restore_panel_layout();
   void save_panel_layout() const;
   void reset_panel_layout();
+  void place_new_panel_sections();
   bool handle_window_resize_event(QObject* watched, QEvent* event);
   void update_window_resize_cursor(Qt::Edges edges);
   void clear_window_resize_cursor();
@@ -2519,10 +2520,15 @@ private:
     QString name;
     Qt::DockWidgetArea area{Qt::RightDockWidgetArea};
     QStringList tab_partners;
+    // Docks whose sections come after this one's in the built-in area, in column order.
+    QStringList followers;
     bool expanded{true};
   };
   QByteArray default_panel_layout_;
   std::vector<DefaultPanelPlacement> default_panel_placements_;
+  // Panels a saved layout predated, waiting for the first show to move above their built-in
+  // successors (place_new_panel_sections; needs laid-out geometry).
+  std::vector<std::pair<QString, QStringList>> pending_panel_sections_;
   bool spacebar_canvas_pan_down_{false};
   bool spacebar_canvas_pan_dragging_{false};
   bool spacebar_canvas_pan_cursor_active_{false};
