@@ -48,9 +48,10 @@ it shrinks and scrolls instead of growing the window, and with room its picker g
   edits is drawn on top with an accent ring and a background gap; clicking the other switches. The
   panel starts on the foreground each run.
 - Modes (`colorDockModeCombo`): HSV Square (plane plus hue bar, the default), Wheel + Square,
-  Wheel + Triangle, Sliders. Persisted under `colorDock/mode` as `square`, `wheel`, `triangle`,
-  `sliders`; the key and tokens are permanent. Only the current mode's page is shown, so hidden
-  pages never add to the minimum height.
+  Wheel + Triangle, HSV Sliders, RGB Sliders, HSV + RGB Sliders. Persisted under `colorDock/mode`
+  as `square`, `wheel`, `triangle`, `hsv_sliders`, `rgb_sliders`, `sliders`; the key and tokens are
+  permanent. The three slider modes share one page and hide the rows they do not use. Only the
+  current mode's page is shown, so hidden pages never add to the minimum height.
 - Hex field (`colorDockHexEdit`): accepts what `parse_panel_color` accepts.
 - Edits emit `color_edited(background, color)`. MainWindow applies them through
   `apply_foreground_background_edit`, the same path as the Foreground/Background popup (canvas

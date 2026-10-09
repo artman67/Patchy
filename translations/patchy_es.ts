@@ -11131,10 +11131,6 @@ RGB: %2, %3, %4</translation>
         <translation>Rueda + triángulo</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Reguladores</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Elija cómo muestra el color el panel Color</translation>
     </message>
@@ -11145,6 +11141,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Haga clic en la muestra frontal o de fondo para elegir qué color edita el panel</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>Reguladores HSV</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>Reguladores RGB</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>Reguladores HSV + RGB</translation>
     </message>
 </context>
 <context>

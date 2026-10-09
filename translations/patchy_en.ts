@@ -11121,10 +11121,6 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation type="unfinished"></translation>
     </message>
@@ -11134,6 +11130,18 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

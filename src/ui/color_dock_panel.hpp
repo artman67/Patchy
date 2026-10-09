@@ -26,7 +26,7 @@ class ColorDockPanel final : public QWidget, private HsvColorModel {
 
 public:
   // Persisted by token under kColorDockModeKey; append only.
-  enum class Mode { HsvSquare, WheelSquare, WheelTriangle, Sliders };
+  enum class Mode { HsvSquare, WheelSquare, WheelTriangle, Sliders, HsvSliders, RgbSliders };
 
   explicit ColorDockPanel(QWidget* parent = nullptr);
 
@@ -57,6 +57,7 @@ private:
   void retranslate();
   void apply_hex_text();
   void refresh_views();
+  void show_mode_widgets(int index);
 
   QColor foreground_{Qt::black};
   QColor background_{Qt::white};
@@ -72,7 +73,7 @@ private:
 };
 
 // QSettings key holding the panel's mode token ("square", "wheel", "triangle",
-// "sliders"). Persisted identifiers: never rename the key or a token.
+// "hsv_sliders", "rgb_sliders", "sliders"). Persisted identifiers: never rename the key or a token.
 inline constexpr const char* kColorDockModeKey = "colorDock/mode";
 
 }  // namespace patchy::ui

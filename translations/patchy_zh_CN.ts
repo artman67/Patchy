@@ -11101,10 +11101,6 @@ RGB：%2, %3, %4</translation>
         <translation>色轮 + 三角形</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>滑块</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>选择颜色面板显示颜色的方式</translation>
     </message>
@@ -11115,6 +11111,18 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>单击前景色或背景色色块，选择面板要编辑的颜色</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>HSV 滑块</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>RGB 滑块</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>HSV + RGB 滑块</translation>
     </message>
 </context>
 <context>

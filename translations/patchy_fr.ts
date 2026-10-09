@@ -11131,10 +11131,6 @@ RVB : %2, %3, %4</translation>
         <translation>Roue + triangle</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Curseurs</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Choisir comment le panneau Couleur affiche la couleur</translation>
     </message>
@@ -11145,6 +11141,18 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Cliquez sur la vignette de premier plan ou d&apos;arrière-plan pour choisir la couleur que le panneau modifie</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>Curseurs TSV</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>Curseurs RVB</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>Curseurs TSV + RVB</translation>
     </message>
 </context>
 <context>

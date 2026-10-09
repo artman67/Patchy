@@ -11161,10 +11161,6 @@ RGB: %2, %3, %4</translation>
         <translation>Колесо + треугольник</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Слайдеры</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Выберите, как панель «Цвет» показывает цвет</translation>
     </message>
@@ -11175,6 +11171,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Щёлкните образец основного или фонового цвета, чтобы выбрать, какой цвет редактирует панель</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>Слайдеры HSV</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>Слайдеры RGB</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>Слайдеры HSV + RGB</translation>
     </message>
 </context>
 <context>
