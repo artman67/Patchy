@@ -57,6 +57,7 @@ class QComboBox;
 class QDialog;
 class QDockWidget;
 class QDoubleSpinBox;
+class QSettings;
 class QDragEnterEvent;
 class QDragMoveEvent;
 class QDropEvent;
@@ -1450,6 +1451,10 @@ private:
   void fold_canvas_brush_values();
   // An options-bar edit of the active size group: the working brush, or the Eraser's group.
   void edit_brush_option(const BrushEdit& edit);
+  // The remembered working brush and its base under tools/workingBrush (load_tool_settings and
+  // save_tool_settings). Restore returns false when nothing usable was remembered.
+  bool restore_working_brush(const QSettings& settings);
+  void save_working_brush(QSettings& settings) const;
   void import_brush_tips_from_abr();
   void open_brush_tip_manager();
   void expand_selection_dialog();
