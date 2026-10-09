@@ -32,15 +32,25 @@ struct ModeEntry {
   ColorDockPanel::Mode mode;
   const char* token;
   const char* label;
+  int page;  // index into pages_; the three slider modes share one page
+  bool hsv_rows;
+  bool rgb_rows;
 };
 
 // Combo order and persisted tokens. Tokens are permanent settings values.
-constexpr std::array<ModeEntry, 4> kModeEntries{{
-    {ColorDockPanel::Mode::HsvSquare, "square", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "HSV Square")},
-    {ColorDockPanel::Mode::WheelSquare, "wheel", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "Wheel + Square")},
+constexpr std::array<ModeEntry, 6> kModeEntries{{
+    {ColorDockPanel::Mode::HsvSquare, "square", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "HSV Square"), 0,
+     false, false},
+    {ColorDockPanel::Mode::WheelSquare, "wheel", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "Wheel + Square"), 1,
+     false, false},
     {ColorDockPanel::Mode::WheelTriangle, "triangle",
-     QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "Wheel + Triangle")},
-    {ColorDockPanel::Mode::Sliders, "sliders", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "Sliders")},
+     QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "Wheel + Triangle"), 2, false, false},
+    {ColorDockPanel::Mode::HsvSliders, "hsv_sliders", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "HSV Sliders"),
+     3, true, false},
+    {ColorDockPanel::Mode::RgbSliders, "rgb_sliders", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "RGB Sliders"),
+     3, false, true},
+    {ColorDockPanel::Mode::Sliders, "sliders", QT_TRANSLATE_NOOP("patchy::ui::ColorDockPanel", "HSV + RGB Sliders"),
+     3, true, true},
 }};
 
 int mode_index(ColorDockPanel::Mode mode) {
@@ -228,7 +238,7 @@ ColorDockPanel::ColorDockPanel(QWidget* parent) : QWidget(parent) {
     const QSignalBlocker blocker(mode_combo_);
     mode_combo_->setCurrentIndex(mode_index(mode_));
   }
-  pages_[static_cast<std::size_t>(mode_index(mode_))]->show();
+  show_mode_widgets(mode_index(mode_));
   retranslate();
   set_color(foreground_, ColorChangeNotification::No);
 }
@@ -255,15 +265,25 @@ void ColorDockPanel::set_editing_background(bool background) {
   set_color(background ? background_ : foreground_, ColorChangeNotification::No);
 }
 
+void ColorDockPanel::show_mode_widgets(int index) {
+  const auto& entry = kModeEntries[static_cast<std::size_t>(index)];
+  for (std::size_t row = 0; row < sliders_.size(); ++row) {
+    const bool visible = row < 3 ? entry.hsv_rows : entry.rgb_rows;
+    slider_labels_[row]->setVisible(visible);
+    sliders_[row]->setVisible(visible);
+  }
+  for (std::size_t page = 0; page < pages_.size(); ++page) {
+    pages_[page]->setVisible(static_cast<int>(page) == entry.page);
+  }
+}
+
 void ColorDockPanel::set_mode(Mode mode) {
   const auto index = mode_index(mode);
   if (mode_combo_->currentIndex() != index) {
     const QSignalBlocker blocker(mode_combo_);
     mode_combo_->setCurrentIndex(index);
   }
-  for (std::size_t page = 0; page < pages_.size(); ++page) {
-    pages_[page]->setVisible(static_cast<int>(page) == index);
-  }
+  show_mode_widgets(index);
   if (mode_ == mode) {
     return;
   }

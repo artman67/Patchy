@@ -10532,10 +10532,6 @@ RGB: %2, %3, %4</translation>
         <translation>Farbrad + Dreieck</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Regler</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Wählen, wie das Farbe-Bedienfeld die Farbe anzeigt</translation>
     </message>
@@ -10546,6 +10542,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Klicken Sie auf das Vordergrund- oder Hintergrundfeld, um zu wählen, welche Farbe das Bedienfeld bearbeitet</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>HSV-Regler</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>RGB-Regler</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>HSV- + RGB-Regler</translation>
     </message>
 </context>
 <context>

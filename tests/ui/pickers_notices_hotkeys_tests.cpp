@@ -635,7 +635,7 @@ void ui_color_dock_panel_modes_fit_persist_and_align_the_triangle() {
     return;
   }
   CHECK(panel->mode() == patchy::ui::ColorDockPanel::Mode::HsvSquare);  // the unset default
-  CHECK(combo->count() == 4);
+  CHECK(combo->count() == 6);
 
   // Every mode's view is visible, usable and unclipped (no scrolling) at the
   // normal dock width in a desktop-height window, in both schemes (the
@@ -652,11 +652,14 @@ void ui_color_dock_panel_modes_fit_persist_and_align_the_triangle() {
     const char* view;
     const char* token;
     int minimum_side;
+    const char* hidden_slider;  // a slider from the other channel set, or nullptr
   };
-  const std::array<ModeView, 4> modes{{{"colorDockPlane", "square", 60},
-                                       {"colorDockWheel", "wheel", 110},
-                                       {"colorDockTriangleWheel", "triangle", 110},
-                                       {"colorDockSliderBlue", "sliders", 14}}};
+  const std::array<ModeView, 6> modes{{{"colorDockPlane", "square", 60, nullptr},
+                                       {"colorDockWheel", "wheel", 110, nullptr},
+                                       {"colorDockTriangleWheel", "triangle", 110, nullptr},
+                                       {"colorDockSliderVal", "hsv_sliders", 14, "colorDockSliderRed"},
+                                       {"colorDockSliderBlue", "rgb_sliders", 14, "colorDockSliderHue"},
+                                       {"colorDockSliderBlue", "sliders", 14, nullptr}}};
   // Colors go in through the panel's hex field, a real edit of the canvas
   // foreground, so the scheme switch's refresh keeps them.
   auto* hex = panel->findChild<QLineEdit*>(QStringLiteral("colorDockHexEdit"));
@@ -685,6 +688,10 @@ void ui_color_dock_panel_modes_fit_persist_and_align_the_triangle() {
       CHECK(std::min(view->width(), view->height()) >= modes[static_cast<std::size_t>(index)].minimum_side);
       CHECK(panel->rect().contains(QRect(view->mapTo(panel, QPoint()), view->size())));
       CHECK(!scroll->verticalScrollBar()->isVisible());
+      if (const auto* hidden_name = modes[static_cast<std::size_t>(index)].hidden_slider) {
+        auto* hidden = panel->findChild<QWidget*>(QLatin1String(hidden_name));
+        CHECK(hidden != nullptr && !hidden->isVisible());
+      }
       save_widget_artifact(std::string("ui_color_dock_") + modes[static_cast<std::size_t>(index)].token + "_" + scheme,
                            *dock);
     }

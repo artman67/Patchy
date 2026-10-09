@@ -10502,10 +10502,6 @@ RGB: %2, %3, %4</translation>
         <translation>색상환 + 삼각형</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>슬라이더</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>색상 패널에서 색을 표시하는 방식 선택</translation>
     </message>
@@ -10516,6 +10512,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>전경색 또는 배경색 견본을 클릭하여 패널에서 편집할 색 선택</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>HSV 슬라이더</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>RGB 슬라이더</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>HSV + RGB 슬라이더</translation>
     </message>
 </context>
 <context>

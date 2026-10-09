@@ -10532,10 +10532,6 @@ RGB: %2, %3, %4</translation>
         <translation>Círculo + triângulo</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Controles deslizantes</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Escolha como o painel Cor mostra a cor</translation>
     </message>
@@ -10546,6 +10542,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Clique na amostra de primeiro plano ou de fundo para escolher qual cor o painel edita</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>Controles deslizantes HSV</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>Controles deslizantes RGB</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>Controles deslizantes HSV + RGB</translation>
     </message>
 </context>
 <context>

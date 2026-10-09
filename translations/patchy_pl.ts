@@ -10562,10 +10562,6 @@ RGB: %2, %3, %4</translation>
         <translation>Koło + trójkąt</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Suwaki</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Wybierz, jak panel Kolor pokazuje kolor</translation>
     </message>
@@ -10576,6 +10572,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Kliknij próbkę koloru narzędzia lub tła, aby wybrać, który kolor edytuje panel</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>Suwaki HSV</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>Suwaki RGB</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>Suwaki HSV + RGB</translation>
     </message>
 </context>
 <context>

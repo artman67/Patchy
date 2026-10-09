@@ -10502,10 +10502,6 @@ Mixed selection</source>
         <translation>ホイール + 三角形</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>スライダー</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>カラーパネルでの色の表示方法を選択</translation>
     </message>
@@ -10516,6 +10512,18 @@ Mixed selection</source>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>描画色または背景色のスウォッチをクリックして、パネルで編集する色を選択</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>HSV スライダー</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>RGB スライダー</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>HSV + RGB スライダー</translation>
     </message>
 </context>
 <context>

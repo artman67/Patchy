@@ -10532,10 +10532,6 @@ RGB: %2, %3, %4</translation>
         <translation>Ruota + triangolo</translation>
     </message>
     <message>
-        <source>Sliders</source>
-        <translation>Cursori</translation>
-    </message>
-    <message>
         <source>Choose how the Color panel shows the color</source>
         <translation>Scegli come il pannello Colore mostra il colore</translation>
     </message>
@@ -10546,6 +10542,18 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Click the foreground or background swatch to choose which color the panel edits</source>
         <translation>Fai clic sul campione di primo piano o di sfondo per scegliere quale colore modifica il pannello</translation>
+    </message>
+    <message>
+        <source>HSV Sliders</source>
+        <translation>Cursori HSV</translation>
+    </message>
+    <message>
+        <source>RGB Sliders</source>
+        <translation>Cursori RGB</translation>
+    </message>
+    <message>
+        <source>HSV + RGB Sliders</source>
+        <translation>Cursori HSV + RGB</translation>
     </message>
 </context>
 <context>
