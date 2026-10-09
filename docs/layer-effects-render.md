@@ -27,7 +27,7 @@ Styled groups derive effects from their full child silhouette, including childre
 outside the canvas. The silhouette and isolation buffers span the children's
 render bounds only (`group_content_bounds_for_render`), never the group's own
 effect padding: effects paint straight into the destination, and Photoshop's
-30000 px shadow Distance would otherwise allocate that padding. Inner shadows
+30000 px shadow Distance would otherwise allocate that padding. The silhouette is cached with the effect masks (`StyleMaskKind::GroupSilhouette`, keyed by the children's render revisions); a preview override bypasses the cache only for a group whose own subtree it touches (`subtree_has_override`), so a styled group above a dragged layer keeps its cached silhouette (October 2026: thumbo.psd's 'Hand' folder re-flattened a canvas-sized smart object every move frame, ~100 ms). Inner shadows
 clamp each offset axis to the layer extent plus size + 2, past which every
 interior sample is already outside the layer. The UI caches that silhouette with the style masks and keys
 group entries on descendant render revisions. Strips and dirty rectangles share
