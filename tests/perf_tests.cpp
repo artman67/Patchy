@@ -1080,7 +1080,7 @@ void masked_layer_rotate_perf() {
     int width;
     int height;
   };
-  constexpr double kLiveFrameLatchMs = 100.0;  // live_preview_frame_latch_ms default
+  constexpr double kLiveFrameLatchMs = 50.0;  // live_preview_frame_latch_ms default
   for (const auto size : {Size{1920, 1080}, Size{4000, 3000}}) {
     double unmasked_median_ms = 0.0;
     // 0 = no mask, 1 = reveal-all mask (what Add Layer Mask creates), 2 = a

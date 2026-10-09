@@ -311,6 +311,18 @@ inline const LayerBoundsOverride* layer_override_for_render(const Layer& layer,
   return found == overrides->end() ? nullptr : &*found;
 }
 
+// Whether any preview override targets this layer or one of its descendants.
+inline bool subtree_has_override(const Layer& layer, const std::vector<LayerBoundsOverride>* overrides) {
+  if (overrides == nullptr || overrides->empty()) {
+    return false;
+  }
+  if (layer_override_for_render(layer, overrides) != nullptr) {
+    return true;
+  }
+  return std::any_of(layer.children().begin(), layer.children().end(),
+                     [overrides](const Layer& child) { return subtree_has_override(child, overrides); });
+}
+
 // Fill applies to a GROUP's content exactly as it does to a pixel layer's: the
 // content fades, the group's own effects do not (Photoshop 2026 flattens of
 // psd-tools' knockout-none-*.psd and passthrough_fill_*.psd, October 2026;
@@ -3898,8 +3910,11 @@ inline PixelBuffer group_silhouette_for_render(const Layer& layer, Rect bounds,
                                                 StyleMaskProvider* masks, const PatternStore* patterns) {
   // Full child coverage anchors every effect, independent of the caller's strip
   // or dirty rectangle. Cache it alongside effect masks to avoid re-flattening
-  // all child pixels per repaint. Transient geometry never enters that cache.
-  auto* cache = overrides == nullptr || overrides->empty() ? masks : nullptr;
+  // all child pixels per repaint. Transient geometry never enters that cache,
+  // but only a group whose subtree a preview override touches is transient: a
+  // styled group beside or above a dragged layer keeps its cached silhouette
+  // (re-flattening one around a canvas-sized smart object cost ~100 ms a frame).
+  auto* cache = subtree_has_override(layer, overrides) ? nullptr : masks;
   const auto prepared = style_mask_for_render(
       cache, layer, StyleMaskKind::GroupSilhouette, 0, bounds, bounds, bounds, bounds, std::nullopt,
       [&](Rect rect) {

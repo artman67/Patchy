@@ -627,7 +627,9 @@ QRect preview_scaled_document_rect(QRect rect, int level) noexcept {
 }
 
 int live_preview_frame_latch_ms() noexcept {
-  constexpr int kLivePreviewFrameLatchMs = 100;
+  // 50 ms = 20 fps. At 100 ms a drag under a styled folder could sit at 60-90 ms a frame,
+  // never latch, and stay visibly choppy for its whole length.
+  constexpr int kLivePreviewFrameLatchMs = 50;
   bool ok = false;
   const auto value = qEnvironmentVariableIntValue("PATCHY_MOVE_LIVE_LATCH_MS", &ok);
   return ok ? std::max(0, value) : kLivePreviewFrameLatchMs;
