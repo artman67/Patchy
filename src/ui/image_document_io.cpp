@@ -1163,8 +1163,13 @@ void apply_document_resolution(QImage& image, const Document& document) {
   image.setDotsPerMeterY(dots_per_meter_from_ppi(document.print_settings().vertical_ppi));
 }
 
+// `backdrop`, when given, is a document-sized RGBA8888 render of exactly the layers the
+// overrides hide below the first drawn top-level layer (render_layers_below_backdrop): the
+// render starts from it instead of a cleared image. The target stores 8-bit pixels after
+// every layer, so resuming from that image gives the same bytes as compositing them again.
 QImage render_document_rect(const Document& document, QRect document_rect, bool preserve_alpha,
-                            const std::vector<render_detail::LayerBoundsOverride>* overrides) {
+                            const std::vector<render_detail::LayerBoundsOverride>* overrides,
+                            const QImage* backdrop = nullptr) {
   const auto tracing = render_trace_enabled();
   const auto profiling = render_profile_enabled();
   RenderTraceStats trace_stats;
@@ -1189,13 +1194,15 @@ QImage render_document_rect(const Document& document, QRect document_rect, bool 
   const auto logical_alpha_render =
       !preserve_alpha && render_detail::layers_have_rendered_underlying_blend_if(document.layers());
   const auto target_preserves_alpha = preserve_alpha || logical_alpha_render;
-  QImage image(clip.width, clip.height,
-               target_preserves_alpha ? QImage::Format_RGBA8888 : QImage::Format_RGB888);
-  if (target_preserves_alpha) {
-    image.fill(Qt::transparent);
-  } else {
-    image.fill(Qt::white);
-  }
+  const auto start_image = [&](Rect rect) {
+    if (backdrop != nullptr) {
+      return backdrop->copy(rect.x, rect.y, rect.width, rect.height);
+    }
+    QImage started(rect.width, rect.height, target_preserves_alpha ? QImage::Format_RGBA8888 : QImage::Format_RGB888);
+    started.fill(target_preserves_alpha ? Qt::transparent : Qt::white);
+    return started;
+  };
+  QImage image = start_image(clip);
 
   // Large renders split into horizontal strips composited concurrently. Clip
   // rendering is exactly equivalent to full rendering (the dirty-rect patch
@@ -1229,14 +1236,9 @@ QImage render_document_rect(const Document& document, QRect document_rect, bool 
       const Rect strip_clip{clip.x, clip.y + start, clip.width, rows};
       strips.push_back(StripJob{
           strip_clip,
-          std::async(std::launch::async, [&document, strip_clip, target_preserves_alpha, overrides, masks] {
-            QImage strip_image(strip_clip.width, strip_clip.height,
-                               target_preserves_alpha ? QImage::Format_RGBA8888 : QImage::Format_RGB888);
-            if (target_preserves_alpha) {
-              strip_image.fill(Qt::transparent);
-            } else {
-              strip_image.fill(Qt::white);
-            }
+          std::async(std::launch::async, [&document, &start_image, strip_clip, target_preserves_alpha, overrides,
+                                          masks] {
+            QImage strip_image = start_image(strip_clip);
             QImageCompositeTarget strip_target(strip_image, target_preserves_alpha, strip_clip.x, strip_clip.y);
             render_detail::composite_sibling_layers(
                 strip_target, document.layers(), strip_clip, overrides, false, masks,
@@ -1666,6 +1668,84 @@ std::vector<RenderedDocumentPatch> qimage_patches_from_document_region_with_laye
   const std::vector<render_detail::LayerBoundsOverride> overrides{
       render_detail::LayerBoundsOverride{layer_id, layer_bounds, &layer_pixels}};
   return render_document_region(document, document_region, preserve_alpha, &overrides);
+}
+
+std::optional<std::size_t> layer_below_backdrop_index(const Document& document, LayerId layer_id) {
+  const auto& layers = document.layers();
+  for (std::size_t index = 0; index < layers.size(); ++index) {
+    if (layers[index].id() == layer_id) {
+      // A clipped layer belongs to the clip run of a base below it, which the
+      // backdrop would have flattened without it.
+      if (layers[index].clipped()) {
+        return std::nullopt;
+      }
+      return index;
+    }
+  }
+  return std::nullopt;  // nested in a group: its siblings and group effects can't be split off
+}
+
+namespace {
+
+std::vector<render_detail::LayerBoundsOverride> hide_top_level_layers(const Document& document, std::size_t begin,
+                                                                      std::size_t end) {
+  std::vector<render_detail::LayerBoundsOverride> overrides;
+  for (std::size_t index = begin; index < end; ++index) {
+    const auto& layer = document.layers()[index];
+    const auto bounds = layer.kind() == LayerKind::Adjustment ? layer.bounds() : layer_pixel_bounds(layer);
+    overrides.push_back(render_detail::LayerBoundsOverride{layer.id(), bounds, nullptr, std::nullopt, false});
+  }
+  return overrides;
+}
+
+}  // namespace
+
+std::uint64_t layers_below_backdrop_revision(const Document& document, LayerId layer_id) {
+  const auto index = layer_below_backdrop_index(document, layer_id);
+  if (!index.has_value()) {
+    return 0;
+  }
+  std::uint64_t key = 0x9e3779b97f4a7c15ULL ^ layer_id;
+  const auto mix = [&key](const Layer& layer, auto&& self) -> void {
+    key ^= layer.render_revision() + 0x9e3779b97f4a7c15ULL + (key << 6U) + (key >> 2U);
+    for (const auto& child : layer.children()) {
+      self(child, self);
+    }
+  };
+  for (std::size_t below = 0; below < *index; ++below) {
+    mix(document.layers()[below], mix);
+  }
+  return key;
+}
+
+QImage render_layers_below_backdrop(const Document& document, LayerId layer_id) {
+  const auto index = layer_below_backdrop_index(document, layer_id);
+  if (!index.has_value()) {
+    return {};
+  }
+  const auto overrides = hide_top_level_layers(document, *index, document.layers().size());
+  auto image = render_document_rect(document, QRect(0, 0, document.width(), document.height()), true, &overrides);
+  return image.format() == QImage::Format_RGBA8888 ? image : QImage();
+}
+
+std::vector<RenderedDocumentPatch> qimage_patches_over_backdrop_with_layer_pixels(
+    const Document& document, const QRegion& document_region, const QImage& backdrop, LayerId layer_id,
+    const PixelBuffer& layer_pixels, Rect layer_bounds) {
+  const auto index = layer_below_backdrop_index(document, layer_id);
+  if (!index.has_value() || backdrop.size() != QSize(document.width(), document.height()) ||
+      backdrop.format() != QImage::Format_RGBA8888) {
+    return qimage_patches_from_document_region_with_layer_pixels(document, document_region, true, layer_id,
+                                                                  layer_pixels, layer_bounds);
+  }
+  auto overrides = hide_top_level_layers(document, 0, *index);
+  overrides.push_back(render_detail::LayerBoundsOverride{layer_id, layer_bounds, &layer_pixels});
+  std::vector<RenderedDocumentPatch> patches;
+  for (const auto& rect : document_region.intersected(QRect(0, 0, document.width(), document.height()))) {
+    if (auto image = render_document_rect(document, rect, true, &overrides, &backdrop); !image.isNull()) {
+      patches.push_back(RenderedDocumentPatch{rect, std::move(image)});
+    }
+  }
+  return patches;
 }
 
 std::vector<RenderedDocumentPatch> qimage_patches_from_document_region_with_layer_pixel_overrides(

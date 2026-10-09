@@ -2360,6 +2360,12 @@ private:
   // hull -> Trnf homography, for pixel layers the layer-bounds translation).
   bool prepare_warp_source();
   void refresh_warp_preview_cache();
+  // Drag-time warp refreshes (Warp handles, Puppet pins, Perspective corners) only mark
+  // the preview stale and request a repaint; paintEvent rebuilds it once. A pen streams
+  // far more moves than the screen shows, and rebuilding the preview inside every event
+  // queued seconds of work behind a slow layer.
+  void queue_warp_preview_refresh();
+  void flush_warp_preview_refresh();
   [[nodiscard]] std::array<double, 8> warp_document_quad() const;
   // Bakes (mesh, content->document map) into the layer at commit quality and, for
   // smart objects, writes the mesh + hull-quad placement metadata. Shared by the
@@ -3214,6 +3220,11 @@ private:
   double warp_style_value_{0.0};
   QImage warp_source_image_{};
   QImage warp_base_cache_{};
+  bool warp_preview_refresh_queued_{false};
+  // Render of the top-level layers under the warped layer (render_layers_below_backdrop),
+  // keyed by layers_below_backdrop_revision; null when the layer is nested or clipped.
+  QImage warp_below_cache_{};
+  std::uint64_t warp_below_cache_key_{0};
   // Level the warp base was composited at (preview-scaled document); 0 = full-res.
   int warp_base_cache_scale_level_{0};
   std::vector<QImage> warp_base_display_mip_cache_{};

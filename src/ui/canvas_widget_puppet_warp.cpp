@@ -451,8 +451,7 @@ void CanvasWidget::handle_puppet_warp_move(QMouseEvent* event) {
     pin.x = puppet_.drag_origins[i].x() + delta.x();
     pin.y = puppet_.drag_origins[i].y() + delta.y();
   }
-  refresh_puppet_warp_preview();
-  update();
+  queue_warp_preview_refresh();
 }
 
 void CanvasWidget::handle_puppet_warp_release() {
@@ -574,6 +573,8 @@ void CanvasWidget::commit_puppet_warp() {
 void CanvasWidget::reset_puppet_warp_state() {
   puppet_ = PuppetWarpSession{};
   warp_base_cache_ = QImage();
+  warp_below_cache_ = QImage();
+  warp_below_cache_key_ = 0;
   warp_base_cache_scale_level_ = 0;
   warp_base_display_mip_cache_.clear();
   warp_base_display_mip_source_key_ = 0;

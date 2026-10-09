@@ -266,6 +266,54 @@ void styled_group_shadow_window_patches_match_full_render() {
   }
 }
 
+// Warp previews start from a render of the top-level layers under the warped layer
+// (qimage_patches_over_backdrop_with_layer_pixels). With a styled layer, an invert
+// adjustment and a clipped layer above it, the result must match the full render.
+void warp_backdrop_patches_match_full_render() {
+  patchy::Document document(160, 120, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Backdrop", solid_rgba(160, 120, 200, 180, 90, 150));
+  patchy::Layer below(document.allocate_layer_id(), "Below", solid_rgba(70, 50, 20, 120, 220, 160));
+  below.set_bounds({10, 10, 70, 50});
+  document.add_layer(std::move(below));
+  patchy::Layer warped(document.allocate_layer_id(), "Warped", solid_rgba(60, 40, 230, 40, 40, 255));
+  warped.set_bounds({40, 30, 60, 40});
+  patchy::LayerDropShadow shadow;
+  shadow.enabled = true;
+  shadow.opacity = 0.7F;
+  shadow.distance = 6.0F;
+  shadow.size = 5.0F;
+  warped.layer_style().drop_shadows.push_back(shadow);
+  const auto warped_id = warped.id();
+  document.add_layer(std::move(warped));
+  patchy::Layer clipped(document.allocate_layer_id(), "Clipped", solid_rgba(30, 30, 0, 255, 0, 200));
+  clipped.set_bounds({50, 40, 30, 30});
+  clipped.set_clipped(true);
+  document.add_layer(std::move(clipped));
+  patchy::AdjustmentSettings invert;
+  invert.kind = patchy::AdjustmentKind::Invert;
+  patchy::Layer adjustment(document.allocate_layer_id(), "Invert", patchy::LayerKind::Adjustment);
+  patchy::configure_adjustment_layer(adjustment, invert);
+  adjustment.set_opacity(0.5F);
+  document.add_layer(std::move(adjustment));
+
+  CHECK(patchy::ui::layer_below_backdrop_index(document, warped_id) == std::optional<std::size_t>{2});
+  const auto backdrop = patchy::ui::render_layers_below_backdrop(document, warped_id);
+  CHECK(!backdrop.isNull());
+  const auto moved_pixels = solid_rgba(50, 45, 10, 200, 90, 220);
+  const patchy::Rect moved_bounds{70, 50, 50, 45};
+  const QRegion region(QRect(20, 15, 120, 95));
+  const auto fast = patchy::ui::qimage_patches_over_backdrop_with_layer_pixels(document, region, backdrop, warped_id,
+                                                                              moved_pixels, moved_bounds);
+  const auto full = patchy::ui::qimage_patches_from_document_region_with_layer_pixels(document, region, true,
+                                                                                       warped_id, moved_pixels,
+                                                                                       moved_bounds);
+  CHECK(fast.size() == full.size());
+  for (std::size_t index = 0; index < std::min(fast.size(), full.size()); ++index) {
+    CHECK(fast[index].document_rect == full[index].document_rect);
+    CHECK(fast[index].image == full[index].image);
+  }
+}
+
 void group_clipped_adjustment_preview_keeps_backdrop_and_tracks_child_move() {
   for (const auto mode : {patchy::BlendMode::PassThrough, patchy::BlendMode::Normal}) {
     patchy::Document document(300, 200, patchy::PixelFormat::rgb8());
@@ -355,6 +403,7 @@ std::vector<patchy::test::TestCase> composite_render_tests() {
       {"styled_group_partial_render_and_child_edit_match_full_render", styled_group_partial_render_and_child_edit_match_full_render},
       {"styled_group_parallel_strips_match_single_threaded", styled_group_parallel_strips_match_single_threaded},
       {"styled_group_shadow_window_patches_match_full_render", styled_group_shadow_window_patches_match_full_render},
+      {"warp_backdrop_patches_match_full_render", warp_backdrop_patches_match_full_render},
       {"group_clipped_adjustment_preview_keeps_backdrop_and_tracks_child_move",
        group_clipped_adjustment_preview_keeps_backdrop_and_tracks_child_move},
       {"backglass_group_clipped_invert_preview_matches_photoshop_if_available",
