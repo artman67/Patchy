@@ -520,6 +520,16 @@ private:
   void build_zoom_tool_options(OptionsBarBuildContext& bar);
   void build_type_tool_options(OptionsBarBuildContext& bar);
   void build_rotate_view_options(OptionsBarBuildContext& bar);
+  // load_tool_settings()'s per-tool-family steps, run in this order once a
+  // canvas exists (main_window_tool_settings.cpp), and refresh_options_bar()'s
+  // mirror of the tool option values into their controls
+  // (main_window_tool_options.cpp).
+  void load_brush_tool_settings(QSettings& settings);
+  void load_selection_and_transform_tool_settings(QSettings& settings);
+  void load_crop_and_retouch_tool_settings(QSettings& settings);
+  void load_shape_tool_settings(QSettings& settings);
+  void load_fill_zoom_gradient_and_type_settings(QSettings& settings);
+  void refresh_option_control_values(bool edit_allowed);
   void configure_window_chrome();
   void position_window_chrome_controls();
   void ensure_native_resizable_frame();

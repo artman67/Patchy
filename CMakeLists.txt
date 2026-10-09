@@ -1118,6 +1118,9 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/main_window_theme.cpp
       src/ui/main_window_paths.cpp
       src/ui/main_window_tool_options.cpp
+      src/ui/main_window_tool_settings.cpp
+      src/ui/main_window_layer_controls.cpp
+      src/ui/main_window_colors.cpp
       src/ui/main_window_vector.cpp
       src/ui/paths_panel.hpp
       src/ui/paths_panel.cpp
