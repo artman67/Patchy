@@ -132,6 +132,10 @@ void CurrentBrush::pick_tip(const QString& tip_id, const BrushTipEntry* entry,
       next.airbrush = *entry->tool_airbrush;
       changes |= Airbrush;
     }
+    if (apply_tool_settings && entry->default_size.has_value()) {
+      next.size = std::clamp(*entry->default_size, 1, kMaxBrushSize);  // an imported preset's size
+      changes |= Size;
+    }
   } else {
     // replace() keeps procedural_ in step with every procedural brush; Round and Square share it.
     next.angle = procedural_.angle;

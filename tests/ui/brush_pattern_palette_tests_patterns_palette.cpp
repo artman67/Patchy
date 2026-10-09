@@ -264,7 +264,7 @@ void ui_brush_tip_abr_import_populates_library_and_picker() {
   const auto* first_entry = library.find_entry(first_id);
   CHECK(first_entry != nullptr);
   CHECK(first_entry->name == QStringLiteral("Individual Tree 001"));
-  CHECK(first_entry->size == QSize(36, 36));
+  CHECK(first_entry->size == QSize(55, 78));  // its own tip by sampledData uuid, not file order
   CHECK(!first_entry->thumbnail.isNull());
 
   window.set_active_brush_tip(first_id, false);
@@ -2117,7 +2117,8 @@ void ui_brush_tip_folders_and_bulk_delete() {
   show_window(window);
   auto& library = window.brush_tip_library();
 
-  // Imported sets land in a folder named after the file.
+  // Imported sets land in a folder named after the file, with the file's own preset folders
+  // ('phry') nested below it as "File / Group / Sub".
   QString error;
   QStringList warnings;
   const auto fixture =
@@ -2125,8 +2126,12 @@ void ui_brush_tip_folders_and_bulk_delete() {
   const auto first_id = library.import_abr(fixture, error, warnings);
   CHECK(!first_id.isEmpty());
   CHECK(library.entries().size() == 148);
-  CHECK(library.folders() == QStringList{QStringLiteral("myer-settlement-brushes")});
-  CHECK(library.find_entry(first_id)->folder == QStringLiteral("myer-settlement-brushes"));
+  CHECK(library.folders().size() == 12);
+  for (const auto& folder : library.folders()) {
+    CHECK(folder.startsWith(QStringLiteral("myer-settlement-brushes / ")));
+  }
+  CHECK(library.find_entry(first_id)->folder ==
+        QStringLiteral("myer-settlement-brushes / Flora / Individual Trees"));
 
   const auto loose_id = library.add_tip(QStringLiteral("Loose"), make_bar_tip_image(), 0.25);
   CHECK(!loose_id.isEmpty());
@@ -2146,7 +2151,7 @@ void ui_brush_tip_folders_and_bulk_delete() {
   });
   QStringList doomed;
   for (const auto& entry : library.entries()) {
-    if (entry.folder == QStringLiteral("myer-settlement-brushes")) {
+    if (entry.folder.startsWith(QStringLiteral("myer-settlement-brushes"))) {
       doomed.append(entry.id);
     }
   }

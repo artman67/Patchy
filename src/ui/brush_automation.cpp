@@ -58,6 +58,11 @@ QJsonObject dynamics(const QJsonObject& overrides, const BrushDynamics& base) {
       const auto token = string(overrides, k);
       if (k == "textureStyle") {
         if (!QStringList{"fineGrain", "canvas", "speckle"}.contains(token)) invalid(k);
+      } else if (k == "textureMode") {
+        if (!QStringList{"multiply", "subtract", "darken", "overlay", "colorDodge", "colorBurn",
+                         "linearBurn", "hardMix", "linearHeight", "height"}.contains(token)) invalid(k);
+      } else if (k == "texturePatternId" || k == "texturePatternName") {
+        // Free text: an id the Pattern library lacks paints with the procedural grain.
       } else {
         QStringList allowed{"off", "fade", "penPressure", "penTilt", "penRotation", "stylusWheel"};
         if (k == "angleControl") allowed << "direction" << "initialDirection";
@@ -74,6 +79,8 @@ QJsonObject dynamics(const QJsonObject& overrides, const BrushDynamics& base) {
       else if (k == "dualBrushSize") { lo = .05; hi = 4; }
       else if (k == "dualBrushSpacing") { lo = .1; hi = 10; }
       else if (k == "purity") lo = -1;
+      else if (k == "textureBrightness") { lo = -150; hi = 150; }
+      else if (k == "textureContrast") { lo = -50; hi = 100; }
       (void)number(overrides, k, 0, lo, hi, integral);
     }
     out[k] = it.value();

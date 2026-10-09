@@ -21,6 +21,7 @@
 #include "ui/image_document_io.hpp"
 #include "ui/localization.hpp"
 #include "ui/new_brush_preset_dialog.hpp"
+#include "ui/pattern_library.hpp"
 
 #include <QAction>
 #include <QComboBox>
@@ -38,6 +39,7 @@
 #include <cmath>
 #include <exception>
 #include <functional>
+#include <optional>
 #include <utility>
 
 namespace patchy::ui {
@@ -84,6 +86,9 @@ void MainWindow::push_current_brush_to_canvas(CanvasWidget* canvas, unsigned cha
     // Brush strokes only: erase strokes strip them, and a dynamics-active Round or Square
     // stamps through a synthesized disc or square tip inside CanvasWidget.
     canvas->set_brush_dynamics(brush.dynamics);
+    const auto& pattern_id = brush.dynamics.texture_pattern_id;
+    canvas->set_brush_texture_pattern(
+        pattern_id.empty() ? std::nullopt : pattern_library().resource(QString::fromStdString(pattern_id)));
   }
   if (!eraser_brush_settings_active_) {
     if ((changes & CurrentBrush::Size) != 0U) canvas->set_brush_size(brush.size);

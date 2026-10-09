@@ -8913,6 +8913,42 @@ RGB: %2, %3, %4</source>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9704,6 +9740,14 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

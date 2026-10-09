@@ -572,6 +572,10 @@ public:
   [[nodiscard]] int brush_base_roundness() const noexcept;
   // UI-test hook: fixes the per-stroke dynamics RNG seed so stroke artifacts are reproducible.
   void set_brush_dynamics_test_seed(std::optional<quint32> seed) noexcept;
+  // The Pattern library tile for brush_dynamics().texture_pattern_id, pushed by MainWindow
+  // (nullopt when the brush names none or the library lacks it: the procedural grain applies).
+  void set_brush_texture_pattern(std::optional<PatternResource> pattern);
+  [[nodiscard]] bool has_brush_texture_pattern() const noexcept;
   void set_gradient_method(GradientMethod method) noexcept;
   [[nodiscard]] GradientMethod gradient_method() const noexcept;
   void set_gradient_reverse(bool reverse) noexcept;
@@ -2382,6 +2386,8 @@ private:
       brush_tip_scaled_cache_;
   patchy::BrushTipStrokeState brush_tip_stroke_state_;
   patchy::BrushDynamics brush_dynamics_{};
+  std::string brush_texture_pattern_id_;
+  std::shared_ptr<const patchy::BrushTextureTile> brush_texture_tile_;
   double brush_base_angle_degrees_{0.0};
   int brush_base_roundness_{100};
   std::optional<quint32> brush_dynamics_test_seed_;

@@ -399,6 +399,8 @@ struct TipDabTransform {
   transform.cos_angle = std::cos(angle);
   transform.sin_angle = std::sin(angle);
   transform.inverse_roundness = 100.0 / static_cast<double>(brush_roundness_percent(options));
+  transform.flip_x_sign = options.brush_flip_x ? -1.0 : 1.0;
+  transform.flip_y_sign = options.brush_flip_y ? -1.0 : 1.0;
   return transform;
 }
 
@@ -414,8 +416,9 @@ struct TipDabTransform {
                  0.01, 1.0);
   transform.inverse_roundness = 1.0 / roundness_fraction;
   transform.inverse_scale = 1.0 / std::clamp(variation.scale, 0.01, 1.0);
-  transform.flip_x_sign = variation.flip_x ? -1.0 : 1.0;
-  transform.flip_y_sign = variation.flip_y ? -1.0 : 1.0;
+  // A flip jitter mirrors the statically flipped tip again (Photoshop combines them the same way).
+  transform.flip_x_sign = variation.flip_x != options.brush_flip_x ? -1.0 : 1.0;
+  transform.flip_y_sign = variation.flip_y != options.brush_flip_y ? -1.0 : 1.0;
   return transform;
 }
 
@@ -455,43 +458,110 @@ struct TipDabTransform {
   return hash;
 }
 
+// One wrapped, world-anchored sample of a pattern tile at the texture scale: nearest at 100%
+// (texels land on pixels), bilinear between texel centers otherwise.
+[[nodiscard]] float pattern_brush_texture(const BrushTextureTile& tile, double scale, std::int32_t x,
+                                          std::int32_t y) noexcept {
+  const auto wrap = [](std::int64_t value, std::int32_t extent) {
+    const auto wrapped = value % extent;
+    return static_cast<std::int32_t>(wrapped < 0 ? wrapped + extent : wrapped);
+  };
+  const auto texel = [&tile, &wrap](std::int64_t tx, std::int64_t ty) {
+    return static_cast<float>(
+        tile.gray[static_cast<std::size_t>(wrap(ty, tile.height)) * static_cast<std::size_t>(tile.width) +
+                  static_cast<std::size_t>(wrap(tx, tile.width))]);
+  };
+  if (std::abs(scale - 1.0) < 1e-9) {
+    return texel(x, y) / 255.0F;
+  }
+  const auto u = (static_cast<double>(x) + 0.5) / scale - 0.5;
+  const auto v = (static_cast<double>(y) + 0.5) / scale - 0.5;
+  const auto u0 = std::floor(u);
+  const auto v0 = std::floor(v);
+  const auto fx = static_cast<float>(u - u0);
+  const auto fy = static_cast<float>(v - v0);
+  const auto ix = static_cast<std::int64_t>(u0);
+  const auto iy = static_cast<std::int64_t>(v0);
+  const auto top = texel(ix, iy) + (texel(ix + 1, iy) - texel(ix, iy)) * fx;
+  const auto bottom = texel(ix, iy + 1) + (texel(ix + 1, iy + 1) - texel(ix, iy + 1)) * fx;
+  return (top + (bottom - top) * fy) / 255.0F;
+}
+
 // Patent boundary: this is one static grayscale function of document coordinates and saved
-// brush settings. It never receives pressure, direction, velocity, tilt, rotation, or a color
-// channel, and never assembles a runtime texture from weighted channels.
-[[nodiscard]] float static_brush_texture(const BrushDynamics& dynamics, std::int32_t x,
-                                         std::int32_t y) noexcept {
+// brush settings (a procedural grain or one fixed pattern tile, then fixed brightness/contrast).
+// It never receives pressure, direction, velocity, tilt, rotation, or a color channel, and never
+// assembles a runtime texture from weighted channels.
+[[nodiscard]] float static_brush_texture(const BrushDynamics& dynamics, const BrushTextureTile* tile,
+                                         std::int32_t x, std::int32_t y) noexcept {
   const auto scale = std::clamp(dynamics.texture_scale, 0.01, 10.0);
   float value = 1.0F;
-  switch (dynamics.texture_style) {
-    case BrushTextureStyle::FineGrain: {
-      const auto cell = std::max(1.0, 3.0 * scale);
-      const auto gx = static_cast<std::int32_t>(std::floor(static_cast<double>(x) / cell));
-      const auto gy = static_cast<std::int32_t>(std::floor(static_cast<double>(y) / cell));
-      value = static_cast<float>(brush_texture_hash(gx, gy, dynamics.texture_seed) & 0xFFFFU) /
-              65535.0F;
-      break;
-    }
-    case BrushTextureStyle::Canvas: {
-      const auto period = std::max(2, static_cast<int>(std::lround(6.0 * scale)));
-      const auto positive_mod = [period](std::int32_t coordinate) {
-        const auto mod = coordinate % period;
-        return mod < 0 ? mod + period : mod;
-      };
-      const auto warp = positive_mod(x) <= std::max(1, period / 4);
-      const auto weft = positive_mod(y) <= std::max(1, period / 4);
-      value = warp || weft ? 0.95F : 0.28F;
-      break;
-    }
-    case BrushTextureStyle::Speckle: {
-      const auto cell = std::max(1.0, 2.0 * scale);
-      const auto gx = static_cast<std::int32_t>(std::floor(static_cast<double>(x) / cell));
-      const auto gy = static_cast<std::int32_t>(std::floor(static_cast<double>(y) / cell));
-      const auto random = brush_texture_hash(gx, gy, dynamics.texture_seed) & 0xFFU;
-      value = random < 82U ? 0.18F : 1.0F;
-      break;
+  if (tile != nullptr && !tile->empty()) {
+    value = pattern_brush_texture(*tile, scale, x, y);
+  } else {
+    switch (dynamics.texture_style) {
+      case BrushTextureStyle::FineGrain: {
+        const auto cell = std::max(1.0, 3.0 * scale);
+        const auto gx = static_cast<std::int32_t>(std::floor(static_cast<double>(x) / cell));
+        const auto gy = static_cast<std::int32_t>(std::floor(static_cast<double>(y) / cell));
+        value = static_cast<float>(brush_texture_hash(gx, gy, dynamics.texture_seed) & 0xFFFFU) /
+                65535.0F;
+        break;
+      }
+      case BrushTextureStyle::Canvas: {
+        const auto period = std::max(2, static_cast<int>(std::lround(6.0 * scale)));
+        const auto positive_mod = [period](std::int32_t coordinate) {
+          const auto mod = coordinate % period;
+          return mod < 0 ? mod + period : mod;
+        };
+        const auto warp = positive_mod(x) <= std::max(1, period / 4);
+        const auto weft = positive_mod(y) <= std::max(1, period / 4);
+        value = warp || weft ? 0.95F : 0.28F;
+        break;
+      }
+      case BrushTextureStyle::Speckle: {
+        const auto cell = std::max(1.0, 2.0 * scale);
+        const auto gx = static_cast<std::int32_t>(std::floor(static_cast<double>(x) / cell));
+        const auto gy = static_cast<std::int32_t>(std::floor(static_cast<double>(y) / cell));
+        const auto random = brush_texture_hash(gx, gy, dynamics.texture_seed) & 0xFFU;
+        value = random < 82U ? 0.18F : 1.0F;
+        break;
+      }
     }
   }
+  if (dynamics.texture_brightness != 0.0 || dynamics.texture_contrast != 0.0) {
+    // Photoshop ranges: Brightness -150..150 shifts by up to a full tone range, Contrast -50..100
+    // scales around mid-gray from flat (-50) to 3x (100).
+    const auto contrast =
+        1.0F + static_cast<float>(std::clamp(dynamics.texture_contrast, -50.0, 100.0)) / 50.0F;
+    const auto brightness =
+        static_cast<float>(std::clamp(dynamics.texture_brightness, -150.0, 150.0)) / 150.0F;
+    value = std::clamp((value - 0.5F) * contrast + 0.5F + brightness, 0.0F, 1.0F);
+  }
   return dynamics.texture_invert ? 1.0F - value : value;
+}
+
+// Noise threshold for one document pixel in [0, 1): the splitmix64 finalizer over the pixel
+// coordinates with a fixed salt and an explicit 24-bit uniform mapping, so every toolchain
+// produces the same grain. Static by design (see BrushDynamics::noise).
+[[nodiscard]] float brush_noise_threshold(std::int32_t x, std::int32_t y) noexcept {
+  auto z = (static_cast<std::uint64_t>(static_cast<std::uint32_t>(x)) << 32U) ^
+           static_cast<std::uint64_t>(static_cast<std::uint32_t>(y)) ^ 0x6E6F697365ULL;
+  z += 0x9E3779B97F4A7C15ULL;
+  z = (z ^ (z >> 30U)) * 0xBF58476D1CE4E5B9ULL;
+  z = (z ^ (z >> 27U)) * 0x94D049BB133111EBULL;
+  z ^= z >> 31U;
+  return static_cast<float>(z >> 40U) * 0x1.0p-24F;
+}
+
+// Pulls a soft coverage value most of the way toward hard 0/1 against the static threshold,
+// which reads as grain along soft edges; fully covered and empty pixels are unchanged.
+[[nodiscard]] float apply_brush_noise(float coverage, std::int32_t x, std::int32_t y) noexcept {
+  if (coverage >= 1.0F) {
+    return coverage;
+  }
+  constexpr float kNoiseStrength = 0.75F;
+  const auto hard = brush_noise_threshold(x, y) < coverage ? 1.0F : 0.0F;
+  return coverage + (hard - coverage) * kNoiseStrength;
 }
 
 [[nodiscard]] float dual_brush_coverage(const BrushDynamics& dynamics,
@@ -1306,15 +1376,21 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
       if (coverage <= 0.0F) {
         continue;
       }
+      if (options.brush_dynamics.noise) {
+        coverage = apply_brush_noise(coverage, px_doc, py);
+      }
       if (options.brush_dynamics.dual_brush_enabled) {
         coverage *= dual_brush_coverage(options.brush_dynamics, transform, offset_x, offset_y,
                                         options.brush_size);
       }
       if (options.brush_dynamics.texture_enabled && options.brush_dynamics.texture_depth > 0.0) {
-        const auto grain = static_brush_texture(options.brush_dynamics, px_doc, py);
+        // The dab's opacity/flow multipliers (where pressure and other inputs enter) apply below,
+        // after the texture: the mode combines only static values.
+        const auto grain =
+            static_brush_texture(options.brush_dynamics, options.brush_texture_tile, px_doc, py);
         const auto depth = static_cast<float>(
             std::clamp(options.brush_dynamics.texture_depth, 0.0, 1.0));
-        coverage *= 1.0F - depth * (1.0F - grain);
+        coverage = combine_brush_texture(options.brush_dynamics.texture_mode, coverage, grain, depth);
       }
       if (coverage <= 0.0F) {
         continue;
@@ -1349,6 +1425,31 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
     report_edit_progress(options);
   }
   return dirty;
+}
+
+BrushTextureTile make_brush_texture_tile(const PixelBuffer& pattern) {
+  BrushTextureTile tile;
+  const auto channels = pattern.format().channels;
+  if (pattern.width() <= 0 || pattern.height() <= 0 || channels < 3) {
+    return tile;
+  }
+  tile.width = pattern.width();
+  tile.height = pattern.height();
+  tile.gray.resize(static_cast<std::size_t>(tile.width) * static_cast<std::size_t>(tile.height));
+  for (std::int32_t y = 0; y < tile.height; ++y) {
+    const auto* row = pattern.pixel(0, y);
+    for (std::int32_t x = 0; x < tile.width; ++x) {
+      const auto* px = row + static_cast<std::size_t>(x) * channels;
+      // The pattern sampler's Blend-If luminance weights; transparency reads as white (no
+      // texture), like an unpatterned surface.
+      const auto luminance = (299 * px[0] + 590 * px[1] + 111 * px[2] + 500) / 1000;
+      const auto alpha = channels >= 4 ? px[3] : 255;
+      tile.gray[static_cast<std::size_t>(y) * static_cast<std::size_t>(tile.width) +
+                static_cast<std::size_t>(x)] =
+          static_cast<std::uint8_t>((luminance * alpha + 255 * (255 - alpha) + 127) / 255);
+    }
+  }
+  return tile;
 }
 
 Rect paint_brush_dab(Document& document, LayerId layer_id, double x, double y, const EditOptions& options,

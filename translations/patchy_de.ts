@@ -8923,6 +8923,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>Die Pixelmaße sind gesperrt. Nur die Druckauflösung und die Druckgröße ändern sich.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Pinselprojektion</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Pinselhaltung</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Nässe- und Mischungs-Jitter</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Struktur schützen</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Neigungsskalierung</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Modus des Dualpinsels</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Streuung und Spiegelung des Dualpinsels</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Abstand ausgeschaltet</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>Die Datei enthält keine verwendbaren Pinsel</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9715,6 +9751,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Aus &quot;%1&quot; konnten keine Pinselspitzen importiert werden.</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Photoshop-Einstellungen ohne Entsprechung in Patchy wurden ausgelassen: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Strukturmuster wurden weder in der Datei noch in der Musterbibliothek gefunden, daher wird eine erzeugte Körnung verwendet: %1</translation>
     </message>
 </context>
 <context>

@@ -50,6 +50,16 @@ struct ScaledBrushTip {
 // tips.
 void soften_scaled_brush_tip(ScaledBrushTip& tip, int feather_pixels);
 
+// A Brush Texture source tile: 8-bit luminance (255 = the surface's high points that take
+// paint), row-major, sampled with wraparound in document space.
+struct BrushTextureTile {
+  std::int32_t width{0};
+  std::int32_t height{0};
+  std::vector<std::uint8_t> gray;
+
+  [[nodiscard]] bool empty() const noexcept { return width <= 0 || height <= 0 || gray.empty(); }
+};
+
 // Carries dab-spacing progress across the short segments the canvas stroke smoother emits, so
 // dab placement is uniform along the whole stroke instead of clustering at segment joins. Also
 // owns the per-stroke dynamics state: the RNG (seeded from EditOptions::brush_dynamics.seed on

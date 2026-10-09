@@ -32,6 +32,7 @@ std::vector<patchy::test::TestCase> camera_raw_heif_tests();
 std::vector<patchy::test::TestCase> layer_mask_tests();
 std::vector<patchy::test::TestCase> pen_tablet_input_tests();
 std::vector<patchy::test::TestCase> brush_engine_stroke_tests();
+std::vector<patchy::test::TestCase> brush_tip_engine_tests();
 std::vector<patchy::test::TestCase> text_editor_font_picker_tests();
 std::vector<patchy::test::TestCase> psd_text_import_tests();
 std::vector<patchy::test::TestCase> text_transform_commit_tests();

@@ -708,6 +708,7 @@ int stored_default_asset_version(const QSettings& settings, const QString& key) 
 BrushTipLibrary& MainWindow::brush_tip_library() {
   if (brush_tip_library_ == nullptr) {
     brush_tip_library_ = new BrushTipLibrary({}, this);
+    brush_tip_library_->set_pattern_library(&pattern_library());  // ABR-embedded textures
     // Seed the built-in bitmap tips once. The version gate (not an emptiness check) means a
     // user who deletes some or all of them is respected — they never come back on their own;
     // the manager's "Restore Defaults" button brings them back on demand. On upgrade only tips
@@ -735,6 +736,7 @@ PatternLibrary& MainWindow::pattern_library() {
     connect(pattern_library_, &PatternLibrary::changed, this, [this] {
       refresh_pattern_stamp_pattern_combo();
       apply_pattern_stamp_settings_to_canvas(canvas_);
+      push_current_brush_to_canvas(canvas_, CurrentBrush::Dynamics);  // a Brush Texture pattern
       schedule_save_tool_settings();
     });
     // Seed code-generated defaults once. A user deletion stays deleted across

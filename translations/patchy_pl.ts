@@ -8953,6 +8953,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>Wymiary w pikselach są zablokowane. Zmieniają się tylko rozdzielczość i rozmiar wydruku.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Projekcja pędzla</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Pozycja pędzla</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Rozrzut wilgotności i mieszania</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Chroń teksturę</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Skala nachylenia</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Tryb pędzla podwójnego</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Rozpraszanie i odbicie pędzla podwójnego</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Odstępy wyłączone</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>Plik nie zawiera użytecznych pędzli</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9745,6 +9781,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Nie można zaimportować żadnych końcówek pędzli z &quot;%1&quot;.</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Pominięto ustawienia Photoshopa bez odpowiednika w Patchy: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Nie znaleziono wzorków tekstury w pliku ani w bibliotece wzorków, więc użyto wygenerowanego ziarna: %1</translation>
     </message>
 </context>
 <context>

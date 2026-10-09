@@ -89,6 +89,13 @@ interface PatchyBrushDynamics {
   textureEnabled?: boolean; textureStyle?: "fineGrain" | "canvas" | "speckle";
   /** Static grain scale .01..10, depth 0..1, unsigned 32-bit seed. */
   textureScale?: number; textureDepth?: number; textureInvert?: boolean; textureSeed?: number;
+  /** How the static texture combines with tip coverage (Photoshop's texture Mode). */
+  textureMode?: "multiply" | "subtract" | "darken" | "overlay" | "colorDodge" | "colorBurn" |
+    "linearBurn" | "hardMix" | "linearHeight" | "height";
+  /** Photoshop units: brightness -150..150, contrast -50..100. */
+  textureBrightness?: number; textureContrast?: number;
+  /** Pattern library id used as the texture; "" or a missing id uses textureStyle. */
+  texturePatternId?: string; texturePatternName?: string;
   dualBrushEnabled?: boolean;
   /** Secondary size .05..4, hardness 0..1, spacing .1..10. */
   dualBrushSize?: number; dualBrushHardness?: number; dualBrushSpacing?: number;
@@ -99,6 +106,10 @@ interface PatchyBrushDynamics {
   purity?: number; colorPerTip?: boolean;
   /** Whole-stroke wash boundary treatment, not Mixer pickup. Disabled in palette mode. */
   wetEdges?: boolean;
+  /** Static grain on soft tip edges. */
+  noise?: boolean;
+  /** Static Brush Tip Shape mirrors (not jitter). */
+  tipFlipX?: boolean; tipFlipY?: boolean;
 }
 interface PatchyBrushSettings {
   /** Default brush; Mixer uses Flow with its native full opacity. */

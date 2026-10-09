@@ -878,6 +878,163 @@ void tool_brush_texture_and_dual_brush_render_deterministically() {
 
 }
 
+void tool_brush_noise_grains_soft_edges_without_rng_draws() {
+  // A radial soft tip: full coverage in the middle, a long falloff to the rim.
+  patchy::BrushTip soft;
+  soft.width = 21;
+  soft.height = 21;
+  soft.mask.resize(21U * 21U);
+  for (std::int32_t y = 0; y < 21; ++y) {
+    for (std::int32_t x = 0; x < 21; ++x) {
+      const auto distance = std::hypot(static_cast<double>(x) - 10.0, static_cast<double>(y) - 10.0);
+      soft.mask[static_cast<std::size_t>(y) * 21U + static_cast<std::size_t>(x)] =
+          static_cast<std::uint8_t>(std::clamp(std::lround((11.0 - distance) * 51.0), 0L, 255L));
+    }
+  }
+  const auto tip = patchy::make_scaled_brush_tip(patchy::build_brush_tip_mips(soft), 21);
+  const auto plain = render_effect_dab(tip, {});
+  patchy::BrushDynamics noisy;
+  noisy.noise = true;
+  CHECK(noisy.active());
+  const auto grained = render_effect_dab(tip, noisy);
+  CHECK(grained != plain);
+  CHECK(render_effect_dab(tip, noisy) == grained);  // static grain, no per-run randomness
+  // Fully covered pixels keep their value; only the soft rim changes. The dab is centered at
+  // (24, 24) on a 64 px wide RGBA layer.
+  const auto alpha_at = [](const std::vector<std::uint8_t>& bytes, int x, int y) {
+    return bytes[(static_cast<std::size_t>(y) * 64U + static_cast<std::size_t>(x)) * 4U + 3U];
+  };
+  CHECK(alpha_at(grained, 24, 24) == alpha_at(plain, 24, 24));
+  int changed_rim = 0;
+  for (int x = 24 - 10; x <= 24 + 10; ++x) {
+    changed_rim += alpha_at(grained, x, 31) != alpha_at(plain, x, 31) ? 1 : 0;
+  }
+  CHECK(changed_rim > 3);
+
+  // The RNG draw-order contract: noise adds no draws, so a scattered stroke consumes the same
+  // stream (and places the same dabs) with or without it.
+  const auto rng_after = [&tip](bool noise) {
+    auto document = make_tool_document();
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 21;
+    options.brush_tip = &tip;
+    options.brush_dynamics.scatter = 0.5;
+    options.brush_dynamics.size_jitter = 0.3;
+    options.brush_dynamics.noise = noise;
+    options.brush_dynamics.seed = 7;
+    patchy::BrushTipStrokeState state;
+    (void)patchy::paint_brush_segment(document, active_tool_layer(document), 5.0, 20.0, 55.0, 30.0,
+                                      options, false, state);
+    return state.rng.state;
+  };
+  CHECK(rng_after(true) == rng_after(false));
+}
+
+void brush_texture_modes_combine_static_values() {
+  using Mode = patchy::BrushTextureMode;
+  constexpr std::array modes{Mode::Multiply,   Mode::Subtract,  Mode::Darken,     Mode::Overlay,
+                             Mode::ColorDodge, Mode::ColorBurn, Mode::LinearBurn, Mode::HardMix,
+                             Mode::LinearHeight, Mode::Height};
+  std::vector<std::vector<float>> responses;
+  for (const auto mode : modes) {
+    // A mask never adds paint where the tip has none, and every result stays a coverage.
+    CHECK(patchy::combine_brush_texture(mode, 0.0F, 1.0F, 1.0F) == 0.0F);
+    std::vector<float> response;
+    for (const auto v : {0.1F, 0.4F, 0.6F, 0.9F, 1.0F}) {
+      for (const auto t : {0.0F, 0.3F, 0.6F, 1.0F}) {
+        const auto result = patchy::combine_brush_texture(mode, v, t, 0.7F);
+        CHECK(result >= 0.0F && result <= 1.0F);
+        response.push_back(result);
+      }
+    }
+    responses.push_back(std::move(response));
+  }
+  // Multiply is the historical expression, bit for bit.
+  const auto v = 0.73F;
+  const auto t = 0.41F;
+  const auto d = 0.65F;
+  CHECK(patchy::combine_brush_texture(Mode::Multiply, v, t, d) == v * (1.0F - d * (1.0F - t)));
+  // Zero depth leaves the depth-blended modes untouched; white texture leaves the subtractive ones.
+  for (const auto mode : {Mode::Multiply, Mode::Subtract, Mode::Darken, Mode::Overlay, Mode::ColorBurn,
+                          Mode::LinearBurn, Mode::HardMix}) {
+    CHECK(std::abs(patchy::combine_brush_texture(mode, 0.6F, 0.2F, 0.0F) - 0.6F) < 1e-6F);
+  }
+  for (const auto mode : {Mode::Multiply, Mode::Subtract, Mode::Darken}) {
+    CHECK(std::abs(patchy::combine_brush_texture(mode, 0.6F, 1.0F, 1.0F) - 0.6F) < 1e-6F);
+  }
+  // The modes are distinct functions, not aliases.
+  for (std::size_t a = 0; a < responses.size(); ++a) {
+    for (std::size_t b = a + 1; b < responses.size(); ++b) {
+      CHECK(responses[a] != responses[b]);
+    }
+  }
+}
+
+void tool_brush_texture_pattern_tile_drives_coverage() {
+  // Vertical stripes: document columns x % 4 in {0, 1} are white (take paint), {2, 3} black.
+  patchy::PixelBuffer stripes(4, 4, patchy::PixelFormat::rgba8());
+  for (std::int32_t y = 0; y < 4; ++y) {
+    for (std::int32_t x = 0; x < 4; ++x) {
+      auto* px = stripes.pixel(x, y);
+      const auto value = static_cast<std::uint8_t>(x < 2 ? 255 : 0);
+      px[0] = value;
+      px[1] = value;
+      px[2] = value;
+      px[3] = 255;
+    }
+  }
+  const auto tile = patchy::make_brush_texture_tile(stripes);
+  CHECK(tile.width == 4 && tile.height == 4);
+  CHECK(tile.gray[0] == 255U && tile.gray[2] == 0U);
+  stripes.pixel(2, 0)[3] = 0;  // transparency reads as white: no texture there
+  CHECK(patchy::make_brush_texture_tile(stripes).gray[2] == 255U);
+
+  const auto scaled = make_solid_scaled_tip(21);
+  const auto render = [&scaled](const patchy::BrushDynamics& dynamics,
+                                const patchy::BrushTextureTile* source) {
+    auto document = make_tool_document();
+    const auto layer_id = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 21;
+    options.brush_tip = &scaled;
+    options.brush_dynamics = dynamics;
+    options.brush_texture_tile = source;
+    patchy::BrushTipStrokeState state;
+    (void)patchy::paint_brush_segment(document, layer_id, 24.0, 24.0, 24.0, 24.0, options, false, state);
+    const auto data = std::as_const(*document.find_layer(layer_id)).pixels().data();
+    return std::vector<std::uint8_t>(data.begin(), data.end());
+  };
+  const auto alpha_at = [](const std::vector<std::uint8_t>& bytes, int x, int y) {
+    return bytes[(static_cast<std::size_t>(y) * 64U + static_cast<std::size_t>(x)) * 4U + 3U];
+  };
+  patchy::BrushDynamics textured;
+  textured.texture_enabled = true;
+  textured.texture_depth = 1.0;
+  textured.texture_pattern_id = "stripes";
+  const auto striped = render(textured, &tile);
+  CHECK(alpha_at(striped, 24, 24) == 255U);  // x % 4 == 0: white column
+  CHECK(alpha_at(striped, 25, 24) == 255U);
+  CHECK(alpha_at(striped, 26, 24) == 0U);  // black columns take no paint
+  CHECK(alpha_at(striped, 27, 24) == 0U);
+
+  // A missing pattern falls back to the procedural grain, exactly.
+  auto procedural = textured;
+  procedural.texture_pattern_id.clear();
+  CHECK(render(textured, nullptr) == render(procedural, nullptr));
+  CHECK(render(textured, nullptr) != striped);
+
+  // Full Brightness lifts the whole texture to white: the plain stamp comes back.
+  auto bright = textured;
+  bright.texture_brightness = 150.0;
+  CHECK(render(bright, &tile) == render(patchy::BrushDynamics{}, nullptr));
+  // Contrast -50 flattens the stripes to mid-gray: every column takes the same paint.
+  auto flat = textured;
+  flat.texture_contrast = -50.0;
+  const auto flattened = render(flat, &tile);
+  CHECK(alpha_at(flattened, 24, 24) == alpha_at(flattened, 26, 24));
+  CHECK(alpha_at(flattened, 24, 24) > 0U && alpha_at(flattened, 24, 24) < 255U);
+}
+
 void mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero() {
   // Since the 2026-08-14 claim review the mixer runs limited continuous pickup:
   // ONE running canvas-only average, transient foreground lerp, linear mixing
@@ -1328,6 +1485,46 @@ void tool_brush_tip_flip_jitter_mirrors_stamp() {
   }
   CHECK(saw_left);
   CHECK(saw_right);
+}
+
+void tool_brush_tip_static_flip_mirrors_stamp() {
+  // Static Flip X mirrors every dab without dynamics or RNG draws; a flip jitter on top mirrors
+  // the flipped tip back for the dabs whose coin lands heads, so both sides appear again.
+  patchy::BrushTip half_bar;
+  half_bar.width = 9;
+  half_bar.height = 9;
+  half_bar.mask.assign(81, 0);
+  for (std::int32_t x = 0; x < 4; ++x) {
+    half_bar.mask[4U * 9U + static_cast<std::size_t>(x)] = 255;
+  }
+  const auto scaled = patchy::make_scaled_brush_tip(patchy::build_brush_tip_mips(half_bar), 9);
+  const auto painted_side = [&scaled](bool flip_x, bool jitter, std::uint32_t seed) {
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 9;
+    options.brush_tip = &scaled;
+    options.brush_flip_x = flip_x;
+    options.brush_dynamics.flip_x_jitter = jitter;
+    options.brush_dynamics.seed = seed;
+    patchy::BrushTipStrokeState state;
+    CHECK(!patchy::paint_brush_segment(document, layer, 24.0, 20.0, 24.0, 20.0, options, false, state)
+               .empty());
+    const auto& pixels = document.find_layer(layer)->pixels();
+    int side = 0;
+    for (std::int32_t x = 0; x < pixels.width(); ++x) {
+      if (pixels.pixel(x, 20)[3] > 128U) {
+        side = x <= 22 ? -1 : (x >= 26 ? 1 : side);
+      }
+    }
+    return side;
+  };
+  CHECK(painted_side(false, false, 0) == -1);
+  CHECK(painted_side(true, false, 0) == 1);
+  for (std::uint32_t seed = 0; seed < 8; ++seed) {
+    // The jitter coin is the same draw with or without the static flip, so the sides swap.
+    CHECK(painted_side(true, true, seed) == -painted_side(false, true, seed));
+  }
 }
 
 void tool_brush_tip_scatter_offsets_perpendicular_to_stroke() {
@@ -1893,6 +2090,10 @@ std::vector<patchy::test::TestCase> brush_engine_tests() {
       {"tool_brush_tip_inactive_dynamics_change_nothing", tool_brush_tip_inactive_dynamics_change_nothing},
       {"tool_brush_texture_and_dual_brush_render_deterministically",
        tool_brush_texture_and_dual_brush_render_deterministically},
+      {"brush_texture_modes_combine_static_values", brush_texture_modes_combine_static_values},
+      {"tool_brush_texture_pattern_tile_drives_coverage", tool_brush_texture_pattern_tile_drives_coverage},
+      {"tool_brush_noise_grains_soft_edges_without_rng_draws",
+       tool_brush_noise_grains_soft_edges_without_rng_draws},
       {"mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero",
        mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero},
       {"stroke_stabilizer_pass_through_and_leash_geometry",
@@ -1906,6 +2107,7 @@ std::vector<patchy::test::TestCase> brush_engine_tests() {
       {"tool_brush_tip_angle_direction_follows_stroke", tool_brush_tip_angle_direction_follows_stroke},
       {"tool_brush_tip_angle_fade_and_jitter_rotate_dabs", tool_brush_tip_angle_fade_and_jitter_rotate_dabs},
       {"tool_brush_tip_flip_jitter_mirrors_stamp", tool_brush_tip_flip_jitter_mirrors_stamp},
+      {"tool_brush_tip_static_flip_mirrors_stamp", tool_brush_tip_static_flip_mirrors_stamp},
       {"tool_brush_tip_scatter_offsets_perpendicular_to_stroke",
        tool_brush_tip_scatter_offsets_perpendicular_to_stroke},
       {"tool_brush_tip_count_stamps_multiple_dabs_per_step", tool_brush_tip_count_stamps_multiple_dabs_per_step},

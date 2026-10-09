@@ -8893,6 +8893,42 @@ RGB：%2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>像素尺寸已锁定。只有打印分辨率和打印尺寸会更改。</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>画笔投影</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>画笔笔势</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>潮湿度和混合抖动</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>保护纹理</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>倾斜缩放比例</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>双重画笔模式</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>双重画笔散布和翻转</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>间距已关闭</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>该文件不包含可用的画笔</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9685,6 +9721,14 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>无法从“%1”导入任何画笔笔尖。</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>已省略在 Patchy 中没有对应功能的 Photoshop 设置：%1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>在文件和图案库中都找不到纹理图案，改用生成的颗粒：%1</translation>
     </message>
 </context>
 <context>
