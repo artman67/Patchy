@@ -4025,6 +4025,292 @@ void ui_dock_group_window_drags_by_blank_chrome() {
   CHECK(group.pos() == position_before_edge_press + QPoint(-30, 20));
 }
 
+QDockWidget* require_dock(QWidget& window, const char* name) {
+  auto* dock = window.findChild<QDockWidget*>(QLatin1String(name));
+  CHECK(dock != nullptr);
+  return dock;
+}
+
+QToolButton* dock_toggle(QWidget& window, const QDockWidget* dock) {
+  auto* toggle = window.findChild<QToolButton*>(dock->objectName().chopped(4) + QStringLiteral("DockCollapseButton"));
+  CHECK(toggle != nullptr);
+  return toggle;
+}
+
+// The right-column arrangement as comparable text: each panel's floating
+// flag, tab partners and collapse state, then the docked panels on screen
+// from top to bottom (Qt parks the hidden tabs of a group off screen).
+QStringList panel_layout_signature(patchy::ui::MainWindow& window) {
+  QStringList signature;
+  std::vector<std::pair<int, QString>> docked;
+  for (const auto* name : {"layersDock", "channelsDock", "pathsDock", "historyDock", "propertiesDock", "infoDock",
+                           "paletteDock"}) {
+    auto* dock = require_dock(window, name);
+    QStringList partners;
+    for (const auto* partner : window.tabifiedDockWidgets(dock)) {
+      partners.append(partner->objectName());
+    }
+    partners.sort();
+    signature.append(QStringLiteral("%1 floating=%2 tabs=%3 expanded=%4")
+                         .arg(dock->objectName())
+                         .arg(int(dock->isFloating()))
+                         .arg(partners.join(QLatin1Char(',')))
+                         .arg(int(dock_toggle(window, dock)->isChecked())));
+    if (!dock->isFloating() && dock->isVisible() && dock->geometry().right() >= 0 &&
+        dock->geometry().bottom() >= 0) {
+      docked.emplace_back(dock->mapTo(&window, QPoint(0, 0)).y(), dock->objectName());
+    }
+  }
+  std::sort(docked.begin(), docked.end());
+  QStringList order;
+  for (const auto& entry : docked) {
+    order.append(entry.second);
+  }
+  signature.append(QStringLiteral("order=") + order.join(QLatin1Char(',')));
+  return signature;
+}
+
+void settle_events() {
+  for (int pass = 0; pass < 4; ++pass) {
+    QApplication::processEvents();
+  }
+}
+
+// What a drag would build: Patchy's right column rearranged into a new tab
+// group (Info + Properties), Palette moved up to sit under History, and
+// Channels floating, with History expanded.
+void rearrange_panels(patchy::ui::MainWindow& window) {
+  auto* history = require_dock(window, "historyDock");
+  auto* palette = require_dock(window, "paletteDock");
+  window.tabifyDockWidget(require_dock(window, "infoDock"), require_dock(window, "propertiesDock"));
+  window.removeDockWidget(palette);
+  window.splitDockWidget(history, palette, Qt::Vertical);
+  palette->show();
+  auto* channels = require_dock(window, "channelsDock");
+  channels->setFloating(true);
+  settle_events();
+  channels->setGeometry(QRect(140, 120, 440, 300));
+  dock_toggle(window, history)->setChecked(true);
+  settle_events();
+}
+
+void ui_panel_layout_persists_across_launches() {
+  // Photoshop-style panel arrangements survive a relaunch: tab groups, the
+  // section order in the right column, floating panels (with their position
+  // and the floating chrome) and each panel's collapse state.
+  QStringList saved;
+  QRect floating_geometry;
+  {
+    patchy::ui::MainWindow window;
+    show_window_empty(window);
+    const auto built_in = panel_layout_signature(window);
+    rearrange_panels(window);
+    saved = panel_layout_signature(window);
+    CHECK(saved != built_in);
+    floating_geometry = require_dock(window, "channelsDock")->geometry();
+    window.close();
+    QApplication::processEvents();
+  }
+  CHECK(!patchy::ui::app_settings().value(QStringLiteral("window/panelLayout")).toByteArray().isEmpty());
+
+  patchy::ui::MainWindow restored;
+  show_window_empty(restored);
+  settle_events();
+  CHECK(panel_layout_signature(restored) == saved);
+  auto* channels = require_dock(restored, "channelsDock");
+  CHECK(channels->geometry() == floating_geometry);
+  CHECK(channels->contentsMargins().left() >= 8);
+  CHECK(channels->property("floatingChrome").toBool());
+  CHECK(!dock_toggle(restored, channels)->isVisibleTo(channels));
+}
+
+// Appends a floating tab group of the named panels to a saved main-window
+// state. Only a drag builds one (Qt has no public call), so this writes the
+// record QMainWindow::saveState emits for it in Qt 6.8: the group marker and
+// window geometry, then a tabbed QDockAreaLayoutInfo with one entry per panel.
+QByteArray with_floating_tab_group(QByteArray state, const QRect& geometry, const QStringList& names) {
+  QDataStream stream(&state, QIODevice::WriteOnly | QIODevice::Append);
+  stream.setVersion(QDataStream::Qt_5_0);
+  stream << quint8(0xf9) << geometry << quint8(0xfa) << qint32(0) << quint8(Qt::Horizontal)
+         << qint32(names.size());
+  for (const auto& name : names) {
+    stream << quint8(0xfb) << name << quint8(1) << qint32(0) << qint32(-1) << qint32(0) << qint32(0);
+  }
+  return state;
+}
+
+void ui_panel_layout_restores_floating_tab_group_with_chrome() {
+  // A floating tab group comes back as Qt's group window with Patchy's
+  // floating chrome, its panels expanded and their collapse toggles hidden.
+  {
+    patchy::ui::MainWindow window;
+    show_window_empty(window);
+    window.removeDockWidget(require_dock(window, "channelsDock"));
+    window.removeDockWidget(require_dock(window, "pathsDock"));
+    window.close();
+    QApplication::processEvents();
+  }
+  {
+    auto settings = patchy::ui::app_settings();
+    const auto state = settings.value(QStringLiteral("window/panelLayout")).toByteArray();
+    CHECK(!state.isEmpty());
+    settings.setValue(QStringLiteral("window/panelLayout"),
+                      with_floating_tab_group(state, QRect(160, 140, 340, 300),
+                                              {QStringLiteral("channelsDock"), QStringLiteral("pathsDock")}));
+    settings.sync();
+  }
+
+  patchy::ui::MainWindow restored;
+  show_window_empty(restored);
+  settle_events();
+  auto* channels = require_dock(restored, "channelsDock");
+  auto* paths = require_dock(restored, "pathsDock");
+  auto* group = channels->window();
+  CHECK(qstrcmp(group->metaObject()->className(), "QDockWidgetGroupWindow") == 0);
+  CHECK(paths->window() == group);
+  CHECK(group->isVisible());
+  CHECK(restored.dockWidgetArea(channels) == Qt::NoDockWidgetArea);
+  CHECK(restored.tabifiedDockWidgets(require_dock(restored, "layersDock")).isEmpty());
+  CHECK(group->contentsMargins().left() >= 8);
+  for (auto* dock : {channels, paths}) {
+    CHECK(dock_toggle(restored, dock)->isChecked());
+    CHECK(!dock_toggle(restored, dock)->isVisibleTo(dock));
+  }
+
+  // Reset Panel Layout docks the group back into the built-in column.
+  require_action(restored, "windowResetPanelLayoutAction")->trigger();
+  settle_events();
+  CHECK(channels->window() == &restored);
+  CHECK(restored.tabifiedDockWidgets(channels).size() == 2);
+  CHECK(!paths->isFloating());
+  CHECK(panel_layout_signature(restored).constLast().startsWith(QStringLiteral("order=layersDock,historyDock")));
+  CHECK(dock_toggle(restored, channels)->isVisibleTo(channels));
+}
+
+void ui_panel_layout_places_panels_the_saved_layout_predates() {
+  // A layout saved before a panel existed: the panel joins its built-in tab
+  // partner if that partner is docked, otherwise it becomes a new section at
+  // the bottom of the column, instead of landing wherever Qt's index fallback
+  // puts it.
+  {
+    patchy::ui::MainWindow window;
+    show_window_empty(window);
+    rearrange_panels(window);
+    require_dock(window, "channelsDock")->setFloating(false);
+    window.removeDockWidget(require_dock(window, "pathsDock"));
+    window.removeDockWidget(require_dock(window, "historyDock"));
+    window.close();
+    QApplication::processEvents();
+  }
+  {
+    // As if Paths and History had not been built yet when the layout was saved.
+    auto settings = patchy::ui::app_settings();
+    auto docks = settings.value(QStringLiteral("window/panelLayoutDocks")).toStringList();
+    CHECK(docks.removeAll(QStringLiteral("pathsDock")) == 1);
+    CHECK(docks.removeAll(QStringLiteral("historyDock")) == 1);
+    settings.setValue(QStringLiteral("window/panelLayoutDocks"), docks);
+    settings.sync();
+  }
+
+  patchy::ui::MainWindow restored;
+  show_window_empty(restored);
+  settle_events();
+  auto* paths = require_dock(restored, "pathsDock");
+  auto* history = require_dock(restored, "historyDock");
+  CHECK(paths->isVisible() && !paths->isFloating());
+  const auto paths_partners = restored.tabifiedDockWidgets(paths);
+  CHECK(!paths_partners.isEmpty());
+  for (const auto* partner : paths_partners) {
+    CHECK(partner->objectName() == QStringLiteral("layersDock") ||
+          partner->objectName() == QStringLiteral("channelsDock"));
+  }
+  CHECK(history->isVisible() && !history->isFloating());
+  CHECK(restored.tabifiedDockWidgets(history).isEmpty());
+  CHECK(restored.dockWidgetArea(history) == Qt::RightDockWidgetArea);
+  CHECK(panel_layout_signature(restored).constLast().endsWith(QStringLiteral(",historyDock")));
+}
+
+void ui_tab_group_collapses_and_expands_as_one() {
+  // Qt sizes a tab group by its most restrictive tab, so one collapsed tab
+  // left the group as a title strip over a dead band (collapsing Layers in
+  // the built-in Layers/Channels/Paths group did this), a collapsed panel
+  // dropped into an expanded group showed the same strip, and Properties'
+  // height cap capped any group it joined.
+  patchy::ui::MainWindow window;
+  show_window_empty(window);
+  auto* layers = require_dock(window, "layersDock");
+  auto* history = require_dock(window, "historyDock");
+  auto* properties = require_dock(window, "propertiesDock");
+  dock_toggle(window, layers)->setChecked(false);
+  settle_events();
+  CHECK(!dock_toggle(window, require_dock(window, "channelsDock"))->isChecked());
+  CHECK(!dock_toggle(window, require_dock(window, "pathsDock"))->isChecked());
+  const auto layers_bottom = layers->mapTo(&window, QPoint(0, layers->height())).y();
+  CHECK(history->mapTo(&window, QPoint(0, 0)).y() - layers_bottom <= 8);
+  dock_toggle(window, require_dock(window, "pathsDock"))->setChecked(true);
+  settle_events();
+  CHECK(dock_toggle(window, layers)->isChecked());
+
+  CHECK(!dock_toggle(window, history)->isChecked());
+  CHECK(!dock_toggle(window, properties)->isChecked());
+  window.tabifyDockWidget(layers, history);
+  window.tabifyDockWidget(layers, properties);
+  settle_events();
+  CHECK(dock_toggle(window, history)->isChecked());
+  CHECK(dock_toggle(window, properties)->isChecked());
+  CHECK(properties->height() > 230);
+
+  // Standing alone again, Properties gets its cap back.
+  window.addDockWidget(Qt::RightDockWidgetArea, properties);
+  settle_events();
+  CHECK(window.tabifiedDockWidgets(properties).isEmpty());
+  CHECK(properties->maximumHeight() == 230);
+}
+
+void ui_reset_panel_layout_restores_built_in_arrangement() {
+  patchy::ui::MainWindow window;
+  show_window_empty(window);
+  const auto built_in = panel_layout_signature(window);
+  rearrange_panels(window);
+  CHECK(panel_layout_signature(window) != built_in);
+  auto* action = require_action(window, "windowResetPanelLayoutAction");
+  CHECK(action->menuRole() == QAction::NoRole);
+  CHECK(action->shortcuts().isEmpty());
+  action->trigger();
+  settle_events();
+  CHECK(panel_layout_signature(window) == built_in);
+  auto* channels = require_dock(window, "channelsDock");
+  CHECK(!channels->property("floatingChrome").toBool());
+  CHECK(dock_toggle(window, channels)->isVisibleTo(channels));
+}
+
+void ui_panel_layout_unreadable_or_old_state_falls_back_to_built_in() {
+  QStringList built_in;
+  QByteArray other_version;
+  {
+    patchy::ui::MainWindow window;
+    show_window_empty(window);
+    built_in = panel_layout_signature(window);
+    rearrange_panels(window);
+    other_version = window.saveState(9999);
+  }
+  for (const auto& state : {QByteArray("not a panel layout"), other_version}) {
+    {
+      auto settings = patchy::ui::app_settings();
+      settings.setValue(QStringLiteral("window/panelLayout"), state);
+      // The saved collapse states belong to the rejected layout and must not
+      // apply either.
+      settings.setValue(QStringLiteral("window/panelExpanded"),
+                        QVariantMap{{QStringLiteral("historyDock"), true}, {QStringLiteral("layersDock"), false}});
+      settings.sync();
+    }
+    patchy::ui::MainWindow window;
+    show_window_empty(window);
+    settle_events();
+    CHECK(panel_layout_signature(window) == built_in);
+  }
+}
+
 void ui_menu_disabled_items_render_grayed() {
   // The app stylesheet styles QMenu::item text, so without an explicit :disabled rule
   // disabled entries rendered in the same bright color as enabled ones and were only
@@ -4137,6 +4423,15 @@ std::vector<patchy::test::TestCase> canvas_view_tools_tests() {
       {"ui_layer_action_button_foreign_drag_never_repolishes_in_filter",
        ui_layer_action_button_foreign_drag_never_repolishes_in_filter},
       {"ui_dock_group_window_drags_by_blank_chrome", ui_dock_group_window_drags_by_blank_chrome},
+      {"ui_tab_group_collapses_and_expands_as_one", ui_tab_group_collapses_and_expands_as_one},
+      {"ui_panel_layout_persists_across_launches", ui_panel_layout_persists_across_launches},
+      {"ui_panel_layout_restores_floating_tab_group_with_chrome",
+       ui_panel_layout_restores_floating_tab_group_with_chrome},
+      {"ui_panel_layout_places_panels_the_saved_layout_predates",
+       ui_panel_layout_places_panels_the_saved_layout_predates},
+      {"ui_reset_panel_layout_restores_built_in_arrangement", ui_reset_panel_layout_restores_built_in_arrangement},
+      {"ui_panel_layout_unreadable_or_old_state_falls_back_to_built_in",
+       ui_panel_layout_unreadable_or_old_state_falls_back_to_built_in},
       {"ui_menu_disabled_items_render_grayed", ui_menu_disabled_items_render_grayed},
   };
 }

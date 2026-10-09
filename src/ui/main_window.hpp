@@ -485,6 +485,10 @@ private:
   void update_right_dock_resize_handle_geometry(QWidget* host);
   void set_right_dock_stack_width(int width);
   void update_right_dock_minimum_width();
+  void sync_panel_collapse_toggles();
+  void restore_panel_layout();
+  void save_panel_layout() const;
+  void reset_panel_layout();
   bool handle_window_resize_event(QObject* watched, QEvent* event);
   void update_window_resize_cursor(Qt::Edges edges);
   void clear_window_resize_cursor();
@@ -2601,6 +2605,17 @@ private:
   int right_dock_chrome_width_{-1};
   // 0 until set_right_dock_stack_width() pins the stack to an exact width.
   int right_dock_pinned_width_{0};
+  // The built-in panel arrangement, captured by restore_panel_layout() before
+  // the saved one is applied: Reset Panel Layout returns to it, and panels a
+  // saved layout does not know take their default area and tab partners.
+  struct DefaultPanelPlacement {
+    QString name;
+    Qt::DockWidgetArea area{Qt::RightDockWidgetArea};
+    QStringList tab_partners;
+    bool expanded{true};
+  };
+  QByteArray default_panel_layout_;
+  std::vector<DefaultPanelPlacement> default_panel_placements_;
   bool spacebar_canvas_pan_down_{false};
   bool spacebar_canvas_pan_dragging_{false};
   bool spacebar_canvas_pan_cursor_active_{false};

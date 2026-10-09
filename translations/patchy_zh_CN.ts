@@ -19782,6 +19782,10 @@ Baked into images: %1.</source>
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>已裁剪，已删除画布外图层: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>复位面板布局(&amp;P)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

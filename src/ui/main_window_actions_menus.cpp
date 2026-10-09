@@ -2020,6 +2020,13 @@ void MainWindow::build_menu_bar_actions(ActionBuildContext& ctx) {
 
   window_menu->addSeparator();
 
+  auto* reset_panel_layout_action = window_menu->addAction(tr("Reset &Panel Layout"));
+  reset_panel_layout_action->setObjectName(QStringLiteral("windowResetPanelLayoutAction"));
+  reset_panel_layout_action->setMenuRole(QAction::NoRole);
+  bind_action_text(reset_panel_layout_action, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Reset &Panel Layout"));
+  register_hotkey(reset_panel_layout_action, "window.reset_panel_layout", QKeySequence());
+  connect(reset_panel_layout_action, &QAction::triggered, this, [this] { reset_panel_layout(); });
+
   auto* screen_size_menu = window_menu->addMenu(tr("Set Screen Size"));
   screen_size_menu->setObjectName(QStringLiteral("windowSetScreenSizeMenu"));
   struct ScreenSizePreset {

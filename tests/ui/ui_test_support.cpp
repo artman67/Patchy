@@ -753,6 +753,11 @@ void cleanup_after_visual_test() {
         "tools/quickSelectFeather"}) {
     settings.remove(QLatin1StringView(key));
   }
+  // A closed MainWindow saves its panel arrangement; every test starts from
+  // the built-in layout.
+  for (const char* key : {"window/panelLayout", "window/panelLayoutDocks", "window/panelExpanded"}) {
+    settings.remove(QLatin1StringView(key));
+  }
   settings.sync();
 }
 

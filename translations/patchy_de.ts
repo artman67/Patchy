@@ -19838,6 +19838,10 @@ In Bilder umgewandelt: %1.</translation>
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>Freigestellt, Ebenen außerhalb gelöscht: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>&amp;Bedienfeldanordnung zurücksetzen</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

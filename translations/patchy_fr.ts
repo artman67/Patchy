@@ -19838,6 +19838,10 @@ Convertis en images : %1.</translation>
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>Recadré, calques hors zone supprimés : %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Réinitialiser la disposition des &amp;panneaux</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

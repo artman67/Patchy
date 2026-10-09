@@ -19838,6 +19838,10 @@ Convertiti in immagini: %1.</translation>
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>Ritagliato, livelli fuori dal quadro eliminati: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Ripristina layout dei &amp;pannelli</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

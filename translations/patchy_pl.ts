@@ -19894,6 +19894,10 @@ Y: %2
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>Przycięto, usunięto warstwy poza płótnem: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Przywróć układ &amp;paneli</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

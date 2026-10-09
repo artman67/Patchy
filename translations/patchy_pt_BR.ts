@@ -19838,6 +19838,10 @@ Y: %2
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>Cortado, camadas fora da tela excluídas: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Redefinir layout dos &amp;painéis</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

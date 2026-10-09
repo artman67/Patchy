@@ -19782,6 +19782,10 @@ Y: %2
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>잘림, 캔버스 외부 레이어 삭제됨: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>패널 레이아웃 초기화(&amp;P)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

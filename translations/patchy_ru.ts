@@ -19894,6 +19894,10 @@ Y: %2
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation>Кадрировано, удалены слои за пределами холста: %1</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Сбросить расположение &amp;панелей</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

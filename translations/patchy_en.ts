@@ -19789,6 +19789,10 @@ Baked into images: %1.</source>
         <source>Cropped, off-canvas layers deleted: %1</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
