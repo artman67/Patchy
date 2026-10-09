@@ -104,7 +104,7 @@ void CurrentBrush::edit(const BrushEdit& edit) {
 }
 
 void CurrentBrush::pick(const WorkingBrush& brush, BrushBase::Kind kind, const QString& id) {
-  auto next = brush;
+  auto next = picked_over(brush_, brush, locks_);
   if (next.tip_id.isEmpty() && next.snapshot_tip == nullptr) {
     next.tip_id = builtin_round_brush_tip_id();
   }
@@ -138,6 +138,7 @@ void CurrentBrush::pick_tip(const QString& tip_id, const BrushTipEntry* entry,
     next.roundness = procedural_.roundness;
     next.dynamics = procedural_.dynamics;
   }
+  next = picked_over(brush_, std::move(next), locks_);
   base_ = BrushBase{BrushBase::Kind::Tip, tip_id, next};
   replace(std::move(next), changes);
 }
@@ -150,6 +151,14 @@ void CurrentBrush::rebase(BrushBase::Kind kind, const QString& id) {
 void CurrentBrush::restore(const WorkingBrush& brush, const BrushBase& base) {
   base_ = base;
   replace(brush, All);
+}
+
+void CurrentBrush::set_locks(BrushSectionMask locks) {
+  if (locks_ == locks) {
+    return;
+  }
+  locks_ = locks;
+  emit locks_changed();
 }
 
 void CurrentBrush::replace(WorkingBrush next, unsigned changes) {

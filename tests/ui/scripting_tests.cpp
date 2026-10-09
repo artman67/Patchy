@@ -3780,13 +3780,14 @@ void ui_script_advanced_brush_creation_preview_and_psd() {
   CHECK(std::equal(saved.data().begin(),saved.data().end(),reopened.data().begin(),reopened.data().end()));
   combo->setCurrentIndex(combo->findData(preset_id));
   CHECK(MainWindowTestAccess::canvas(window)->has_brush_tip());
+  // "Save Current Brush..." opens the New Brush Preset dialog, which this test's unattended
+  // script host cancels unseen like every dialog; the combo returns to the picked preset.
+  CHECK(window.unattended_automation());
+  const auto preset_count=window.brush_automation_library().presets().size();
   for (int repeat=0;repeat<2;++repeat) {
-    bool opened=false;
-    QTimer::singleShot(0,&window,[&] {
-      if(auto* dialog=window.findChild<QInputDialog*>()) {opened=true;dialog->reject();}
-    });
     combo->setCurrentIndex(combo->findData("__saveBrush"));
-    CHECK(opened);CHECK(combo->currentData().toString()==preset_id);
+    CHECK(combo->currentData().toString()==preset_id);
+    CHECK(window.brush_automation_library().presets().size()==preset_count);
   }
   save_widget_artifact("advanced_brush_presets",window);
 }

@@ -9312,8 +9312,8 @@ RVB : %2, %3, %4</translation>
         <translation>Dynamique</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush</source>
-        <translation>Dynamique de forme et effets pour la forme actuelle</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>Dynamique et effets de la forme actuelle : affiche le panneau Paramètres de forme</translation>
     </message>
 </context>
 <context>
@@ -9351,20 +9351,12 @@ RVB : %2, %3, %4</translation>
         <translation>Nombre de pas d&apos;espacement sur lesquels appliquer le fondu</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>Forme de la pointe</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>Angle :</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>Arrondi :</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>Dynamique de forme</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9415,10 +9407,6 @@ RVB : %2, %3, %4</translation>
         <translation>Variation de symétrie Y</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>Diffusion</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>Diffusion :</translation>
     </message>
@@ -9443,10 +9431,6 @@ RVB : %2, %3, %4</translation>
         <translation>Contrôle du nombre :</translation>
     </message>
     <message>
-        <source>Transfer</source>
-        <translation>Transfert</translation>
-    </message>
-    <message>
         <source>Opacity Jitter:</source>
         <translation>Variation de l&apos;opacité :</translation>
     </message>
@@ -9469,10 +9453,6 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Flow Control:</source>
         <translation>Contrôle du flux :</translation>
-    </message>
-    <message>
-        <source>Texture</source>
-        <translation>Texture</translation>
     </message>
     <message>
         <source>Enable Texture</source>
@@ -9507,10 +9487,6 @@ RVB : %2, %3, %4</translation>
         <translation>Inverser la texture</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>Forme double</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>Activer la forme double</translation>
     </message>
@@ -9525,10 +9501,6 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>Espacement secondaire :</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>Dynamique de la couleur</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -9563,10 +9535,6 @@ RVB : %2, %3, %4</translation>
         <translation>Appliquer par pointe</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>Effets de forme</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>Contours humides</translation>
     </message>
@@ -9581,6 +9549,153 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>Réinitialiser la forme de la pointe et toute la dynamique aux valeurs par défaut</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>Faites glisser pour régler l’angle de la pointe ; faites glisser un point pour modifier l’arrondi</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>Accumule la peinture tant que le pointeur reste immobile, comme l’option Aérographe. Cochez la case pour l’activer.</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>Tout déverrouiller</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>Réinitialiser tous les paramètres verrouillés : déverrouiller toutes les sections</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>Options des paramètres de forme</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>Effacer les commandes de forme</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>Réinitialiser tous les paramètres verrouillés</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>Créer une forme prédéfinie à partir de ces paramètres</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>Pointes de forme : cliquez sur une pointe pour peindre avec</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Taille :</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>Douceur :</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Pas</translation>
+    </message>
+    <message>
+        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Désactivé : le pas propre à la pointe ; activé : la distance entre les empreintes en pourcentage de la taille de la forme</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>Lissage :</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>Lissage du tracé : 0 % peint le trajet brut du pointeur</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>Mode Corde tendue</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>Rattrapage du tracé</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>Rattrapage en fin de tracé</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>Ajuster pour le zoom</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>Rond</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>Carré</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>Verrouillé : ces paramètres sont conservés quand vous choisissez une autre forme. Cliquez pour déverrouiller.</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>Cliquez pour verrouiller : ces paramètres seront conservés quand vous choisirez une autre forme</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>Verrouillé : %1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>Déverrouiller la section</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>Verrouiller la section</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>Forme de la pointe</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>Dynamique de forme</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>Diffusion</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>Texture</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>Forme double</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>Dynamique de la couleur</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>Transfert</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>Contours humides</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>Aérographe</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>Lissage</translation>
     </message>
 </context>
 <context>
@@ -9647,6 +9762,113 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>%1 - %2 (%3×%4)</source>
         <translation>%1 : %2 (%3×%4)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>(modifié)</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Taille :</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>Taille de la forme en pixels</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>Rechercher des formes</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>Affichage en liste</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>Affichage en grille de vignettes</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>Afficher le panneau Paramètres de forme</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>Options du panneau Formes</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>Nouveau dossier...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>Nouvelle forme prédéfinie...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>Supprimer la forme ou le dossier sélectionné</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>Formes générales</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>Forme actuelle (modifiée)</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>Forme actuelle</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>Renommer...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Dupliquer</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Supprimer</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>Importer des formes...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>Affichage en liste</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>Affichage en grille de vignettes</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>Nouveau dossier</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Nom :</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Formes</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Renommer</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 copie</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>Supprimer la forme « %1 » ?</translation>
     </message>
 </context>
 <context>
@@ -13015,10 +13237,6 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>Pinceau de travail</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>Enregistrer le pinceau prédéfini</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -18709,6 +18927,22 @@ Convertis en images : %1.</translation>
         <source>Reset &amp;Panel Layout</source>
         <translation>Réinitialiser la disposition des &amp;panneaux</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 copie</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>Forme prédéfinie enregistrée : %1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Formes</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>Paramètres de forme</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -18858,6 +19092,53 @@ Convertis en images : %1.</translation>
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>Nouvelle forme prédéfinie</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Nom :</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>Aucun dossier</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>Choisissez un dossier ou saisissez le nom d’un nouveau dossier</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>Dossier :</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>Enregistrer la taille de la forme dans le paramètre prédéfini</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>Désactivé : choisir le paramètre prédéfini conserve la taille avec laquelle vous peignez</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>Inclure les paramètres de l’outil</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>Opacité, flux, lissage, réglage de la pression du stylet et valeurs du pinceau mélangeur</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>Inclure la couleur</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>Choisir le paramètre prédéfini définit aussi les couleurs de premier plan et d’arrière-plan</translation>
     </message>
 </context>
 <context>

@@ -9282,8 +9282,8 @@ RGB：%2, %3, %4</translation>
         <translation>動態</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush</source>
-        <translation>目前筆刷的筆刷動態與效果</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>目前筆刷的動態與效果：顯示「筆刷設定」面板</translation>
     </message>
 </context>
 <context>
@@ -9321,20 +9321,12 @@ RGB：%2, %3, %4</translation>
         <translation>淡化所經過的間距階數</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>筆尖形狀</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>角度:</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>圓度:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>形狀動態</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9385,10 +9377,6 @@ RGB：%2, %3, %4</translation>
         <translation>翻轉 Y 快速變換</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>散佈</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>散佈:</translation>
     </message>
@@ -9413,10 +9401,6 @@ RGB：%2, %3, %4</translation>
         <translation>數量控制:</translation>
     </message>
     <message>
-        <source>Transfer</source>
-        <translation>轉換</translation>
-    </message>
-    <message>
         <source>Opacity Jitter:</source>
         <translation>不透明度快速變換:</translation>
     </message>
@@ -9439,10 +9423,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Flow Control:</source>
         <translation>流量控制:</translation>
-    </message>
-    <message>
-        <source>Texture</source>
-        <translation>紋理</translation>
     </message>
     <message>
         <source>Enable Texture</source>
@@ -9477,10 +9457,6 @@ RGB：%2, %3, %4</translation>
         <translation>反轉紋理</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>雙筆刷</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>啟用雙筆刷</translation>
     </message>
@@ -9495,10 +9471,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>次要筆刷間距:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>顏色動態</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -9533,10 +9505,6 @@ RGB：%2, %3, %4</translation>
         <translation>套用至每個筆尖</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>筆刷效果</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>潮濕邊緣</translation>
     </message>
@@ -9551,6 +9519,153 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>將筆尖形狀和所有動態重設為預設值</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>拖曳以設定筆尖角度；拖曳圓點可變更圓度</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>指標靜止時持續堆積顏料，與「噴槍」選項相同。勾選此方塊即可啟用。</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>全部解除鎖定</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>重設所有鎖定的設定：解除所有區段的鎖定</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>筆刷設定選項</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>清除筆刷控制</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>重設所有鎖定的設定</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>以這些設定建立新筆刷預設集</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>筆尖：按一下即可用它繪畫</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>尺寸:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>柔邊:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>間距</translation>
+    </message>
+    <message>
+        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>關閉時使用筆尖本身的間距；開啟時以筆刷大小的百分比設定筆觸之間的距離</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>平滑:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>筆畫平滑化:0% 會直接繪製指標的原始路徑</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>拉繩模式</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>筆畫追上</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>筆畫結束時追上</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>依縮放調整</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>圓形</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>方形</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>已鎖定：選取其他筆刷時保留這些設定。按一下即可解除鎖定。</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>按一下以鎖定：選取其他筆刷時保留這些設定</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>已鎖定：%1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>解除鎖定此區段</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>鎖定此區段</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>筆尖形狀</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>形狀動態</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>散佈</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>紋理</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>雙筆刷</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>顏色動態</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>轉換</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>潮濕邊緣</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>建立</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>平滑</translation>
     </message>
 </context>
 <context>
@@ -9617,6 +9732,113 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>%1 - %2 (%3×%4)</source>
         <translation>%1:%2 (%3×%4)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>（已修改）</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>尺寸:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>筆刷大小（像素）</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>搜尋筆刷</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>清單檢視</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>縮圖格狀檢視</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>顯示「筆刷設定」面板</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>筆刷面板選項</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>新增資料夾...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>新增筆刷預設集...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>刪除選取的筆刷或資料夾</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>一般筆刷</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>目前筆刷（已修改）</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>目前筆刷</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>重新命名...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>複製</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>刪除</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>匯入筆刷...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>清單檢視</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>縮圖格狀檢視</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>新增群組</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>名稱:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>筆刷</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>重新命名</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 拷貝</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>刪除筆刷「%1」？</translation>
     </message>
 </context>
 <context>
@@ -12985,10 +13207,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>使用中的筆刷</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>儲存筆刷預設集</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -18653,6 +18871,22 @@ Baked into images: %1.</source>
         <source>Reset &amp;Panel Layout</source>
         <translation>重設面板配置(&amp;P)</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 拷貝</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>已儲存筆刷預設集：%1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>筆刷</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>筆刷設定</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -18802,6 +19036,53 @@ Baked into images: %1.</source>
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>新增筆刷預設集</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>名稱:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>無資料夾</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>選取資料夾或輸入新資料夾名稱</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>資料夾:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>在預設集中擷取筆刷大小</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>關閉：選取此預設集時保留您正在使用的大小</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>包含工具設定</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>不透明度、流量、平滑、壓力感應對應與混合筆刷數值</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>包含顏色</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>選取此預設集時也會設定前景色與背景色</translation>
     </message>
 </context>
 <context>

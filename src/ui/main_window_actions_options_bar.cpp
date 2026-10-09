@@ -36,6 +36,7 @@
 #include "render/compositor.hpp"
 #include "ui/blend_mode_ui.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_settings_sections.hpp"
 #include "ui/brush_presets.hpp"
 #include "ui/brush_automation.hpp"
 #include "ui/brush_tip_library.hpp"
@@ -1627,7 +1628,8 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   bind_widget_text(brush_airbrush, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Airbrush"));
   brush_airbrush->setChecked(canvas_defaults->brush_build_up());
   bind_tooltip(brush_airbrush, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Build paint while the pointer is held still"));
-  add_option_widget(brush_airbrush, {CanvasTool::Brush});
+  options_flow->addWidget(brush_airbrush);
+  register_option_action(brush_airbrush, tools_honoring(BrushSection::BuildUp));
   brush_controls_.flow = brush_flow;
   brush_controls_.airbrush = brush_airbrush;
   connect(brush_flow, &QSpinBox::valueChanged, this, [this](int value) {
@@ -1903,21 +1905,11 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   });
 
   brush_dynamics_button_ = new BrushDynamicsButton(toolbar);
-  add_option_widget(brush_dynamics_button_, {CanvasTool::Brush});
-  connect(brush_dynamics_button_, &BrushDynamicsButton::dynamics_edited, this,
-          [this](const QString& tip_key, const patchy::BrushDynamics& dynamics, double base_angle,
-                 double base_roundness) {
-            // The working brush only: a tip's stored defaults change through the Brush Tips
-            // manager. A late debounced edit for an earlier tip is dropped.
-            if (tip_key != working_brush_tip_key(current_brush().brush())) {
-              return;
-            }
-            BrushEdit edit;
-            edit.dynamics = dynamics;
-            edit.angle = base_angle;
-            edit.roundness = base_roundness;
-            current_brush().edit(edit);
-          });
+  // Shown for the tools whose strokes apply dynamics (brush_settings_sections).
+  options_flow->addWidget(brush_dynamics_button_);
+  register_option_action(brush_dynamics_button_, tools_honoring(BrushSection::ShapeDynamics));
+  connect(brush_dynamics_button_, &BrushDynamicsButton::show_settings_requested, this,
+          [this] { show_brush_settings_panel(); });
   {
     const auto& brush = current_brush().brush();
     brush_dynamics_button_->set_working_brush(working_brush_tip_key(brush), brush.dynamics,

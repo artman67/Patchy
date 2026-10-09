@@ -10,6 +10,16 @@ namespace patchy::ui {
 class BrushTipLibrary;
 struct BrushPreset;
 
+// What a saved preset captures besides the brush itself (the New Brush Preset dialog). A
+// preset saved without size or tool settings keeps the artist's current values when picked;
+// the record says so with captureSize/includeToolSettings set to false.
+struct BrushPresetSaveOptions {
+  QString folder;
+  bool capture_size{true};
+  bool include_tool_settings{true};  // opacity, flow, smoothing, pen mapping, Mixer values
+  bool include_color{false};
+};
+
 // Shared by scripting and the artist's preset controls. Only explicit library
 // methods persist; resolving a brush never edits a tip or a document.
 class BrushAutomationLibrary : public QObject {
@@ -25,8 +35,15 @@ class BrushAutomationLibrary : public QObject {
   [[nodiscard]] QJsonObject preset(const QString& id) const;
   [[nodiscard]] ScriptStroke resolve(const QJsonObject& settings) const;
   QJsonObject capture(const ScriptStroke& settings);
+  // entry_flags adds entry-level keys beside includeColors (the Brushes panel's captureSize and
+  // includeToolSettings); additive vocabulary, scripts never need them.
   QString save(const QString& name, const ScriptStroke& settings, bool colors,
-               const QString& existing = {}, const QString& folder = {});
+               const QString& existing = {}, const QString& folder = {},
+               const QJsonObject& entry_flags = {});
+  // Renames and/or refiles a saved preset without touching its settings.
+  void update_entry(const QString& id, const QString& name, const QString& folder);
+  // Copies a saved preset (settings, tip snapshot and flags) under a new id; returns it.
+  QString duplicate(const QString& id, const QString& name);
   void remove(const QString& id);
   static QJsonObject settings(const ScriptStroke& stroke);
   static QStringList setting_keys();

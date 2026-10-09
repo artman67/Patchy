@@ -40,7 +40,9 @@ the working brush (`ui/current_brush`), recording any preset as its base, which 
 state reports as `currentBrush.presetId`; ordinary stroke calls restore it. Presets saved through the AI appear in the
 existing preset control, whose final entries save/manage user presets. Built-in
 IDs remain unchanged; a launch restores the remembered working brush, else Round.
-Working changes do not update a saved preset. UI activation preserves colors unless the preset includes them.
+Working changes do not update a saved preset. UI activation preserves colors unless the preset includes them,
+and keeps the artist's size or tool settings when the preset says `captureSize`/`includeToolSettings`
+false ([brush-panels.md](brush-panels.md)); Brush Settings locks apply to UI picks and `activate`.
 
 ## Resource persistence
 

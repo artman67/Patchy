@@ -9312,8 +9312,8 @@ RGB: %2, %3, %4</translation>
         <translation>Dinâmica</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush</source>
-        <translation>Dinâmica e efeitos do pincel para o pincel atual</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>Dinâmica e efeitos do pincel atual: mostra o painel Configurações do pincel</translation>
     </message>
 </context>
 <context>
@@ -9351,20 +9351,12 @@ RGB: %2, %3, %4</translation>
         <translation>Número de passos de espaçamento até a atenuação total</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>Formato da ponta</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>Ângulo:</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>Redondeza:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>Dinâmica de Forma</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9415,10 +9407,6 @@ RGB: %2, %3, %4</translation>
         <translation>Tremulação com inversão em Y</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>Dispersão</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>Dispersão:</translation>
     </message>
@@ -9443,10 +9431,6 @@ RGB: %2, %3, %4</translation>
         <translation>Controle de contagem:</translation>
     </message>
     <message>
-        <source>Transfer</source>
-        <translation>Transferência</translation>
-    </message>
-    <message>
         <source>Opacity Jitter:</source>
         <translation>Tremulação de opacidade:</translation>
     </message>
@@ -9469,10 +9453,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Flow Control:</source>
         <translation>Controle de fluxo:</translation>
-    </message>
-    <message>
-        <source>Texture</source>
-        <translation>Textura</translation>
     </message>
     <message>
         <source>Enable Texture</source>
@@ -9507,10 +9487,6 @@ RGB: %2, %3, %4</translation>
         <translation>Inverter textura</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>Pincel duplo</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>Ativar pincel duplo</translation>
     </message>
@@ -9525,10 +9501,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>Espaçamento Secundário:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>Dinâmica de cores</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -9563,10 +9535,6 @@ RGB: %2, %3, %4</translation>
         <translation>Aplicar por ponta</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>Efeitos de pincel</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>Bordas molhadas</translation>
     </message>
@@ -9581,6 +9549,153 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>Redefinir o formato da ponta e todas as dinâmicas para os padrões</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>Arraste para definir o ângulo da ponta; arraste um ponto para mudar a redondez</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>Acumula tinta enquanto o ponteiro fica parado, como a opção Aerógrafo. Marque a caixa para ativar.</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>Desbloquear tudo</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>Redefinir todas as configurações bloqueadas: desbloquear todas as seções</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>Opções de Configurações do pincel</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>Limpar controles do pincel</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>Redefinir todas as configurações bloqueadas</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>Criar uma nova predefinição de pincel com estas configurações</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>Pontas de pincel: clique em uma para pintar com ela</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Tamanho:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>Suavidade:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Espaçamento</translation>
+    </message>
+    <message>
+        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Desligado usa o espaçamento da própria ponta; ligado define a distância entre as marcas como porcentagem do tamanho do pincel</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>Suavização:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>Suavização do traçado: 0% pinta o trajeto original do ponteiro</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>Modo de corda esticada</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>Acompanhar o traçado</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>Completar ao terminar o traçado</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>Ajustar ao zoom</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>Redondo</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>Quadrado</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>Bloqueado: ao escolher outro pincel, estas configurações são mantidas. Clique para desbloquear.</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>Clique para bloquear: ao escolher outro pincel, estas configurações são mantidas</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>Bloqueado: %1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>Desbloquear seção</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>Bloquear seção</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>Forma da ponta do pincel</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>Dinâmica de Forma</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>Dispersão</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>Textura</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>Pincel duplo</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>Dinâmica de cores</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>Transferência</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>Bordas molhadas</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>Acúmulo</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>Suavização</translation>
     </message>
 </context>
 <context>
@@ -9647,6 +9762,113 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Manage…</source>
         <translation>Gerenciar…</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>(modificado)</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Tamanho:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>Tamanho do pincel em pixels</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>Pesquisar pincéis</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>Exibição em lista</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>Exibição em grade de miniaturas</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>Mostrar o painel Configurações do pincel</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>Opções do painel Pincéis</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>Nova pasta...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>Nova predefinição de pincel...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>Excluir o pincel ou a pasta selecionados</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>Pincéis gerais</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>Pincel atual (modificado)</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>Pincel atual</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>Renomear...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Duplicar</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Excluir</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>Importar pincéis...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>Exibição em lista</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>Exibição em grade de miniaturas</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>Nova pasta</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Nome:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Pincéis</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Renomear</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 Cópia</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>Excluir o pincel &quot;%1&quot;?</translation>
     </message>
 </context>
 <context>
@@ -13507,10 +13729,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>Pincel de trabalho</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>Salvar predefinição de pincel</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -18709,6 +18927,22 @@ Y: %2
         <source>Reset &amp;Panel Layout</source>
         <translation>Redefinir layout dos &amp;painéis</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 Cópia</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>Predefinição de pincel salva: %1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Pincéis</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>Configurações do pincel</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -18858,6 +19092,53 @@ Y: %2
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>Nova predefinição de pincel</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Nome:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>Nenhuma pasta</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>Escolha uma pasta ou digite o nome de uma nova pasta</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>Pasta:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>Capturar tamanho do pincel na predefinição</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>Desligado: escolher a predefinição mantém o tamanho com que você está pintando</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>Incluir configurações da ferramenta</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>Opacidade, fluxo, suavização, mapeamento da pressão da caneta e valores do pincel misturador</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>Incluir cor</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>Escolher a predefinição também define as cores de primeiro plano e de fundo</translation>
     </message>
 </context>
 <context>

@@ -2,6 +2,7 @@
 
 #include "core/brush_dynamics.hpp"
 #include "core/brush_tip.hpp"
+#include "ui/brush_settings_sections.hpp"
 
 #include <QJsonObject>
 #include <QObject>
@@ -112,15 +113,22 @@ public:
   // Puts back a remembered brush and base (startup), modified state included.
   void restore(const WorkingBrush& brush, const BrushBase& base);
 
+  // Brush Settings section locks: tool state, never part of a preset. pick() and pick_tip()
+  // keep the current values of every locked section (picked_over).
+  [[nodiscard]] BrushSectionMask locks() const noexcept { return locks_; }
+  void set_locks(BrushSectionMask locks);
+
 signals:
   // Change flags for what may differ; listeners may ignore them and re-read brush().
   void changed(unsigned changes);
+  void locks_changed();
 
 private:
   void replace(WorkingBrush next, unsigned changes);
 
   WorkingBrush brush_;
   BrushBase base_;
+  BrushSectionMask locks_{0};
   // Round and Square share one session tip shape and dynamics: leaving them for a bitmap tip
   // and coming back restores what was last used on them.
   struct ProceduralShape {

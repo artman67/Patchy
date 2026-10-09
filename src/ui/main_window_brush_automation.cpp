@@ -5,6 +5,8 @@
 #include "ui/brush_tip_picker.hpp"
 #include "ui/brush_dynamics_popup.hpp"
 #include "ui/brush_presets.hpp"
+#include "ui/brush_settings_sections.hpp"
+#include "ui/brushes_panel.hpp"
 #include "ui/current_brush.hpp"
 #include "ui/script_engine.hpp"
 #include "ui/dialog_utils.hpp"
@@ -64,10 +66,26 @@ void MainWindow::pick_brush_preset(const QString& preset_id) {
     try {
       auto& library = brush_automation_library(); library.refresh();
       auto s = library.resolve(QJsonObject{{"presetId", preset_id}});
-      if (!library.preset(preset_id)["includeColors"].toBool()) {
+      const auto entry = library.preset(preset_id);
+      if (!entry["includeColors"].toBool()) {
         s.color = canvas_->primary_color(); s.background = canvas_->secondary_color();
       }
+      // A preset saved without its size or tool settings keeps the artist's current ones.
+      const auto& working = current_brush().brush();
+      if (!entry["captureSize"].toBool(true)) s.size = working.size;
+      const auto tool_settings = entry["includeToolSettings"].toBool(true);
+      if (!tool_settings) {
+        s.opacity = s.mixer ? 100 : working.opacity; s.flow = s.mixer ? current_mixer_flow_ : working.flow;
+        s.smoothing = current_brush_smoothing_; s.pulled_string = current_brush_smoothing_pulled_string_;
+        s.catch_up = current_brush_smoothing_catch_up_; s.catch_up_end = current_brush_smoothing_catch_up_end_;
+        s.zoom_adjust = current_brush_smoothing_zoom_adjust_;
+        s.wet = current_mixer_wet_; s.load = current_mixer_load_; s.mix = current_mixer_mix_;
+      }
       activate_automation_brush(s);
+      if (!tool_settings && preset_pen_override_) {
+        // No saved pen mapping: the global pen preferences stay in charge.
+        preset_pen_override_.reset(); apply_pen_input_settings(canvas_);
+      }
     } catch (const std::exception& e) { show_status_error(tr("Brush preset operation failed: %1").arg(translate_data_text(e.what()))); }
     return;
   }
@@ -92,6 +110,12 @@ void MainWindow::pick_brush_preset(const QString& preset_id) {
 void MainWindow::activate_automation_brush(const ScriptStroke& input) {
   if (!canvas_) brush_input::invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "active document"));
   auto s = input;
+  if ((current_brush().locks() & brush_section_bit(BrushSection::Smoothing)) != 0U) {
+    // A locked Smoothing section keeps the artist's values (the other sections lock in pick()).
+    s.smoothing = current_brush_smoothing_; s.pulled_string = current_brush_smoothing_pulled_string_;
+    s.catch_up = current_brush_smoothing_catch_up_; s.catch_up_end = current_brush_smoothing_catch_up_end_;
+    s.zoom_adjust = current_brush_smoothing_zoom_adjust_;
+  }
   activate_tool(s.mixer ? CanvasTool::MixerBrush : s.erase ? CanvasTool::Eraser : CanvasTool::Brush);
   // The canvas takes the complete brush, including its pen mapping, Mixer and Smoothing values.
   canvas_->apply_script_brush(s);
@@ -127,19 +151,22 @@ void MainWindow::activate_automation_brush(const ScriptStroke& input) {
   canvas_->refresh_tool_cursor(); refresh_document_info();
 }
 QString MainWindow::save_working_brush_as_preset(const QString& name) {
+  return save_working_brush_as_preset(name, BrushPresetSaveOptions{});
+}
+QString MainWindow::save_working_brush_as_preset(const QString& name, const BrushPresetSaveOptions& options) {
   if (!canvas_) brush_input::invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "active document"));
   fold_canvas_brush_values();
-  const auto id = brush_automation_library().save(name, canvas_->current_script_brush(), false);
+  QJsonObject flags;
+  if (!options.capture_size) flags["captureSize"] = false;
+  if (!options.include_tool_settings) flags["includeToolSettings"] = false;
+  const auto id = brush_automation_library().save(name, canvas_->current_script_brush(), options.include_color, {},
+                                                  options.folder, flags);
   if (!eraser_brush_settings_active_) current_brush().rebase(BrushBase::Kind::Preset, id);
   return id;
 }
 void MainWindow::save_current_automation_brush() {
-  if (!canvas_) return;
-  bool accepted = false;
-  const auto name = QInputDialog::getText(this, tr("Save Brush Preset"), tr("Name:"), QLineEdit::Normal, {}, &accepted);
-  if (!accepted || name.trimmed().isEmpty()) return;
-  try { (void)save_working_brush_as_preset(name); }
-  catch (const std::exception& e) { show_status_error(tr("Could not save brush preset: %1").arg(translate_data_text(e.what()))); }
+  // The options-bar combo's entry opens the same New Brush Preset dialog as the panels.
+  new_brush_preset_from_panel(brushes_panel_ != nullptr ? brushes_panel_->selected_folder() : QString());
 }
 void MainWindow::manage_automation_brush_presets() {
   auto& library = brush_automation_library(); library.refresh();
@@ -170,12 +197,15 @@ void MainWindow::manage_automation_brush_presets() {
   action(tr("Update"), [&](const QString& id) {
     if (!canvas_) return;
     const auto p=library.preset(id);
-    (void)library.save(p["name"].toString(),canvas_->current_script_brush(),p["includeColors"].toBool(),id,p["folder"].toString());
+    QJsonObject flags;  // keep the record's capture choices
+    for (const auto* key : {"captureSize", "includeToolSettings"}) if (p.contains(key)) flags[key] = p[key];
+    (void)library.save(p["name"].toString(),canvas_->current_script_brush(),p["includeColors"].toBool(),id,p["folder"].toString(),flags);
   });
   const auto rename = [&](const QString& id, bool duplicate) {
     const auto p=library.preset(id); bool accepted=false;
     const auto name=QInputDialog::getText(&dialog,duplicate?tr("Duplicate Brush"):tr("Rename Brush"),tr("Name:"),QLineEdit::Normal,p["name"].toString(),&accepted);
-    if(accepted && !name.trimmed().isEmpty()) (void)library.save(name,library.resolve(QJsonObject{{"presetId",id}}),p["includeColors"].toBool(),duplicate?QString():id,p["folder"].toString());
+    if(!accepted || name.trimmed().isEmpty()) return;
+    if (duplicate) (void)library.duplicate(id, name); else library.update_entry(id, name, p["folder"].toString());
   };
   action(tr("Duplicate"),[&](const QString& id){rename(id,true);});
   action(tr("Rename"),[&](const QString& id){rename(id,false);});

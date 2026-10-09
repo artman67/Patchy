@@ -9,6 +9,9 @@
 
 #include "ui/brush_automation.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_settings_panel.hpp"
+#include "ui/brush_settings_sections.hpp"
+#include "ui/brushes_panel.hpp"
 #include "ui/brush_presets.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
@@ -16,14 +19,20 @@
 #include "ui/current_brush.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/image_document_io.hpp"
+#include "ui/localization.hpp"
+#include "ui/new_brush_preset_dialog.hpp"
 
+#include <QAction>
 #include <QComboBox>
+#include <QDockWidget>
 #include <QInputDialog>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QMessageBox>
 #include <QSettings>
 #include <QSignalBlocker>
+#include <QSpinBox>
+#include <QStringList>
 #include <QStatusBar>
 
 #include <cmath>
@@ -301,6 +310,14 @@ void MainWindow::set_eraser_brush_settings_active(bool active) {
 }
 
 bool MainWindow::restore_working_brush(const QSettings& settings) {
+  // Brush Settings locks are tool state: they come back even without a remembered brush.
+  BrushSectionMask locks = 0U;
+  for (const auto& key : settings.value(QStringLiteral("tools/brushSectionLocks")).toStringList()) {
+    if (const auto section = brush_section_from_key(key); section && brush_section_lockable(*section)) {
+      locks |= brush_section_bit(*section);
+    }
+  }
+  current_brush().set_locks(locks);
   const auto state =
       QJsonDocument::fromJson(settings.value(QStringLiteral("tools/workingBrush")).toString().toUtf8())
           .object();
@@ -340,6 +357,15 @@ bool MainWindow::restore_working_brush(const QSettings& settings) {
 
 void MainWindow::save_working_brush(QSettings& settings) const {
   if (current_brush_ != nullptr) {
+    QStringList locks;
+    for (const auto section : kBrushSections) {
+      if ((current_brush_->locks() & brush_section_bit(section)) != 0U) {
+        locks << brush_section_key(section);
+      }
+    }
+    settings.setValue(QStringLiteral("tools/brushSectionLocks"), locks);
+  }
+  if (current_brush_ != nullptr) {
     const auto& base = current_brush_->base();
     const QJsonObject state{
         {"brush", working_brush_to_json(current_brush_->brush())},
@@ -348,6 +374,114 @@ void MainWindow::save_working_brush(QSettings& settings) const {
                              {"brush", working_brush_to_json(base.settings)}}}};
     settings.setValue(QStringLiteral("tools/workingBrush"),
                       QString::fromUtf8(QJsonDocument(state).toJson(QJsonDocument::Compact)));
+  }
+}
+
+void MainWindow::wire_brush_panels() {
+  // Picks and size-group edits go through the same MainWindow paths as the options bar; the
+  // panels' own brush edits go straight to CurrentBrush.
+  connect(brushes_panel_, &BrushesPanel::preset_picked, this, [this](const QString& id) { pick_brush_preset(id); });
+  connect(brushes_panel_, &BrushesPanel::tip_picked, this,
+          [this](const QString& id) { set_active_brush_tip(id, true); });
+  connect(brushes_panel_, &BrushesPanel::size_edited, this, [this](int size) {
+    BrushEdit edit;
+    edit.size = size;
+    edit_brush_option(edit);
+  });
+  connect(brushes_panel_, &BrushesPanel::new_preset_requested, this,
+          [this](const QString& folder) { new_brush_preset_from_panel(folder); });
+  connect(brushes_panel_, &BrushesPanel::import_requested, this, [this] { import_brush_tips_from_abr(); });
+  connect(brushes_panel_, &BrushesPanel::show_settings_requested, this, [this] { show_brush_settings_panel(); });
+  connect(brush_settings_panel_, &BrushSettingsPanel::size_group_edited, this,
+          [this](const BrushEdit& edit) { edit_brush_option(edit); });
+  connect(brush_settings_panel_, &BrushSettingsPanel::tip_picked, this,
+          [this](const QString& id) { set_active_brush_tip(id, true); });
+  connect(brush_settings_panel_, &BrushSettingsPanel::new_preset_requested, this,
+          [this] { new_brush_preset_from_panel(brushes_panel_->selected_folder()); });
+  connect(brush_settings_panel_, &BrushSettingsPanel::smoothing_edited, this,
+          [this](const BrushSettingsPanel::Smoothing& smoothing) {
+            // Through the options-bar controls, whose handlers own the canvas and the saved state.
+            if (auto* spin = findChild<QSpinBox*>(QStringLiteral("brushSmoothingSpin")); spin != nullptr) {
+              spin->setValue(smoothing.amount);
+            }
+            for (const auto& [action, checked] :
+                 {std::pair{brush_smoothing_pulled_string_action_, smoothing.pulled_string},
+                  std::pair{brush_smoothing_catch_up_action_, smoothing.catch_up},
+                  std::pair{brush_smoothing_catch_up_end_action_, smoothing.catch_up_end},
+                  std::pair{brush_smoothing_zoom_adjust_action_, smoothing.zoom_adjust}}) {
+              if (action != nullptr && action->isChecked() != checked) {
+                action->setChecked(checked);
+              }
+            }
+          });
+  connect(&current_brush(), &CurrentBrush::locks_changed, this, [this] { schedule_save_tool_settings(); });
+  // The options-bar Smoothing controls are the other view of the panel's Smoothing section.
+  if (auto* spin = findChild<QSpinBox*>(QStringLiteral("brushSmoothingSpin")); spin != nullptr) {
+    connect(spin, &QSpinBox::valueChanged, this, [this] { sync_brush_panels(); });
+  }
+  for (auto* action : {brush_smoothing_pulled_string_action_, brush_smoothing_catch_up_action_,
+                       brush_smoothing_catch_up_end_action_, brush_smoothing_zoom_adjust_action_}) {
+    if (action != nullptr) {
+      connect(action, &QAction::toggled, this, [this] { sync_brush_panels(); });
+    }
+  }
+  sync_brush_panels();
+}
+
+void MainWindow::sync_brush_panels() {
+  BrushSettingsPanel::Smoothing smoothing;
+  smoothing.amount = current_brush_smoothing_;
+  smoothing.pulled_string = current_brush_smoothing_pulled_string_;
+  smoothing.catch_up = current_brush_smoothing_catch_up_;
+  smoothing.catch_up_end = current_brush_smoothing_catch_up_end_;
+  smoothing.zoom_adjust = current_brush_smoothing_zoom_adjust_;
+  // The active size group: the canvas holds it live (the Eraser's own while it is active).
+  const auto size = canvas_ != nullptr ? canvas_->brush_size() : current_brush().brush().size;
+  const auto softness = canvas_ != nullptr ? canvas_->brush_softness() : current_brush().brush().softness;
+  if (brushes_panel_ != nullptr) {
+    brushes_panel_->set_size(size);
+  }
+  if (brush_settings_panel_ != nullptr) {
+    brush_settings_panel_->set_size_group(size, softness);
+    brush_settings_panel_->set_smoothing(smoothing);
+  }
+}
+
+void MainWindow::new_brush_preset_from_panel(const QString& folder) {
+  if (canvas_ == nullptr || brushes_panel_ == nullptr) {
+    return;
+  }
+  if (brush_settings_panel_ != nullptr) {
+    brush_settings_panel_->flush_pending_edit();
+  }
+  const auto& base = current_brush().base();
+  QString default_name;
+  if (base.kind == BrushBase::Kind::Preset) {
+    if (const auto* preset = find_brush_preset(base.id); preset != nullptr) {
+      default_name = brush_preset_display_name(*preset);
+    } else {
+      try {
+        default_name = brush_automation_library().preset(base.id)[QStringLiteral("name")].toString();
+      } catch (const std::exception&) {
+      }
+    }
+  } else if (const auto* entry = brush_tip_library().find_entry(base.id); entry != nullptr) {
+    default_name = entry->name;
+  }
+  if (default_name.isEmpty()) {
+    default_name = tr("Brush %1").arg(brush_automation_library().presets().size() + 1);
+  } else if (current_brush().modified()) {
+    default_name = tr("%1 Copy").arg(default_name);
+  }
+  const auto request = request_new_brush_preset(this, default_name, brushes_panel_->folder_names(), folder);
+  if (!request) {
+    return;
+  }
+  try {
+    (void)save_working_brush_as_preset(request->name, request->options);
+    statusBar()->showMessage(tr("Saved brush preset: %1").arg(request->name));
+  } catch (const std::exception& e) {
+    show_status_error(tr("Could not save brush preset: %1").arg(translate_data_text(e.what())));
   }
 }
 

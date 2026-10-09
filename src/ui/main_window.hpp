@@ -118,6 +118,9 @@ struct ImageSequenceNaming;
 // create_actions() build-phase context (main_window_actions_internal.hpp).
 struct ActionBuildContext;
 class BrushDynamicsButton;
+class BrushesPanel;
+class BrushSettingsPanel;
+struct BrushPresetSaveOptions;
 class CurrentBrush;
 struct BrushEdit;
 class BrushTipLibrary;
@@ -204,6 +207,11 @@ public:
   // Saves the active tool's current brush as a new saved preset and records it as the base.
   // Returns the new id; throws std::exception on invalid input or a write failure.
   QString save_working_brush_as_preset(const QString& name);
+  // The same with the New Brush Preset dialog's choices (folder, size, tool settings, color).
+  QString save_working_brush_as_preset(const QString& name, const BrushPresetSaveOptions& options);
+  // Shows the Brush Settings panel: docked or floating, expanded and in front of its tab group
+  // (Window > Brush Settings, the Dynamics button, the Brushes panel's settings button).
+  void show_brush_settings_panel();
   void refresh_automation_brush_presets();
   void manage_automation_brush_presets();
   void save_current_automation_brush();
@@ -502,6 +510,15 @@ private:
   void set_window_screen_size(QSize physical_size);
   void create_docks();
   void create_palette_dock();
+  // The Brushes and Brush Settings docks (docs/brush-panels.md), their Window menu toggles
+  // and their wiring to the working brush (main_window_brush.cpp).
+  void create_brush_docks();
+  // Opens the New Brush Preset dialog and saves the working brush into `folder` by default.
+  void new_brush_preset_from_panel(const QString& folder);
+  // Brings both panels' size group and Smoothing up to date with the active canvas.
+  void sync_brush_panels();
+  // Connects the brush panels' picks and edits to the working brush (main_window_brush.cpp).
+  void wire_brush_panels();
   // Palette (indexed) mode plumbing. Every document-palette mutation goes through
   // these so the undo snapshot, the revision bump (app-globally unique values,
   // keying the canvas LUT cache), the indexed_palette export mirror, and the UI
@@ -1736,6 +1753,7 @@ private:
   void apply_transform_controls_from_ui();
   void sync_transform_controls_from_canvas();
   void register_option_action(QWidget* widget, std::initializer_list<CanvasTool> tools);
+  void register_option_action(QWidget* widget, std::vector<CanvasTool> tools);
   void register_retranslation(std::function<void()> callback);
   void retranslate_ui();
   void retranslate_bound_children();
@@ -2062,6 +2080,10 @@ private:
   StyleLibrary* style_library_{nullptr};
   BrushTipPicker* brush_tip_picker_{nullptr};
   BrushDynamicsButton* brush_dynamics_button_{nullptr};
+  QDockWidget* brushes_dock_{nullptr};
+  BrushesPanel* brushes_panel_{nullptr};
+  QDockWidget* brush_settings_dock_{nullptr};
+  BrushSettingsPanel* brush_settings_panel_{nullptr};
   // The options-bar size-group controls; they show the active group (working brush or Eraser).
   struct BrushOptionControls {
     QSpinBox* size{nullptr};

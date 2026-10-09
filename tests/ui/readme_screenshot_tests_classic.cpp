@@ -827,29 +827,18 @@ void shot_readme_brush_dynamics() {
     paint_readme_polyline(*canvas, readme_wave_points(90.0, 1090.0, stroke.y_center, stroke.amplitude));
   }
 
+  // The Dynamics button opens the docked Brush Settings panel beside the strokes.
   auto* button = window.findChild<QToolButton*>(QStringLiteral("brushDynamicsButton"));
   CHECK(button != nullptr);
   button->click();
-  QApplication::processEvents();
-  QWidget* popup = nullptr;
-  for (auto* widget : QApplication::topLevelWidgets()) {
-    if (widget->objectName() == QStringLiteral("brushDynamicsPopup") && widget->isVisible()) {
-      popup = widget;
-    }
+  for (int pass = 0; pass < 4; ++pass) {
+    QApplication::processEvents();
   }
-  CHECK(popup != nullptr);
-  // Drop the popup under the options-bar Dynamics button; the offscreen
-  // platform's small virtual screen otherwise clamps it over the menu bar.
-  const QPoint popup_offset(700, 96);
-  popup->move(window.geometry().topLeft() + popup_offset);
-  QApplication::processEvents();
+  auto* dock = window.findChild<QDockWidget*>(QStringLiteral("brushSettingsDock"));
+  CHECK(dock != nullptr && dock->isVisible());
 
   reset_readme_status_bar(window);
-  auto base = window.grab().toImage();
-  draw_readme_overlay(base, popup->grab().toImage(), popup_offset);
-  save_readme_shot("shot_readme_brush_dynamics", base);
-  popup->close();
-  QApplication::processEvents();
+  save_readme_shot("shot_readme_brush_dynamics", window.grab().toImage());
   clear_brush_tip_test_state();
 }
 

@@ -938,6 +938,13 @@ ${PATCHY_LUPDATE_MANIFEST_SOURCES}
       src/ui/blend_mode_ui.cpp
       src/ui/brush_dynamics_popup.hpp
       src/ui/brush_dynamics_popup.cpp
+      src/ui/brush_settings_sections.cpp
+      src/ui/brush_settings_panel.hpp
+      src/ui/brush_settings_panel.cpp
+      src/ui/brush_stroke_preview.cpp
+      src/ui/brushes_panel.hpp
+      src/ui/brushes_panel.cpp
+      src/ui/new_brush_preset_dialog.cpp
       src/ui/brush_presets.cpp
       src/ui/brush_automation.cpp
       src/ui/main_window_brush_automation.cpp
@@ -1798,6 +1805,7 @@ if(PATCHY_BUILD_TESTS)
       tests/ui/brush_pattern_palette_tests.cpp
       tests/ui/brush_pattern_palette_tests_patterns_palette.cpp
       tests/ui/brush_pattern_palette_tests_brush_dynamics.cpp
+      tests/ui/brush_pattern_palette_tests_brush_panels.cpp
       tests/ui/layer_panel_organization_tests.cpp
       tests/ui/layer_panel_organization_tests_animation.cpp
       tests/ui/layer_panel_organization_tests_cross_document.cpp

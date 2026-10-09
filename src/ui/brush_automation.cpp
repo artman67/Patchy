@@ -302,7 +302,8 @@ QJsonObject BrushAutomationLibrary::capture(const ScriptStroke& s) {
   return result;
 }
 QString BrushAutomationLibrary::save(const QString& name, const ScriptStroke& s, bool colors,
-                                    const QString& existing, const QString& folder) {
+                                    const QString& existing, const QString& folder,
+                                    const QJsonObject& entry_flags) {
   if (name.trimmed().isEmpty()) invalid("name");
   if (!QDir().mkpath(directory_)) invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset directory"));
   QLockFile lock(QDir(directory_).filePath("write.lock"));
@@ -314,6 +315,9 @@ QString BrushAutomationLibrary::save(const QString& name, const ScriptStroke& s,
   if (!colors) { config.remove("color"); config.remove("backgroundColor"); }
   QJsonObject entry{{"version", 1}, {"id", id}, {"name", name.trimmed()}, {"folder", folder}, {"source", "user"},
                     {"settings", config}, {"includeColors", colors}};
+  for (auto it = entry_flags.begin(); it != entry_flags.end(); ++it) {
+    if (!entry.contains(it.key())) entry[it.key()] = it.value();
+  }
   if (s.tip) {
     QByteArray bytes; QBuffer buffer(&bytes); buffer.open(QIODevice::WriteOnly);
     if (!coverage_image_from_brush_tip(*s.tip).save(&buffer, "PNG")) invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset tip"));
@@ -323,6 +327,39 @@ QString BrushAutomationLibrary::save(const QString& name, const ScriptStroke& s,
   QSaveFile file(QDir(directory_).filePath(id + ".json")); const auto bytes = QJsonDocument(entry).toJson();
   if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset write"));
   refresh(); return id;
+}
+namespace {
+// Writes one preset record; the caller holds the write lock.
+void write_preset_entry(const QString& directory, const QJsonObject& entry) {
+  QSaveFile file(QDir(directory).filePath(entry["id"].toString() + ".json"));
+  const auto bytes = QJsonDocument(entry).toJson();
+  if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit())
+    invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset write"));
+}
+}
+void BrushAutomationLibrary::update_entry(const QString& id, const QString& name, const QString& folder) {
+  if (name.trimmed().isEmpty()) invalid("name");
+  QLockFile lock(QDir(directory_).filePath("write.lock"));
+  if (!lock.tryLock(0)) invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset library busy"));
+  refresh();
+  auto entry = preset(id);
+  if (entry["source"].toString() != "user") invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset is read-only"));
+  entry["name"] = name.trimmed(); entry["folder"] = folder;
+  write_preset_entry(directory_, entry);
+  refresh();
+}
+QString BrushAutomationLibrary::duplicate(const QString& id, const QString& name) {
+  if (name.trimmed().isEmpty()) invalid("name");
+  QLockFile lock(QDir(directory_).filePath("write.lock"));
+  if (!lock.tryLock(0)) invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset library busy"));
+  refresh();
+  auto entry = preset(id);
+  if (entry["source"].toString() != "user") invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset is read-only"));
+  const auto copy_id = QUuid::createUuid().toString(QUuid::WithoutBraces);
+  entry["id"] = copy_id; entry["name"] = name.trimmed();
+  write_preset_entry(directory_, entry);
+  refresh();
+  return copy_id;
 }
 void BrushAutomationLibrary::remove(const QString& id) {
   QLockFile lock(QDir(directory_).filePath("write.lock")); if (!lock.tryLock(0)) invalid(QCoreApplication::translate("patchy::ui::BrushAutomationLibrary", "preset library busy"));

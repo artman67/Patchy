@@ -123,8 +123,12 @@ QJSValue ScriptEngineHost::scriptBrushCall(const QString& method, const QJSValue
       auto settings = duplicate ? library.resolve(QJsonObject{{"presetId", id}}) : library.resolve(json_object(a(1)));
       const auto old = id.isEmpty() ? QJsonObject() : library.preset(id);
       const auto name = update ? options.value("name").toString(old["name"].toString()) : text_arg(a(duplicate ? 1 : 0), "name");
+      // The Brushes panel's capture choices ride along with an update or a copy.
+      QJsonObject flags;
+      for (const auto* key : {"captureSize", "includeToolSettings"}) if (old.contains(key)) flags[key] = old[key];
       const auto saved = library.save(name, settings, boolean(options, "includeColors", old["includeColors"].toBool()),
-                                     update ? id : QString(), options.value("folder").toString(old["folder"].toString()));
+                                     update ? id : QString(), options.value("folder").toString(old["folder"].toString()),
+                                     flags);
       return js(public_preset(library.preset(saved)));
     }
     if (method == "removePreset") { library.remove(text_arg(a(0), "presetId")); return QJSValue(true); }

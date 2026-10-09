@@ -148,6 +148,10 @@ interface PatchyBrushTipInfo {
 interface PatchyBrushPreset {
   id: string; name: string; source: "builtin" | "user"; folder?: string;
   includeColors?: boolean; settings: PatchyBrushSettings;
+  /** false when saved from the Brushes panel without its size or tool settings: picking it in
+   * the UI keeps the artist's current size (or Opacity, Flow, Smoothing, pen mapping, Mixer
+   * values). Scripts always get the stored settings. Absent means true. */
+  captureSize?: boolean; includeToolSettings?: boolean;
 }
 interface PatchyBrushes {
   listTips(): PatchyBrushTipInfo[];

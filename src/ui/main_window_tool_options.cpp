@@ -41,6 +41,8 @@
 #include "ui/brush_automation.hpp"
 #include "ui/brush_dynamics_popup.hpp"
 #include "ui/brush_presets.hpp"
+#include "ui/brush_settings_panel.hpp"
+#include "ui/brush_settings_sections.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
 #include "ui/brush_tip_picker.hpp"
@@ -2353,6 +2355,13 @@ void MainWindow::register_option_action(QWidget* widget, std::initializer_list<C
   option_actions_.emplace_back(widget, std::vector<CanvasTool>(tools.begin(), tools.end()));
 }
 
+void MainWindow::register_option_action(QWidget* widget, std::vector<CanvasTool> tools) {
+  if (widget == nullptr) {
+    return;
+  }
+  option_actions_.emplace_back(widget, std::move(tools));
+}
+
 void MainWindow::refresh_options_bar() {
   // Runs on every passive transform-box change (each Move-tool press), so it
   // reports under PATCHY_UI_PROFILE=1 like the other per-interaction refreshes.
@@ -2681,6 +2690,10 @@ void MainWindow::refresh_options_bar() {
   update_selection_mode_buttons(canvas_ != nullptr ? canvas_->selection_mode()
                                                    : CanvasWidget::SelectionMode::Replace);
   sync_text_alignment_buttons_from_editor();
+  if (brush_settings_panel_ != nullptr) {
+    // Grey out the Brush Settings sections the active tool's strokes ignore.
+    brush_settings_panel_->set_tool_sections(brush_sections_for_tool(current_tool_));
+  }
 }
 
 void MainWindow::update_selection_mode_buttons(CanvasWidget::SelectionMode mode) {
@@ -2814,6 +2827,7 @@ void MainWindow::sync_brush_controls_from_canvas() {
   sync_smoothing_action(brush_smoothing_catch_up_action_, canvas_->brush_smoothing_catch_up());
   sync_smoothing_action(brush_smoothing_catch_up_end_action_, canvas_->brush_smoothing_catch_up_end());
   sync_smoothing_action(brush_smoothing_zoom_adjust_action_, canvas_->brush_smoothing_zoom_adjust());
+  sync_brush_panels();
 }
 
 }  // namespace patchy::ui

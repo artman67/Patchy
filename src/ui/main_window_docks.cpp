@@ -37,7 +37,11 @@
 #include "ui/app_settings.hpp"
 #include "render/compositor.hpp"
 #include "ui/blend_mode_ui.hpp"
+#include "ui/brush_automation.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_settings_panel.hpp"
+#include "ui/brushes_panel.hpp"
+#include "ui/current_brush.hpp"
 #include "ui/brush_presets.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
@@ -265,14 +269,17 @@ constexpr int kHistoryDockExpandedMinimumHeight = 90;
 constexpr int kHistoryDockPreferredHeight = 190;
 constexpr int kPropertiesDockMaximumHeight = 230;
 constexpr int kPaletteDockPreferredHeight = 320;
+constexpr int kBrushesDockPreferredHeight = 320;
 // A panel that starts closed lists its built-in tab partners here (restore_panel_layout).
 constexpr auto kBuiltInTabPartnersProperty = "patchy.builtInTabPartners";
+constexpr int kBrushSettingsDockPreferredHeight = 520;
 
 // The docks that share one width as the right panel stack. Every dock in the
 // column must be listed: one left out keeps its own minimum width and renders
 // as a shorter strip whenever the pinned or measured width exceeds it.
-const std::array<QString, 7>& right_dock_stack_names() {
-  static const std::array<QString, 7> names{
+const std::array<QString, 9>& right_dock_stack_names() {
+  static const std::array<QString, 9> names{
+      QStringLiteral("brushesDock"),    QStringLiteral("brushSettingsDock"),
       QStringLiteral("layersDock"),     QStringLiteral("channelsDock"),
       QStringLiteral("pathsDock"),      QStringLiteral("historyDock"),
       QStringLiteral("propertiesDock"), QStringLiteral("infoDock"),
@@ -1043,6 +1050,8 @@ void MainWindow::create_docks() {
   // dragging a dock back OUT by its tab under GroupedDragging (which also
   // drags a tabbed group as one unit by its shared title bar).
   setDockOptions(dockOptions() | QMainWindow::GroupedDragging);
+  // First, so the Brushes / Brush Settings group sits directly above Layers.
+  create_brush_docks();
   auto* layers_dock = new QDockWidget(tr("Layers"), this);
   layers_dock->setObjectName(QStringLiteral("layersDock"));
   bind_widget_text(layers_dock, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Layers"));
@@ -1886,6 +1895,11 @@ void MainWindow::create_docks() {
   update_right_dock_resize_handle_geometry(info_dock);
 
   create_palette_dock();
+  // With the brush tab group in the column, Qt lays the still unstyled window out while the
+  // Layers group is tabified and leaves that pass's minimum height (taller than the styled
+  // one) on the window, where it clamped the restored window geometry
+  // (ui_main_window_persists_window_geometry). Drop it; the next layout pass sets the real one.
+  setMinimumSize(0, 0);
   update_right_dock_minimum_width();
   // Re-measure once the first event-loop pass has shown and styled the docks:
   // only then can the real dock chrome and title heights be read.
@@ -2012,6 +2026,107 @@ void MainWindow::create_palette_dock() {
   install_right_dock_width_handle(palette_dock_);
   addDockWidget(Qt::RightDockWidgetArea, palette_dock_);
   update_right_dock_resize_handle_geometry(palette_dock_);
+}
+
+void MainWindow::create_brush_docks() {
+  // Both start closed in their built-in spot (one tab group above Layers): even collapsed, the
+  // group's title strip and tab bar would push the all-panels-expanded column past a 1080p
+  // work area. Window > Brushes / Brush Settings open them expanded (docs/brush-panels.md).
+  brushes_dock_ = new QDockWidget(tr("Brushes"), this);
+  brushes_dock_->setObjectName(QStringLiteral("brushesDock"));
+  bind_widget_text(brushes_dock_, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brushes"));
+  brushes_panel_ = new BrushesPanel(current_brush(), brush_tip_library(), brush_automation_library(), brushes_dock_);
+  brushes_panel_->setContentsMargins(kRightDockResizeHandleWidth, 0, 0, 0);
+  brushes_dock_->setWidget(brushes_panel_);
+  install_collapsible_dock_title(brushes_dock_, brushes_panel_, QStringLiteral("brushes"), 0, QWIDGETSIZE_MAX,
+                                 false, kBrushesDockPreferredHeight, [this](bool expanded) {
+                                   handle_right_dock_panel_toggled(brushes_dock_, expanded, 0);
+                                 });
+  install_right_dock_width_handle(brushes_dock_);
+  addDockWidget(Qt::RightDockWidgetArea, brushes_dock_);
+  update_right_dock_resize_handle_geometry(brushes_dock_);
+
+  brush_settings_dock_ = new QDockWidget(tr("Brush Settings"), this);
+  brush_settings_dock_->setObjectName(QStringLiteral("brushSettingsDock"));
+  bind_widget_text(brush_settings_dock_, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush Settings"));
+  brush_settings_panel_ = new BrushSettingsPanel(current_brush(), brush_tip_library(), brush_settings_dock_);
+  brush_settings_panel_->setContentsMargins(kRightDockResizeHandleWidth, 0, 0, 0);
+  // Squeezed below its natural height (a crowded column) the panel scrolls instead of pinning
+  // the window taller, like the Palette and Color panels.
+  auto* settings_scroll = new QScrollArea(brush_settings_dock_);
+  settings_scroll->setObjectName(QStringLiteral("brushSettingsScrollArea"));
+  settings_scroll->setFrameShape(QFrame::NoFrame);
+  settings_scroll->setWidgetResizable(true);
+  settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  settings_scroll->setMinimumHeight(12);
+  settings_scroll->setWidget(brush_settings_panel_);
+  brush_settings_dock_->setWidget(settings_scroll);
+  install_collapsible_dock_title(brush_settings_dock_, settings_scroll, QStringLiteral("brushSettings"), 0,
+                                 QWIDGETSIZE_MAX, false, kBrushSettingsDockPreferredHeight, [this](bool expanded) {
+                                   handle_right_dock_panel_toggled(brush_settings_dock_, expanded, 0);
+                                 });
+  install_right_dock_width_handle(brush_settings_dock_);
+  addDockWidget(Qt::RightDockWidgetArea, brush_settings_dock_);
+  tabifyDockWidget(brushes_dock_, brush_settings_dock_);
+  brushes_dock_->setProperty(kBuiltInTabPartnersProperty, QStringList{brush_settings_dock_->objectName()});
+  brush_settings_dock_->setProperty(kBuiltInTabPartnersProperty, QStringList{brushes_dock_->objectName()});
+  brushes_dock_->raise();
+  update_right_dock_resize_handle_geometry(brush_settings_dock_);
+  brushes_dock_->hide();
+  brush_settings_dock_->hide();
+  register_document_widget(brushes_panel_);
+  register_document_widget(brush_settings_panel_);
+
+  // Window menu toggles, above Reset Panel Layout. No default keys: F5 stays Force Refresh.
+  auto* window_menu = findChild<QMenu*>(QStringLiteral("windowMenu"));
+  auto* reset_action = findChild<QAction*>(QStringLiteral("windowResetPanelLayoutAction"));
+  struct PanelToggle {
+    QDockWidget* dock;
+    const char* title_prefix;
+    const char* action_name;
+    const char* hotkey_id;
+  };
+  for (const auto& toggle : {PanelToggle{brushes_dock_, "brushes", "windowBrushesPanelAction", "window.brushes_panel"},
+                             PanelToggle{brush_settings_dock_, "brushSettings", "windowBrushSettingsPanelAction",
+                                         "window.brush_settings_panel"}}) {
+    auto* action = toggle.dock->toggleViewAction();
+    action->setObjectName(QLatin1String(toggle.action_name));
+    action->setMenuRole(QAction::NoRole);
+    if (window_menu != nullptr) {
+      window_menu->insertAction(reset_action, action);
+    }
+    register_hotkey(action, QLatin1String(toggle.hotkey_id), QKeySequence());
+    // Showing a panel also expands it and brings it to the front of its tab group.
+    auto* dock = toggle.dock;
+    const auto collapse_name = QLatin1String(toggle.title_prefix) + QStringLiteral("DockCollapseButton");
+    connect(action, &QAction::triggered, this, [dock, collapse_name](bool shown) {
+      if (!shown) {
+        return;
+      }
+      if (auto* collapse = dock->findChild<QToolButton*>(collapse_name); collapse != nullptr) {
+        collapse->setChecked(true);
+      }
+      dock->raise();
+    });
+  }
+  if (window_menu != nullptr && reset_action != nullptr) {
+    window_menu->insertSeparator(reset_action);
+  }
+  wire_brush_panels();
+}
+
+void MainWindow::show_brush_settings_panel() {
+  if (brush_settings_dock_ == nullptr) {
+    return;
+  }
+  brush_settings_dock_->show();
+  if (auto* collapse = dock_collapse_toggle(brush_settings_dock_); collapse != nullptr) {
+    collapse->setChecked(true);
+  }
+  brush_settings_dock_->raise();
+  if (brush_settings_dock_->isFloating() || brush_settings_dock_->window() != this) {
+    brush_settings_dock_->window()->raise();
+  }
 }
 
 namespace {

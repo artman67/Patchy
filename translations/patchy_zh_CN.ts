@@ -9282,8 +9282,8 @@ RGB：%2, %3, %4</translation>
         <translation>动态</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the current brush</source>
-        <translation>当前画笔的画笔动态和效果</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>当前画笔的动态和效果：显示“画笔设置”面板</translation>
     </message>
 </context>
 <context>
@@ -9321,20 +9321,12 @@ RGB：%2, %3, %4</translation>
         <translation>渐隐所经过的间距步数</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>笔尖形状</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>角度:</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>圆度:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>形状动态</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9385,10 +9377,6 @@ RGB：%2, %3, %4</translation>
         <translation>翻转 Y 抖动</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>散布</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>散布:</translation>
     </message>
@@ -9413,10 +9401,6 @@ RGB：%2, %3, %4</translation>
         <translation>数量控制:</translation>
     </message>
     <message>
-        <source>Transfer</source>
-        <translation>传递</translation>
-    </message>
-    <message>
         <source>Opacity Jitter:</source>
         <translation>不透明度抖动:</translation>
     </message>
@@ -9439,10 +9423,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Flow Control:</source>
         <translation>流量控制:</translation>
-    </message>
-    <message>
-        <source>Texture</source>
-        <translation>纹理</translation>
     </message>
     <message>
         <source>Enable Texture</source>
@@ -9477,10 +9457,6 @@ RGB：%2, %3, %4</translation>
         <translation>反相纹理</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>双重画笔</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>启用双重画笔</translation>
     </message>
@@ -9495,10 +9471,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>次级间距:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>颜色动态</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -9533,10 +9505,6 @@ RGB：%2, %3, %4</translation>
         <translation>每笔尖应用</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>画笔效果</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>湿边</translation>
     </message>
@@ -9551,6 +9519,153 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>将笔尖形状和所有动态恢复为默认值</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>拖动以设置笔尖角度；拖动圆点可改变圆度</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>指针静止时持续堆积颜料，与“喷枪”选项相同。勾选此框即可启用。</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>全部解锁</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>复位所有锁定设置：解锁所有部分</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>画笔设置选项</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>清除画笔控制</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>复位所有锁定设置</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>用这些设置创建新画笔预设</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>画笔笔尖：单击一个即可用其绘画</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>大小:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>柔化:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>间距</translation>
+    </message>
+    <message>
+        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>关闭时使用笔尖自身的间距；开启时按画笔大小的百分比设置印迹之间的距离</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>平滑:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>描边平滑：0% 时按原始指针路径绘制</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>拉绳模式</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>描边补齐</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>补齐描边末端</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>调整缩放</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>圆形</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>方形</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>已锁定：选取其他画笔时保留这些设置。单击可解锁。</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>单击以锁定：选取其他画笔时保留这些设置</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>已锁定：%1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>解锁此部分</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>锁定此部分</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>画笔笔尖形状</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>形状动态</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>散布</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>纹理</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>双重画笔</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>颜色动态</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>传递</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>湿边</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>建立</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>平滑</translation>
     </message>
 </context>
 <context>
@@ -9617,6 +9732,113 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>%1 - %2 (%3×%4)</source>
         <translation>%1：%2 (%3×%4)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>（已修改）</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>大小:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>画笔大小（像素）</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>搜索画笔</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>列表视图</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>缩览图网格视图</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>显示“画笔设置”面板</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>画笔面板选项</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>新建文件夹...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>新建画笔预设...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>删除所选画笔或文件夹</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>常规画笔</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>当前画笔（已修改）</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>当前画笔</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>重命名...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>复制</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>删除</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>导入画笔...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>列表视图</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>缩览图网格视图</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>新建文件夹</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>名称:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>画笔</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>重命名</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 拷贝</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>删除画笔“%1”？</translation>
     </message>
 </context>
 <context>
@@ -12985,10 +13207,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>工作画笔</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>存储画笔预设</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -18653,6 +18871,22 @@ Baked into images: %1.</source>
         <source>Reset &amp;Panel Layout</source>
         <translation>复位面板布局(&amp;P)</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 拷贝</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>已存储画笔预设：%1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>画笔</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>画笔设置</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -18802,6 +19036,53 @@ Baked into images: %1.</source>
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>新建画笔预设</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>名称:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>无文件夹</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>选取文件夹或键入新文件夹名称</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>文件夹:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>在预设中存储画笔大小</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>关闭：选取该预设时保留您正在使用的大小</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>包含工具设置</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>不透明度、流量、平滑、压感映射和混合器画笔数值</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>包含颜色</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>选取该预设时也会设置前景色和背景色</translation>
     </message>
 </context>
 <context>

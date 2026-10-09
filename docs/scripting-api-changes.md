@@ -1,5 +1,11 @@
 # Scripting API compatibility
 
+2026-10-09 additive (API 1): saved brush presets may carry `captureSize: false` and
+`includeToolSettings: false`, written by the Brushes panel's New Brush Preset dialog. They
+only change what a pick in the UI applies (the artist's size or tool settings stay); the stored
+`settings` are complete either way, so `resolve`, strokes and `activate` are unchanged.
+`updatePreset` and `duplicatePreset` keep both flags. See docs/brush-panels.md.
+
 2026-10-07 additive (API 1): `doc.resizeImage(width, height, {method})` takes a resampling
 method id: `"automatic"` (default), `"nearest"`, `"bilinear"`, `"bicubic"`, `"bicubicSmoother"`,
 `"bicubicSharper"`; an unknown id throws. Behavioral correction in the same change: a resize

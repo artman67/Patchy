@@ -24,6 +24,7 @@
 #include "psd/psd_layer_effects.hpp"
 #include "core/style_presets.hpp"
 #include "ui/brush_automation.hpp"
+#include "ui/brush_settings_panel.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
 #include "ui/brush_tip_picker.hpp"
@@ -574,24 +575,13 @@ void ui_brush_dynamics_round_brush_session() {
 
     auto* button = window.findChild<QToolButton*>(QStringLiteral("brushDynamicsButton"));
     CHECK(button != nullptr);
-    CHECK(button->isVisible());
-    CHECK(button->isEnabled());  // the Round brush carries session-only dynamics
     CHECK(!canvas->brush_dynamics().active());
 
-    // Popup edits apply to the canvas without touching the library.
-    button->click();
-    QApplication::processEvents();
-    QWidget* popup = nullptr;
-    for (auto* widget : QApplication::topLevelWidgets()) {
-      if (widget->objectName() == QStringLiteral("brushDynamicsPopup") && widget->isVisible()) {
-        popup = widget;
-      }
-    }
-    CHECK(popup != nullptr);
-    popup->findChild<QSpinBox*>(QStringLiteral("dynamicsScatterSpin"))->setValue(200);
-    popup->findChild<QSpinBox*>(QStringLiteral("dynamicsCountSpin"))->setValue(2);
-    popup->close();
-    process_events_for(350);  // the popup edit commit is debounced ~200ms
+    // Brush Settings edits apply to the canvas without touching the library.
+    auto& panel = open_brush_settings_panel(window);
+    panel.findChild<QSpinBox*>(QStringLiteral("dynamicsScatterSpin"))->setValue(200);
+    panel.findChild<QSpinBox*>(QStringLiteral("dynamicsCountSpin"))->setValue(2);
+    process_events_for(150);  // panel edits coalesce for ~40ms
     CHECK(std::abs(canvas->brush_dynamics().scatter - 2.0) < 1e-9);
     CHECK(canvas->brush_dynamics().count == 2);
     CHECK(!canvas->has_brush_tip());                      // still the procedural Round brush
@@ -657,19 +647,8 @@ void ui_brush_dynamics_popup_edits_working_brush_not_tip() {
   CHECK(library.set_tip_dynamics(tip_id, seeded_dynamics, 0.0, 100.0));
   window.set_active_brush_tip(tip_id, false);
 
-  auto* button = window.findChild<QToolButton*>(QStringLiteral("brushDynamicsButton"));
-  CHECK(button != nullptr);
-  CHECK(button->isEnabled());
-  button->click();
-  QApplication::processEvents();
-
-  QWidget* popup = nullptr;
-  for (auto* widget : QApplication::topLevelWidgets()) {
-    if (widget->objectName() == QStringLiteral("brushDynamicsPopup") && widget->isVisible()) {
-      popup = widget;
-    }
-  }
-  CHECK(popup != nullptr);
+  auto& settings_panel = open_brush_settings_panel(window);
+  auto* popup = &settings_panel;
   popup->findChild<QSpinBox*>(QStringLiteral("dynamicsSizeJitterSpin"))->setValue(40);
   popup->findChild<QSpinBox*>(QStringLiteral("dynamicsScatterSpin"))->setValue(150);
   popup->findChild<QSpinBox*>(QStringLiteral("dynamicsCountSpin"))->setValue(3);
@@ -706,15 +685,13 @@ void ui_brush_dynamics_popup_edits_working_brush_not_tip() {
   CHECK(wet_edges->toolTip().contains(QStringLiteral("does not smear"), Qt::CaseInsensitive));
   CHECK(wet_edges->toolTip().contains(QStringLiteral("Smudge")));
   wet_edges->setChecked(true);
+  settings_panel.select_section(patchy::ui::BrushSection::ShapeDynamics);
   QApplication::processEvents();
-  save_widget_artifact("ui_brush_dynamics_popup", *popup);
-  auto* scroll_area = popup->findChild<QScrollArea*>();
-  CHECK(scroll_area != nullptr);
-  scroll_area->verticalScrollBar()->setValue(scroll_area->verticalScrollBar()->maximum());
+  save_widget_artifact("ui_brush_settings_shape_dynamics", settings_panel);
+  settings_panel.select_section(patchy::ui::BrushSection::Transfer);
   QApplication::processEvents();
-  save_widget_artifact("ui_brush_dynamics_popup_transfer", *popup);
-  popup->close();
-  process_events_for(350);  // the popup edit commit is debounced ~200ms
+  save_widget_artifact("ui_brush_settings_transfer", settings_panel);
+  process_events_for(150);  // panel edits coalesce for ~40ms
 
   const auto& dynamics = canvas->brush_dynamics();
   CHECK(std::abs(dynamics.size_jitter - 0.40) < 1e-9);
@@ -743,7 +720,7 @@ void ui_brush_dynamics_popup_edits_working_brush_not_tip() {
   CHECK(dynamics.wet_edges);
   CHECK(std::abs(canvas->brush_base_angle_degrees() - 30.0) < 1e-9);
 
-  // The popup edits the working brush only: the tip's stored defaults stay as they were.
+  // The panel edits the working brush only: the tip's stored defaults stay as they were.
   CHECK(window.current_brush().modified());
   QFile sidecar(brush_tip_test_storage_dir() + QStringLiteral("/") + tip_id + QStringLiteral(".json"));
   CHECK(sidecar.open(QIODevice::ReadOnly));
@@ -813,19 +790,10 @@ void ui_brush_dynamics_popup_control_edits_round_trip() {
 
   auto* button = window.findChild<QToolButton*>(QStringLiteral("brushDynamicsButton"));
   CHECK(button != nullptr);
-  button->click();
+  auto& settings_panel = open_brush_settings_panel(window);
+  auto* popup = &settings_panel;
+  settings_panel.select_section(patchy::ui::BrushSection::Transfer);
   QApplication::processEvents();
-  QWidget* popup = nullptr;
-  for (auto* widget : QApplication::topLevelWidgets()) {
-    if (widget->objectName() == QStringLiteral("brushDynamicsPopup") && widget->isVisible()) {
-      popup = widget;
-    }
-  }
-  CHECK(popup != nullptr);
-  // The popup sizes from the panel's hint, clamped to the screen. On the 600px offscreen
-  // display that means the full clamp height — QScrollArea::sizeHint's ~24-font-height cap
-  // must not shrink it (the "needless scrollbar on a big monitor" bug).
-  CHECK(popup->height() >= 450);
 
   const auto select_control = [popup](const char* combo_name, patchy::BrushDynamicControl control) {
     auto* combo = popup->findChild<QComboBox*>(QLatin1String(combo_name));
@@ -852,15 +820,16 @@ void ui_brush_dynamics_popup_control_edits_round_trip() {
   flow_fade->setValue(45);
   auto* scatter_fade = popup->findChild<QSpinBox*>(QStringLiteral("dynamicsScatterFadeStepsSpin"));
   CHECK(scatter_fade != nullptr);
+  settings_panel.select_section(patchy::ui::BrushSection::Scattering);
+  QApplication::processEvents();
   CHECK(!scatter_fade->isVisible());
   select_control("dynamicsScatterControlCombo", patchy::BrushDynamicControl::Fade);
   QApplication::processEvents();
   CHECK(scatter_fade->isVisible());  // fade steps appear only for a Fade control
   scatter_fade->setValue(40);
   QApplication::processEvents();
-  save_widget_artifact("ui_brush_dynamics_popup_controls", *popup);
-  popup->close();
-  process_events_for(350);  // the popup edit commit is debounced ~200ms
+  save_widget_artifact("ui_brush_settings_scattering_controls", settings_panel);
+  process_events_for(150);  // panel edits coalesce for ~40ms
 
   const auto& dynamics = canvas->brush_dynamics();
   CHECK(dynamics.size_control == patchy::BrushDynamicControl::Off);
@@ -872,7 +841,7 @@ void ui_brush_dynamics_popup_control_edits_round_trip() {
   CHECK(dynamics.scatter_control == patchy::BrushDynamicControl::Fade);
   CHECK(dynamics.scatter_fade_steps == 40);
   CHECK(dynamics.roundness_control == patchy::BrushDynamicControl::GlobalDefault);  // untouched
-  CHECK(!library.find_entry(tip_id)->dynamics.active());  // the popup never edits the tip
+  CHECK(!library.find_entry(tip_id)->dynamics.active());  // the panel never edits the tip
 
   // Stored as the tip's defaults, the sidecar carries the new tokens...
   CHECK(library.set_tip_dynamics(tip_id, canvas->brush_dynamics(), 0.0, 100.0));
@@ -917,46 +886,28 @@ void ui_brush_dynamics_popup_control_edits_round_trip() {
   clear_brush_tip_test_state();
 }
 
-void ui_brush_dynamics_button_toggles_popup_closed() {
+void ui_brush_dynamics_button_shows_brush_settings_panel() {
+  // The options-bar Dynamics button opens the Brush Settings panel (docked, expanded, in front
+  // of Brushes), and a second click leaves it open instead of toggling it away.
   clear_brush_tip_test_state();
   patchy::ui::MainWindow window;
   show_window(window);
   require_action_by_text(window, QStringLiteral("Brush"))->trigger();
   QApplication::processEvents();
-  auto& library = window.brush_tip_library();
-  const auto tip_id = library.add_tip(QStringLiteral("Bar"), make_bar_tip_image(), 0.25);
-  window.set_active_brush_tip(tip_id, false);
+  auto* dock = window.findChild<QDockWidget*>(QStringLiteral("brushSettingsDock"));
+  CHECK(dock != nullptr);
+  CHECK(!dock->isVisible());  // closed until asked for
+  auto& panel = open_brush_settings_panel(window);
+  CHECK(!dock->isFloating());
+  auto* collapse = dock->findChild<QToolButton*>(QStringLiteral("brushSettingsDockCollapseButton"));
+  CHECK(collapse != nullptr);
+  CHECK(collapse->isChecked());
+  CHECK(dock->height() > 4 * collapse->height());  // expanded, not a title strip
+  CHECK(panel.isVisible());
   auto* button = window.findChild<QToolButton*>(QStringLiteral("brushDynamicsButton"));
-  CHECK(button != nullptr);
-
-  const auto find_popup = []() -> QWidget* {
-    QWidget* popup = nullptr;
-    for (auto* widget : QApplication::topLevelWidgets()) {
-      if (widget->objectName() == QStringLiteral("brushDynamicsPopup") && widget->isVisible()) {
-        popup = widget;
-      }
-    }
-    return popup;
-  };
-
   button->click();
   QApplication::processEvents();
-  CHECK(find_popup() != nullptr);
-
-  // A second click while the popup is open (the replayed dismissal click) must close it and
-  // NOT immediately reopen it — the close-then-instant-reopen was the July 2026 toggle bug.
-  button->click();
-  QApplication::processEvents();
-  CHECK(find_popup() == nullptr);
-
-  // And the button must not stay dead: a later click opens the popup again.
-  process_events_for(350);
-  button->click();
-  QApplication::processEvents();
-  auto* reopened = find_popup();
-  CHECK(reopened != nullptr);
-  reopened->close();
-  QApplication::processEvents();
+  CHECK(dock->isVisible());
   clear_brush_tip_test_state();
 }
 
@@ -1628,7 +1579,7 @@ std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part2() {
       {"ui_brush_dynamics_round_brush_session", ui_brush_dynamics_round_brush_session},
       {"ui_brush_dynamics_popup_edits_working_brush_not_tip", ui_brush_dynamics_popup_edits_working_brush_not_tip},
       {"ui_brush_dynamics_popup_control_edits_round_trip", ui_brush_dynamics_popup_control_edits_round_trip},
-      {"ui_brush_dynamics_button_toggles_popup_closed", ui_brush_dynamics_button_toggles_popup_closed},
+      {"ui_brush_dynamics_button_shows_brush_settings_panel", ui_brush_dynamics_button_shows_brush_settings_panel},
       {"ui_brush_dynamics_stroke_scatters_with_seed", ui_brush_dynamics_stroke_scatters_with_seed},
       {"ui_brush_color_dynamics_reaches_stroke_compositor",
        ui_brush_color_dynamics_reaches_stroke_compositor},
