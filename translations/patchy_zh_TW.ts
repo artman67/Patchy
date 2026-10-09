@@ -9465,10 +9465,6 @@ RGB：%2, %3, %4</translation>
         <translation>啟用紋理</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>粒子:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>細緻粒子</translation>
     </message>
@@ -9568,6 +9564,90 @@ RGB：%2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>為筆刷筆尖的柔和邊緣加入顆粒。顆粒固定在畫布上；硬筆尖幾乎不受影響。</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>色彩增值</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>減去</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>變暗</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>覆蓋</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>加亮顏色</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>加深顏色</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>線性加深</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>實色疊印混合</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>線性高度</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>高度</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>翻轉 X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>左右鏡像筆尖</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>翻轉 Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>上下鏡像筆尖</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>圖樣:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>紋理來源:產生的顆粒,或圖樣庫中的圖樣</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>此圖樣不在你的圖樣庫中,因此筆觸使用產生的顆粒。請加入該圖樣或選擇其他圖樣。</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>亮度:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>對比:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>模式:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1（遺失）</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9614,10 +9694,6 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>間距</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>關閉時使用筆尖本身的間距；開啟時以筆刷大小的百分比設定筆觸之間的距離</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9714,6 +9790,10 @@ RGB：%2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>雜訊</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>關閉時保留筆尖本身的間距(圓形和方形繪製平滑筆觸);開啟時以筆刷大小的百分比設定印跡之間的距離</translation>
     </message>
 </context>
 <context>

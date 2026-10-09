@@ -9495,10 +9495,6 @@ RGB: %2, %3, %4</translation>
         <translation>Struktur aktivieren</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>Körnung:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>Feine Körnung</translation>
     </message>
@@ -9598,6 +9594,90 @@ RGB: %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>Fügt den weichen Rändern der Pinselspitze Körnung hinzu. Die Körnung bleibt fest auf der Arbeitsfläche; harte Spitzen ändern sich kaum.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Multiplizieren</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Subtrahieren</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Abdunkeln</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Ineinanderkopieren</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Farbig abwedeln</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Farbig nachbelichten</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Linear nachbelichten</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Hart mischen</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Lineare Höhe</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Höhe</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>X spiegeln</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Spitze von links nach rechts spiegeln</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Y spiegeln</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Spitze von oben nach unten spiegeln</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Muster:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>Die Texturquelle: eine erzeugte Körnung oder ein Muster aus Ihrer Musterbibliothek</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Dieses Muster ist nicht in Ihrer Musterbibliothek, daher verwenden Striche die erzeugte Körnung. Fügen Sie das Muster hinzu oder wählen Sie ein anderes.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Helligkeit:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Kontrast:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Modus:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (fehlt)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9644,10 +9724,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>Abstand</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>Aus: der eigene Abstand der Spitze; ein: der Abstand zwischen den Abdrücken in Prozent der Pinselgröße</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9744,6 +9820,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>Rauschen</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Aus behält den eigenen Abstand der Spitze (Rund und Quadrat malen einen glatten Strich); an legt den Abstand zwischen Abdrücken als Prozentsatz der Pinselgröße fest</translation>
     </message>
 </context>
 <context>

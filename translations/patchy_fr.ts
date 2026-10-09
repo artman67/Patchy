@@ -9495,10 +9495,6 @@ RVB : %2, %3, %4</translation>
         <translation>Activer la texture</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>Grain :</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>Grain fin</translation>
     </message>
@@ -9598,6 +9594,90 @@ RVB : %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>Ajoute du grain aux bords doux de la forme de pinceau. Le grain reste fixe sur la zone de travail ; les formes dures changent à peine.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Produit</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Soustraction</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Obscurcir</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Incrustation</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Densité couleur -</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Densité couleur +</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Densité linéaire +</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Mélange maximal</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Hauteur linéaire</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Hauteur</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Symétrie X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Retourne la forme de gauche à droite</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Symétrie Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Retourne la forme de haut en bas</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Motif :</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>La source de la texture : un grain généré ou un motif de votre bibliothèque de motifs</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Ce motif n&apos;est pas dans votre bibliothèque de motifs : les tracés utilisent le grain généré. Ajoutez le motif ou choisissez-en un autre.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Luminosité :</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Contraste :</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Mode :</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (manquant)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9644,10 +9724,6 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>Pas</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>Désactivé : le pas propre à la pointe ; activé : la distance entre les empreintes en pourcentage de la taille de la forme</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9744,6 +9820,10 @@ RVB : %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>Bruit</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Désactivé conserve l&apos;espacement propre de la forme (Rond et Carré peignent un tracé continu) ; activé définit la distance entre les empreintes en pourcentage de la taille du pinceau</translation>
     </message>
 </context>
 <context>

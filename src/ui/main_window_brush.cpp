@@ -2,7 +2,6 @@
 // accessor and its push to the active canvas, folding canvas gestures back, options-bar size
 // group edits, the tip pick policy, the Eraser's own size group, brush-tip import/define, and
 // the remembered working brush (docs/brushes.md, "Current brush").
-// Pure function moves; behavior must stay identical.
 
 #include "ui/main_window.hpp"
 #include "ui/main_window_shared.hpp"
@@ -97,8 +96,8 @@ void MainWindow::push_current_brush_to_canvas(CanvasWidget* canvas, unsigned cha
     if ((changes & CurrentBrush::Softness) != 0U) canvas->set_brush_softness(brush.softness);
     if ((changes & CurrentBrush::Airbrush) != 0U) canvas->set_brush_build_up(brush.airbrush);
   }
-  if ((changes & (CurrentBrush::Tip | CurrentBrush::TipShape)) != 0U) {
-    canvas->refresh_tool_cursor();
+  if ((changes & (CurrentBrush::Tip | CurrentBrush::TipShape | CurrentBrush::Dynamics)) != 0U) {
+    canvas->refresh_tool_cursor();  // Dynamics carries the static tip flips
   }
 }
 

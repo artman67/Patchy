@@ -81,6 +81,9 @@ QImage render_brush_stroke_preview(const BrushStrokePreviewSpec& spec, QSize siz
   options.brush_tip_spacing = std::clamp(spec.spacing.value_or(own_spacing), 0.01, 10.0);
   options.brush_angle_degrees = spec.angle;
   options.brush_roundness = static_cast<int>(std::lround(std::clamp(spec.roundness, 1.0, 100.0)));
+  options.brush_flip_x = spec.dynamics.tip_flip_x;
+  options.brush_flip_y = spec.dynamics.tip_flip_y;
+  options.brush_texture_tile = spec.texture_tile.get();
   options.brush_dynamics = spec.dynamics;
   options.brush_dynamics.seed = 1234;  // fixed seed: a stable preview instead of reshuffling per repaint
   // Like the canvas stroke compositor at 100% Flow, overlapping dabs cap at full coverage

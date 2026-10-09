@@ -558,6 +558,10 @@ QImage CanvasWidget::brush_tip_stamp_image(int size, int softness) const {
     std::copy_n(scaled->mask.data() + static_cast<std::size_t>(y) * scaled->width, scaled->width,
                 image.scanLine(y));
   }
+  // The static Brush Tip Shape flips mirror the footprint the cursor shows.
+  if (brush_dynamics_.tip_flip_x || brush_dynamics_.tip_flip_y) {
+    return image.mirrored(brush_dynamics_.tip_flip_x, brush_dynamics_.tip_flip_y);
+  }
   return image;
 }
 
@@ -714,12 +718,14 @@ void CanvasWidget::draw_brush_hover_outline(QPainter& painter) const {
   const QPoint center = brush_hover_widget_position_;
   if (brush_tip_ != nullptr && tool_paints_with_brush_tip(tool_)) {
     const auto display = brush_outline_display_size();
-    const auto key = QStringLiteral("%1:%2x%3:%4:%5")
+    const auto key = QStringLiteral("%1:%2x%3:%4:%5:%6%7")
                          .arg(reinterpret_cast<quintptr>(brush_tip_.get()))
                          .arg(display.width())
                          .arg(display.height())
                          .arg(brush_size_)
-                         .arg(brush_softness_);
+                         .arg(brush_softness_)
+                         .arg(int{brush_dynamics_.tip_flip_x})
+                         .arg(int{brush_dynamics_.tip_flip_y});
     if (brush_outline_overlay_key_ != key) {
       const auto stamp = brush_tip_stamp_image(brush_size_, brush_softness_);
       brush_outline_overlay_image_ =

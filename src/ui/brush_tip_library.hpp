@@ -81,6 +81,8 @@ public:
   // The Pattern library ABR imports add embedded texture patterns to (null = none; the brushes
   // still reference their patterns by id and paint with the procedural grain until one exists).
   void set_pattern_library(PatternLibrary* patterns) noexcept { pattern_library_ = patterns; }
+  // The same library, for the Brush Texture pattern pickers (null = none set).
+  [[nodiscard]] PatternLibrary* pattern_library() const noexcept { return pattern_library_; }
 
   // Adds a tip from a coverage mask image (any format; converted to grayscale, cropped to
   // content). Returns the new id, or empty when the mask is empty/unsaveable.

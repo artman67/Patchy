@@ -1,5 +1,6 @@
 #include "ui/brush_settings_panel.hpp"
 
+#include "core/pixel_tools.hpp"
 #include "ui/action_icons.hpp"
 #include "ui/brush_dynamics_popup.hpp"
 #include "ui/brush_stroke_preview.hpp"
@@ -8,6 +9,7 @@
 #include "ui/curved_slider.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/main_window_shared.hpp"
+#include "ui/pattern_library.hpp"
 #include "ui/theme_palette.hpp"
 #include "ui/theme_qss.hpp"
 #include "ui/unit_spin_box.hpp"
@@ -27,6 +29,7 @@
 #include <QPushButton>
 #include <QResizeEvent>
 #include <QScrollArea>
+#include <QScrollBar>
 #include <QSignalBlocker>
 #include <QSlider>
 #include <QSpinBox>
@@ -122,9 +125,11 @@ public:
     QObject::connect(&throttle_, &QTimer::timeout, this, [this] { update(); });
   }
 
-  void set_brush(const WorkingBrush& brush, std::shared_ptr<const patchy::BrushTip> tip) {
+  void set_brush(const WorkingBrush& brush, std::shared_ptr<const patchy::BrushTip> tip,
+                 std::shared_ptr<const patchy::BrushTextureTile> texture_tile) {
     brush_ = brush;
     tip_ = std::move(tip);
+    texture_tile_ = std::move(texture_tile);
     if (!throttle_.isActive()) {
       throttle_.start();
     }
@@ -145,6 +150,7 @@ protected:
     spec.angle = brush_.angle;
     spec.roundness = brush_.roundness;
     spec.dynamics = brush_.dynamics;
+    spec.texture_tile = texture_tile_;
     const QSize area(width() - 8, height() - 8);
     const auto brush_size = std::clamp(brush_.size, 2, std::max(2, area.height() * 3 / 5));
     const auto pixmap =
@@ -157,6 +163,7 @@ protected:
 private:
   WorkingBrush brush_;
   std::shared_ptr<const patchy::BrushTip> tip_;
+  std::shared_ptr<const patchy::BrushTextureTile> texture_tile_;
   QTimer throttle_;
 };
 
@@ -220,6 +227,7 @@ BrushSettingsPanel::BrushSettingsPanel(CurrentBrush& brush, BrushTipLibrary& tip
   body_layout_->addWidget(page_scroll_, 1);
 
   form_ = new BrushDynamicsPanel(this, BrushDynamicsPanel::Presentation::Pages);
+  form_->set_pattern_library(tips_.pattern_library());
   for (const auto section : kBrushSections) {
     QWidget* page = nullptr;
     if (section == BrushSection::TipShape) {
@@ -330,9 +338,7 @@ BrushSettingsPanel::BrushSettingsPanel(CurrentBrush& brush, BrushTipLibrary& tip
     if (item == nullptr) {
       return;
     }
-    const auto section = static_cast<BrushSection>(item->data(0, kSectionRole).toInt());
-    pages_->setCurrentWidget(page_for_section_.at(section));
-    page_scroll_->verticalScrollBar();
+    show_section_page(static_cast<BrushSection>(item->data(0, kSectionRole).toInt()));
   });
   connect(section_list_, &QTreeWidget::itemChanged, this, [this](QTreeWidgetItem* item, int column) {
     if (updating_ || column != 0 || !(item->flags() & Qt::ItemIsUserCheckable)) {
@@ -358,16 +364,22 @@ BrushSettingsPanel::BrushSettingsPanel(CurrentBrush& brush, BrushTipLibrary& tip
   connect(&tips_, &BrushTipLibrary::changed, this, [this] {
     rebuild_tip_list();
     refresh_spacing_row();
-    preview_->set_brush(brush_.brush(), brush_.brush().snapshot_tip != nullptr
-                                             ? brush_.brush().snapshot_tip
-                                             : tips_.tip(brush_.brush().tip_id));
+    refresh_preview();
   });
+  if (auto* patterns = tips_.pattern_library(); patterns != nullptr) {
+    connect(patterns, &PatternLibrary::changed, this, [this] {
+      texture_tile_id_.clear();
+      texture_tile_.reset();
+      refresh_preview();
+    });
+  }
 
   retranslate();
   rebuild_tip_list();
   refresh_from_brush(true);
   refresh_locks();
   section_list_->setCurrentItem(section_item(BrushSection::TipShape));
+  show_section_page(BrushSection::TipShape);
   // Every section shows when there is room; a short dock keeps five rows and scrolls the rest,
   // so the selected section's controls keep their space.
   section_list_->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
@@ -399,6 +411,8 @@ void BrushSettingsPanel::build_tip_shape_page(QWidget* page) {
   });
   layout->addWidget(tip_list_);
 
+  // Photoshop's order with Soft standing in for Hardness: Size, the angle/roundness block with
+  // the flips, Soft, Spacing. One grid keeps the rows' sliders aligned.
   auto* grid = new QGridLayout();
   grid->setContentsMargins(0, 0, 0, 0);
   const auto add_row = [this, page, grid](int row, const char* label, const char* name, int minimum, int maximum,
@@ -423,8 +437,9 @@ void BrushSettingsPanel::build_tip_shape_page(QWidget* page) {
   };
   std::tie(size_slider_, size_spin_) =
       add_row(0, QT_TR_NOOP("Size:"), "brushSettingsSizeSpin", 1, kMaxBrushSize, true, false);
+  grid->addWidget(form_->section_page(BrushSection::TipShape), 1, 0, 1, 3);
   std::tie(softness_slider_, softness_spin_) =
-      add_row(1, QT_TR_NOOP("Soft:"), "brushSettingsSoftSpin", 0, 100, false, true);
+      add_row(2, QT_TR_NOOP("Soft:"), "brushSettingsSoftSpin", 0, 100, false, true);
   grid->setColumnStretch(1, 1);
   layout->addLayout(grid);
   connect(size_spin_, qOverload<int>(&QSpinBox::valueChanged), this, [this](int value) {
@@ -448,15 +463,11 @@ void BrushSettingsPanel::build_tip_shape_page(QWidget* page) {
     schedule_flush();
   });
 
-  layout->addWidget(form_->section_page(BrushSection::TipShape));
-
-  auto* spacing_grid = new QGridLayout();
-  spacing_grid->setContentsMargins(0, 0, 0, 0);
   spacing_check_ = bound(new QCheckBox(page), QT_TR_NOOP("Spacing"),
-                         QT_TR_NOOP("Off uses the tip's own spacing; on sets the distance between stamps as a "
-                                    "percentage of the brush size"));
+                         QT_TR_NOOP("Off keeps the tip's own spacing (Round and Square paint a smooth stroke); "
+                                    "on sets the distance between stamps as a percentage of the brush size"));
   spacing_check_->setObjectName(QStringLiteral("brushSettingsSpacingCheck"));
-  spacing_grid->addWidget(spacing_check_, 0, 0);
+  grid->addWidget(spacing_check_, 3, 0);
   spacing_slider_ = new QSlider(Qt::Horizontal, page);
   spacing_slider_->setObjectName(QStringLiteral("brushSettingsSpacingSpinSlider"));
   spacing_slider_->setRange(1, 1000);
@@ -466,10 +477,8 @@ void BrushSettingsPanel::build_tip_shape_page(QWidget* page) {
   spacing_spin_->setRange(1, 1000);
   connect(spacing_slider_, &QSlider::valueChanged, spacing_spin_, &QSpinBox::setValue);
   connect(spacing_spin_, qOverload<int>(&QSpinBox::valueChanged), spacing_slider_, &QSlider::setValue);
-  spacing_grid->addWidget(spacing_slider_, 0, 1);
-  spacing_grid->addWidget(spacing_spin_, 0, 2);
-  spacing_grid->setColumnStretch(1, 1);
-  layout->addLayout(spacing_grid);
+  grid->addWidget(spacing_slider_, 3, 1);
+  grid->addWidget(spacing_spin_, 3, 2);
   const auto spacing_edited = [this] {
     if (updating_) {
       return;
@@ -601,10 +610,43 @@ void BrushSettingsPanel::refresh_from_brush(bool reload_form) {
   updating_ = false;
   refresh_spacing_row();
   refresh_section_states();
-  preview_->set_brush(brush, brush.snapshot_tip != nullptr ? brush.snapshot_tip : tips_.tip(brush.tip_id));
+  refresh_preview();
+}
+
+void BrushSettingsPanel::refresh_preview() {
+  const auto& brush = brush_.brush();
+  const auto& pattern_id = brush.dynamics.texture_pattern_id;
+  if (pattern_id != texture_tile_id_) {
+    texture_tile_id_ = pattern_id;
+    texture_tile_.reset();
+    auto* patterns = tips_.pattern_library();
+    if (!pattern_id.empty() && patterns != nullptr) {
+      if (const auto resource = patterns->resource(QString::fromStdString(pattern_id)); resource.has_value()) {
+        auto tile = patchy::make_brush_texture_tile(resource->tile);
+        if (!tile.empty()) {
+          texture_tile_ = std::make_shared<const patchy::BrushTextureTile>(std::move(tile));
+        }
+      }
+    }
+  }
+  preview_->set_brush(brush, brush.snapshot_tip != nullptr ? brush.snapshot_tip : tips_.tip(brush.tip_id),
+                      texture_tile_);
+}
+
+void BrushSettingsPanel::show_section_page(BrushSection section) {
+  // Only the shown page sizes the stack, so the scroll range is that page's own height.
+  auto* shown = page_for_section_.at(section);
+  for (auto& [key, page] : page_for_section_) {
+    page->setSizePolicy(page == shown ? QSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred)
+                                      : QSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored));
+  }
+  pages_->setCurrentWidget(shown);
+  pages_->updateGeometry();
+  page_scroll_->verticalScrollBar()->setValue(0);
 }
 
 std::optional<double> BrushSettingsPanel::tip_default_spacing() const {
+  // nullopt for the procedural Round and Square: unset spacing paints their continuous stroke.
   const auto& brush = brush_.brush();
   if (brush.snapshot_tip != nullptr) {
     return brush.snapshot_tip->default_spacing;
@@ -612,7 +654,7 @@ std::optional<double> BrushSettingsPanel::tip_default_spacing() const {
   if (const auto* entry = tips_.find_entry(brush.tip_id); entry != nullptr) {
     return entry->spacing;
   }
-  return std::nullopt;  // the procedural tips have no dab spacing to set
+  return std::nullopt;
 }
 
 void BrushSettingsPanel::refresh_spacing_row() {
@@ -624,13 +666,13 @@ void BrushSettingsPanel::refresh_spacing_row() {
   const auto pending = pending_brush_edit_ && pending_brush_edit_->spacing.has_value();
   const auto spacing = pending ? *pending_brush_edit_->spacing : brush.spacing;
   updating_ = true;
-  spacing_check_->setEnabled(own.has_value());
-  spacing_check_->setChecked(own.has_value() && spacing.has_value());
+  spacing_check_->setChecked(spacing.has_value());
+  // Unticked shows what ticking starts from: the tip's own spacing, else Photoshop's 25%.
   const auto shown = spacing.value_or(own.value_or(0.25));
   if (spacing_spin_->value() != static_cast<int>(std::lround(shown * 100.0))) {
     spacing_spin_->setValue(static_cast<int>(std::lround(shown * 100.0)));
   }
-  const auto live = own.has_value() && spacing.has_value();
+  const auto live = spacing.has_value();
   spacing_spin_->setEnabled(live);
   spacing_slider_->setEnabled(live);
   updating_ = false;

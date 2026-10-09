@@ -9495,10 +9495,6 @@ RGB: %2, %3, %4</translation>
         <translation>Activar textura</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>Grano:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>Grano fino</translation>
     </message>
@@ -9598,6 +9594,90 @@ RGB: %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>Añade grano a los bordes suaves de la punta del pincel. El grano permanece fijo en el lienzo; las puntas duras apenas cambian.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Multiplicar</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Restar</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Oscurecer</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Superponer</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Sobreexponer color</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Subexponer color</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Subexposición lineal</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Mezcla definida</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Altura lineal</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Altura</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Voltear X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Refleja la punta de izquierda a derecha</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Voltear Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Refleja la punta de arriba abajo</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Motivo:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>El origen de la textura: un grano generado o un motivo de su biblioteca de motivos</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Este motivo no está en su biblioteca de motivos, así que los trazos usan el grano generado. Añada el motivo o elija otro.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Brillo:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Contraste:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Modo:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (falta)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9644,10 +9724,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>Espaciado</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>Desactivado usa el espaciado propio de la punta; activado fija la distancia entre impresiones como porcentaje del tamaño del pincel</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9744,6 +9820,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>Ruido</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Desactivado mantiene el espaciado propio de la punta (Redondo y Cuadrado pintan un trazo continuo); activado fija la distancia entre impresiones como porcentaje del tamaño del pincel</translation>
     </message>
 </context>
 <context>

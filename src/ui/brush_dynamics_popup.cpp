@@ -3,6 +3,7 @@
 #include "ui/brush_tip_library.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/main_window_shared.hpp"
+#include "ui/pattern_library.hpp"
 #include "ui/theme_palette.hpp"
 #include "ui/theme_qss.hpp"
 #include "ui/unit_spin_box.hpp"
@@ -117,6 +118,28 @@ constexpr TextureItem kTextureItems[] = {
     {patchy::BrushTextureStyle::FineGrain, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Fine Grain")},
     {patchy::BrushTextureStyle::Canvas, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Canvas")},
     {patchy::BrushTextureStyle::Speckle, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Speckle")},
+};
+// Texture picker rows: a grain carries its style; a library pattern kPatternRow and its id.
+constexpr int kPatternRow = -1;
+constexpr int kMissingPatternRow = -2;
+constexpr int kTexturePatternIdRole = Qt::UserRole + 1;
+constexpr int kTexturePatternNameRole = Qt::UserRole + 2;
+struct TextureModeItem {
+  patchy::BrushTextureMode mode;
+  const char* source;
+};
+// Photoshop's texture Mode list, in its order.
+constexpr TextureModeItem kTextureModeItems[] = {
+    {patchy::BrushTextureMode::Multiply, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Multiply")},
+    {patchy::BrushTextureMode::Subtract, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Subtract")},
+    {patchy::BrushTextureMode::Darken, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Darken")},
+    {patchy::BrushTextureMode::Overlay, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Overlay")},
+    {patchy::BrushTextureMode::ColorDodge, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Color Dodge")},
+    {patchy::BrushTextureMode::ColorBurn, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Color Burn")},
+    {patchy::BrushTextureMode::LinearBurn, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Linear Burn")},
+    {patchy::BrushTextureMode::HardMix, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Hard Mix")},
+    {patchy::BrushTextureMode::LinearHeight, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Linear Height")},
+    {patchy::BrushTextureMode::Height, QT_TRANSLATE_NOOP("patchy::ui::BrushDynamicsPanel", "Height")},
 };
 
 [[nodiscard]] QString panel_tr(const char* source) {
@@ -309,6 +332,32 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
     return spin;
   };
 
+  // A plain signed value (Brightness, Contrast), laid out like the percent rows.
+  const auto add_number_row = [this, make_label, stacked, R](QGridLayout* grid, int row, const char* label,
+                                                             const QString& object_name, int minimum,
+                                                             int maximum) -> QSpinBox* {
+    auto* text = make_label(label);
+    auto* slider = new QSlider(Qt::Horizontal, this);
+    slider->setObjectName(object_name + QStringLiteral("Slider"));
+    slider->setRange(minimum, maximum);
+    slider->setMinimumWidth(presentation_ == Presentation::Pages ? 40 : 120);
+    auto* spin = new QSpinBox(this);
+    spin->setObjectName(object_name);
+    spin->setRange(minimum, maximum);
+    QObject::connect(slider, &QSlider::valueChanged, spin, &QSpinBox::setValue);
+    QObject::connect(spin, qOverload<int>(&QSpinBox::valueChanged), slider, &QSlider::setValue);
+    if (stacked) {
+      grid->addWidget(text, R(row), 0, 1, 2);
+      grid->addWidget(spin, R(row), 2);
+      grid->addWidget(slider, R(row) + 1, 0, 1, 3);
+    } else {
+      grid->addWidget(text, row, 0);
+      grid->addWidget(slider, row, 1);
+      grid->addWidget(spin, row, 2);
+    }
+    return spin;
+  };
+
   // A "Control:" combo plus its fade-steps spin (shown only while the combo says Fade). The
   // items carry the enum in their data so display order stays decoupled from the enum values;
   // with_global lists "Use Global Pen Setting" first (size/roundness/opacity only).
@@ -341,11 +390,12 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
     return {combo, fade_spin};
   };
 
-  // Brush Tip Shape: the static Photoshop angle/roundness, with the draggable preview.
+  // Brush Tip Shape: the static Photoshop angle/roundness, with the draggable preview, and the
+  // static flips beside it.
   {
     auto* grid = make_page(BrushSection::TipShape);
     angle_roundness_widget_ = new AngleRoundnessWidget(this);
-    grid->addWidget(angle_roundness_widget_, 0, 0, 2, 1);
+    grid->addWidget(angle_roundness_widget_, 0, 0, 3, 1);
     grid->addWidget(make_label(QT_TR_NOOP("Angle:")), 0, 1);
     base_angle_spin_ = new UnitIntSpinBox(SpinUnit::Degrees, this);
     base_angle_spin_->setObjectName(QStringLiteral("dynamicsBaseAngleSpin"));
@@ -357,6 +407,15 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
     base_roundness_spin_->setRange(1, 100);
     base_roundness_spin_->setValue(100);
     grid->addWidget(base_roundness_spin_, 1, 2);
+    auto* tip_flips = new QHBoxLayout();
+    tip_flip_x_check_ = bound(new QCheckBox(this), QT_TR_NOOP("Flip X"), QT_TR_NOOP("Mirror the tip left to right"));
+    tip_flip_x_check_->setObjectName(QStringLiteral("dynamicsTipFlipXCheck"));
+    tip_flip_y_check_ = bound(new QCheckBox(this), QT_TR_NOOP("Flip Y"), QT_TR_NOOP("Mirror the tip top to bottom"));
+    tip_flip_y_check_->setObjectName(QStringLiteral("dynamicsTipFlipYCheck"));
+    tip_flips->addWidget(tip_flip_x_check_);
+    tip_flips->addWidget(tip_flip_y_check_);
+    tip_flips->addStretch(1);
+    grid->addLayout(tip_flips, 2, 1, 1, 2);
     grid->setColumnStretch(3, 1);
     connect(angle_roundness_widget_, &AngleRoundnessWidget::edited, this, [this](int angle, int roundness) {
       base_angle_spin_->setValue(angle);
@@ -437,28 +496,56 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
                         QStringLiteral("dynamicsCountFadeStepsSpin"), false);
   }
 
-  // Texture. The generated grain is intentionally static: scale/depth/invert are saved brush
-  // settings, never pen-input controls.
+  // Texture, in Photoshop's order. Every setting is static: they are saved brush settings, never
+  // pen-input controls (docs/brush-texture.md).
   {
     auto* grid = make_page(BrushSection::Texture);
     texture_enabled_check_ = bound(new QCheckBox(this), QT_TR_NOOP("Enable Texture"));
     texture_enabled_check_->setObjectName(QStringLiteral("dynamicsTextureEnabledCheck"));
     grid->addWidget(texture_enabled_check_, R(0), 0, 1, 2);
-    grid->addWidget(make_label(QT_TR_NOOP("Grain:")), R(1), 0);
-    texture_style_combo_ = new QComboBox(this);
-    texture_style_combo_->setObjectName(QStringLiteral("dynamicsTextureStyleCombo"));
-    for (const auto& item : kTextureItems) {
-      texture_style_combo_->addItem(panel_tr(item.source), static_cast<int>(item.style));
-    }
-    grid->addWidget(texture_style_combo_, R(1), 1, 1, 2);
-    texture_scale_spin_ =
-        add_percent_row(grid, 2, QT_TR_NOOP("Scale:"), QStringLiteral("dynamicsTextureScaleSpin"), 1000);
-    texture_scale_spin_->setMinimum(1);
-    texture_depth_spin_ =
-        add_percent_row(grid, 3, QT_TR_NOOP("Depth:"), QStringLiteral("dynamicsTextureDepthSpin"), 100);
+    grid->addWidget(make_label(QT_TR_NOOP("Pattern:")), R(1), 0);
+    texture_pattern_combo_ = new QComboBox(this);
+    texture_pattern_combo_->setObjectName(QStringLiteral("dynamicsTexturePatternCombo"));
+    texture_pattern_combo_->setIconSize(QSize(20, 20));
+    texture_pattern_combo_->setSizeAdjustPolicy(QComboBox::AdjustToMinimumContentsLengthWithIcon);
+    texture_pattern_combo_->setMinimumContentsLength(8);
+    bound(texture_pattern_combo_, nullptr,
+          QT_TR_NOOP("The texture source: a generated grain, or a pattern from your Pattern library"));
+    grid->addWidget(texture_pattern_combo_, R(1), 1, 1, 2);
+    texture_missing_hint_ = new QLabel(this);
+    texture_missing_hint_->setObjectName(QStringLiteral("dynamicsTextureMissingHint"));
+    texture_missing_hint_->setWordWrap(true);
+    texture_missing_hint_->setAttribute(Qt::WA_StyledBackground, true);
+    set_themed_style(*texture_missing_hint_,
+                     QStringLiteral("QLabel#dynamicsTextureMissingHint { background: @info_banner_bg; "
+                                    "color: @info_banner_text; border: 1px solid @info_banner_border; "
+                                    "border-radius: 3px; padding: 2px 4px; }"));
+    bound(texture_missing_hint_, QT_TR_NOOP("This pattern is not in your Pattern library, so strokes use the "
+                                            "generated grain. Add the pattern or pick another."));
+    texture_missing_hint_->setVisible(false);
+    grid->addWidget(texture_missing_hint_, R(2), 0, 1, 3);
     texture_invert_check_ = bound(new QCheckBox(this), QT_TR_NOOP("Invert Texture"));
     texture_invert_check_->setObjectName(QStringLiteral("dynamicsTextureInvertCheck"));
-    grid->addWidget(texture_invert_check_, R(4), 0, 1, 2);
+    grid->addWidget(texture_invert_check_, R(3), 0, 1, 2);
+    texture_scale_spin_ =
+        add_percent_row(grid, 4, QT_TR_NOOP("Scale:"), QStringLiteral("dynamicsTextureScaleSpin"), 1000);
+    texture_scale_spin_->setMinimum(1);
+    texture_brightness_spin_ = add_number_row(grid, 5, QT_TR_NOOP("Brightness:"),
+                                              QStringLiteral("dynamicsTextureBrightnessSpin"), -150, 150);
+    texture_contrast_spin_ = add_number_row(grid, 6, QT_TR_NOOP("Contrast:"),
+                                            QStringLiteral("dynamicsTextureContrastSpin"), -50, 100);
+    grid->addWidget(make_label(QT_TR_NOOP("Mode:")), R(7), 0);
+    texture_mode_combo_ = new QComboBox(this);
+    texture_mode_combo_->setObjectName(QStringLiteral("dynamicsTextureModeCombo"));
+    for (const auto& item : kTextureModeItems) {
+      texture_mode_combo_->addItem(panel_tr(item.source), static_cast<int>(item.mode));
+    }
+    grid->addWidget(texture_mode_combo_, R(7), 1, 1, 2);
+    texture_depth_spin_ =
+        add_percent_row(grid, 8, QT_TR_NOOP("Depth:"), QStringLiteral("dynamicsTextureDepthSpin"), 100);
+    rebuild_texture_patterns(loaded_);
+    connect(texture_pattern_combo_, &QComboBox::currentIndexChanged, this,
+            [this] { refresh_texture_missing_hint(); });
   }
 
   // Dual Brush: one fixed secondary computed mask.
@@ -614,7 +701,8 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
         minimum_roundness_spin_, roundness_fade_steps_spin_, scatter_spin_, scatter_fade_steps_spin_,
         count_spin_, count_jitter_spin_, count_fade_steps_spin_, opacity_jitter_spin_,
         minimum_opacity_spin_, opacity_fade_steps_spin_, flow_jitter_spin_, minimum_flow_spin_,
-        flow_fade_steps_spin_, texture_scale_spin_, texture_depth_spin_, dual_brush_size_spin_,
+        flow_fade_steps_spin_, texture_scale_spin_, texture_brightness_spin_, texture_contrast_spin_,
+        texture_depth_spin_, dual_brush_size_spin_,
         dual_brush_hardness_spin_, dual_brush_spacing_spin_,
         foreground_background_jitter_spin_, color_fade_steps_spin_, hue_jitter_spin_,
         saturation_jitter_spin_, brightness_jitter_spin_, purity_spin_}) {
@@ -622,10 +710,11 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
   }
   for (auto* combo : {angle_control_combo_, size_control_combo_, roundness_control_combo_,
                       scatter_control_combo_, count_control_combo_, opacity_control_combo_,
-                      flow_control_combo_, texture_style_combo_, color_control_combo_}) {
+                      flow_control_combo_, texture_pattern_combo_, texture_mode_combo_, color_control_combo_}) {
     connect(combo, &QComboBox::currentIndexChanged, this, emit_edited);
   }
-  for (auto* check : {flip_x_check_, flip_y_check_, both_axes_check_, texture_enabled_check_,
+  for (auto* check : {tip_flip_x_check_, tip_flip_y_check_, flip_x_check_, flip_y_check_, both_axes_check_,
+                      texture_enabled_check_,
                       texture_invert_check_, dual_brush_enabled_check_,
                       color_dynamics_enabled_check_, color_per_tip_check_, noise_check_, wet_edges_check_}) {
     connect(check, &QCheckBox::toggled, this, emit_edited);
@@ -645,6 +734,66 @@ BrushDynamicsPanel::BrushDynamicsPanel(QWidget* parent, Presentation presentatio
 QWidget* BrushDynamicsPanel::section_page(BrushSection section) const {
   const auto found = pages_.find(section);
   return found != pages_.end() ? found->second : nullptr;
+}
+
+void BrushDynamicsPanel::set_pattern_library(PatternLibrary* patterns) {
+  if (pattern_library_ == patterns) {
+    return;
+  }
+  if (pattern_library_ != nullptr) {
+    disconnect(pattern_library_, nullptr, this, nullptr);
+  }
+  pattern_library_ = patterns;
+  if (pattern_library_ != nullptr) {
+    connect(pattern_library_, &PatternLibrary::changed, this, [this] { rebuild_texture_patterns(dynamics()); });
+  }
+  rebuild_texture_patterns(dynamics());
+}
+
+void BrushDynamicsPanel::rebuild_texture_patterns(const patchy::BrushDynamics& target) {
+  const QSignalBlocker blocker(texture_pattern_combo_);
+  texture_pattern_combo_->clear();
+  for (const auto& item : kTextureItems) {
+    texture_pattern_combo_->addItem(panel_tr(item.source), static_cast<int>(item.style));
+  }
+  const auto target_id = QString::fromStdString(target.texture_pattern_id);
+  int selected = std::max(0, texture_pattern_combo_->findData(static_cast<int>(target.texture_style)));
+  bool found = target_id.isEmpty();
+  if (pattern_library_ != nullptr && !pattern_library_->entries().empty()) {
+    texture_pattern_combo_->insertSeparator(texture_pattern_combo_->count());
+    for (const auto& entry : pattern_library_->entries()) {
+      texture_pattern_combo_->addItem(QIcon(entry.thumbnail), pattern_library_entry_display_name(entry), kPatternRow);
+      const auto index = texture_pattern_combo_->count() - 1;
+      texture_pattern_combo_->setItemData(index, entry.id, kTexturePatternIdRole);
+      texture_pattern_combo_->setItemData(index, entry.name, kTexturePatternNameRole);
+      auto detail = QStringLiteral("%1 x %2").arg(entry.size.width()).arg(entry.size.height());
+      if (!entry.folder.isEmpty()) {
+        detail = entry.folder + QStringLiteral(" - ") + detail;
+      }
+      texture_pattern_combo_->setItemData(index, detail, Qt::ToolTipRole);
+      if (!found && entry.id == target_id) {
+        selected = index;
+        found = true;
+      }
+    }
+  }
+  if (!found) {
+    // The brush names a pattern the library lacks (deleted, or an ABR texture never imported):
+    // keep it selectable by name so an edit elsewhere does not drop the reference.
+    const auto name = target.texture_pattern_name.empty() ? target_id
+                                                          : QString::fromStdString(target.texture_pattern_name);
+    texture_pattern_combo_->addItem(panel_tr(QT_TR_NOOP("%1 (missing)")).arg(name), kMissingPatternRow);
+    selected = texture_pattern_combo_->count() - 1;
+    texture_pattern_combo_->setItemData(selected, target_id, kTexturePatternIdRole);
+    texture_pattern_combo_->setItemData(selected, QString::fromStdString(target.texture_pattern_name),
+                                        kTexturePatternNameRole);
+  }
+  texture_pattern_combo_->setCurrentIndex(selected);
+  refresh_texture_missing_hint();
+}
+
+void BrushDynamicsPanel::refresh_texture_missing_hint() {
+  texture_missing_hint_->setVisible(texture_pattern_combo_->currentData().toInt() == kMissingPatternRow);
 }
 
 void BrushDynamicsPanel::changeEvent(QEvent* event) {
@@ -682,14 +831,14 @@ void BrushDynamicsPanel::retranslate_combos() {
       angle_control_combo_->setItemText(index, panel_tr(kAngleControlItems[index]));
     }
   }
-  const QSignalBlocker blocker(texture_style_combo_);
-  for (int index = 0; index < texture_style_combo_->count(); ++index) {
-    for (const auto& item : kTextureItems) {
-      if (texture_style_combo_->itemData(index).toInt() == static_cast<int>(item.style)) {
-        texture_style_combo_->setItemText(index, panel_tr(item.source));
-      }
+  {
+    const QSignalBlocker blocker(texture_mode_combo_);
+    for (int index = 0; index < texture_mode_combo_->count(); ++index) {
+      texture_mode_combo_->setItemText(index, panel_tr(kTextureModeItems[index].source));
     }
   }
+  // Grain names and the "missing" row are translated; library pattern names are not.
+  rebuild_texture_patterns(dynamics());
 }
 
 void BrushDynamicsPanel::set_values(const patchy::BrushDynamics& dynamics, double base_angle_degrees,
@@ -730,12 +879,17 @@ void BrushDynamicsPanel::set_values(const patchy::BrushDynamics& dynamics, doubl
   flow_fade_steps_spin_->setValue(std::clamp(dynamics.flow_fade_steps, 1, 9999));
   texture_enabled_check_->setChecked(dynamics.texture_enabled);
   select_combo_control(*color_control_combo_, dynamics.color_control);
-  texture_style_combo_->setCurrentIndex(std::max(
-      0, texture_style_combo_->findData(static_cast<int>(dynamics.texture_style))));
+  loaded_ = dynamics;
+  rebuild_texture_patterns(dynamics);
   texture_scale_spin_->setValue(percent_from_fraction(dynamics.texture_scale));
+  texture_brightness_spin_->setValue(static_cast<int>(std::lround(dynamics.texture_brightness)));
+  texture_contrast_spin_->setValue(static_cast<int>(std::lround(dynamics.texture_contrast)));
+  texture_mode_combo_->setCurrentIndex(
+      std::max(0, texture_mode_combo_->findData(static_cast<int>(dynamics.texture_mode))));
   texture_depth_spin_->setValue(percent_from_fraction(dynamics.texture_depth));
   texture_invert_check_->setChecked(dynamics.texture_invert);
-  loaded_ = dynamics;
+  tip_flip_x_check_->setChecked(dynamics.tip_flip_x);
+  tip_flip_y_check_->setChecked(dynamics.tip_flip_y);
   dual_brush_enabled_check_->setChecked(dynamics.dual_brush_enabled);
   dual_brush_size_spin_->setValue(percent_from_fraction(dynamics.dual_brush_size));
   dual_brush_hardness_spin_->setValue(percent_from_fraction(dynamics.dual_brush_hardness));
@@ -789,9 +943,22 @@ patchy::BrushDynamics BrushDynamicsPanel::dynamics() const {
   dynamics.flow_control = combo_control(*flow_control_combo_);
   dynamics.flow_fade_steps = flow_fade_steps_spin_->value();
   dynamics.texture_enabled = texture_enabled_check_->isChecked();
-  dynamics.texture_style = static_cast<patchy::BrushTextureStyle>(
-      texture_style_combo_->currentData().toInt());
+  if (const auto source = texture_pattern_combo_->currentData().toInt(); source >= 0) {
+    dynamics.texture_style = static_cast<patchy::BrushTextureStyle>(source);
+    dynamics.texture_pattern_id.clear();
+    dynamics.texture_pattern_name.clear();
+  } else {
+    // A pattern keeps the last grain as its fallback style.
+    dynamics.texture_pattern_id = texture_pattern_combo_->currentData(kTexturePatternIdRole).toString().toStdString();
+    dynamics.texture_pattern_name =
+        texture_pattern_combo_->currentData(kTexturePatternNameRole).toString().toStdString();
+  }
   dynamics.texture_scale = fraction_from_percent(texture_scale_spin_->value());
+  dynamics.texture_brightness = texture_brightness_spin_->value();
+  dynamics.texture_contrast = texture_contrast_spin_->value();
+  dynamics.texture_mode = static_cast<patchy::BrushTextureMode>(texture_mode_combo_->currentData().toInt());
+  dynamics.tip_flip_x = tip_flip_x_check_->isChecked();
+  dynamics.tip_flip_y = tip_flip_y_check_->isChecked();
   dynamics.texture_depth = fraction_from_percent(texture_depth_spin_->value());
   dynamics.texture_invert = texture_invert_check_->isChecked();
   dynamics.dual_brush_enabled = dual_brush_enabled_check_->isChecked();

@@ -9465,10 +9465,6 @@ Mixed selection</source>
         <translation>テクスチャを有効化</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>粒子:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>細かい粒子</translation>
     </message>
@@ -9568,6 +9564,90 @@ Mixed selection</source>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>ブラシ先端のソフトな縁に粒状感を加えます。粒状感はカンバス上で固定され、ハードな先端はほとんど変化しません。</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>乗算</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>減算</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>比較(暗)</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>オーバーレイ</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>覆い焼きカラー</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>焼き込みカラー</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>焼き込み(リニア)</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>ハードミックス</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>高さ(リニア)</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>高さ</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>X を反転</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>先端を左右に反転します</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Y を反転</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>先端を上下に反転します</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>パターン:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>テクスチャの元:生成された粒子、またはパターンライブラリのパターン</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>このパターンはパターンライブラリにないため、ストロークは生成された粒子を使います。パターンを追加するか、別のものを選んでください。</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>明るさ:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>コントラスト:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>描画モード:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1（見つかりません）</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9614,10 +9694,6 @@ Mixed selection</source>
     <message>
         <source>Spacing</source>
         <translation>間隔</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>オフでは先端自体の間隔を使い、オンでは描点の間隔をブラシサイズに対するパーセントで設定します</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9714,6 +9790,10 @@ Mixed selection</source>
     <message>
         <source>Noise</source>
         <translation>ノイズ</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>オフでは先端自身の間隔を使います(円形と正方形はなめらかなストロークを描きます)。オンではスタンプ間の距離をブラシサイズに対する割合で設定します</translation>
     </message>
 </context>
 <context>

@@ -92,6 +92,8 @@ patchy::BrushDynamics fully_customized_dynamics() {
       it.value() = 7;
     } else if (it.key() == QStringLiteral("textureSeed")) {
       it.value() = 12345.0;
+    } else if (it.key() == QStringLiteral("textureBrightness") || it.key() == QStringLiteral("textureContrast")) {
+      it.value() = 30.0;  // whole Photoshop units, like the panel's spin boxes
     } else {
       it.value() = it.value().toDouble() == 0.3 ? 0.4 : 0.3;
     }
@@ -434,6 +436,119 @@ void ui_brush_settings_sections_grey_out_per_tool() {
   clear_brush_tip_test_state();
 }
 
+void ui_brush_settings_engine_controls_reach_stroke() {
+  // Spacing on Round, the static flips, Noise and a Texture pattern from the Pattern library all
+  // write the working brush through the panel and reach the canvas.
+  clear_brush_tip_test_state();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  require_action_by_text(window, QStringLiteral("Brush"))->trigger();
+  canvas->set_zoom(1.0);
+  canvas->set_primary_color(Qt::black);
+  auto& panel = open_brush_settings_panel(window);
+  const auto& working = window.current_brush().brush();
+
+  // Spacing applies to the procedural Round too; unticked leaves it unset (the smooth stroke).
+  auto* spacing = panel.findChild<QCheckBox*>(QStringLiteral("brushSettingsSpacingCheck"));
+  CHECK(spacing != nullptr && spacing->isEnabled() && !spacing->isChecked());
+  spacing->setChecked(true);
+  panel.findChild<QSpinBox*>(QStringLiteral("brushSettingsSpacingSpin"))->setValue(50);
+  process_events_for(120);
+  CHECK(working.spacing.has_value() && std::abs(*working.spacing - 0.5) < 1e-9);
+  spacing->setChecked(false);
+  process_events_for(120);
+  CHECK(!working.spacing.has_value());
+
+  auto* flip_x = panel.findChild<QCheckBox*>(QStringLiteral("dynamicsTipFlipXCheck"));
+  CHECK(flip_x != nullptr);
+  flip_x->setChecked(true);
+  process_events_for(120);
+  CHECK(working.dynamics.tip_flip_x && canvas->brush_dynamics().tip_flip_x);
+  flip_x->setChecked(false);
+  process_events_for(120);
+
+  auto* sections = panel.findChild<QTreeWidget*>(QStringLiteral("brushSettingsSectionList"));
+  const auto section_row = [sections](const QString& title) {
+    for (int row = 0; row < sections->topLevelItemCount(); ++row) {
+      if (sections->topLevelItem(row)->text(0) == title) {
+        return sections->topLevelItem(row);
+      }
+    }
+    return static_cast<QTreeWidgetItem*>(nullptr);
+  };
+  auto* noise = section_row(QStringLiteral("Noise"));
+  CHECK(noise != nullptr);
+  noise->setCheckState(0, Qt::Checked);
+  settle();
+  CHECK(canvas->brush_dynamics().noise);
+  noise->setCheckState(0, Qt::Unchecked);
+  settle();
+  CHECK(!canvas->brush_dynamics().noise);
+
+  // 8 px vertical stripes: document columns x % 16 < 8 take paint, the rest stay empty.
+  const QString pattern_id = QStringLiteral("patchy-test-panel-texture-stripes");
+  patchy::PixelBuffer stripes(16, 16, patchy::PixelFormat::rgba8());
+  for (int y = 0; y < 16; ++y) {
+    for (int x = 0; x < 16; ++x) {
+      auto* px = stripes.pixel(x, y);
+      px[0] = px[1] = px[2] = static_cast<std::uint8_t>(x < 8 ? 255 : 0);
+      px[3] = 255;
+    }
+  }
+  auto& patterns = window.pattern_library();
+  if (const auto* stale = patterns.find_entry_by_pattern_id(pattern_id); stale != nullptr) {
+    CHECK(patterns.remove_pattern(stale->storage_id));
+  }
+  const auto storage_id =
+      patterns.add_pattern(QStringLiteral("Panel Stripes"), stripes, QStringLiteral("Tests"), pattern_id);
+  CHECK(!storage_id.isEmpty());
+  window.set_active_brush_tip(patchy::ui::builtin_square_brush_tip_id(), false);
+  patchy::ui::BrushEdit size;
+  size.size = 40;
+  size.softness = 0;
+  window.current_brush().edit(size);
+  panel.select_section(BrushSection::Texture);
+  section_row(QStringLiteral("Texture"))->setCheckState(0, Qt::Checked);
+  settle();
+  auto* source = panel.findChild<QComboBox*>(QStringLiteral("dynamicsTexturePatternCombo"));
+  CHECK(source != nullptr);
+  const auto pattern_index = source->findData(pattern_id, Qt::UserRole + 1);
+  CHECK(pattern_index > 0);
+  source->setCurrentIndex(pattern_index);
+  panel.findChild<QSpinBox*>(QStringLiteral("dynamicsTextureDepthSpin"))->setValue(100);
+  process_events_for(120);
+  CHECK(working.dynamics.texture_enabled);
+  CHECK(QString::fromStdString(working.dynamics.texture_pattern_id) == pattern_id);
+  CHECK(canvas->has_brush_texture_pattern());
+  const auto dark = [canvas](QPoint point) { return canvas_pixel(*canvas, point).lightness() < 128; };
+  const auto press = canvas->widget_position_for_document_point(QPoint(100, 100));
+  send_mouse(*canvas, QEvent::MouseButtonPress, press, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(*canvas, QEvent::MouseButtonRelease, press, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+  CHECK(dark(QPoint(98, 100)));    // 98 % 16 = 2: a stripe that takes paint
+  CHECK(!dark(QPoint(106, 100)));  // 106 % 16 = 10: a stripe that stays empty
+  process_events_for(120);  // the preview strip re-renders at most every 80 ms
+  save_widget_artifact("ui_brush_settings_panel_texture_pattern", panel);
+
+  // A deleted pattern stays named, marked missing, and the brush keeps its reference.
+  CHECK(patterns.remove_pattern(storage_id));
+  settle();
+  CHECK(source->currentText().contains(QStringLiteral("Panel Stripes")));
+  CHECK(source->currentText().contains(QStringLiteral("missing")));
+  CHECK(panel.findChild<QLabel*>(QStringLiteral("dynamicsTextureMissingHint"))->isVisibleTo(&panel));
+  CHECK(QString::fromStdString(working.dynamics.texture_pattern_id) == pattern_id);
+  save_widget_artifact("ui_brush_settings_panel_texture_missing", panel);
+
+  patchy::ui::BrushEdit reset;
+  reset.size = 25;
+  reset.spacing = std::optional<double>{};
+  reset.dynamics = patchy::BrushDynamics{};
+  window.set_active_brush_tip(patchy::ui::builtin_round_brush_tip_id(), false);
+  window.current_brush().edit(reset);
+  clear_brush_tip_test_state();
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part3() {
@@ -445,5 +560,6 @@ std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part3() {
       {"ui_brush_section_locks_merge_picked_brush", ui_brush_section_locks_merge_picked_brush},
       {"ui_brush_dynamics_form_keeps_fields_it_does_not_edit", ui_brush_dynamics_form_keeps_fields_it_does_not_edit},
       {"ui_brush_settings_sections_grey_out_per_tool", ui_brush_settings_sections_grey_out_per_tool},
+      {"ui_brush_settings_engine_controls_reach_stroke", ui_brush_settings_engine_controls_reach_stroke},
   };
 }

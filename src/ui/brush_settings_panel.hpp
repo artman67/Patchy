@@ -1,13 +1,16 @@
 #pragma once
 
+#include "core/brush_tip.hpp"
 #include "ui/brush_settings_sections.hpp"
 #include "ui/current_brush.hpp"
 
 #include <QWidget>
 
 #include <map>
+#include <memory>
 #include <optional>
 #include <set>
+#include <string>
 
 class QBoxLayout;
 class QCheckBox;
@@ -78,6 +81,8 @@ private:
   void refresh_section_states();
   void refresh_locks();
   void refresh_spacing_row();
+  void refresh_preview();
+  void show_section_page(BrushSection section);
   void schedule_flush();
   void section_toggled(BrushSection section, bool enabled);
   void toggle_lock(BrushSection section);
@@ -114,6 +119,9 @@ private:
   QLabel* lock_banner_label_{nullptr};
   BrushStrokePreviewStrip* preview_{nullptr};
   QTimer* flush_timer_{nullptr};
+  // The preview's Brush Texture tile, built once per pattern id.
+  std::string texture_tile_id_;
+  std::shared_ptr<const patchy::BrushTextureTile> texture_tile_;
 
   // Edits waiting for the coalescing timer.
   std::optional<BrushEdit> pending_brush_edit_;

@@ -9465,10 +9465,6 @@ RGB: %2, %3, %4</translation>
         <translation>텍스처 활성화</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>입자:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>미세한 입자</translation>
     </message>
@@ -9568,6 +9564,90 @@ RGB: %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>브러시 팁의 부드러운 가장자리에 그레인을 추가합니다. 그레인은 캔버스에 고정되며 단단한 팁은 거의 바뀌지 않습니다.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>곱하기</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>빼기</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>어둡게 하기</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>오버레이</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>색상 닷지</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>색상 번</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>선형 번</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>하드 혼합</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>선형 높이</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>높이</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>X 뒤집기</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>팁을 좌우로 뒤집습니다</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Y 뒤집기</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>팁을 위아래로 뒤집습니다</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>패턴:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>텍스처 원본: 생성된 그레인 또는 패턴 라이브러리의 패턴</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>이 패턴이 패턴 라이브러리에 없으므로 획에 생성된 그레인이 사용됩니다. 패턴을 추가하거나 다른 패턴을 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>밝기:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>대비:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>모드:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1(누락)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9614,10 +9694,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>간격</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>끄면 끝 자체의 간격을 사용하고, 켜면 찍힘 사이의 거리를 브러시 크기의 백분율로 설정합니다</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9714,6 +9790,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>노이즈</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>끄면 팁 자체의 간격을 유지합니다(원형과 사각형은 매끄러운 획을 칠합니다). 켜면 찍기 사이의 거리를 브러시 크기의 백분율로 설정합니다</translation>
     </message>
 </context>
 <context>

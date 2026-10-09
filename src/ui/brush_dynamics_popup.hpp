@@ -11,10 +11,13 @@
 
 class QCheckBox;
 class QComboBox;
+class QLabel;
 class QSlider;
 class QSpinBox;
 
 namespace patchy::ui {
+
+class PatternLibrary;
 
 // Photoshop's angle/roundness preview: a rotated ellipse with an arrow along the angle. Dragging
 // rotates it; dragging one of the two roundness handles flattens or rounds it.
@@ -68,6 +71,9 @@ public:
   // The section's page, or nullptr for sections this form does not edit (Build-up, Smoothing).
   // With Presentation::Pages the host reparents it into its own layout.
   [[nodiscard]] QWidget* section_page(BrushSection section) const;
+  // The Pattern library the Texture picker lists after the procedural grains (null = grains
+  // only). The picker follows the library's changes.
+  void set_pattern_library(PatternLibrary* patterns);
 
 signals:
   void edited();
@@ -78,6 +84,10 @@ protected:
 private:
   void reset_to_defaults();
   void retranslate_combos();
+  // Refills the Texture picker: the grains, then the library's patterns, plus a "missing" row
+  // when `target` names a pattern the library lacks. Selects target's source; never emits.
+  void rebuild_texture_patterns(const patchy::BrushDynamics& target);
+  void refresh_texture_missing_hint();
   // Fade-steps spins show only while their combo says Fade; minimum Transfer rows are live
   // only while their matching control has a real source; a disabled effect greys its rows.
   void refresh_control_dependent_widgets();
@@ -98,6 +108,8 @@ private:
   QSpinBox* minimum_roundness_spin_{nullptr};
   QComboBox* roundness_control_combo_{nullptr};
   QSpinBox* roundness_fade_steps_spin_{nullptr};
+  QCheckBox* tip_flip_x_check_{nullptr};
+  QCheckBox* tip_flip_y_check_{nullptr};
   QCheckBox* flip_x_check_{nullptr};
   QCheckBox* flip_y_check_{nullptr};
   QSpinBox* scatter_spin_{nullptr};
@@ -119,8 +131,15 @@ private:
   QComboBox* flow_control_combo_{nullptr};
   QSpinBox* flow_fade_steps_spin_{nullptr};
   QCheckBox* texture_enabled_check_{nullptr};
-  QComboBox* texture_style_combo_{nullptr};
+  // The procedural grains (data = the style) and the Pattern library's patterns (data -1, the
+  // pattern id in kTexturePatternIdRole); a missing pattern lists as data -2.
+  QComboBox* texture_pattern_combo_{nullptr};
+  QLabel* texture_missing_hint_{nullptr};
+  PatternLibrary* pattern_library_{nullptr};
   QSpinBox* texture_scale_spin_{nullptr};
+  QSpinBox* texture_brightness_spin_{nullptr};
+  QSpinBox* texture_contrast_spin_{nullptr};
+  QComboBox* texture_mode_combo_{nullptr};
   QSpinBox* texture_depth_spin_{nullptr};
   QCheckBox* texture_invert_check_{nullptr};
   // The struct last loaded: dynamics() starts from it, so fields the form does not show (the

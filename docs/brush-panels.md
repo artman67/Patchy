@@ -87,22 +87,34 @@ re-applies those heights after every polish because the application sheet's
 `BrushDynamicsPanel` in `Presentation::Pages` stack each row (label and value, then the slider or
 combo); the Brush Tips manager's "Edit Dynamics..." uses `Presentation::AllSections` (titled
 groups, one line per row, Reset). One form instance lives under MainWindow, so the existing
-`dynamics*` objectNames stay unique.
+`dynamics*` objectNames stay unique. Only the shown page sizes the stack (the others get an
+Ignored size policy in `show_section_page`), so the page area scrolls by that page's own height
+and a section change starts at its top.
 
-Sections, in Photoshop's order (`kBrushSections`; lock keys persist, never rename): Brush Tip
-Shape (tip grid, Size, Soft, the angle/roundness ellipse and spins, Spacing), Shape Dynamics,
-Scattering, Texture, Dual Brush, Color Dynamics, Transfer, Wet Edges, Build-up (the Airbrush
-flag), Smoothing. Brush Pose, Brush Projection, Noise and Protect Texture are left out: the
-engine has no such features (see [legal-constraints.md](legal-constraints.md) before adding any).
+Sections, in Photoshop's order (`kBrushSections`; the enum appends, lock keys persist, never
+rename): Brush Tip Shape (tip grid, Size, the angle/roundness ellipse and spins with Flip X / Flip
+Y, Soft standing in for Hardness, Spacing), Shape Dynamics, Scattering, Texture, Dual Brush, Color
+Dynamics, Transfer, Noise, Wet Edges, Build-up (the Airbrush flag), Smoothing. Brush Pose, Brush
+Projection and Protect Texture are left out: the engine has no such features (see
+[legal-constraints.md](legal-constraints.md) before adding any).
 
-- Enable boxes: Texture, Dual Brush, Color Dynamics and Wet Edges map onto their
-  `BrushDynamics` flags, Build-up onto `WorkingBrush::airbrush`. Shape Dynamics, Scattering,
+- Enable boxes: Texture, Dual Brush, Color Dynamics, Noise and Wet Edges map onto their
+  `BrushDynamics` flags (Noise and Wet Edges are checkbox-only sections with a hint page), Build-up onto `WorkingBrush::airbrush`. Shape Dynamics, Scattering,
   Transfer and Smoothing have no flag; their box shows whether the section changes anything.
   Unticking parks the section's values in the panel and resets them, ticking brings them back
   (Smoothing returns to its last amount, else 10%); ticking an empty section keeps it ticked
   until edited. Parked values belong to the brush showing and reset on every pick. No core state.
-- Spacing applies to bitmap tips (and saved snapshot tips); unticked uses the tip's own spacing.
-  The procedural Round and Square have no dab spacing to set yet, so the row is disabled there.
+- Spacing (`WorkingBrush::spacing`) applies to every tip, the procedural Round and Square
+  included: ticked stamps at that fraction of the size, unticked leaves it unset (the tip's own
+  spacing; Round and Square keep their smooth stroke, see brushes.md "Current brush").
+- The flips are `BrushDynamics::tip_flip_x/y` but belong to Brush Tip Shape: they are never
+  locked and "Clear Brush Controls" keeps them. The bitmap-tip cursor outline mirrors with them
+  (`brush_tip_stamp_image`), and every stroke preview passes them on (`render_brush_stroke_preview`).
+- Texture lists the generated grains, then the Pattern library (`BrushTipLibrary::pattern_library`,
+  live), as one picker; a grain clears `texture_pattern_id`, a pattern keeps the last grain as its
+  fallback. A brush naming a pattern the library lacks shows "<texture_pattern_name> (missing)"
+  with a hint and keeps the reference. Then Invert, Scale, Brightness, Contrast, Mode, Depth
+  ([brush-texture.md](brush-texture.md)). The stroke strip renders with the pattern tile.
 - Edits coalesce over 40 ms and the stroke strip re-renders at most every 80 ms. A pick drops a
   pending form edit; the panel skips reloading values that only echo its own edit.
 - Tools grey out what their strokes ignore (`brush_sections_for_tool`): the Brush honors every
@@ -124,7 +136,7 @@ ignore them. Brush Tip Shape cannot be locked. Locks must never go unnoticed: a 
 an accent padlock and a bold name, a banner under the page names every locked section with
 Unlock All, and the panel menu and the list's context menu offer "Reset All Locked Settings"
 (clears every lock). `ui_brush_section_locks_merge_picked_brush` pins the merge, including that
-every persisted `BrushDynamics` field belongs to a lockable section: a new field must be added to
+every persisted `BrushDynamics` field belongs to a section: a new field must be added to
 `copy_brush_section`.
 
 ## Tests
@@ -134,3 +146,5 @@ placement and the Window toggles including a layout that predates the panels, pi
 canvas and the modified marker, the New Brush Preset round trip with its folder and capture
 choices, the lock merge, and section greying per tool. The dynamics form tests in part 2 drive
 the panel through `open_brush_settings_panel` (the Dynamics button).
+`ui_brush_settings_engine_controls_reach_stroke` drives Spacing on Round, Flip X, Noise and a
+Texture pattern (including the missing state) through the panel to the canvas.

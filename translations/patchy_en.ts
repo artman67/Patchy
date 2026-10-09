@@ -9485,10 +9485,6 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation type="unfinished"></translation>
     </message>
@@ -9588,6 +9584,90 @@ RGB: %2, %3, %4</source>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9633,10 +9713,6 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Spacing</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9733,6 +9809,10 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Noise</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

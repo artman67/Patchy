@@ -9495,10 +9495,6 @@ RGB: %2, %3, %4</translation>
         <translation>Ativar textura</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>Grão:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>Grão Fino</translation>
     </message>
@@ -9598,6 +9594,90 @@ RGB: %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>Adiciona granulação às bordas suaves da ponta do pincel. A granulação fica fixa na tela; pontas duras quase não mudam.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Multiplicação</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Subtrair</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Escurecer</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Sobrepor</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Subexposição de cores</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Superexposição de cores</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Superexposição linear</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Mistura sólida</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Altura linear</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Altura</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Inverter X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Espelha a ponta da esquerda para a direita</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Inverter Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Espelha a ponta de cima para baixo</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Padrão:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>A origem da textura: um grão gerado ou um padrão da sua biblioteca de padrões</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Este padrão não está na sua biblioteca de padrões, então os traços usam o grão gerado. Adicione o padrão ou escolha outro.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Brilho:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Contraste:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Modo:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (ausente)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9644,10 +9724,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>Espaçamento</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>Desligado usa o espaçamento da própria ponta; ligado define a distância entre as marcas como porcentagem do tamanho do pincel</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9744,6 +9820,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>Ruído</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Desligado mantém o espaçamento próprio da ponta (Redondo e Quadrado pintam um traço contínuo); ligado define a distância entre carimbos como porcentagem do tamanho do pincel</translation>
     </message>
 </context>
 <context>

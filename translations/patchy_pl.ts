@@ -9525,10 +9525,6 @@ RGB: %2, %3, %4</translation>
         <translation>Włącz teksturę</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>Ziarno:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>Drobne ziarno</translation>
     </message>
@@ -9628,6 +9624,90 @@ RGB: %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>Dodaje ziarno do miękkich krawędzi końcówki pędzla. Ziarno pozostaje nieruchome na płótnie; twarde końcówki prawie się nie zmieniają.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Mnożenie</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Odejmowanie</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Ciemniej</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Nakładka</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Rozjaśnianie</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Ściemnianie</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Ściemnianie liniowe</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Mieszanie twarde</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Wysokość liniowa</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Wysokość</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Odbij X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Odbija końcówkę od lewej do prawej</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Odbij Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Odbija końcówkę z góry na dół</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Wzorek:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>Źródło tekstury: wygenerowane ziarno lub wzorek z biblioteki wzorków</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Tego wzorka nie ma w bibliotece wzorków, więc pociągnięcia używają wygenerowanego ziarna. Dodaj wzorek lub wybierz inny.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Jasność:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Kontrast:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Tryb:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (brak)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9674,10 +9754,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>Odstępy</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>Wyłączone: własne odstępy końcówki; włączone: odległość między odciskami jako procent rozmiaru pędzla</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9774,6 +9850,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>Szum</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Wyłączone zachowuje własne odstępy końcówki (Okrągła i Kwadratowa malują gładkie pociągnięcie); włączone ustawia odległość między odbiciami jako procent rozmiaru pędzla</translation>
     </message>
 </context>
 <context>

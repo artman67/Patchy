@@ -24,6 +24,8 @@ struct BrushStrokePreviewSpec {
   double angle{0.0};
   double roundness{100.0};
   patchy::BrushDynamics dynamics{};
+  // The Pattern library tile for dynamics.texture_pattern_id (null = the procedural grain).
+  std::shared_ptr<const patchy::BrushTextureTile> texture_tile;
 };
 
 // Paints a gentle S-curve stroke with the real stamping engine into a scratch document and

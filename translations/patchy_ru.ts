@@ -9525,10 +9525,6 @@ RGB: %2, %3, %4</translation>
         <translation>Включить текстуру</translation>
     </message>
     <message>
-        <source>Grain:</source>
-        <translation>Зерно:</translation>
-    </message>
-    <message>
         <source>Fine Grain</source>
         <translation>Мелкое зерно</translation>
     </message>
@@ -9628,6 +9624,90 @@ RGB: %2, %3, %4</translation>
         <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
         <translation>Добавляет зерно на мягкие края отпечатка кисти. Зерно остаётся на месте на холсте; жёсткие кисти почти не меняются.</translation>
     </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Умножение</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Вычитание</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Затемнение</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Перекрытие</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Осветление основы</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Затемнение основы</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Линейный затемнитель</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Жёсткое смешение</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Линейная высота</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Высота</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Отразить по X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Отражает кисть слева направо</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Отразить по Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Отражает кисть сверху вниз</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Узор:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>Источник текстуры: созданное зерно или узор из вашей библиотеки узоров</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Этого узора нет в вашей библиотеке узоров, поэтому мазки используют созданное зерно. Добавьте узор или выберите другой.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Яркость:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Контрастность:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Режим:</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (отсутствует)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::BrushSettingsPanel</name>
@@ -9674,10 +9754,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Spacing</source>
         <translation>Интервалы</translation>
-    </message>
-    <message>
-        <source>Off uses the tip&apos;s own spacing; on sets the distance between stamps as a percentage of the brush size</source>
-        <translation>Выключено: собственный интервал отпечатка; включено: расстояние между отпечатками в процентах от размера кисти</translation>
     </message>
     <message>
         <source>Smoothing:</source>
@@ -9774,6 +9850,10 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Noise</source>
         <translation>Шум</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Выкл. сохраняет собственный интервал кисти (Круглая и Квадратная рисуют сплошной мазок); вкл. задаёт расстояние между отпечатками в процентах от размера кисти</translation>
     </message>
 </context>
 <context>

@@ -659,7 +659,7 @@ void ui_brush_dynamics_popup_edits_working_brush_not_tip() {
   auto* texture_enabled =
       popup->findChild<QCheckBox*>(QStringLiteral("dynamicsTextureEnabledCheck"));
   auto* texture_style =
-      popup->findChild<QComboBox*>(QStringLiteral("dynamicsTextureStyleCombo"));
+      popup->findChild<QComboBox*>(QStringLiteral("dynamicsTexturePatternCombo"));
   CHECK(texture_enabled != nullptr);
   CHECK(texture_style != nullptr);
   texture_enabled->setChecked(true);
