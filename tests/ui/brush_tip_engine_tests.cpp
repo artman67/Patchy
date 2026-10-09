@@ -11,6 +11,8 @@
 #include <QAction>
 #include <QApplication>
 #include <QColor>
+#include <QImage>
+#include <QJsonObject>
 #include <QPoint>
 
 #include <optional>
@@ -128,10 +130,84 @@ void ui_working_brush_spacing_drives_procedural_dabs() {
   restore_default_working_brush(window);
 }
 
+// 32x32 coverage with the lower-left triangle painted (x <= y), so a mirror is visible and
+// cropping to content keeps the full square.
+QImage make_triangle_tip_image() {
+  QImage mask(32, 32, QImage::Format_Grayscale8);
+  for (int y = 0; y < 32; ++y) {
+    auto* row = mask.scanLine(y);
+    for (int x = 0; x < 32; ++x) {
+      row[x] = x <= y ? 255 : 0;
+    }
+  }
+  return mask;
+}
+
+void click_canvas(patchy::ui::CanvasWidget& canvas, QPoint document_point) {
+  const auto position = canvas.widget_position_for_document_point(document_point);
+  send_mouse(canvas, QEvent::MouseButtonPress, position, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(canvas, QEvent::MouseButtonRelease, position, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+}
+
+void ui_static_tip_flip_persists_and_reaches_strokes() {
+  clear_brush_tip_test_state();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  require_action_by_text(window, QStringLiteral("Brush"))->trigger();
+  canvas->set_zoom(1.0);
+  canvas->set_primary_color(Qt::black);
+  QApplication::processEvents();
+
+  // The flips persist with the dynamics JSON and count as a non-default tip setting.
+  patchy::BrushDynamics flipped;
+  flipped.tip_flip_x = true;
+  CHECK(!patchy::ui::brush_dynamics_is_default(flipped));
+  const auto json = patchy::ui::brush_dynamics_to_json(flipped);
+  CHECK(json.value(QStringLiteral("tipFlipX")).toBool());
+  CHECK(!json.value(QStringLiteral("tipFlipY")).toBool(true));
+  CHECK(patchy::ui::brush_dynamics_from_json(json).tip_flip_x);
+  CHECK(!patchy::ui::brush_dynamics_from_json(QJsonObject{}).tip_flip_x);
+
+  auto& library = window.brush_tip_library();
+  const auto tip_id = library.add_tip(QStringLiteral("Triangle"), make_triangle_tip_image(), 0.25);
+  CHECK(!tip_id.isEmpty());
+  CHECK(library.set_tip_dynamics(tip_id, flipped, 0.0, 100.0));
+  library.refresh_from_disk();
+  const auto* entry = library.find_entry(tip_id);
+  CHECK(entry != nullptr && entry->dynamics.tip_flip_x && !entry->dynamics.tip_flip_y);
+
+  // Picking the tip loads its stored flip; the stroke mirrors the stamp.
+  window.set_active_brush_tip(tip_id, false);
+  patchy::ui::BrushEdit size_edit;
+  size_edit.size = 32;
+  size_edit.softness = 0;
+  window.current_brush().edit(size_edit);
+  CHECK(window.current_brush().brush().dynamics.tip_flip_x);
+  const auto dark = [canvas](QPoint point) { return canvas_pixel(*canvas, point).lightness() < 128; };
+  click_canvas(*canvas, QPoint(100, 100));
+  CHECK(!dark(QPoint(90, 105)));  // lower-left is empty once mirrored
+  CHECK(dark(QPoint(110, 105)));
+
+  // Clearing the flip restores the authored orientation, with no dynamics involved.
+  patchy::ui::BrushEdit unflip;
+  unflip.dynamics = patchy::BrushDynamics{};
+  window.current_brush().edit(unflip);
+  CHECK(!canvas->brush_dynamics().active());
+  click_canvas(*canvas, QPoint(200, 100));
+  CHECK(dark(QPoint(190, 105)));
+  CHECK(!dark(QPoint(210, 105)));
+
+  save_widget_artifact("ui_static_tip_flip_persists_and_reaches_strokes", *canvas);
+  restore_default_working_brush(window);
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_tip_engine_tests() {
   return {
       {"ui_working_brush_spacing_drives_procedural_dabs", ui_working_brush_spacing_drives_procedural_dabs},
+      {"ui_static_tip_flip_persists_and_reaches_strokes", ui_static_tip_flip_persists_and_reaches_strokes},
   };
 }

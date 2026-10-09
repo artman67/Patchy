@@ -1330,6 +1330,46 @@ void tool_brush_tip_flip_jitter_mirrors_stamp() {
   CHECK(saw_right);
 }
 
+void tool_brush_tip_static_flip_mirrors_stamp() {
+  // Static Flip X mirrors every dab without dynamics or RNG draws; a flip jitter on top mirrors
+  // the flipped tip back for the dabs whose coin lands heads, so both sides appear again.
+  patchy::BrushTip half_bar;
+  half_bar.width = 9;
+  half_bar.height = 9;
+  half_bar.mask.assign(81, 0);
+  for (std::int32_t x = 0; x < 4; ++x) {
+    half_bar.mask[4U * 9U + static_cast<std::size_t>(x)] = 255;
+  }
+  const auto scaled = patchy::make_scaled_brush_tip(patchy::build_brush_tip_mips(half_bar), 9);
+  const auto painted_side = [&scaled](bool flip_x, bool jitter, std::uint32_t seed) {
+    auto document = make_tool_document();
+    const auto layer = active_tool_layer(document);
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 9;
+    options.brush_tip = &scaled;
+    options.brush_flip_x = flip_x;
+    options.brush_dynamics.flip_x_jitter = jitter;
+    options.brush_dynamics.seed = seed;
+    patchy::BrushTipStrokeState state;
+    CHECK(!patchy::paint_brush_segment(document, layer, 24.0, 20.0, 24.0, 20.0, options, false, state)
+               .empty());
+    const auto& pixels = document.find_layer(layer)->pixels();
+    int side = 0;
+    for (std::int32_t x = 0; x < pixels.width(); ++x) {
+      if (pixels.pixel(x, 20)[3] > 128U) {
+        side = x <= 22 ? -1 : (x >= 26 ? 1 : side);
+      }
+    }
+    return side;
+  };
+  CHECK(painted_side(false, false, 0) == -1);
+  CHECK(painted_side(true, false, 0) == 1);
+  for (std::uint32_t seed = 0; seed < 8; ++seed) {
+    // The jitter coin is the same draw with or without the static flip, so the sides swap.
+    CHECK(painted_side(true, true, seed) == -painted_side(false, true, seed));
+  }
+}
+
 void tool_brush_tip_scatter_offsets_perpendicular_to_stroke() {
   const auto tip = make_bar_brush_tip();
   const auto mips = patchy::build_brush_tip_mips(tip);
@@ -1906,6 +1946,7 @@ std::vector<patchy::test::TestCase> brush_engine_tests() {
       {"tool_brush_tip_angle_direction_follows_stroke", tool_brush_tip_angle_direction_follows_stroke},
       {"tool_brush_tip_angle_fade_and_jitter_rotate_dabs", tool_brush_tip_angle_fade_and_jitter_rotate_dabs},
       {"tool_brush_tip_flip_jitter_mirrors_stamp", tool_brush_tip_flip_jitter_mirrors_stamp},
+      {"tool_brush_tip_static_flip_mirrors_stamp", tool_brush_tip_static_flip_mirrors_stamp},
       {"tool_brush_tip_scatter_offsets_perpendicular_to_stroke",
        tool_brush_tip_scatter_offsets_perpendicular_to_stroke},
       {"tool_brush_tip_count_stamps_multiple_dabs_per_step", tool_brush_tip_count_stamps_multiple_dabs_per_step},

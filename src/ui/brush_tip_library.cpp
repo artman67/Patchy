@@ -553,7 +553,8 @@ namespace {
          a.color_control == b.color_control && a.color_fade_steps == b.color_fade_steps &&
          a.hue_jitter == b.hue_jitter && a.saturation_jitter == b.saturation_jitter &&
          a.brightness_jitter == b.brightness_jitter && a.purity == b.purity &&
-         a.color_per_tip == b.color_per_tip && a.wet_edges == b.wet_edges;
+         a.color_per_tip == b.color_per_tip && a.wet_edges == b.wet_edges &&
+         a.tip_flip_x == b.tip_flip_x && a.tip_flip_y == b.tip_flip_y;
 }
 
 }  // namespace
@@ -751,6 +752,8 @@ QJsonObject brush_dynamics_to_json(const patchy::BrushDynamics& dynamics) {
   object.insert(QStringLiteral("purity"), dynamics.purity);
   object.insert(QStringLiteral("colorPerTip"), dynamics.color_per_tip);
   object.insert(QStringLiteral("wetEdges"), dynamics.wet_edges);
+  object.insert(QStringLiteral("tipFlipX"), dynamics.tip_flip_x);
+  object.insert(QStringLiteral("tipFlipY"), dynamics.tip_flip_y);
   return object;
 }
 
@@ -844,6 +847,8 @@ patchy::BrushDynamics brush_dynamics_from_json(const QJsonObject& object) {
   dynamics.purity = std::clamp(object.value(QStringLiteral("purity")).toDouble(0.0), -1.0, 1.0);
   dynamics.color_per_tip = object.value(QStringLiteral("colorPerTip")).toBool(true);
   dynamics.wet_edges = object.value(QStringLiteral("wetEdges")).toBool(false);
+  dynamics.tip_flip_x = object.value(QStringLiteral("tipFlipX")).toBool(false);
+  dynamics.tip_flip_y = object.value(QStringLiteral("tipFlipY")).toBool(false);
   return dynamics;
 }
 
@@ -914,7 +919,8 @@ bool brush_dynamics_is_default(const patchy::BrushDynamics& dynamics) {
          dynamics.saturation_jitter == defaults.saturation_jitter &&
          dynamics.brightness_jitter == defaults.brightness_jitter &&
          dynamics.purity == defaults.purity && dynamics.color_per_tip == defaults.color_per_tip &&
-         dynamics.wet_edges == defaults.wet_edges;
+         dynamics.wet_edges == defaults.wet_edges && dynamics.tip_flip_x == defaults.tip_flip_x &&
+         dynamics.tip_flip_y == defaults.tip_flip_y;
   // seed / pen_* are per-stroke inputs, deliberately ignored.
 }
 

@@ -468,6 +468,10 @@ void CanvasWidget::apply_brush_tip_to_options(EditOptions& options, int brush_si
   }
   // The cache's shared_ptr keeps the stamp alive for the duration of the paint call.
   options.brush_tip = scaled.get();
+  // Static tip flips are tip shape, not dynamics: they survive the erase/Pattern Stamp/Mixer
+  // dynamics strip the callers apply after this.
+  options.brush_flip_x = brush_dynamics_.tip_flip_x;
+  options.brush_flip_y = brush_dynamics_.tip_flip_y;
   options.brush_tip_spacing =
       script_brush_spacing_.value_or(brush_tip_ != nullptr ? brush_tip_->default_spacing : kRoundDynamicsTipSpacing);
 

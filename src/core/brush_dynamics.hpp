@@ -97,6 +97,13 @@ struct BrushDynamics {
   // Fixed coverage-edge treatment, not a fluid, pigment, drying, or canvas-pickup simulation.
   bool wet_edges{false};
 
+  // Static Brush Tip Shape flips (Photoshop's Flip X / Flip Y checkboxes). Not dynamics: they
+  // never draw randomness or activate the per-dab path; the canvas copies them into
+  // EditOptions::brush_flip_x/y so every tip stroke (erase included) mirrors the stamp. They
+  // live here so they persist with the rest of the tip settings.
+  bool tip_flip_x{false};
+  bool tip_flip_y{false};
+
   // Per-brush control precedence: GlobalDefault (the size/roundness/opacity default) leaves the
   // global pen preferences authoritative (they modulate pre-dab in effective_brush_input); any
   // other value makes this brush own the aspect and suppresses that global modulation. Off

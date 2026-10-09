@@ -32,6 +32,8 @@ struct EditOptions {
   int brush_softness{0};
   int brush_roundness{100};
   double brush_angle_degrees{0.0};
+  bool brush_flip_x{false};  // static tip mirror (Brush Tip Shape Flip X/Y); bitmap tips only
+  bool brush_flip_y{false};
   BrushShape brush_shape{BrushShape::Round};  // procedural footprint; ignored while brush_tip is set
   const ScaledBrushTip* brush_tip{nullptr};  // non-owning; null = procedural round/soft brush
   double brush_tip_spacing{0.25};            // dab spacing as a fraction of brush_size

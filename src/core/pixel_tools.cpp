@@ -399,6 +399,8 @@ struct TipDabTransform {
   transform.cos_angle = std::cos(angle);
   transform.sin_angle = std::sin(angle);
   transform.inverse_roundness = 100.0 / static_cast<double>(brush_roundness_percent(options));
+  transform.flip_x_sign = options.brush_flip_x ? -1.0 : 1.0;
+  transform.flip_y_sign = options.brush_flip_y ? -1.0 : 1.0;
   return transform;
 }
 
@@ -414,8 +416,9 @@ struct TipDabTransform {
                  0.01, 1.0);
   transform.inverse_roundness = 1.0 / roundness_fraction;
   transform.inverse_scale = 1.0 / std::clamp(variation.scale, 0.01, 1.0);
-  transform.flip_x_sign = variation.flip_x ? -1.0 : 1.0;
-  transform.flip_y_sign = variation.flip_y ? -1.0 : 1.0;
+  // A flip jitter mirrors the statically flipped tip again (Photoshop combines them the same way).
+  transform.flip_x_sign = variation.flip_x != options.brush_flip_x ? -1.0 : 1.0;
+  transform.flip_y_sign = variation.flip_y != options.brush_flip_y ? -1.0 : 1.0;
   return transform;
 }
 
