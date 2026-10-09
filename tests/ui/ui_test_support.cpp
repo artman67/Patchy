@@ -608,6 +608,15 @@ void show_window(patchy::ui::MainWindow& window) {
   }
 }
 
+void hide_color_dock(patchy::ui::MainWindow& window) {
+  auto* color_dock = window.findChild<QDockWidget*>(QStringLiteral("colorDock"));
+  CHECK(color_dock != nullptr);
+  if (color_dock != nullptr) {
+    color_dock->hide();
+    QApplication::processEvents();
+  }
+}
+
 void show_window_empty(patchy::ui::MainWindow& window) {
   window.resize(1180, 780);
   window.show();

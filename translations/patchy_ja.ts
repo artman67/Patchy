@@ -10488,6 +10488,37 @@ Mixed selection</source>
     </message>
 </context>
 <context>
+    <name>patchy::ui::ColorDockPanel</name>
+    <message>
+        <source>HSV Square</source>
+        <translation>HSV スクエア</translation>
+    </message>
+    <message>
+        <source>Wheel + Square</source>
+        <translation>ホイール + スクエア</translation>
+    </message>
+    <message>
+        <source>Wheel + Triangle</source>
+        <translation>ホイール + 三角形</translation>
+    </message>
+    <message>
+        <source>Sliders</source>
+        <translation>スライダー</translation>
+    </message>
+    <message>
+        <source>Choose how the Color panel shows the color</source>
+        <translation>カラーパネルでの色の表示方法を選択</translation>
+    </message>
+    <message>
+        <source>Hex color: type or paste #RRGGBB</source>
+        <translation>16 進カラー: #RRGGBB を入力または貼り付け</translation>
+    </message>
+    <message>
+        <source>Click the foreground or background swatch to choose which color the panel edits</source>
+        <translation>描画色または背景色のスウォッチをクリックして、パネルで編集する色を選択</translation>
+    </message>
+</context>
+<context>
     <name>patchy::ui::FontPickerCombo</name>
     <message>
         <source>The quick brown fox jumps over the lazy dog. 0123456789</source>
@@ -18602,6 +18633,10 @@ Baked into images: %1.</source>
     <message>
         <source>Height of the crop box</source>
         <translation>切り抜き枠の高さ</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>カラー</translation>
     </message>
 </context>
 <context>

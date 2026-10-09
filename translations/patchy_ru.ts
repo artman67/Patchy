@@ -10548,6 +10548,37 @@ RGB: %2, %3, %4</translation>
     </message>
 </context>
 <context>
+    <name>patchy::ui::ColorDockPanel</name>
+    <message>
+        <source>HSV Square</source>
+        <translation>Квадрат HSV</translation>
+    </message>
+    <message>
+        <source>Wheel + Square</source>
+        <translation>Колесо + квадрат</translation>
+    </message>
+    <message>
+        <source>Wheel + Triangle</source>
+        <translation>Колесо + треугольник</translation>
+    </message>
+    <message>
+        <source>Sliders</source>
+        <translation>Слайдеры</translation>
+    </message>
+    <message>
+        <source>Choose how the Color panel shows the color</source>
+        <translation>Выберите, как панель «Цвет» показывает цвет</translation>
+    </message>
+    <message>
+        <source>Hex color: type or paste #RRGGBB</source>
+        <translation>Шестнадцатеричный цвет: введите или вставьте #RRGGBB</translation>
+    </message>
+    <message>
+        <source>Click the foreground or background swatch to choose which color the panel edits</source>
+        <translation>Щёлкните образец основного или фонового цвета, чтобы выбрать, какой цвет редактирует панель</translation>
+    </message>
+</context>
+<context>
     <name>patchy::ui::FontPickerCombo</name>
     <message>
         <source>The quick brown fox jumps over the lazy dog. 0123456789</source>
@@ -18714,6 +18745,10 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>Высота рамки кадрирования</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>Цвет</translation>
     </message>
 </context>
 <context>

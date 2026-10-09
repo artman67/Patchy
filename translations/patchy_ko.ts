@@ -10488,6 +10488,37 @@ RGB: %2, %3, %4</translation>
     </message>
 </context>
 <context>
+    <name>patchy::ui::ColorDockPanel</name>
+    <message>
+        <source>HSV Square</source>
+        <translation>HSV 정사각형</translation>
+    </message>
+    <message>
+        <source>Wheel + Square</source>
+        <translation>색상환 + 정사각형</translation>
+    </message>
+    <message>
+        <source>Wheel + Triangle</source>
+        <translation>색상환 + 삼각형</translation>
+    </message>
+    <message>
+        <source>Sliders</source>
+        <translation>슬라이더</translation>
+    </message>
+    <message>
+        <source>Choose how the Color panel shows the color</source>
+        <translation>색상 패널에서 색을 표시하는 방식 선택</translation>
+    </message>
+    <message>
+        <source>Hex color: type or paste #RRGGBB</source>
+        <translation>16진수 색상: #RRGGBB 입력 또는 붙여넣기</translation>
+    </message>
+    <message>
+        <source>Click the foreground or background swatch to choose which color the panel edits</source>
+        <translation>전경색 또는 배경색 견본을 클릭하여 패널에서 편집할 색 선택</translation>
+    </message>
+</context>
+<context>
     <name>patchy::ui::FontPickerCombo</name>
     <message>
         <source>The quick brown fox jumps over the lazy dog. 0123456789</source>
@@ -18602,6 +18633,10 @@ Y: %2
     <message>
         <source>Height of the crop box</source>
         <translation>자르기 상자 높이</translation>
+    </message>
+    <message>
+        <source>Color</source>
+        <translation>색상</translation>
     </message>
 </context>
 <context>

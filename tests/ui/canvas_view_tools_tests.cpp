@@ -2728,6 +2728,7 @@ void ui_gradient_toolbar_preset_popup_applies_stops() {
 void ui_right_docks_collapse_layers_show_metadata_and_info_updates() {
   patchy::ui::MainWindow window;
   show_window(window);
+  hide_color_dock(window);
   auto* canvas = require_canvas(window);
   canvas->set_zoom(1.0);
   QApplication::processEvents();
@@ -3456,6 +3457,7 @@ void ui_collapsed_right_docks_keep_deep_layer_rows_readable() {
 void ui_right_dock_panels_expand_within_window_height() {
   patchy::ui::MainWindow window;
   show_window(window);
+  hide_color_dock(window);
   auto& document = patchy::ui::MainWindowTestAccess::document(window);
 
   // Worst-case palette: 256 colors is 22 swatch rows, which must scroll
@@ -3677,6 +3679,7 @@ void ui_right_dock_separator_drags_between_docks() {
   // between two docks is never covered by another widget.
   patchy::ui::MainWindow window;
   show_window(window);
+  hide_color_dock(window);
   auto* history_toggle = window.findChild<QToolButton*>(QStringLiteral("historyDockCollapseButton"));
   CHECK(history_toggle != nullptr);
   history_toggle->setChecked(true);

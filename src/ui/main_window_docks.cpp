@@ -55,6 +55,7 @@
 #include "ui/font_picker.hpp"
 #include "ui/hotkey_editor.hpp"
 #include "ui/edit_conversions.hpp"
+#include "ui/color_dock_panel.hpp"
 #include "ui/color_panel.hpp"
 #include "ui/layer_style_dialog.hpp"
 #include "ui/layer_list_widget.hpp"
@@ -264,16 +265,18 @@ constexpr int kHistoryDockExpandedMinimumHeight = 90;
 constexpr int kHistoryDockPreferredHeight = 190;
 constexpr int kPropertiesDockMaximumHeight = 230;
 constexpr int kPaletteDockPreferredHeight = 320;
+constexpr int kColorDockPreferredHeight = 260;
+constexpr int kColorDockSqueezedHeight = 12;
 
 // The docks that share one width as the right panel stack. Every dock in the
 // column must be listed: one left out keeps its own minimum width and renders
 // as a shorter strip whenever the pinned or measured width exceeds it.
-const std::array<QString, 7>& right_dock_stack_names() {
-  static const std::array<QString, 7> names{
-      QStringLiteral("layersDock"),     QStringLiteral("channelsDock"),
-      QStringLiteral("pathsDock"),      QStringLiteral("historyDock"),
-      QStringLiteral("propertiesDock"), QStringLiteral("infoDock"),
-      QStringLiteral("paletteDock")};
+const std::array<QString, 8>& right_dock_stack_names() {
+  static const std::array<QString, 8> names{
+      QStringLiteral("colorDock"),      QStringLiteral("layersDock"),
+      QStringLiteral("channelsDock"),   QStringLiteral("pathsDock"),
+      QStringLiteral("historyDock"),    QStringLiteral("propertiesDock"),
+      QStringLiteral("infoDock"),       QStringLiteral("paletteDock")};
   return names;
 }
 
@@ -986,6 +989,8 @@ void MainWindow::create_docks() {
   // dragging a dock back OUT by its tab under GroupedDragging (which also
   // drags a tabbed group as one unit by its shared title bar).
   setDockOptions(dockOptions() | QMainWindow::GroupedDragging);
+  // First, so it heads the column like Photoshop's Color panel.
+  create_color_dock();
   auto* layers_dock = new QDockWidget(tr("Layers"), this);
   layers_dock->setObjectName(QStringLiteral("layersDock"));
   bind_widget_text(layers_dock, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Layers"));
@@ -1829,6 +1834,7 @@ void MainWindow::create_docks() {
   update_right_dock_resize_handle_geometry(info_dock);
 
   create_palette_dock();
+  add_panel_toggles_to_window_menu();
   update_right_dock_minimum_width();
   // Re-measure once the first event-loop pass has shown and styled the docks:
   // only then can the real dock chrome and title heights be read.
@@ -1955,6 +1961,107 @@ void MainWindow::create_palette_dock() {
   install_right_dock_width_handle(palette_dock_);
   addDockWidget(Qt::RightDockWidgetArea, palette_dock_);
   update_right_dock_resize_handle_geometry(palette_dock_);
+}
+
+void MainWindow::create_color_dock() {
+  color_dock_ = new QDockWidget(tr("Color"), this);
+  color_dock_->setObjectName(QStringLiteral("colorDock"));
+  bind_widget_text(color_dock_, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Color"));
+  color_dock_panel_ = new ColorDockPanel(color_dock_);
+  connect(color_dock_panel_, &ColorDockPanel::color_edited, this, [this](bool background, QColor color) {
+    apply_foreground_background_edit(!background, color);
+    // An open Foreground/Background popup for the same color mirrors the edit
+    // (blocked, so its own callback does not echo it back).
+    if (color_dialog_ == nullptr || canvas_ == nullptr) {
+      return;
+    }
+    const auto target = background ? QStringLiteral("background") : QStringLiteral("foreground");
+    if (color_dialog_->property("patchy.colorTarget").toString() != target) {
+      return;
+    }
+    if (auto* picker =
+            color_dialog_->findChild<PatchyColorPicker*>(QStringLiteral("patchyAdvancedColorPicker"))) {
+      const QSignalBlocker blocker(picker);
+      picker->setCurrentColor(background ? canvas_->secondary_color() : canvas_->primary_color());
+    }
+  });
+  // Disabled with no document, like the toolbar's FG/BG swatches.
+  register_document_widget(color_dock_panel_);
+  color_dock_panel_->setContentsMargins(kRightDockResizeHandleWidth, 0, 0, 0);
+  // The panel fills the dock and its picker grows with it; squeezed below
+  // the picker's usable size it scrolls instead of pinning the window taller.
+  auto* color_scroll = new QScrollArea(color_dock_);
+  color_scroll->setObjectName(QStringLiteral("colorDockScrollArea"));
+  color_scroll->setFrameShape(QFrame::NoFrame);
+  color_scroll->setWidgetResizable(true);
+  color_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  // A low floor lets a crowded column squeeze the panel (it scrolls) rather
+  // than grow the window: the all-panels-expanded window must still fit 1080p.
+  color_scroll->setMinimumHeight(kColorDockSqueezedHeight);
+  color_scroll->setWidget(color_dock_panel_);
+  color_dock_->setWidget(color_scroll);
+  install_collapsible_dock_title(color_dock_, color_scroll, QStringLiteral("color"), 0, QWIDGETSIZE_MAX, true,
+                                 kColorDockPreferredHeight, [this](bool expanded) {
+                                   handle_right_dock_panel_toggled(color_dock_, expanded, 0);
+                                 });
+  // Starting expanded applies the re-expand boost as a minimum, and nothing
+  // releases it before the window shows; drop it so the startup window keeps
+  // its minimum height. A later expand still gets the boost.
+  color_dock_->setMinimumHeight(0);
+  install_right_dock_width_handle(color_dock_);
+  addDockWidget(Qt::RightDockWidgetArea, color_dock_);
+  update_right_dock_resize_handle_geometry(color_dock_);
+  refresh_color_buttons();
+}
+
+void MainWindow::add_panel_toggles_to_window_menu() {
+  auto* window_menu = findChild<QMenu*>(QStringLiteral("windowMenu"));
+  if (window_menu == nullptr) {
+    return;
+  }
+  struct PanelToggle {
+    const char* dock_name;
+    const char* title_prefix;
+    const char* action_name;
+    const char* hotkey_id;
+    QKeySequence default_shortcut;
+  };
+  // Column order. F6/F7/F8 are Photoshop's Color/Layers/Info toggles.
+  const std::array<PanelToggle, 8> toggles{{
+      {"colorDock", "color", "windowColorPanelAction", "window.color_panel", QKeySequence(Qt::Key_F6)},
+      {"layersDock", "layers", "windowLayersPanelAction", "window.layers_panel", QKeySequence(Qt::Key_F7)},
+      {"channelsDock", "channels", "windowChannelsPanelAction", "window.channels_panel", QKeySequence()},
+      {"pathsDock", "paths", "windowPathsPanelAction", "window.paths_panel", QKeySequence()},
+      {"historyDock", "history", "windowHistoryPanelAction", "window.history_panel", QKeySequence()},
+      {"propertiesDock", "properties", "windowPropertiesPanelAction", "window.properties_panel", QKeySequence()},
+      {"infoDock", "info", "windowInfoPanelAction", "window.info_panel", QKeySequence(Qt::Key_F8)},
+      {"paletteDock", "palette", "windowPalettePanelAction", "window.palette_panel", QKeySequence()},
+  }};
+  for (const auto& toggle : toggles) {
+    auto* dock = findChild<QDockWidget*>(QLatin1String(toggle.dock_name));
+    if (dock == nullptr) {
+      continue;
+    }
+    // The dock's own toggle action: checked while shown, text follows the
+    // (retranslated) dock title.
+    auto* action = dock->toggleViewAction();
+    action->setObjectName(QLatin1String(toggle.action_name));
+    action->setMenuRole(QAction::NoRole);
+    window_menu->insertAction(window_documents_separator_, action);
+    register_hotkey(action, QLatin1String(toggle.hotkey_id), toggle.default_shortcut);
+    // Showing a panel also expands it and brings it to the front of its tab
+    // group, so the menu always lands on a usable panel.
+    const auto collapse_name = QLatin1String(toggle.title_prefix) + QStringLiteral("DockCollapseButton");
+    connect(action, &QAction::triggered, this, [dock, collapse_name](bool shown) {
+      if (!shown) {
+        return;
+      }
+      if (auto* collapse = dock->findChild<QToolButton*>(collapse_name); collapse != nullptr) {
+        collapse->setChecked(true);
+      }
+      dock->raise();
+    });
+  }
 }
 
 }  // namespace patchy::ui

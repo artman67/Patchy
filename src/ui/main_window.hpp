@@ -125,6 +125,7 @@ struct OrphanedRecoveryFolder;
 class CustomShapeLibrary;
 class AnimationPreviewWindow;
 class PalettePanel;
+class ColorDockPanel;
 class PathsPanel;
 class StartPanel;
 class PatternLibrary;
@@ -483,6 +484,10 @@ private:
   void set_window_screen_size(QSize physical_size);
   void create_docks();
   void create_palette_dock();
+  void create_color_dock();
+  // Window menu show/hide toggles for the right-side panels, grouped with the
+  // toolbar toggles above the open-document list.
+  void add_panel_toggles_to_window_menu();
   // Palette (indexed) mode plumbing. Every document-palette mutation goes through
   // these so the undo snapshot, the revision bump (app-globally unique values,
   // keying the canvas LUT cache), the indexed_palette export mirror, and the UI
@@ -1579,6 +1584,9 @@ private:
   void choose_secondary_color();
   void choose_text_color();
   void show_color_panel(bool foreground);
+  // A live foreground/background edit from the Foreground/Background color
+  // popup or the Color panel: sets the canvas color and its side effects.
+  void apply_foreground_background_edit(bool foreground, QColor color);
   void swap_colors();
   void default_colors();
   void refresh_color_buttons();
@@ -2166,6 +2174,8 @@ private:
   // Palette (indexed) mode UI: dock panel, status chip, advisory compliance scan.
   PalettePanel* palette_panel_{nullptr};
   QDockWidget* palette_dock_{nullptr};
+  ColorDockPanel* color_dock_panel_{nullptr};
+  QDockWidget* color_dock_{nullptr};
   QToolButton* palette_mode_chip_{nullptr};
   QTimer* palette_compliance_timer_{nullptr};
   bool palette_compliance_clean_{true};
