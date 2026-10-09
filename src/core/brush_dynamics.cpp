@@ -75,7 +75,7 @@ bool BrushDynamics::active() const noexcept {
          opacity_jitter > 0.0 || control_has_source(size_control) ||
          flow_jitter > 0.0 || control_has_source(roundness_control) ||
          control_has_source(opacity_control) || control_has_source(flow_control) ||
-         (texture_enabled && texture_depth > 0.0) || dual_brush_enabled || wet_edges ||
+         (texture_enabled && texture_depth > 0.0) || dual_brush_enabled || wet_edges || noise ||
          (color_dynamics_enabled &&
           (foreground_background_jitter > 0.0 || control_has_source(color_control) ||
            hue_jitter > 0.0 || saturation_jitter > 0.0 || brightness_jitter > 0.0 ||

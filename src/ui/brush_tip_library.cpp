@@ -554,7 +554,7 @@ namespace {
          a.hue_jitter == b.hue_jitter && a.saturation_jitter == b.saturation_jitter &&
          a.brightness_jitter == b.brightness_jitter && a.purity == b.purity &&
          a.color_per_tip == b.color_per_tip && a.wet_edges == b.wet_edges &&
-         a.tip_flip_x == b.tip_flip_x && a.tip_flip_y == b.tip_flip_y;
+         a.tip_flip_x == b.tip_flip_x && a.tip_flip_y == b.tip_flip_y && a.noise == b.noise;
 }
 
 }  // namespace
@@ -754,6 +754,7 @@ QJsonObject brush_dynamics_to_json(const patchy::BrushDynamics& dynamics) {
   object.insert(QStringLiteral("wetEdges"), dynamics.wet_edges);
   object.insert(QStringLiteral("tipFlipX"), dynamics.tip_flip_x);
   object.insert(QStringLiteral("tipFlipY"), dynamics.tip_flip_y);
+  object.insert(QStringLiteral("noise"), dynamics.noise);
   return object;
 }
 
@@ -849,6 +850,7 @@ patchy::BrushDynamics brush_dynamics_from_json(const QJsonObject& object) {
   dynamics.wet_edges = object.value(QStringLiteral("wetEdges")).toBool(false);
   dynamics.tip_flip_x = object.value(QStringLiteral("tipFlipX")).toBool(false);
   dynamics.tip_flip_y = object.value(QStringLiteral("tipFlipY")).toBool(false);
+  dynamics.noise = object.value(QStringLiteral("noise")).toBool(false);
   return dynamics;
 }
 
@@ -920,7 +922,7 @@ bool brush_dynamics_is_default(const patchy::BrushDynamics& dynamics) {
          dynamics.brightness_jitter == defaults.brightness_jitter &&
          dynamics.purity == defaults.purity && dynamics.color_per_tip == defaults.color_per_tip &&
          dynamics.wet_edges == defaults.wet_edges && dynamics.tip_flip_x == defaults.tip_flip_x &&
-         dynamics.tip_flip_y == defaults.tip_flip_y;
+         dynamics.tip_flip_y == defaults.tip_flip_y && dynamics.noise == defaults.noise;
   // seed / pen_* are per-stroke inputs, deliberately ignored.
 }
 

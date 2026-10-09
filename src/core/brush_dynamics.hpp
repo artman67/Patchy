@@ -97,6 +97,11 @@ struct BrushDynamics {
   // Fixed coverage-edge treatment, not a fluid, pigment, drying, or canvas-pickup simulation.
   bool wet_edges{false};
 
+  // Photoshop's Noise: static grain on the partially covered (soft) parts of each dab. It is a
+  // pure hash of document coordinates, so it draws no randomness, never samples the canvas, and
+  // stays put on the canvas while the dabs move across it.
+  bool noise{false};
+
   // Static Brush Tip Shape flips (Photoshop's Flip X / Flip Y checkboxes). Not dynamics: they
   // never draw randomness or activate the per-dab path; the canvas copies them into
   // EditOptions::brush_flip_x/y so every tip stroke (erase included) mirrors the stamp. They
@@ -192,6 +197,7 @@ struct BrushDabVariation {
 //  13. brightness jitter       (signed) iff Color Dynamics + brightness jitter > 0
 // When color_per_tip is false, draws 10-13 happen on the first dab only and the sampled values
 // are reused for the rest of the stroke.
+// Noise draws nothing either: its grain hashes document coordinates (brush_noise_threshold).
 // The per-dynamic controls never draw: each control value is computed deterministically from the
 // pen inputs / fade step and only scales the result, so the gates above stay keyed on static
 // configuration and adding a control cannot shift any draw.

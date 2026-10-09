@@ -203,11 +203,28 @@ void ui_static_tip_flip_persists_and_reaches_strokes() {
   restore_default_working_brush(window);
 }
 
+// Every tip setting added after the original dynamics set round-trips through the sidecar JSON,
+// counts as non-default, and reads back as off from an older sidecar that lacks the key.
+void ui_brush_tip_settings_json_round_trip() {
+  patchy::BrushDynamics dynamics;
+  dynamics.noise = true;
+  CHECK(!patchy::ui::brush_dynamics_is_default(dynamics));
+  const auto json = patchy::ui::brush_dynamics_to_json(dynamics);
+  CHECK(json.value(QStringLiteral("noise")).toBool());
+  const auto read = patchy::ui::brush_dynamics_from_json(json);
+  CHECK(read.noise);
+  CHECK(patchy::ui::brush_dynamics_to_json(read) == json);
+  auto legacy = json;
+  legacy.remove(QStringLiteral("noise"));
+  CHECK(!patchy::ui::brush_dynamics_from_json(legacy).noise);
+}
+
 }  // namespace
 
 std::vector<patchy::test::TestCase> brush_tip_engine_tests() {
   return {
       {"ui_working_brush_spacing_drives_procedural_dabs", ui_working_brush_spacing_drives_procedural_dabs},
       {"ui_static_tip_flip_persists_and_reaches_strokes", ui_static_tip_flip_persists_and_reaches_strokes},
+      {"ui_brush_tip_settings_json_round_trip", ui_brush_tip_settings_json_round_trip},
   };
 }

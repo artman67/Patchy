@@ -497,6 +497,30 @@ struct TipDabTransform {
   return dynamics.texture_invert ? 1.0F - value : value;
 }
 
+// Noise threshold for one document pixel in [0, 1): the splitmix64 finalizer over the pixel
+// coordinates with a fixed salt and an explicit 24-bit uniform mapping, so every toolchain
+// produces the same grain. Static by design (see BrushDynamics::noise).
+[[nodiscard]] float brush_noise_threshold(std::int32_t x, std::int32_t y) noexcept {
+  auto z = (static_cast<std::uint64_t>(static_cast<std::uint32_t>(x)) << 32U) ^
+           static_cast<std::uint64_t>(static_cast<std::uint32_t>(y)) ^ 0x6E6F697365ULL;
+  z += 0x9E3779B97F4A7C15ULL;
+  z = (z ^ (z >> 30U)) * 0xBF58476D1CE4E5B9ULL;
+  z = (z ^ (z >> 27U)) * 0x94D049BB133111EBULL;
+  z ^= z >> 31U;
+  return static_cast<float>(z >> 40U) * 0x1.0p-24F;
+}
+
+// Pulls a soft coverage value most of the way toward hard 0/1 against the static threshold,
+// which reads as grain along soft edges; fully covered and empty pixels are unchanged.
+[[nodiscard]] float apply_brush_noise(float coverage, std::int32_t x, std::int32_t y) noexcept {
+  if (coverage >= 1.0F) {
+    return coverage;
+  }
+  constexpr float kNoiseStrength = 0.75F;
+  const auto hard = brush_noise_threshold(x, y) < coverage ? 1.0F : 0.0F;
+  return coverage + (hard - coverage) * kNoiseStrength;
+}
+
 [[nodiscard]] float dual_brush_coverage(const BrushDynamics& dynamics,
                                         const TipDabTransform& transform, double offset_x,
                                         double offset_y, int brush_size) noexcept {
@@ -1308,6 +1332,9 @@ Rect paint_tip_dab(Document& document, LayerId layer_id, double x, double y, con
       auto coverage = tip_dab_coverage(tip, transform, offset_x, offset_y);
       if (coverage <= 0.0F) {
         continue;
+      }
+      if (options.brush_dynamics.noise) {
+        coverage = apply_brush_noise(coverage, px_doc, py);
       }
       if (options.brush_dynamics.dual_brush_enabled) {
         coverage *= dual_brush_coverage(options.brush_dynamics, transform, offset_x, offset_y,

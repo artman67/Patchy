@@ -878,6 +878,58 @@ void tool_brush_texture_and_dual_brush_render_deterministically() {
 
 }
 
+void tool_brush_noise_grains_soft_edges_without_rng_draws() {
+  // A radial soft tip: full coverage in the middle, a long falloff to the rim.
+  patchy::BrushTip soft;
+  soft.width = 21;
+  soft.height = 21;
+  soft.mask.resize(21U * 21U);
+  for (std::int32_t y = 0; y < 21; ++y) {
+    for (std::int32_t x = 0; x < 21; ++x) {
+      const auto distance = std::hypot(static_cast<double>(x) - 10.0, static_cast<double>(y) - 10.0);
+      soft.mask[static_cast<std::size_t>(y) * 21U + static_cast<std::size_t>(x)] =
+          static_cast<std::uint8_t>(std::clamp(std::lround((11.0 - distance) * 51.0), 0L, 255L));
+    }
+  }
+  const auto tip = patchy::make_scaled_brush_tip(patchy::build_brush_tip_mips(soft), 21);
+  const auto plain = render_effect_dab(tip, {});
+  patchy::BrushDynamics noisy;
+  noisy.noise = true;
+  CHECK(noisy.active());
+  const auto grained = render_effect_dab(tip, noisy);
+  CHECK(grained != plain);
+  CHECK(render_effect_dab(tip, noisy) == grained);  // static grain, no per-run randomness
+  // Fully covered pixels keep their value; only the soft rim changes. The dab is centered at
+  // (24, 24) on a 64 px wide RGBA layer.
+  const auto alpha_at = [](const std::vector<std::uint8_t>& bytes, int x, int y) {
+    return bytes[(static_cast<std::size_t>(y) * 64U + static_cast<std::size_t>(x)) * 4U + 3U];
+  };
+  CHECK(alpha_at(grained, 24, 24) == alpha_at(plain, 24, 24));
+  int changed_rim = 0;
+  for (int x = 24 - 10; x <= 24 + 10; ++x) {
+    changed_rim += alpha_at(grained, x, 31) != alpha_at(plain, x, 31) ? 1 : 0;
+  }
+  CHECK(changed_rim > 3);
+
+  // The RNG draw-order contract: noise adds no draws, so a scattered stroke consumes the same
+  // stream (and places the same dabs) with or without it.
+  const auto rng_after = [&tip](bool noise) {
+    auto document = make_tool_document();
+    auto options = tool_options(0, 0, 0);
+    options.brush_size = 21;
+    options.brush_tip = &tip;
+    options.brush_dynamics.scatter = 0.5;
+    options.brush_dynamics.size_jitter = 0.3;
+    options.brush_dynamics.noise = noise;
+    options.brush_dynamics.seed = 7;
+    patchy::BrushTipStrokeState state;
+    (void)patchy::paint_brush_segment(document, active_tool_layer(document), 5.0, 20.0, 55.0, 30.0,
+                                      options, false, state);
+    return state.rng.state;
+  };
+  CHECK(rng_after(true) == rng_after(false));
+}
+
 void mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero() {
   // Since the 2026-08-14 claim review the mixer runs limited continuous pickup:
   // ONE running canvas-only average, transient foreground lerp, linear mixing
@@ -1933,6 +1985,8 @@ std::vector<patchy::test::TestCase> brush_engine_tests() {
       {"tool_brush_tip_inactive_dynamics_change_nothing", tool_brush_tip_inactive_dynamics_change_nothing},
       {"tool_brush_texture_and_dual_brush_render_deterministically",
        tool_brush_texture_and_dual_brush_render_deterministically},
+      {"tool_brush_noise_grains_soft_edges_without_rng_draws",
+       tool_brush_noise_grains_soft_edges_without_rng_draws},
       {"mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero",
        mixer_brush_pickup_average_follows_canvas_and_dries_only_at_wet_zero},
       {"stroke_stabilizer_pass_through_and_leash_geometry",
