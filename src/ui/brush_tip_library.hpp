@@ -16,6 +16,8 @@
 
 namespace patchy::ui {
 
+class PatternLibrary;
+
 // The reserved ids of the built-in procedural brushes (no bitmap tip). They are not stored on
 // disk; the picker lists them first and selecting one clears the canvas brush tip and sets its
 // procedural footprint (core BrushShape). Script identifiers: never change them.
@@ -33,6 +35,9 @@ struct BrushTipEntry {
   patchy::BrushDynamics dynamics{};
   std::optional<int> tool_flow_percent;
   std::optional<bool> tool_airbrush;
+  // The brush size an imported Photoshop preset was saved with ('Dmtr' with "Capture Brush Size
+  // in Preset"); picking the tip applies it like Photoshop does. Unset = keep the current size.
+  std::optional<int> default_size;
   QSize size;
   QPixmap thumbnail;
 };
@@ -65,10 +70,19 @@ public:
   // and for the built-in round id.
   [[nodiscard]] std::shared_ptr<const patchy::BrushTip> tip(const QString& id) const;
 
-  // Imports every sampled brush from a .abr file into a folder named after the file. Returns
-  // the id of the first imported tip, or an empty string when nothing was imported (error is
-  // set). Warnings collect per-brush skips.
+  // Imports every brush from a .abr file into a folder named after the file ("File / Group /
+  // Sub" for the file's own preset folders). Computed brushes import as rendered round tips.
+  // Texture patterns embedded in the file join the Pattern library set below (folder named after
+  // the file) unless a pattern with that id is already there. Returns the id of the first
+  // imported tip, or an empty string when nothing was imported (error is set). Warnings collect
+  // per-brush skips plus at most one line each for settings Patchy cannot honor and for texture
+  // patterns found nowhere.
   QString import_abr(const QString& path, QString& error, QStringList& warnings);
+  // The Pattern library ABR imports add embedded texture patterns to (null = none; the brushes
+  // still reference their patterns by id and paint with the procedural grain until one exists).
+  void set_pattern_library(PatternLibrary* patterns) noexcept { pattern_library_ = patterns; }
+  // The same library, for the Brush Texture pattern pickers (null = none set).
+  [[nodiscard]] PatternLibrary* pattern_library() const noexcept { return pattern_library_; }
 
   // Adds a tip from a coverage mask image (any format; converted to grayscale, cropped to
   // content). Returns the new id, or empty when the mask is empty/unsaveable.
@@ -115,12 +129,14 @@ private:
                            const QString& folder, const patchy::BrushDynamics& dynamics = {},
                            double base_angle_degrees = 0.0, double base_roundness = 100.0,
                            std::optional<int> tool_flow_percent = std::nullopt,
-                           std::optional<bool> tool_airbrush = std::nullopt);
+                           std::optional<bool> tool_airbrush = std::nullopt,
+                           std::optional<int> default_size = std::nullopt);
   bool remove_entry_files(const QString& id);
   [[nodiscard]] QString png_path(const QString& id) const;
   bool write_sidecar(const BrushTipEntry& entry) const;
 
   mutable std::vector<std::pair<QString, std::shared_ptr<const patchy::BrushTip>>> tip_cache_;
+  PatternLibrary* pattern_library_{nullptr};
 };
 
 // Summary text for the .abr import result dialogs: separates brushes that were skipped

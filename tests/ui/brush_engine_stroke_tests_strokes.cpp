@@ -3072,13 +3072,13 @@ void ui_brush_and_eraser_remember_separate_settings() {
   auto* canvas = require_canvas(window);
   auto* size_spin = window.findChild<QSpinBox*>(QStringLiteral("brushSizeSpin"));
   CHECK(size_spin != nullptr);
-  // A restart resets brush and eraser opacity/softness (and the paint brush size)
-  // to the Round startup preset; only the eraser size survives.
-  CHECK(canvas->brush_size() == 25);
-  CHECK(canvas->brush_opacity() == 100);
-  CHECK(canvas->brush_flow() == 100);
-  CHECK(canvas->brush_softness() == 0);
-  CHECK(!canvas->brush_build_up());
+  // A restart remembers the working brush; the eraser keeps only its size and resets the
+  // rest to the Round startup preset.
+  CHECK(canvas->brush_size() == 31);
+  CHECK(canvas->brush_opacity() == 81);
+  CHECK(canvas->brush_flow() == 35);
+  CHECK(canvas->brush_softness() == 11);
+  CHECK(canvas->brush_build_up());
   require_action_by_text(window, QStringLiteral("Eraser"))->trigger();
   CHECK(canvas->brush_size() == 48);
   CHECK(canvas->brush_opacity() == 100);

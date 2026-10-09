@@ -9410,6 +9410,42 @@ RGB: %2, %3, %4</source>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9799,15 +9835,7 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -9846,19 +9874,11 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Roundness:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9910,10 +9930,6 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation type="unfinished"></translation>
     </message>
@@ -9935,10 +9951,6 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Count Control:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Transfer</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -9966,15 +9978,7 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Texture</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Enable Texture</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Grain:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10002,10 +10006,6 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10019,10 +10019,6 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Secondary Spacing:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -10058,10 +10054,6 @@ RGB: %2, %3, %4</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation type="unfinished"></translation>
     </message>
@@ -10075,6 +10067,249 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Multiply</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Noise</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -10094,6 +10329,14 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -10141,6 +10384,113 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>%1 - %2 (%3×%4)</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -13636,10 +13986,6 @@ RGB: %2, %3, %4</source>
     </message>
     <message>
         <source>Working brush</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -19793,6 +20139,22 @@ Baked into images: %1.</source>
         <source>Reset &amp;Panel Layout</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -19941,6 +20303,53 @@ Baked into images: %1.</source>
     </message>
     <message>
         <source>Alt</source>
+        <translation type="unfinished"></translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

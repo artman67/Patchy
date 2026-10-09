@@ -9450,6 +9450,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>Размеры в пикселях заблокированы. Меняются только разрешение и размер печати.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Проекция кисти</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Положение кисти</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Колебание влажности и смешивания</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Защита текстуры</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Масштаб наклона</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Режим двойной кисти</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Рассеивание и отражение двойной кисти</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Интервалы отключены</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>Файл не содержит пригодных кистей</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9839,16 +9875,8 @@ RGB: %2, %3, %4</translation>
         <translation>Динамика</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>Динамика и эффекты активного отпечатка кисти</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>Динамика и эффекты кисти для квадратной кисти (только в этом сеансе; сбрасывается при следующем запуске)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>Динамика и эффекты кисти для круглой кисти (только в этом сеансе; сбрасывается при следующем запуске)</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>Динамика и эффекты текущей кисти: открывает панель «Настройки кисти»</translation>
     </message>
 </context>
 <context>
@@ -9886,20 +9914,12 @@ RGB: %2, %3, %4</translation>
         <translation>Интервал между шагами для исчезновения</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>Форма отпечатка</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>Угол:</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>Форма:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>Динамика формы</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9950,10 +9970,6 @@ RGB: %2, %3, %4</translation>
         <translation>Случайное отражение по Y</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>Рассеивание</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>Разброс:</translation>
     </message>
@@ -9976,10 +9992,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Count Control:</source>
         <translation>Управление количеством:</translation>
-    </message>
-    <message>
-        <source>Transfer</source>
-        <translation>Передача</translation>
     </message>
     <message>
         <source>Opacity Jitter:</source>
@@ -10006,16 +10018,8 @@ RGB: %2, %3, %4</translation>
         <translation>Управление нажимом:</translation>
     </message>
     <message>
-        <source>Texture</source>
-        <translation>Текстура</translation>
-    </message>
-    <message>
         <source>Enable Texture</source>
         <translation>Включить текстуру</translation>
-    </message>
-    <message>
-        <source>Grain:</source>
-        <translation>Зерно:</translation>
     </message>
     <message>
         <source>Fine Grain</source>
@@ -10042,10 +10046,6 @@ RGB: %2, %3, %4</translation>
         <translation>Инвертировать текстуру</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>Двойная кисть</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>Включить двойную кисть</translation>
     </message>
@@ -10060,10 +10060,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>Вторичный интервал:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>Динамика цвета</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -10098,10 +10094,6 @@ RGB: %2, %3, %4</translation>
         <translation>Для каждого отпечатка</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>Эффекты кисти</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>Мокрые края</translation>
     </message>
@@ -10116,6 +10108,249 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>Сбросить форму отпечатка и всю динамику по умолчанию</translation>
+    </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Умножение</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Вычитание</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Затемнение</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Перекрытие</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Осветление основы</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Затемнение основы</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Линейный затемнитель</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Жёсткое смешение</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Линейная высота</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Высота</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>Перетащите, чтобы задать угол отпечатка; перетащите точку, чтобы изменить форму</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Отразить по X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Отражает кисть слева направо</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Отразить по Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Отражает кисть сверху вниз</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Узор:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>Источник текстуры: созданное зерно или узор из вашей библиотеки узоров</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Этого узора нет в вашей библиотеке узоров, поэтому мазки используют созданное зерно. Добавьте узор или выберите другой.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Яркость:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Контрастность:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Режим:</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Шум</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>Добавляет зерно на мягкие края отпечатка кисти. Зерно остаётся на месте на холсте; жёсткие кисти почти не меняются.</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (отсутствует)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>Накапливает краску, пока указатель неподвижен, как параметр «Аэрограф». Установите флажок, чтобы включить.</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>Разблокировать все</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>Сбросить все зафиксированные параметры: снять блокировку со всех разделов</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>Параметры панели «Настройки кисти»</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>Удалить параметры кисти</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>Сбросить все зафиксированные параметры</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>Создать новый набор кисти из этих настроек</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>Отпечатки кисти: щелкните, чтобы рисовать им</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Размер:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>Мягкость:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Интервалы</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Выкл. сохраняет собственный интервал кисти (Круглая и Квадратная рисуют сплошной мазок); вкл. задаёт расстояние между отпечатками в процентах от размера кисти</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>Сглаживание:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>Сглаживание мазка: при 0% кисть точно следует траектории указателя</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>Режим натянутой струны</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>Следование за курсором</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>Доведение в конце мазка</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>Учитывать масштаб</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>Круглый</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>Квадрат</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>Зафиксировано: при выборе другой кисти эти параметры сохраняются. Щелкните, чтобы снять блокировку.</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>Щелкните, чтобы зафиксировать: при выборе другой кисти эти параметры сохранятся</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>Зафиксировано: %1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>Снять блокировку раздела</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>Зафиксировать раздел</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>Форма отпечатка кисти</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>Динамика формы</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>Рассеивание</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>Текстура</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>Двойная кисть</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>Динамика цвета</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>Передача</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>Мокрые края</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>Аэрограф</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>Сглаживание</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Шум</translation>
     </message>
 </context>
 <context>
@@ -10135,6 +10370,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Не удалось импортировать отпечатки кистей из «%1».</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Параметры Photoshop без аналога в Patchy пропущены: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Узоры текстуры не найдены ни в файле, ни в библиотеке узоров, поэтому используется сгенерированное зерно: %1</translation>
     </message>
 </context>
 <context>
@@ -10182,6 +10425,113 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Manage…</source>
         <translation>Управлять…</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>(изменена)</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Размер:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>Размер кисти в пикселях</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>Поиск кистей</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>Список</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>Сетка миниатюр</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>Показать панель «Настройки кисти»</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>Параметры панели «Кисти»</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>Новая папка...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>Новый набор кисти...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>Удалить выбранную кисть или папку</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>Основные кисти</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>Текущая кисть (изменена)</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>Текущая кисть</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>Переименовать...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Дублировать</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Удалить</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>Импортировать кисти...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>Список</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>Сетка миниатюр</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>Новая папка</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Имя:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Кисти</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Переименовать</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 Копия</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>Удалить кисть «%1»?</translation>
     </message>
 </context>
 <context>
@@ -14169,10 +14519,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>Рабочая кисть</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>Сохранить настройки кисти</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -19898,6 +20244,22 @@ Y: %2
         <source>Reset &amp;Panel Layout</source>
         <translation>Сбросить расположение &amp;панелей</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 Копия</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>Набор кисти сохранен: %1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Кисти</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>Настройки кисти</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -20047,6 +20409,53 @@ Y: %2
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>Новый набор кисти</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Имя:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>Нет папки</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>Выберите папку или введите имя новой папки</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>Папка:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>Сохранить размер кисти в наборе</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>Выключено: при выборе набора сохраняется текущий размер, которым вы рисуете</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>Включить параметры инструмента</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>Непрозрачность, нажим, сглаживание, привязка нажима пера и значения микс-кисти</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>Включить цвет</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>При выборе набора задаются и основной, и фоновый цвета</translation>
     </message>
 </context>
 <context>

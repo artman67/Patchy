@@ -37,11 +37,14 @@ opacity and meters deposition through Flow. Global dynamic controls resolve
 against explicit script pen settings, defaulting to the historical size/opacity
 mapping, rather than the artist's preferences.
 
-`getCurrent` captures settings explicitly. `activate` changes the manual tool;
-ordinary stroke calls restore it. Presets saved through the AI appear in the
+`getCurrent` captures settings explicitly. `activate` changes the manual tool and
+the working brush (`ui/current_brush`), recording any preset as its base, which MCP
+state reports as `currentBrush.presetId`; ordinary stroke calls restore it. Presets saved through the AI appear in the
 existing preset control, whose final entries save/manage user presets. Built-in
-IDs and startup Round behavior remain unchanged. Working changes do not update
-a saved preset. UI activation preserves colors unless the preset includes them.
+IDs remain unchanged; a launch restores the remembered working brush, else Round.
+Working changes do not update a saved preset. UI activation preserves colors unless the preset includes them,
+and keeps the artist's size or tool settings when the preset says `captureSize`/`includeToolSettings`
+false ([brush-panels.md](brush-panels.md)); Brush Settings locks apply to UI picks and `activate`.
 
 ## Resource persistence
 

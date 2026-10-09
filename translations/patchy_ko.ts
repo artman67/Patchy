@@ -9390,6 +9390,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>픽셀 크기가 잠겨 있습니다. 인쇄 해상도와 인쇄 크기만 바뀝니다.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>브러시 투영</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>브러시 포즈</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>습도 및 혼합 지터</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>텍스처 보호</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>기울기 비율</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>이중 브러시 모드</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>이중 브러시 분산 및 뒤집기</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>간격 끔</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>파일에 사용할 수 있는 브러시가 없습니다</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9779,16 +9815,8 @@ RGB: %2, %3, %4</translation>
         <translation>동적 설정</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>활성 브러시 팁의 브러시 동적 설정 및 효과</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>정사각형 브러시의 브러시 동적 설정 및 효과(이 세션에만 해당, 다음 실행 시 재설정됨)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>라운드 브러시에 대한 브러시 동적 설정 및 효과(이 세션에만 해당, 다음 실행 시 재설정됨)</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>현재 브러시의 다이내믹 및 효과: 브러시 설정 패널을 표시합니다</translation>
     </message>
 </context>
 <context>
@@ -9826,20 +9854,12 @@ RGB: %2, %3, %4</translation>
         <translation>페이드가 완료될 때까지의 브러시 간격 수</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>팁 모양</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>각도:</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>진원도:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>모양 동적 설정</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9890,10 +9910,6 @@ RGB: %2, %3, %4</translation>
         <translation>플립 Y 지터</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>분산</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>분산:</translation>
     </message>
@@ -9916,10 +9932,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Count Control:</source>
         <translation>개수 제어:</translation>
-    </message>
-    <message>
-        <source>Transfer</source>
-        <translation>전달</translation>
     </message>
     <message>
         <source>Opacity Jitter:</source>
@@ -9946,16 +9958,8 @@ RGB: %2, %3, %4</translation>
         <translation>흐름 제어:</translation>
     </message>
     <message>
-        <source>Texture</source>
-        <translation>텍스처</translation>
-    </message>
-    <message>
         <source>Enable Texture</source>
         <translation>텍스처 활성화</translation>
-    </message>
-    <message>
-        <source>Grain:</source>
-        <translation>입자:</translation>
     </message>
     <message>
         <source>Fine Grain</source>
@@ -9982,10 +9986,6 @@ RGB: %2, %3, %4</translation>
         <translation>텍스처 반전</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>듀얼 브러시</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>듀얼 브러시 활성화</translation>
     </message>
@@ -10000,10 +10000,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>보조 간격:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>색상 동적 설정</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -10038,10 +10034,6 @@ RGB: %2, %3, %4</translation>
         <translation>팁당 적용</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>브러시 효과</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>젖은 가장자리</translation>
     </message>
@@ -10056,6 +10048,249 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>팁 모양과 모든 동적 설정을 기본값으로 재설정</translation>
+    </message>
+    <message>
+        <source>Multiply</source>
+        <translation>곱하기</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>빼기</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>어둡게 하기</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>오버레이</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>색상 닷지</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>색상 번</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>선형 번</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>하드 혼합</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>선형 높이</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>높이</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>드래그하여 끝의 각도를 설정하고, 점을 드래그하여 원형률을 바꿉니다</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>X 뒤집기</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>팁을 좌우로 뒤집습니다</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Y 뒤집기</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>팁을 위아래로 뒤집습니다</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>패턴:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>텍스처 원본: 생성된 그레인 또는 패턴 라이브러리의 패턴</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>이 패턴이 패턴 라이브러리에 없으므로 획에 생성된 그레인이 사용됩니다. 패턴을 추가하거나 다른 패턴을 선택하세요.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>밝기:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>대비:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>모드:</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>노이즈</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>브러시 팁의 부드러운 가장자리에 그레인을 추가합니다. 그레인은 캔버스에 고정되며 단단한 팁은 거의 바뀌지 않습니다.</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1(누락)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>포인터를 멈추고 있는 동안 에어브러시 옵션처럼 페인트를 쌓습니다. 상자를 선택하면 켜집니다.</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>모두 잠금 해제</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>잠긴 설정 모두 재설정: 모든 섹션의 잠금을 해제합니다</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>브러시 설정 옵션</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>브러시 컨트롤 지우기</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>잠긴 설정 모두 재설정</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>이 설정으로 새 브러시 사전 설정 만들기</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>브러시 끝: 클릭하면 그 끝으로 칠합니다</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>크기:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>부드러움:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>간격</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>끄면 팁 자체의 간격을 유지합니다(원형과 사각형은 매끄러운 획을 칠합니다). 켜면 찍기 사이의 거리를 브러시 크기의 백분율로 설정합니다</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>스무딩:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>획 보정 - 0%에서는 포인터가 이동한 경로를 그대로 그립니다</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>당겨진 끈 모드</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>획 따라잡기</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>획 끝에서 따라잡기</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>확대/축소 조정</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>원형</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>정사각형</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>잠김: 다른 브러시를 골라도 이 설정이 유지됩니다. 클릭하면 잠금이 해제됩니다.</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>클릭하여 잠금: 다른 브러시를 골라도 이 설정이 유지됩니다</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>잠김: %1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>섹션 잠금 해제</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>섹션 잠그기</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>브러시 끝 모양</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>모양 동적 설정</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>분산</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>텍스처</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>듀얼 브러시</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>색상 동적 설정</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>전달</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>젖은 가장자리</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>빌드업</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>보정</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>노이즈</translation>
     </message>
 </context>
 <context>
@@ -10075,6 +10310,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>&quot;%1&quot;에서 브러시 팁을 가져올 수 없습니다.</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Patchy에 해당 기능이 없는 Photoshop 설정은 제외되었습니다: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>파일이나 패턴 라이브러리에서 텍스처 패턴을 찾을 수 없어 생성된 그레인으로 대체합니다: %1</translation>
     </message>
 </context>
 <context>
@@ -10122,6 +10365,113 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Manage…</source>
         <translation>관리…</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>(수정됨)</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>크기:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>브러시 크기(픽셀)</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>브러시 검색</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>목록 보기</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>축소판 격자 보기</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>브러시 설정 패널 표시</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>브러시 패널 옵션</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>새 폴더...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>새 브러시 사전 설정...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>선택한 브러시 또는 폴더 삭제</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>일반 브러시</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>현재 브러시(수정됨)</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>현재 브러시</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>이름 바꾸기...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>복제</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>삭제</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>브러시 가져오기...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>목록 보기</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>축소판 격자 보기</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>새 폴더</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>이름:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>브러시</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>이름 바꾸기</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 사본</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>브러시 &quot;%1&quot;을(를) 삭제할까요?</translation>
     </message>
 </context>
 <context>
@@ -14109,10 +14459,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>작업용 브러시</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>브러시 사전 설정 저장</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -19786,6 +20132,22 @@ Y: %2
         <source>Reset &amp;Panel Layout</source>
         <translation>패널 레이아웃 초기화(&amp;P)</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 사본</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>브러시 사전 설정을 저장했습니다: %1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>브러시</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>브러시 설정</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -19935,6 +20297,53 @@ Y: %2
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>새 브러시 사전 설정</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>이름:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>폴더 없음</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>폴더를 고르거나 새 폴더 이름을 입력합니다</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>폴더:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>사전 설정에 브러시 크기 포함</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>끄면: 사전 설정을 골라도 지금 칠하는 크기가 유지됩니다</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>도구 설정 포함</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>불투명도, 흐름, 보정, 펜 압력 매핑 및 혼합 브러시 값</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>색상 포함</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>사전 설정을 고르면 전경색과 배경색도 설정됩니다</translation>
     </message>
 </context>
 <context>

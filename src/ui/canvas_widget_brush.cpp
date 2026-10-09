@@ -317,6 +317,18 @@ const QString& CanvasWidget::brush_tip_id() const noexcept {
   return brush_tip_id_;
 }
 
+const std::shared_ptr<const patchy::BrushTip>& CanvasWidget::brush_tip() const noexcept {
+  return brush_tip_;
+}
+
+void CanvasWidget::set_brush_spacing_override(std::optional<double> spacing) noexcept {
+  script_brush_spacing_ = spacing;
+}
+
+std::optional<double> CanvasWidget::brush_spacing_override() const noexcept {
+  return script_brush_spacing_;
+}
+
 bool CanvasWidget::has_brush_tip() const noexcept {
   return brush_tip_ != nullptr;
 }
@@ -359,6 +371,26 @@ int CanvasWidget::brush_base_roundness() const noexcept {
 
 void CanvasWidget::set_brush_dynamics_test_seed(std::optional<quint32> seed) noexcept {
   brush_dynamics_test_seed_ = seed;
+}
+
+void CanvasWidget::set_brush_texture_pattern(std::optional<PatternResource> pattern) {
+  if (!pattern.has_value() || pattern->tile.width() <= 0 || pattern->tile.height() <= 0) {
+    brush_texture_pattern_id_.clear();
+    brush_texture_tile_.reset();
+    return;
+  }
+  auto tile = patchy::make_brush_texture_tile(pattern->tile);
+  if (tile.empty()) {
+    brush_texture_pattern_id_.clear();
+    brush_texture_tile_.reset();
+    return;
+  }
+  brush_texture_pattern_id_ = pattern->id;
+  brush_texture_tile_ = std::make_shared<const patchy::BrushTextureTile>(std::move(tile));
+}
+
+bool CanvasWidget::has_brush_texture_pattern() const noexcept {
+  return brush_texture_tile_ != nullptr;
 }
 
 namespace {
@@ -456,6 +488,10 @@ void CanvasWidget::apply_brush_tip_to_options(EditOptions& options, int brush_si
   }
   // The cache's shared_ptr keeps the stamp alive for the duration of the paint call.
   options.brush_tip = scaled.get();
+  // Static tip flips are tip shape, not dynamics: they survive the erase/Pattern Stamp/Mixer
+  // dynamics strip the callers apply after this.
+  options.brush_flip_x = brush_dynamics_.tip_flip_x;
+  options.brush_flip_y = brush_dynamics_.tip_flip_y;
   options.brush_tip_spacing =
       script_brush_spacing_.value_or(brush_tip_ != nullptr ? brush_tip_->default_spacing : kRoundDynamicsTipSpacing);
 
@@ -464,6 +500,12 @@ void CanvasWidget::apply_brush_tip_to_options(EditOptions& options, int brush_si
   }
   options.brush_dynamics = brush_dynamics_;
   options.brush_dynamics.seed = stroke_dynamics_seed_;
+  if (brush_texture_tile_ != nullptr && !brush_dynamics_.texture_pattern_id.empty() &&
+      brush_dynamics_.texture_pattern_id == brush_texture_pattern_id_) {
+    // The member keeps the tile alive for the paint call; a mismatched or missing pattern
+    // leaves the pointer null, which selects the procedural grain.
+    options.brush_texture_tile = brush_texture_tile_.get();
+  }
   if (pen_input_settings_.enabled && active_pen_input_sample_.has_value()) {
     // Fill every pen input; the core selects per control (missing inputs stay at their
     // full-value defaults so a mouse paints like Photoshop does without a pen).
@@ -515,6 +557,10 @@ QImage CanvasWidget::brush_tip_stamp_image(int size, int softness) const {
   for (std::int32_t y = 0; y < scaled->height; ++y) {
     std::copy_n(scaled->mask.data() + static_cast<std::size_t>(y) * scaled->width, scaled->width,
                 image.scanLine(y));
+  }
+  // The static Brush Tip Shape flips mirror the footprint the cursor shows.
+  if (brush_dynamics_.tip_flip_x || brush_dynamics_.tip_flip_y) {
+    return image.mirrored(brush_dynamics_.tip_flip_x, brush_dynamics_.tip_flip_y);
   }
   return image;
 }
@@ -708,13 +754,15 @@ void CanvasWidget::draw_brush_hover_outline(QPainter& painter) const {
   painter.resetTransform();
   if (brush_tip_ != nullptr && tool_has(tool_, kToolBrushTip)) {
     const auto display = brush_outline_display_size();
-    const auto key = QStringLiteral("%1:%2x%3:%4:%5:%6")
+    const auto key = QStringLiteral("%1:%2x%3:%4:%5:%6:%7%8")
                          .arg(reinterpret_cast<quintptr>(brush_tip_.get()))
                          .arg(display.width())
                          .arg(display.height())
                          .arg(brush_size_)
                          .arg(brush_softness_)
-                         .arg(shown_view_rotation());
+                         .arg(shown_view_rotation())
+                         .arg(int{brush_dynamics_.tip_flip_x})
+                         .arg(int{brush_dynamics_.tip_flip_y});
     if (brush_outline_overlay_key_ != key) {
       const auto upright_stamp = brush_tip_stamp_image(brush_size_, brush_softness_);
       const auto stamp = stamp_turned_for_view(upright_stamp, shown_view_rotation());
@@ -1248,6 +1296,11 @@ QRect CanvasWidget::draw_brush_segment_with_dabs(QPointF from, QPointF to, bool 
     brush_stroke_distance_since_last_stamp_ = 0.0;
   };
 
+  // An explicit spacing keeps every dab on its cadence, like the bitmap-tip path: the smoother's
+  // first-movement endpoint would otherwise add an off-cadence dab next to the press dab.
+  if (script_brush_spacing_ && brush_stroke_last_stamp_position_.has_value()) {
+    stamp_endpoint = false;
+  }
   if (!brush_stroke_last_stamp_position_.has_value()) {
     if (stamp_endpoint) {
       brush_stroke_last_stamp_position_ = from;
@@ -1939,6 +1992,11 @@ EditOptions CanvasWidget::current_brush_edit_options(const EffectiveBrushInput& 
   auto options = edit_options(primary_color_, secondary_color_, brush.size, opacity, brush.softness, fill_shapes_,
                               active_layer_locks_transparent_pixels(), *this, brush.roundness, brush.angle_degrees);
   options.symmetry = paint_symmetry_copies();
+  // The Square footprint belongs to the Brush and Eraser on every procedural path, including
+  // the dab path (Soft, reduced Flow, Airbrush, explicit spacing); the other tools stay round.
+  if (brush_tip_ == nullptr && (tool_ == CanvasTool::Brush || tool_ == CanvasTool::Eraser)) {
+    options.brush_shape = brush_shape_;
+  }
   return options;
 }
 
@@ -2010,6 +2068,9 @@ QRect CanvasWidget::draw_brush_at(QPoint point, bool erase) {
   const auto brush = effective_brush_input();
   auto options = current_brush_edit_options(brush);
   if (brush_uses_dab_stroke(brush, erase)) {
+    if (script_brush_spacing_ && brush_stroke_last_stamp_position_.has_value()) {
+      return {};  // a release inside a spaced stroke adds no off-cadence end dab
+    }
     install_brush_stroke_compositor(options, erase);
     const auto point_f = QPointF(point);
     const auto dirty = draw_brush_dab(point_f, erase, options);

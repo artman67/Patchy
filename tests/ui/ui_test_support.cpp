@@ -744,6 +744,13 @@ void cleanup_after_visual_test() {
   patchy::ui::LocalizationManager::instance().set_language(QStringLiteral("en"), false);
   auto settings = patchy::ui::app_settings();
   settings.remove(QStringLiteral("preferences/language"));
+  // The working brush is remembered across windows; every test starts from the Round preset.
+  settings.remove(QStringLiteral("tools/workingBrush"));
+  // So do Brush Settings locks and the Brushes panel's folders and view.
+  for (const char* key : {"tools/brushSectionLocks", "brushes/panelFolders", "brushes/panelExpandedFolders",
+                          "brushes/panelView"}) {
+    settings.remove(QLatin1StringView(key));
+  }
   // Each selection tool's Feather and Anti-alias persist as soon as a test touches the
   // options bar; a soft edge left behind would reshape every later test's selections.
   for (const char* key :

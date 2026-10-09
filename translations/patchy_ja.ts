@@ -9390,6 +9390,42 @@ Mixed selection</source>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>ピクセル数は固定されています。変わるのは印刷解像度と印刷サイズだけです。</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>ブラシの投影</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>ブラシポーズ</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>湿潤とミックスのジッター</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>テクスチャを保護</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>傾きの比率</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>デュアルブラシのモード</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>デュアルブラシの散布と反転</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>間隔オフ</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>このファイルには使用できるブラシがありません</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9779,24 +9815,12 @@ Mixed selection</source>
         <translation>ダイナミクス</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>アクティブなブラシ先端のダイナミクスと効果</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>丸ブラシのダイナミクスと効果（このセッション限定。次回起動時にリセットされます）</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>四角ブラシのダイナミクスと効果（このセッション限定。次回起動時にリセットされます）</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>現在のブラシのダイナミクスと効果：ブラシ設定パネルを表示します</translation>
     </message>
 </context>
 <context>
     <name>patchy::ui::BrushDynamicsPanel</name>
-    <message>
-        <source>Tip Shape</source>
-        <translation>先端のシェイプ</translation>
-    </message>
     <message>
         <source>Angle:</source>
         <translation>角度:</translation>
@@ -9804,10 +9828,6 @@ Mixed selection</source>
     <message>
         <source>Roundness:</source>
         <translation>真円率:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>シェイプダイナミクス</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9906,10 +9926,6 @@ Mixed selection</source>
         <translation>Yジッターを反転</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>散布</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>散布:</translation>
     </message>
@@ -9924,10 +9940,6 @@ Mixed selection</source>
     <message>
         <source>Count Jitter:</source>
         <translation>数のジッター:</translation>
-    </message>
-    <message>
-        <source>Transfer</source>
-        <translation>転写</translation>
     </message>
     <message>
         <source>Opacity Jitter:</source>
@@ -9946,16 +9958,8 @@ Mixed selection</source>
         <translation>最小のフロー:</translation>
     </message>
     <message>
-        <source>Texture</source>
-        <translation>テクスチャ</translation>
-    </message>
-    <message>
         <source>Enable Texture</source>
         <translation>テクスチャを有効化</translation>
-    </message>
-    <message>
-        <source>Grain:</source>
-        <translation>粒子:</translation>
     </message>
     <message>
         <source>Fine Grain</source>
@@ -9982,10 +9986,6 @@ Mixed selection</source>
         <translation>テクスチャを反転</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>デュアルブラシ</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>デュアルブラシを有効化</translation>
     </message>
@@ -10000,10 +10000,6 @@ Mixed selection</source>
     <message>
         <source>Secondary Spacing:</source>
         <translation>サブブラシの間隔:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>カラーダイナミクス</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -10038,10 +10034,6 @@ Mixed selection</source>
         <translation>ブラシ先端ごとに適用</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>ブラシ効果</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>ウェットエッジ</translation>
     </message>
@@ -10056,6 +10048,249 @@ Mixed selection</source>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>先端のシェイプとすべてのダイナミクスを初期設定に戻します</translation>
+    </message>
+    <message>
+        <source>Multiply</source>
+        <translation>乗算</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>減算</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>比較(暗)</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>オーバーレイ</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>覆い焼きカラー</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>焼き込みカラー</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>焼き込み(リニア)</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>ハードミックス</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>高さ(リニア)</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>高さ</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>ドラッグして先端の角度を設定します。点をドラッグすると真円率が変わります</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>X を反転</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>先端を左右に反転します</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Y を反転</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>先端を上下に反転します</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>パターン:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>テクスチャの元:生成された粒子、またはパターンライブラリのパターン</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>このパターンはパターンライブラリにないため、ストロークは生成された粒子を使います。パターンを追加するか、別のものを選んでください。</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>明るさ:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>コントラスト:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>描画モード:</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>ノイズ</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>ブラシ先端のソフトな縁に粒状感を加えます。粒状感はカンバス上で固定され、ハードな先端はほとんど変化しません。</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1（見つかりません）</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>ポインターを止めている間も、エアブラシオプションと同様にペイントを重ねます。チェックボックスをオンにすると有効になります。</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>すべてロック解除</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>ロックされた設定をすべてリセット：すべてのセクションのロックを解除します</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>ブラシ設定のオプション</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>ブラシコントロールを消去</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>ロックされた設定をすべてリセット</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>この設定から新規ブラシプリセットを作成</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>ブラシ先端：クリックするとそのブラシで描画できます</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>サイズ:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>柔らかさ:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>間隔</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>オフでは先端自身の間隔を使います(円形と正方形はなめらかなストロークを描きます)。オンではスタンプ間の距離をブラシサイズに対する割合で設定します</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>スムージング:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>ストロークの滑らかさ - 0% はポインターの軌跡をそのまま描画します</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>プルストリングモード</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>ストロークキャッチアップ</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>ストローク終了時にキャッチアップ</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>ズームに応じて調整</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>丸</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>四角</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>ロック中：別のブラシを選んでもこの設定は保持されます。クリックするとロックを解除します。</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>クリックでロック：別のブラシを選んでもこの設定が保持されます</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>ロック中：%1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>セクションのロックを解除</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>セクションをロック</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>ブラシ先端のシェイプ</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>シェイプダイナミクス</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>散布</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>テクスチャ</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>デュアルブラシ</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>カラーダイナミクス</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>転写</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>ウェットエッジ</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>エアブラシ</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>滑らかさ</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>ノイズ</translation>
     </message>
 </context>
 <context>
@@ -10075,6 +10310,14 @@ Mixed selection</source>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>「%1」からブラシ先端を読み込めませんでした。</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Patchy に対応する機能がない Photoshop の設定は省略されました: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>テクスチャパターンがファイルにもパターンライブラリにも見つからないため、生成した粒子で代用します: %1</translation>
     </message>
 </context>
 <context>
@@ -10122,6 +10365,113 @@ Mixed selection</source>
     <message>
         <source>%1 - %2 (%3×%4)</source>
         <translation>%1 - %2 (%3×%4)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>（変更済み）</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>サイズ:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>ブラシサイズ（pixel）</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>ブラシを検索</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>リスト表示</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>サムネールのグリッド表示</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>ブラシ設定パネルを表示</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>ブラシパネルのオプション</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>新規フォルダー...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>新規ブラシプリセット...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>選択したブラシまたはフォルダーを削除</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>汎用ブラシ</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>現在のブラシ（変更済み）</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>現在のブラシ</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>名前を変更...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>複製</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>削除</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>ブラシを読み込み...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>リスト表示</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>サムネールのグリッド表示</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>新規フォルダー</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>名前:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>ブラシ</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>名前を変更</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 のコピー</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>ブラシ「%1」を削除しますか？</translation>
     </message>
 </context>
 <context>
@@ -17828,10 +18178,6 @@ Clipped to the layer below</source>
         <translation>使用</translation>
     </message>
     <message>
-        <source>Save Brush Preset</source>
-        <translation>ブラシプリセットを保存</translation>
-    </message>
-    <message>
         <source>Saved Brushes</source>
         <translation>保存したブラシ</translation>
     </message>
@@ -19786,6 +20132,22 @@ Baked into images: %1.</source>
         <source>Reset &amp;Panel Layout</source>
         <translation>パネルレイアウトをリセット(&amp;P)</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 のコピー</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>ブラシプリセットを保存しました：%1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>ブラシ</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>ブラシ設定</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -19935,6 +20297,53 @@ Baked into images: %1.</source>
     <message>
         <source>Option</source>
         <translation>Option</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>新規ブラシプリセット</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>名前:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>フォルダーなし</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>フォルダーを選ぶか、新しいフォルダー名を入力します</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>フォルダー:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>プリセットにブラシサイズを保存</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>オフ：プリセットを選んでも、描画中のサイズはそのままです</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>ツール設定を含める</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>不透明度、流量、滑らかさ、ペン圧の割り当て、混合ブラシの値</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>カラーを含める</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>プリセットを選ぶと描画色と背景色も設定されます</translation>
     </message>
 </context>
 <context>

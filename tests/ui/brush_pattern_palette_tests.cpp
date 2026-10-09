@@ -3,6 +3,8 @@
 //     import, pattern library, palette/indexed-color tests)
 //   brush_pattern_palette_tests_brush_dynamics.cpp   (part 2: brush stamping, cursor,
 //     picker popups, and brush dynamics tests)
+//   brush_pattern_palette_tests_brush_panels.cpp     (part 3: the Brushes and Brush
+//     Settings panels)
 //
 // Registration ORDER is a load-bearing contract: cleanup_after_visual_test restores
 // only language, so QSettings state leaks between tests by construction, and later
@@ -17,11 +19,15 @@
 
 std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part1();
 std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part2();
+std::vector<patchy::test::TestCase> brush_pattern_palette_tests_part3();
 
 std::vector<patchy::test::TestCase> brush_pattern_palette_tests() {
   auto tests = brush_pattern_palette_tests_part1();
   auto part2 = brush_pattern_palette_tests_part2();
   for (auto& test : part2) {
+    tests.push_back(std::move(test));
+  }
+  for (auto& test : brush_pattern_palette_tests_part3()) {
     tests.push_back(std::move(test));
   }
   return tests;

@@ -4,6 +4,7 @@
 #include "core/document.hpp"
 #include "core/pixel_tools.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_stroke_preview.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/dialog_utils.hpp"
 #include "ui/preset_manager_scaffold.hpp"
@@ -77,67 +78,15 @@ protected:
 private:
   void rebuild() {
     stroke_ = {};
-    if (tip_ == nullptr || tip_->empty() || width() <= 4 || height() <= 4) {
-      update();
-      return;
+    if (tip_ != nullptr && !tip_->empty()) {
+      BrushStrokePreviewSpec spec;
+      spec.tip = tip_;
+      spec.spacing = spacing_;
+      spec.angle = base_angle_degrees_;
+      spec.roundness = base_roundness_;
+      spec.dynamics = dynamics_;
+      stroke_ = render_brush_stroke_preview(spec, size());
     }
-
-    const auto document_width = std::max(64, width());
-    const auto document_height = std::max(48, height());
-    patchy::Document document(document_width, document_height, patchy::PixelFormat::rgba8());
-    patchy::PixelBuffer pixels(document_width, document_height, patchy::PixelFormat::rgba8());
-    pixels.clear(0);
-    const auto layer_id = document.add_pixel_layer("Preview", std::move(pixels)).id();
-
-    const auto mips = patchy::build_brush_tip_mips(*tip_);
-    const auto brush_size =
-        std::clamp(std::max(tip_->width, tip_->height), 8, std::max(8, document_height / 2));
-    const auto scaled = patchy::make_scaled_brush_tip(mips, brush_size);
-    if (scaled.empty()) {
-      update();
-      return;
-    }
-
-    patchy::EditOptions options;
-    options.primary = patchy::EditColor{0, 0, 0, 255};
-    options.brush_size = brush_size;
-    options.brush_tip = &scaled;
-    options.brush_tip_spacing = spacing_;
-    options.brush_angle_degrees = base_angle_degrees_;
-    options.brush_roundness = static_cast<int>(std::lround(base_roundness_));
-    options.brush_dynamics = dynamics_;
-    options.brush_dynamics.seed = 1234;  // fixed seed: a stable preview instead of reshuffling per repaint
-
-    // Sample a gentle S-curve across the preview, chopped into short segments like real input.
-    patchy::BrushTipStrokeState state;
-    const auto margin = static_cast<double>(brush_size) / 2.0 + 4.0;
-    const auto usable_width = static_cast<double>(document_width) - 2.0 * margin;
-    const auto center_y = static_cast<double>(document_height) / 2.0;
-    const auto wave_height = std::max(4.0, static_cast<double>(document_height) / 2.0 - margin);
-    constexpr int kSegments = 48;
-    double previous_x = margin;
-    double previous_y = center_y;
-    for (int step = 1; step <= kSegments; ++step) {
-      const auto t = static_cast<double>(step) / kSegments;
-      const auto x = margin + usable_width * t;
-      const auto y = center_y - std::sin(t * 2.0 * 3.14159265358979323846) * wave_height;
-      (void)patchy::paint_brush_segment(document, layer_id, previous_x, previous_y, x, y, options, false, state);
-      previous_x = x;
-      previous_y = y;
-    }
-
-    const auto* layer = document.find_layer(layer_id);
-    if (layer == nullptr) {
-      update();
-      return;
-    }
-    const auto& painted = layer->pixels();
-    QImage image(painted.width(), painted.height(), QImage::Format_RGBA8888);
-    for (std::int32_t y = 0; y < painted.height(); ++y) {
-      const auto row = painted.row(y);
-      std::copy_n(row.data(), static_cast<std::size_t>(painted.width()) * 4U, image.scanLine(y));
-    }
-    stroke_ = std::move(image);
     update();
   }
 
@@ -386,6 +335,7 @@ void request_brush_tip_manager(QWidget* parent, BrushTipLibrary& library, const 
     editor.setWindowTitle(QObject::tr("Brush Dynamics: %1").arg(entry->name));
     auto* editor_layout = new QVBoxLayout(&editor);
     auto* panel = new BrushDynamicsPanel(&editor);
+    panel->set_pattern_library(library.pattern_library());
     panel->set_values(entry->dynamics, entry->base_angle_degrees, entry->base_roundness);
     editor_layout->addWidget(panel);
     auto* editor_buttons = new QDialogButtonBox(QDialogButtonBox::Close, &editor);

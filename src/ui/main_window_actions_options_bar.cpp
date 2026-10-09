@@ -36,11 +36,13 @@
 #include "render/compositor.hpp"
 #include "ui/blend_mode_ui.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_settings_sections.hpp"
 #include "ui/brush_presets.hpp"
 #include "ui/brush_automation.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
 #include "ui/brush_tip_picker.hpp"
+#include "ui/current_brush.hpp"
 #include "ui/default_brush_tips.hpp"
 #include "ui/compatibility_report.hpp"
 #include "ui/image_document_io.hpp"
@@ -1904,21 +1906,23 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
                                        brush_opacity_slider, brush_softness, brush_softness_slider}) {
     vector_pixel_only_option_widgets_.push_back(raster_only);
   }
+  brush_controls_.size = brush_size;
+  brush_controls_.size_slider = brush_size_slider;
+  brush_controls_.opacity = brush_opacity;
+  brush_controls_.opacity_slider = brush_opacity_slider;
+  brush_controls_.softness = brush_softness;
+  brush_controls_.softness_slider = brush_softness_slider;
   connect(brush_size, &QSpinBox::valueChanged, this, [this](int value) {
-    if (canvas_ != nullptr) {
-      canvas_->set_brush_size(value);
-      schedule_save_tool_settings();
-      refresh_document_info();
-    }
+    BrushEdit edit;
+    edit.size = value;
+    edit_brush_option(edit);
   });
   connect(brush_opacity, &QSpinBox::valueChanged, brush_opacity_slider, &QSlider::setValue);
   connect(brush_opacity_slider, &QSlider::valueChanged, brush_opacity, &QSpinBox::setValue);
   connect(brush_opacity, &QSpinBox::valueChanged, this, [this](int value) {
-    if (canvas_ != nullptr) {
-      canvas_->set_brush_opacity(value);
-      schedule_save_tool_settings();
-      refresh_document_info();
-    }
+    BrushEdit edit;
+    edit.opacity = value;
+    edit_brush_option(edit);
   });
 
   auto* brush_flow_label = add_option_label(QT_TR_NOOP("Flow:"), tools_with(kToolFlow));
@@ -1936,20 +1940,19 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   bind_widget_text(brush_airbrush, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Airbrush"));
   brush_airbrush->setChecked(canvas_defaults->brush_build_up());
   bind_tooltip(brush_airbrush, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Build paint while the pointer is held still"));
-  add_option_widget(brush_airbrush, {CanvasTool::Brush});
+  options_flow->addWidget(brush_airbrush);
+  register_option_action(brush_airbrush, tools_honoring(BrushSection::BuildUp));
+  brush_controls_.flow = brush_flow;
+  brush_controls_.airbrush = brush_airbrush;
   connect(brush_flow, &QSpinBox::valueChanged, this, [this](int value) {
-    if (canvas_ != nullptr) {
-      canvas_->set_brush_flow(value);
-      schedule_save_tool_settings();
-      refresh_document_info();
-    }
+    BrushEdit edit;
+    edit.flow = value;
+    edit_brush_option(edit);
   });
   connect(brush_airbrush, &QCheckBox::toggled, this, [this](bool checked) {
-    if (canvas_ != nullptr) {
-      canvas_->set_brush_build_up(checked);
-      schedule_save_tool_settings();
-      refresh_document_info();
-    }
+    BrushEdit edit;
+    edit.airbrush = checked;
+    edit_brush_option(edit);
   });
 
   // Stroke Smoothing (the kToolSmoothing tools): the percent spin plus a
@@ -2232,15 +2235,11 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   connect(brush_softness, &QSpinBox::valueChanged, brush_softness_slider, &QSlider::setValue);
   connect(brush_softness_slider, &QSlider::valueChanged, brush_softness, &QSpinBox::setValue);
   connect(brush_softness, &QSpinBox::valueChanged, this, [this](int value) {
-    if (canvas_ != nullptr) {
-      canvas_->set_brush_softness(value);
-      schedule_save_tool_settings();
-      refresh_document_info();
-    }
+    BrushEdit edit;
+    edit.softness = value;
+    edit_brush_option(edit);
   });
-  connect(brush_preset_combo_, &QComboBox::currentIndexChanged, this,
-          [this, brush_size, brush_opacity, brush_flow, brush_softness,
-           brush_airbrush](int index) {
+  connect(brush_preset_combo_, &QComboBox::currentIndexChanged, this, [this](int index) {
     if (brush_preset_combo_ == nullptr || canvas_ == nullptr || index < 0) {
       return;
     }
@@ -2251,47 +2250,9 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
     } else {
       brush_preset_combo_->setProperty("lastBrushPresetId", preset_id);
     }
-    const auto* preset = find_brush_preset(preset_id);
-    if (preset == nullptr) {
-      if (preset_id == "__saveBrush") save_current_automation_brush();
-      else if (preset_id == "__manageBrushes") manage_automation_brush_presets();
-      else if (!preset_id.isEmpty()) {
-        try {
-          auto& library = brush_automation_library(); library.refresh();
-          auto s = library.resolve(QJsonObject{{"presetId", preset_id}});
-          if (!library.preset(preset_id)["includeColors"].toBool()) {
-            s.color = canvas_->primary_color(); s.background = canvas_->secondary_color();
-          }
-          activate_automation_brush(s);
-        } catch (const std::exception& e) { show_status_error(tr("Brush preset operation failed: %1").arg(translate_data_text(e.what()))); }
-      }
-      return;
-    }
-    if (active_automation_brush_) set_active_brush_tip(builtin_round_brush_tip_id(), false, false);
-    // A built-in preset names its procedural tip (Square, or Round for the rest), so switching
-    // presets never leaves a stale bitmap tip behind.
-    const auto preset_tip = preset->tip_id.isEmpty() ? builtin_round_brush_tip_id() : preset->tip_id;
-    if (active_brush_tip_id_ != preset_tip) {
-      set_active_brush_tip(preset_tip, false, false);
-    }
-    if (preset_id == QStringLiteral("airbrush")) {
-      // The quick Airbrush preset is a predictable soft Round brush. Existing sampled tips
-      // already cover Smoke/Spray/Spatter/Stipple, so do not invent a duplicate airbrush tip or
-      // carry a surprising Round dynamics session into this basic preset.
-      round_brush_dynamics_ = {};
-      round_brush_base_angle_degrees_ = 0.0;
-      round_brush_base_roundness_ = 100.0;
-      set_active_brush_tip(builtin_round_brush_tip_id(), false, false);
-    }
-    apply_brush_preset(*canvas_, *preset);
-    brush_size->setValue(preset->size);
-    brush_opacity->setValue(preset->opacity);
-    brush_flow->setValue(preset->flow);
-    brush_softness->setValue(preset->softness);
-    brush_airbrush->setChecked(preset->build_up);
-    save_tool_settings();
-    refresh_document_info();
-    statusBar()->showMessage(tr("Brush preset: %1").arg(brush_preset_display_name(*preset)));
+    if (preset_id == "__saveBrush") save_current_automation_brush();
+    else if (preset_id == "__manageBrushes") manage_automation_brush_presets();
+    else if (!preset_id.isEmpty()) pick_brush_preset(preset_id);
   });
 
   add_option_label(QT_TR_NOOP("Tip:"), tools_with(kToolBrushTip));
@@ -2299,8 +2260,7 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   refresh_automation_brush_presets();
   register_retranslation([this] { refresh_automation_brush_presets(); });
   brush_tip_picker_ = new BrushTipPicker(brush_tip_library(), toolbar);
-  // The options bar is built after load_tool_settings() reset the active tip to Round.
-  brush_tip_picker_->set_current_tip_id(active_brush_tip_id_);
+  brush_tip_picker_->set_current_tip_id(current_brush().brush().tip_id);
   add_option_widget(brush_tip_picker_, tools_with(kToolBrushTip));
   connect(brush_tip_picker_, &BrushTipPicker::tip_selected, this,
           [this](const QString& id) { set_active_brush_tip(id, true); });
@@ -2310,9 +2270,16 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
           [this] { define_brush_tip_from_selection(); });
   connect(brush_tip_picker_, &BrushTipPicker::manage_requested, this, [this] { open_brush_tip_manager(); });
   connect(&brush_tip_library(), &BrushTipLibrary::changed, this, [this] {
-    // A removed tip must not stay active; re-resolving also refreshes renamed/respaced tips.
-    // Re-applying after a library edit must not reset Flow/Airbrush to imported tool settings.
-    if (!active_automation_brush_) set_active_brush_tip(active_brush_tip_id_, false, false);
+    // A removed tip must not stay active. A library edit of a tip still in use (its stored
+    // dynamics, spacing, or a rewritten mask) never resets the working brush's own settings;
+    // only the tip pixels and spacing are re-resolved.
+    const auto& brush = current_brush().brush();
+    if (brush.snapshot_tip == nullptr && !is_builtin_brush_tip_id(brush.tip_id) &&
+        brush_tip_library().tip(brush.tip_id) == nullptr) {
+      set_active_brush_tip(builtin_round_brush_tip_id(), false, false);
+      return;
+    }
+    push_current_brush_to_canvas(canvas_, CurrentBrush::Tip);
   });
   QPointer<BrushTipPicker> tip_picker(brush_tip_picker_);
   register_retranslation([tip_picker] {
@@ -2322,41 +2289,15 @@ void MainWindow::build_options_bar(ActionBuildContext& ctx) {
   });
 
   brush_dynamics_button_ = new BrushDynamicsButton(toolbar);
-  add_option_widget(brush_dynamics_button_, {CanvasTool::Brush});
-  connect(brush_dynamics_button_, &BrushDynamicsButton::dynamics_edited, this,
-          [this](const QString& tip_id, const patchy::BrushDynamics& dynamics, double base_angle,
-                 double base_roundness) {
-            if (is_builtin_brush_tip_id(tip_id)) {
-              // Session-only: the Round and Square brushes' dynamics live in the window, not
-              // the library, and deliberately reset on the next launch.
-              round_brush_dynamics_ = dynamics;
-              round_brush_base_angle_degrees_ = base_angle;
-              round_brush_base_roundness_ = base_roundness;
-              if (canvas_ != nullptr &&
-                  (active_preset_tip_ || active_brush_tip_id_.isEmpty() ||
-                   is_builtin_brush_tip_id(active_brush_tip_id_))) {
-                canvas_->set_brush_dynamics(dynamics);
-                canvas_->set_brush_base_shape(base_angle, static_cast<int>(std::lround(base_roundness)));
-              }
-              return;
-            }
-            if (canvas_ != nullptr && tip_id == active_brush_tip_id_) {
-              canvas_->set_brush_dynamics(dynamics);
-              canvas_->set_brush_base_shape(base_angle, static_cast<int>(std::lround(base_roundness)));
-            }
-            // Persisting to the sidecar emits changed(), which re-applies the (identical) values.
-            brush_tip_library().set_tip_dynamics(tip_id, dynamics, base_angle, base_roundness);
-          });
-  // The options bar is built after load_tool_settings() already selected the startup tip, so
-  // seed the button's model now (Round session values, or the entry if a tip is active).
-  if (active_brush_tip_id_.isEmpty() || is_builtin_brush_tip_id(active_brush_tip_id_)) {
-    brush_dynamics_button_->set_round_session(
-        active_brush_tip_id_.isEmpty() ? builtin_round_brush_tip_id() : active_brush_tip_id_, round_brush_dynamics_,
-                                              round_brush_base_angle_degrees_,
-                                              round_brush_base_roundness_);
-  } else if (const auto* entry = brush_tip_library().find_entry(active_brush_tip_id_);
-             entry != nullptr) {
-    brush_dynamics_button_->set_active_entry(entry);
+  // Shown for the tools whose strokes apply dynamics (brush_settings_sections).
+  options_flow->addWidget(brush_dynamics_button_);
+  register_option_action(brush_dynamics_button_, tools_honoring(BrushSection::ShapeDynamics));
+  connect(brush_dynamics_button_, &BrushDynamicsButton::show_settings_requested, this,
+          [this] { show_brush_settings_panel(); });
+  {
+    const auto& brush = current_brush().brush();
+    brush_dynamics_button_->set_working_brush(working_brush_tip_key(brush), brush.dynamics,
+                                              brush.angle, brush.roundness);
   }
   QPointer<BrushDynamicsButton> dynamics_button(brush_dynamics_button_);
   register_retranslation([dynamics_button] {

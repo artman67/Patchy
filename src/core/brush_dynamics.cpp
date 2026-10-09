@@ -67,6 +67,52 @@ constexpr double kDirectionSmoothing = 0.35;
 
 }  // namespace
 
+float combine_brush_texture(BrushTextureMode mode, float coverage, float texture,
+                            float depth) noexcept {
+  // The non-Multiply formulas follow PhotoCraft's mask_combine (MIT/Apache-2.0, see
+  // NOTICE-THIRD-PARTY.md). Each is a fixed function of the three static values.
+  const auto v = coverage;
+  const auto t = texture;
+  const auto d = depth;
+  if (v <= 0.0F) {
+    return 0.0F;
+  }
+  const auto lerp = [d, v](float target) { return v + (target - v) * d; };
+  float result = v;
+  switch (mode) {
+    case BrushTextureMode::Multiply:
+      return v * (1.0F - d * (1.0F - t));  // the historical expression; keep it exact
+    case BrushTextureMode::Subtract:
+      result = v - d * (1.0F - t);
+      break;
+    case BrushTextureMode::Darken:
+      result = std::min(v, 1.0F - d * (1.0F - t));
+      break;
+    case BrushTextureMode::Overlay:
+      result = lerp(v < 0.5F ? 2.0F * v * t : 1.0F - 2.0F * (1.0F - v) * (1.0F - t));
+      break;
+    case BrushTextureMode::ColorDodge:
+      result = lerp(std::min(1.0F, v / std::max(1e-3F, 1.0F - t)));
+      break;
+    case BrushTextureMode::ColorBurn:
+      result = lerp(1.0F - std::min(1.0F, (1.0F - v) / std::max(1e-3F, t)));
+      break;
+    case BrushTextureMode::LinearBurn:
+      result = lerp(std::max(0.0F, v + t - 1.0F));
+      break;
+    case BrushTextureMode::HardMix:
+      result = lerp(v + t > 1.0F ? 1.0F : 0.0F);
+      break;
+    case BrushTextureMode::LinearHeight:
+      result = v * std::clamp((t - (1.0F - d * v)) * 4.0F + 0.5F, 0.0F, 1.0F);
+      break;
+    case BrushTextureMode::Height:
+      result = t >= 1.0F - d * v ? v : 0.0F;
+      break;
+  }
+  return std::clamp(result, 0.0F, 1.0F);
+}
+
 bool BrushDynamics::active() const noexcept {
   return size_jitter > 0.0 || angle_jitter > 0.0 ||
          (angle_control != BrushDynamicControl::Off &&
@@ -75,7 +121,7 @@ bool BrushDynamics::active() const noexcept {
          opacity_jitter > 0.0 || control_has_source(size_control) ||
          flow_jitter > 0.0 || control_has_source(roundness_control) ||
          control_has_source(opacity_control) || control_has_source(flow_control) ||
-         (texture_enabled && texture_depth > 0.0) || dual_brush_enabled || wet_edges ||
+         (texture_enabled && texture_depth > 0.0) || dual_brush_enabled || wet_edges || noise ||
          (color_dynamics_enabled &&
           (foreground_background_jitter > 0.0 || control_has_source(color_control) ||
            hue_jitter > 0.0 || saturation_jitter > 0.0 || brightness_jitter > 0.0 ||

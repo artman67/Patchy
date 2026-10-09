@@ -34,10 +34,15 @@ struct EditOptions {
   int brush_softness{0};
   int brush_roundness{100};
   double brush_angle_degrees{0.0};
+  bool brush_flip_x{false};  // static tip mirror (Brush Tip Shape Flip X/Y); bitmap tips only
+  bool brush_flip_y{false};
   BrushShape brush_shape{BrushShape::Round};  // procedural footprint; ignored while brush_tip is set
   const ScaledBrushTip* brush_tip{nullptr};  // non-owning; null = procedural round/soft brush
   double brush_tip_spacing{0.25};            // dab spacing as a fraction of brush_size
   BrushDynamics brush_dynamics{};            // per-dab tip dynamics; default = disabled
+  // Non-owning Brush Texture pattern for brush_dynamics.texture_pattern_id; null (or empty)
+  // uses the procedural texture_style grain.
+  const BrushTextureTile* brush_texture_tile{nullptr};
   bool fill_shapes{false};
   int shape_corner_radius{0};
   double fill_softness_feather{0.0};  // fill_rect/flood_fill: inward edge feather band (px); 0 = hard edge
@@ -172,6 +177,9 @@ enum class CanvasAnchor {
   Bottom,
   BottomRight
 };
+
+// Luminance of an RGBA (or RGB) pattern tile, composited over white, for Brush Texture.
+[[nodiscard]] BrushTextureTile make_brush_texture_tile(const PixelBuffer& pattern);
 
 [[nodiscard]] Rect paint_brush(Document& document, LayerId layer_id, std::int32_t x, std::int32_t y,
                                const EditOptions& options, bool erase);

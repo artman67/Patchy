@@ -9450,6 +9450,42 @@ RGB: %2, %3, %4</translation>
         <source>Pixel dimensions are locked. Only the print resolution and the print size change.</source>
         <translation>Wymiary w pikselach są zablokowane. Zmieniają się tylko rozdzielczość i rozmiar wydruku.</translation>
     </message>
+    <message>
+        <source>Brush Projection</source>
+        <translation>Projekcja pędzla</translation>
+    </message>
+    <message>
+        <source>Brush Pose</source>
+        <translation>Pozycja pędzla</translation>
+    </message>
+    <message>
+        <source>Wetness and Mix jitter</source>
+        <translation>Rozrzut wilgotności i mieszania</translation>
+    </message>
+    <message>
+        <source>Protect Texture</source>
+        <translation>Chroń teksturę</translation>
+    </message>
+    <message>
+        <source>Tilt Scale</source>
+        <translation>Skala nachylenia</translation>
+    </message>
+    <message>
+        <source>Dual Brush mode</source>
+        <translation>Tryb pędzla podwójnego</translation>
+    </message>
+    <message>
+        <source>Dual Brush scattering and flip</source>
+        <translation>Rozpraszanie i odbicie pędzla podwójnego</translation>
+    </message>
+    <message>
+        <source>Spacing turned off</source>
+        <translation>Odstępy wyłączone</translation>
+    </message>
+    <message>
+        <source>The file contains no usable brushes</source>
+        <translation>Plik nie zawiera użytecznych pędzli</translation>
+    </message>
 </context>
 <context>
     <name>ScannerImport</name>
@@ -9839,16 +9875,8 @@ RGB: %2, %3, %4</translation>
         <translation>Dynamika</translation>
     </message>
     <message>
-        <source>Brush dynamics and effects for the active brush tip</source>
-        <translation>Dynamika pędzla i efekty dla aktywnej końcówki pędzla</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Square brush (this session only; resets on the next launch)</source>
-        <translation>Dynamika pędzla i efekty pędzla kwadratowego (tylko w tej sesji; resetuje się przy następnym uruchomieniu)</translation>
-    </message>
-    <message>
-        <source>Brush dynamics and effects for the Round brush (this session only; resets on the next launch)</source>
-        <translation>Dynamika pędzla i efekty pędzla okrągłego (tylko w tej sesji; resetuje się przy następnym uruchomieniu)</translation>
+        <source>Brush dynamics and effects for the current brush: shows the Brush Settings panel</source>
+        <translation>Dynamika i efekty bieżącego pędzla: pokazuje panel Ustawienia pędzla</translation>
     </message>
 </context>
 <context>
@@ -9886,20 +9914,12 @@ RGB: %2, %3, %4</translation>
         <translation>Liczba odstępów do zaniku</translation>
     </message>
     <message>
-        <source>Tip Shape</source>
-        <translation>Kształt końcówki</translation>
-    </message>
-    <message>
         <source>Angle:</source>
         <translation>Kąt:</translation>
     </message>
     <message>
         <source>Roundness:</source>
         <translation>Okrągłość:</translation>
-    </message>
-    <message>
-        <source>Shape Dynamics</source>
-        <translation>Dynamika kształtu</translation>
     </message>
     <message>
         <source>Size Jitter:</source>
@@ -9950,10 +9970,6 @@ RGB: %2, %3, %4</translation>
         <translation>Losowe odbicie Y</translation>
     </message>
     <message>
-        <source>Scattering</source>
-        <translation>Rozpraszanie</translation>
-    </message>
-    <message>
         <source>Scatter:</source>
         <translation>Rozproszenie:</translation>
     </message>
@@ -9976,10 +9992,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Count Control:</source>
         <translation>Sterowanie liczbą:</translation>
-    </message>
-    <message>
-        <source>Transfer</source>
-        <translation>Transfer</translation>
     </message>
     <message>
         <source>Opacity Jitter:</source>
@@ -10006,16 +10018,8 @@ RGB: %2, %3, %4</translation>
         <translation>Kontrola przepływu:</translation>
     </message>
     <message>
-        <source>Texture</source>
-        <translation>Tekstura</translation>
-    </message>
-    <message>
         <source>Enable Texture</source>
         <translation>Włącz teksturę</translation>
-    </message>
-    <message>
-        <source>Grain:</source>
-        <translation>Ziarno:</translation>
     </message>
     <message>
         <source>Fine Grain</source>
@@ -10042,10 +10046,6 @@ RGB: %2, %3, %4</translation>
         <translation>Odwróć teksturę</translation>
     </message>
     <message>
-        <source>Dual Brush</source>
-        <translation>Podwójny pędzel</translation>
-    </message>
-    <message>
         <source>Enable Dual Brush</source>
         <translation>Włącz podwójny pędzel</translation>
     </message>
@@ -10060,10 +10060,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Secondary Spacing:</source>
         <translation>Odstęp drugiego pędzla:</translation>
-    </message>
-    <message>
-        <source>Color Dynamics</source>
-        <translation>Dynamika kolorów</translation>
     </message>
     <message>
         <source>Enable Color Dynamics</source>
@@ -10098,10 +10094,6 @@ RGB: %2, %3, %4</translation>
         <translation>Zastosuj na końcówkę</translation>
     </message>
     <message>
-        <source>Brush Effects</source>
-        <translation>Efekty pędzla</translation>
-    </message>
-    <message>
         <source>Wet Edges</source>
         <translation>Mokre krawędzie</translation>
     </message>
@@ -10116,6 +10108,249 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Reset the tip shape and all dynamics to defaults</source>
         <translation>Zresetuj kształt końcówki i całą dynamikę do wartości domyślnych</translation>
+    </message>
+    <message>
+        <source>Multiply</source>
+        <translation>Mnożenie</translation>
+    </message>
+    <message>
+        <source>Subtract</source>
+        <translation>Odejmowanie</translation>
+    </message>
+    <message>
+        <source>Darken</source>
+        <translation>Ciemniej</translation>
+    </message>
+    <message>
+        <source>Overlay</source>
+        <translation>Nakładka</translation>
+    </message>
+    <message>
+        <source>Color Dodge</source>
+        <translation>Rozjaśnianie</translation>
+    </message>
+    <message>
+        <source>Color Burn</source>
+        <translation>Ściemnianie</translation>
+    </message>
+    <message>
+        <source>Linear Burn</source>
+        <translation>Ściemnianie liniowe</translation>
+    </message>
+    <message>
+        <source>Hard Mix</source>
+        <translation>Mieszanie twarde</translation>
+    </message>
+    <message>
+        <source>Linear Height</source>
+        <translation>Wysokość liniowa</translation>
+    </message>
+    <message>
+        <source>Height</source>
+        <translation>Wysokość</translation>
+    </message>
+    <message>
+        <source>Drag to set the tip angle; drag a dot to change its roundness</source>
+        <translation>Przeciągnij, aby ustawić kąt końcówki; przeciągnij punkt, aby zmienić okrągłość</translation>
+    </message>
+    <message>
+        <source>Flip X</source>
+        <translation>Odbij X</translation>
+    </message>
+    <message>
+        <source>Mirror the tip left to right</source>
+        <translation>Odbija końcówkę od lewej do prawej</translation>
+    </message>
+    <message>
+        <source>Flip Y</source>
+        <translation>Odbij Y</translation>
+    </message>
+    <message>
+        <source>Mirror the tip top to bottom</source>
+        <translation>Odbija końcówkę z góry na dół</translation>
+    </message>
+    <message>
+        <source>Pattern:</source>
+        <translation>Wzorek:</translation>
+    </message>
+    <message>
+        <source>The texture source: a generated grain, or a pattern from your Pattern library</source>
+        <translation>Źródło tekstury: wygenerowane ziarno lub wzorek z biblioteki wzorków</translation>
+    </message>
+    <message>
+        <source>This pattern is not in your Pattern library, so strokes use the generated grain. Add the pattern or pick another.</source>
+        <translation>Tego wzorka nie ma w bibliotece wzorków, więc pociągnięcia używają wygenerowanego ziarna. Dodaj wzorek lub wybierz inny.</translation>
+    </message>
+    <message>
+        <source>Brightness:</source>
+        <translation>Jasność:</translation>
+    </message>
+    <message>
+        <source>Contrast:</source>
+        <translation>Kontrast:</translation>
+    </message>
+    <message>
+        <source>Mode:</source>
+        <translation>Tryb:</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Szum</translation>
+    </message>
+    <message>
+        <source>Adds grain to the soft edges of the brush tip. The grain stays put on the canvas; hard tips barely change.</source>
+        <translation>Dodaje ziarno do miękkich krawędzi końcówki pędzla. Ziarno pozostaje nieruchome na płótnie; twarde końcówki prawie się nie zmieniają.</translation>
+    </message>
+    <message>
+        <source>%1 (missing)</source>
+        <translation>%1 (brak)</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushSettingsPanel</name>
+    <message>
+        <source>Builds paint while the pointer is held still, like the Airbrush option. Tick the box to turn it on.</source>
+        <translation>Nakłada farbę, gdy wskaźnik stoi w miejscu, jak opcja Aerograf. Zaznacz pole, aby to włączyć.</translation>
+    </message>
+    <message>
+        <source>Unlock All</source>
+        <translation>Odblokuj wszystko</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings: unlock every section</source>
+        <translation>Resetuj wszystkie zablokowane ustawienia: odblokuj każdą sekcję</translation>
+    </message>
+    <message>
+        <source>Brush Settings options</source>
+        <translation>Opcje ustawień pędzla</translation>
+    </message>
+    <message>
+        <source>Clear Brush Controls</source>
+        <translation>Wyczyść ustawienia pędzla</translation>
+    </message>
+    <message>
+        <source>Reset All Locked Settings</source>
+        <translation>Resetuj wszystkie zablokowane ustawienia</translation>
+    </message>
+    <message>
+        <source>Create new brush preset from these settings</source>
+        <translation>Utwórz nowy ustawiony pędzel z tych ustawień</translation>
+    </message>
+    <message>
+        <source>Brush tips: click one to paint with it</source>
+        <translation>Końcówki pędzla: kliknij jedną, aby nią malować</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Rozmiar:</translation>
+    </message>
+    <message>
+        <source>Soft:</source>
+        <translation>Miękkość:</translation>
+    </message>
+    <message>
+        <source>Spacing</source>
+        <translation>Odstępy</translation>
+    </message>
+    <message>
+        <source>Off keeps the tip&apos;s own spacing (Round and Square paint a smooth stroke); on sets the distance between stamps as a percentage of the brush size</source>
+        <translation>Wyłączone zachowuje własne odstępy końcówki (Okrągła i Kwadratowa malują gładkie pociągnięcie); włączone ustawia odległość między odbiciami jako procent rozmiaru pędzla</translation>
+    </message>
+    <message>
+        <source>Smoothing:</source>
+        <translation>Wygładzanie:</translation>
+    </message>
+    <message>
+        <source>Stroke smoothing - 0% paints the raw pointer path</source>
+        <translation>Wygładzanie pociągnięć - 0% odwzorowuje dokładnie ruch wskaźnika</translation>
+    </message>
+    <message>
+        <source>Pulled String Mode</source>
+        <translation>Tryb naciągniętej struny</translation>
+    </message>
+    <message>
+        <source>Stroke Catch-up</source>
+        <translation>Nadążanie pociągnięcia</translation>
+    </message>
+    <message>
+        <source>Catch-up on Stroke End</source>
+        <translation>Nadążanie przy końcu pociągnięcia</translation>
+    </message>
+    <message>
+        <source>Adjust for Zoom</source>
+        <translation>Dostosuj do powiększenia</translation>
+    </message>
+    <message>
+        <source>Round</source>
+        <translation>Okrągły</translation>
+    </message>
+    <message>
+        <source>Square</source>
+        <translation>Kwadrat</translation>
+    </message>
+    <message>
+        <source>Locked: picking another brush keeps these settings. Click to unlock.</source>
+        <translation>Zablokowane: po wybraniu innego pędzla te ustawienia pozostają. Kliknij, aby odblokować.</translation>
+    </message>
+    <message>
+        <source>Click to lock: picking another brush keeps these settings</source>
+        <translation>Kliknij, aby zablokować: po wybraniu innego pędzla te ustawienia pozostaną</translation>
+    </message>
+    <message>
+        <source>Locked: %1</source>
+        <translation>Zablokowane: %1</translation>
+    </message>
+    <message>
+        <source>Unlock Section</source>
+        <translation>Odblokuj sekcję</translation>
+    </message>
+    <message>
+        <source>Lock Section</source>
+        <translation>Zablokuj sekcję</translation>
+    </message>
+    <message>
+        <source>Brush Tip Shape</source>
+        <translation>Kształt końcówki pędzla</translation>
+    </message>
+    <message>
+        <source>Shape Dynamics</source>
+        <translation>Dynamika kształtu</translation>
+    </message>
+    <message>
+        <source>Scattering</source>
+        <translation>Rozpraszanie</translation>
+    </message>
+    <message>
+        <source>Texture</source>
+        <translation>Tekstura</translation>
+    </message>
+    <message>
+        <source>Dual Brush</source>
+        <translation>Podwójny pędzel</translation>
+    </message>
+    <message>
+        <source>Color Dynamics</source>
+        <translation>Dynamika kolorów</translation>
+    </message>
+    <message>
+        <source>Transfer</source>
+        <translation>Transfer</translation>
+    </message>
+    <message>
+        <source>Wet Edges</source>
+        <translation>Mokre krawędzie</translation>
+    </message>
+    <message>
+        <source>Build-up</source>
+        <translation>Narastanie</translation>
+    </message>
+    <message>
+        <source>Smoothing</source>
+        <translation>Wygładzanie</translation>
+    </message>
+    <message>
+        <source>Noise</source>
+        <translation>Szum</translation>
     </message>
 </context>
 <context>
@@ -10135,6 +10370,14 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>No brush tips could be imported from &quot;%1&quot;.</source>
         <translation>Nie można zaimportować żadnych końcówek pędzli z &quot;%1&quot;.</translation>
+    </message>
+    <message>
+        <source>Photoshop settings with no Patchy equivalent were left out: %1</source>
+        <translation>Pominięto ustawienia Photoshopa bez odpowiednika w Patchy: %1</translation>
+    </message>
+    <message>
+        <source>Texture patterns not found in the file or the Pattern library, so a generated grain stands in: %1</source>
+        <translation>Nie znaleziono wzorków tekstury w pliku ani w bibliotece wzorków, więc użyto wygenerowanego ziarna: %1</translation>
     </message>
 </context>
 <context>
@@ -10182,6 +10425,113 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Manage…</source>
         <translation>Zarządzaj…</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::BrushesPanel</name>
+    <message>
+        <source>(modified)</source>
+        <translation>(zmieniony)</translation>
+    </message>
+    <message>
+        <source>Size:</source>
+        <translation>Rozmiar:</translation>
+    </message>
+    <message>
+        <source>Brush size in pixels</source>
+        <translation>Rozmiar pędzla w pikselach</translation>
+    </message>
+    <message>
+        <source>Search Brushes</source>
+        <translation>Szukaj pędzli</translation>
+    </message>
+    <message>
+        <source>List view</source>
+        <translation>Widok listy</translation>
+    </message>
+    <message>
+        <source>Thumbnail grid view</source>
+        <translation>Widok siatki miniatur</translation>
+    </message>
+    <message>
+        <source>Show the Brush Settings panel</source>
+        <translation>Pokaż panel Ustawienia pędzla</translation>
+    </message>
+    <message>
+        <source>Brushes panel options</source>
+        <translation>Opcje panelu Pędzle</translation>
+    </message>
+    <message>
+        <source>New Folder...</source>
+        <translation>Nowy folder...</translation>
+    </message>
+    <message>
+        <source>New Brush Preset...</source>
+        <translation>Nowy ustawiony pędzel...</translation>
+    </message>
+    <message>
+        <source>Delete the selected brush or folder</source>
+        <translation>Usuń zaznaczony pędzel lub folder</translation>
+    </message>
+    <message>
+        <source>General Brushes</source>
+        <translation>Pędzle ogólne</translation>
+    </message>
+    <message>
+        <source>Current brush (modified)</source>
+        <translation>Bieżący pędzel (zmieniony)</translation>
+    </message>
+    <message>
+        <source>Current brush</source>
+        <translation>Bieżący pędzel</translation>
+    </message>
+    <message>
+        <source>Rename...</source>
+        <translation>Zmień nazwę...</translation>
+    </message>
+    <message>
+        <source>Duplicate</source>
+        <translation>Powiel</translation>
+    </message>
+    <message>
+        <source>Delete</source>
+        <translation>Usuń</translation>
+    </message>
+    <message>
+        <source>Import Brushes...</source>
+        <translation>Importuj pędzle...</translation>
+    </message>
+    <message>
+        <source>List View</source>
+        <translation>Widok listy</translation>
+    </message>
+    <message>
+        <source>Thumbnail Grid View</source>
+        <translation>Widok siatki miniatur</translation>
+    </message>
+    <message>
+        <source>New Folder</source>
+        <translation>Nowy folder</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Nazwa:</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Pędzle</translation>
+    </message>
+    <message>
+        <source>Rename</source>
+        <translation>Zmień nazwę</translation>
+    </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 kopia</translation>
+    </message>
+    <message>
+        <source>Delete the brush &quot;%1&quot;?</source>
+        <translation>Usunąć pędzel „%1”?</translation>
     </message>
 </context>
 <context>
@@ -14169,10 +14519,6 @@ RGB: %2, %3, %4</translation>
     <message>
         <source>Working brush</source>
         <translation>Pędzel roboczy</translation>
-    </message>
-    <message>
-        <source>Save Brush Preset</source>
-        <translation>Zapisz ustawienie wstępne pędzla</translation>
     </message>
     <message>
         <source>Name:</source>
@@ -19898,6 +20244,22 @@ Y: %2
         <source>Reset &amp;Panel Layout</source>
         <translation>Przywróć układ &amp;paneli</translation>
     </message>
+    <message>
+        <source>%1 Copy</source>
+        <translation>%1 kopia</translation>
+    </message>
+    <message>
+        <source>Saved brush preset: %1</source>
+        <translation>Zapisano ustawiony pędzel: %1</translation>
+    </message>
+    <message>
+        <source>Brushes</source>
+        <translation>Pędzle</translation>
+    </message>
+    <message>
+        <source>Brush Settings</source>
+        <translation>Ustawienia pędzla</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>
@@ -20047,6 +20409,53 @@ Y: %2
     <message>
         <source>Alt</source>
         <translation>Alt</translation>
+    </message>
+</context>
+<context>
+    <name>patchy::ui::NewBrushPresetDialog</name>
+    <message>
+        <source>New Brush Preset</source>
+        <translation>Nowy ustawiony pędzel</translation>
+    </message>
+    <message>
+        <source>Name:</source>
+        <translation>Nazwa:</translation>
+    </message>
+    <message>
+        <source>No folder</source>
+        <translation>Bez folderu</translation>
+    </message>
+    <message>
+        <source>Pick a folder or type a new folder name</source>
+        <translation>Wybierz folder lub wpisz nazwę nowego folderu</translation>
+    </message>
+    <message>
+        <source>Folder:</source>
+        <translation>Folder:</translation>
+    </message>
+    <message>
+        <source>Capture brush size in preset</source>
+        <translation>Zapisz rozmiar pędzla w ustawieniu</translation>
+    </message>
+    <message>
+        <source>Off: picking the preset keeps whatever size you are painting with</source>
+        <translation>Wyłączone: wybranie ustawienia zachowuje rozmiar, którym właśnie malujesz</translation>
+    </message>
+    <message>
+        <source>Include tool settings</source>
+        <translation>Uwzględnij ustawienia narzędzia</translation>
+    </message>
+    <message>
+        <source>Opacity, Flow, Smoothing, pen pressure mapping and Mixer Brush values</source>
+        <translation>Krycie, przepływ, wygładzanie, mapowanie nacisku pióra i wartości pędzla mieszającego</translation>
+    </message>
+    <message>
+        <source>Include color</source>
+        <translation>Uwzględnij kolor</translation>
+    </message>
+    <message>
+        <source>Picking the preset also sets the foreground and background colors</source>
+        <translation>Wybranie ustawienia ustawia też kolor narzędzia i tła</translation>
     </message>
 </context>
 <context>

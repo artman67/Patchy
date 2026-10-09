@@ -8387,6 +8387,8 @@ void MainWindow::configure_canvas(CanvasWidget* canvas) {
     if (canvas != canvas_) {
       return;
     }
+    // Alt-drag resizes and number-key opacity/flow change the canvas first.
+    fold_canvas_brush_values();
     sync_brush_controls_from_canvas();
     refresh_gradient_controls_from_canvas();
     save_tool_settings();

@@ -37,7 +37,11 @@
 #include "ui/app_settings.hpp"
 #include "render/compositor.hpp"
 #include "ui/blend_mode_ui.hpp"
+#include "ui/brush_automation.hpp"
 #include "ui/brush_dynamics_popup.hpp"
+#include "ui/brush_settings_panel.hpp"
+#include "ui/brushes_panel.hpp"
+#include "ui/current_brush.hpp"
 #include "ui/brush_presets.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
@@ -268,13 +272,18 @@ constexpr int kPropertiesDockMaximumHeight = 230;
 constexpr int kPaletteDockPreferredHeight = 320;
 constexpr int kColorDockPreferredHeight = 260;
 constexpr int kColorDockSqueezedHeight = 12;
+constexpr int kBrushesDockPreferredHeight = 320;
+// A panel that starts closed lists its built-in tab partners here (restore_panel_layout).
+constexpr auto kBuiltInTabPartnersProperty = "patchy.builtInTabPartners";
+constexpr int kBrushSettingsDockPreferredHeight = 520;
 
 // The docks that share one width as the right panel stack. Every dock in the
 // column must be listed: one left out keeps its own minimum width and renders
 // as a shorter strip whenever the pinned or measured width exceeds it.
-const std::array<QString, 8>& right_dock_stack_names() {
-  static const std::array<QString, 8> names{
-      QStringLiteral("colorDock"),      QStringLiteral("layersDock"),
+const std::array<QString, 10>& right_dock_stack_names() {
+  static const std::array<QString, 10> names{
+      QStringLiteral("colorDock"),      QStringLiteral("brushesDock"),
+      QStringLiteral("brushSettingsDock"), QStringLiteral("layersDock"),
       QStringLiteral("channelsDock"),   QStringLiteral("pathsDock"),
       QStringLiteral("historyDock"),    QStringLiteral("propertiesDock"),
       QStringLiteral("infoDock"),       QStringLiteral("paletteDock")};
@@ -1046,6 +1055,8 @@ void MainWindow::create_docks() {
   setDockOptions(dockOptions() | QMainWindow::GroupedDragging);
   // First, so it heads the column like Photoshop's Color panel.
   create_color_dock();
+  // Next, so the Brushes / Brush Settings group sits directly above Layers.
+  create_brush_docks();
   auto* layers_dock = new QDockWidget(tr("Layers"), this);
   layers_dock->setObjectName(QStringLiteral("layersDock"));
   bind_widget_text(layers_dock, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Layers"));
@@ -1893,6 +1904,11 @@ void MainWindow::create_docks() {
 
   create_palette_dock();
   add_panel_toggles_to_window_menu();
+  // With the brush tab group in the column, Qt lays the still unstyled window out while the
+  // Layers group is tabified and leaves that pass's minimum height (taller than the styled
+  // one) on the window, where it clamped the restored window geometry
+  // (ui_main_window_persists_window_geometry). Drop it; the next layout pass sets the real one.
+  setMinimumSize(0, 0);
   update_right_dock_minimum_width();
   // Re-measure once the first event-loop pass has shown and styled the docks:
   // only then can the real dock chrome and title heights be read.
@@ -2085,8 +2101,12 @@ void MainWindow::add_panel_toggles_to_window_menu() {
     QKeySequence default_shortcut;
   };
   // Column order. F6/F7/F8 are Photoshop's Color/Layers/Info toggles.
-  const std::array<PanelToggle, 8> toggles{{
+  // The brush panels have no default keys: F5 stays Force Refresh.
+  const std::array<PanelToggle, 10> toggles{{
       {"colorDock", "color", "windowColorPanelAction", "window.color_panel", QKeySequence(Qt::Key_F6)},
+      {"brushesDock", "brushes", "windowBrushesPanelAction", "window.brushes_panel", QKeySequence()},
+      {"brushSettingsDock", "brushSettings", "windowBrushSettingsPanelAction", "window.brush_settings_panel",
+       QKeySequence()},
       {"layersDock", "layers", "windowLayersPanelAction", "window.layers_panel", QKeySequence(Qt::Key_F7)},
       {"channelsDock", "channels", "windowChannelsPanelAction", "window.channels_panel", QKeySequence()},
       {"pathsDock", "paths", "windowPathsPanelAction", "window.paths_panel", QKeySequence()},
@@ -2122,6 +2142,72 @@ void MainWindow::add_panel_toggles_to_window_menu() {
   }
 }
 
+void MainWindow::create_brush_docks() {
+  // Both start closed in their built-in spot (one tab group above Layers): even collapsed, the
+  // group's title strip and tab bar would push the all-panels-expanded column past a 1080p
+  // work area. Window > Brushes / Brush Settings open them expanded (docs/brush-panels.md).
+  brushes_dock_ = new QDockWidget(tr("Brushes"), this);
+  brushes_dock_->setObjectName(QStringLiteral("brushesDock"));
+  bind_widget_text(brushes_dock_, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brushes"));
+  brushes_panel_ = new BrushesPanel(current_brush(), brush_tip_library(), brush_automation_library(), brushes_dock_);
+  brushes_panel_->setContentsMargins(kRightDockResizeHandleWidth, 0, 0, 0);
+  brushes_dock_->setWidget(brushes_panel_);
+  install_collapsible_dock_title(brushes_dock_, brushes_panel_, QStringLiteral("brushes"), 0, QWIDGETSIZE_MAX,
+                                 false, kBrushesDockPreferredHeight, [this](bool expanded) {
+                                   handle_right_dock_panel_toggled(brushes_dock_, expanded, 0);
+                                 });
+  install_right_dock_width_handle(brushes_dock_);
+  addDockWidget(Qt::RightDockWidgetArea, brushes_dock_);
+  update_right_dock_resize_handle_geometry(brushes_dock_);
+
+  brush_settings_dock_ = new QDockWidget(tr("Brush Settings"), this);
+  brush_settings_dock_->setObjectName(QStringLiteral("brushSettingsDock"));
+  bind_widget_text(brush_settings_dock_, QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Brush Settings"));
+  brush_settings_panel_ = new BrushSettingsPanel(current_brush(), brush_tip_library(), brush_settings_dock_);
+  brush_settings_panel_->setContentsMargins(kRightDockResizeHandleWidth, 0, 0, 0);
+  // Squeezed below its natural height (a crowded column) the panel scrolls instead of pinning
+  // the window taller, like the Palette and Color panels.
+  auto* settings_scroll = new QScrollArea(brush_settings_dock_);
+  settings_scroll->setObjectName(QStringLiteral("brushSettingsScrollArea"));
+  settings_scroll->setFrameShape(QFrame::NoFrame);
+  settings_scroll->setWidgetResizable(true);
+  settings_scroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+  settings_scroll->setMinimumHeight(12);
+  settings_scroll->setWidget(brush_settings_panel_);
+  brush_settings_dock_->setWidget(settings_scroll);
+  install_collapsible_dock_title(brush_settings_dock_, settings_scroll, QStringLiteral("brushSettings"), 0,
+                                 QWIDGETSIZE_MAX, false, kBrushSettingsDockPreferredHeight, [this](bool expanded) {
+                                   handle_right_dock_panel_toggled(brush_settings_dock_, expanded, 0);
+                                 });
+  install_right_dock_width_handle(brush_settings_dock_);
+  addDockWidget(Qt::RightDockWidgetArea, brush_settings_dock_);
+  tabifyDockWidget(brushes_dock_, brush_settings_dock_);
+  brushes_dock_->setProperty(kBuiltInTabPartnersProperty, QStringList{brush_settings_dock_->objectName()});
+  brush_settings_dock_->setProperty(kBuiltInTabPartnersProperty, QStringList{brushes_dock_->objectName()});
+  brushes_dock_->raise();
+  update_right_dock_resize_handle_geometry(brush_settings_dock_);
+  brushes_dock_->hide();
+  brush_settings_dock_->hide();
+  register_document_widget(brushes_panel_);
+  register_document_widget(brush_settings_panel_);
+
+  wire_brush_panels();
+}
+
+void MainWindow::show_brush_settings_panel() {
+  if (brush_settings_dock_ == nullptr) {
+    return;
+  }
+  brush_settings_dock_->show();
+  if (auto* collapse = dock_collapse_toggle(brush_settings_dock_); collapse != nullptr) {
+    collapse->setChecked(true);
+  }
+  brush_settings_dock_->raise();
+  if (brush_settings_dock_->isFloating() || brush_settings_dock_->window() != this) {
+    brush_settings_dock_->window()->raise();
+  }
+}
+
 namespace {
 
 // Panel arrangement settings (docs/dock-panels.md); persisted, never rename.
@@ -2139,15 +2225,41 @@ void MainWindow::restore_panel_layout() {
   // Layout returns to it, and it places panels the saved layout predates.
   default_panel_layout_ = saveState(kPanelLayoutVersion);
   default_panel_placements_.clear();
-  for (auto* dock : findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly)) {
+  pending_panel_sections_.clear();
+  // Column order, so panels a saved layout lacks are placed (and tabbed) top to bottom.
+  auto docks = findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly);
+  const auto column_index = [](const QDockWidget* dock) {
+    const auto& column = right_dock_stack_names();
+    return std::distance(column.begin(), std::find(column.begin(), column.end(), dock->objectName()));
+  };
+  std::stable_sort(docks.begin(), docks.end(),
+                   [&](const QDockWidget* a, const QDockWidget* b) { return column_index(a) < column_index(b); });
+  for (auto* dock : docks) {
     DefaultPanelPlacement placement;
     placement.name = dock->objectName();
     placement.area = dockWidgetArea(dock);
     for (const auto* partner : tabifiedDockWidgets(dock)) {
       placement.tab_partners.append(partner->objectName());
     }
+    // Qt reports no tab partners for a panel that starts closed (it has no tab bar yet); such
+    // panels name them in kBuiltInTabPartnersProperty.
+    for (const auto& partner : dock->property(kBuiltInTabPartnersProperty).toStringList()) {
+      if (!placement.tab_partners.contains(partner)) {
+        placement.tab_partners.append(partner);
+      }
+    }
     const auto* toggle = dock_collapse_toggle(dock);
     placement.expanded = toggle == nullptr || toggle->isChecked();
+    // The right column's built-in order, top to bottom: the panels whose sections follow.
+    const auto& column = right_dock_stack_names();
+    const auto position = std::find(column.begin(), column.end(), placement.name);
+    if (placement.area == Qt::RightDockWidgetArea && position != column.end()) {
+      for (auto later = std::next(position); later != column.end(); ++later) {
+        if (!placement.tab_partners.contains(*later)) {
+          placement.followers.append(*later);
+        }
+      }
+    }
     default_panel_placements_.push_back(std::move(placement));
   }
 
@@ -2177,6 +2289,7 @@ void MainWindow::restore_panel_layout() {
   // new section at the end of their default area.
   if (settings.contains(QLatin1StringView(kPanelLayoutDocksKey))) {
     auto placed = settings.value(QLatin1StringView(kPanelLayoutDocksKey)).toStringList();
+    QStringList newly_placed;
     for (const auto& placement : default_panel_placements_) {
       auto* dock = findChild<QDockWidget*>(placement.name);
       if (dock == nullptr || placed.contains(placement.name)) {
@@ -2185,8 +2298,10 @@ void MainWindow::restore_panel_layout() {
       QDockWidget* partner = nullptr;
       for (const auto& name : placement.tab_partners) {
         auto* candidate = findChild<QDockWidget*>(name);
+        // A partner placed here a moment ago counts even while closed (the brush panels start
+        // closed and must stay one group).
         if (candidate != nullptr && placed.contains(name) && candidate->window() == this &&
-            !candidate->isHidden()) {
+            (!candidate->isHidden() || newly_placed.contains(name))) {
           partner = candidate;
           break;
         }
@@ -2195,16 +2310,119 @@ void MainWindow::restore_panel_layout() {
       const bool hidden = dock->isHidden();
       removeDockWidget(dock);
       if (partner != nullptr) {
+        // Tabifying onto a closed partner leaves the two as separate sections once shown;
+        // join them while both are shown, then close the partner again.
+        const bool partner_hidden = partner->isHidden();
+        partner->show();
+        dock->show();
         tabifyDockWidget(partner, dock);
+        partner->setVisible(!partner_hidden);
       } else {
+        // A new section at the bottom of its area for now; the first show moves it above the
+        // section of its built-in successor.
         addDockWidget(placement.area, dock);
+        if (!placement.followers.isEmpty()) {
+          pending_panel_sections_.emplace_back(placement.name, placement.followers);
+        }
       }
       dock->setVisible(!hidden);
       placed.append(placement.name);
+      newly_placed.append(placement.name);
     }
   }
   // Qt reports no top-level change for panels it puts in a floating
   // tab-group window.
+  sync_panel_collapse_toggles();
+}
+
+void MainWindow::place_new_panel_sections() {
+  const auto pending = std::exchange(pending_panel_sections_, {});
+  for (const auto& [name, followers] : pending) {
+    auto* dock = findChild<QDockWidget*>(name);
+    if (dock == nullptr || dock->window() != this || dock->isFloating()) {
+      continue;
+    }
+    const auto area = dockWidgetArea(dock);
+    const auto dock_group = tabifiedDockWidgets(dock);
+    // The area's docked sections (tab groups count once), top to bottom by their visible tab.
+    struct Section {
+      int top{0};
+      QList<QDockWidget*> docks;
+      QDockWidget* current{nullptr};
+    };
+    std::vector<Section> sections;
+    for (auto* candidate : findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly)) {
+      if (candidate == dock || dock_group.contains(candidate) || candidate->isFloating() ||
+          dockWidgetArea(candidate) != area || candidate->isHidden()) {
+        continue;
+      }
+      const auto partners = tabifiedDockWidgets(candidate);
+      const auto known = std::any_of(sections.begin(), sections.end(), [&](const Section& section) {
+        return section.docks.contains(candidate);
+      });
+      if (known) {
+        continue;
+      }
+      Section section;
+      section.docks.append(candidate);
+      for (auto* partner : partners) {
+        if (!partner->isFloating() && partner->window() == this) {
+          section.docks.append(partner);
+        }
+      }
+      // Qt parks the hidden tabs of a group off screen; the shown one gives the position.
+      section.top = std::numeric_limits<int>::max();
+      for (auto* member : section.docks) {
+        const auto top_left = member->mapTo(this, QPoint(0, 0));
+        if (!member->isHidden() && top_left.x() >= 0 && top_left.y() >= 0 && top_left.y() < section.top) {
+          section.top = top_left.y();
+          section.current = member;
+        }
+      }
+      if (section.current != nullptr) {
+        sections.push_back(std::move(section));
+      }
+    }
+    std::sort(sections.begin(), sections.end(),
+              [](const Section& a, const Section& b) { return a.top < b.top; });
+    auto first_moved = sections.end();
+    for (const auto& follower : followers) {
+      first_moved = std::find_if(sections.begin(), sections.end(), [&](const Section& section) {
+        return std::any_of(section.docks.begin(), section.docks.end(),
+                           [&](const QDockWidget* member) { return member->objectName() == follower; });
+      });
+      if (first_moved != sections.end()) {
+        break;
+      }
+    }
+    if (first_moved == sections.end()) {
+      continue;  // nothing of its built-in successors is docked here: it stays at the bottom
+    }
+    // QMainWindow can only append a section, so re-append everything from the successor on
+    // below the new panel, keeping each section's tabs, front tab and height.
+    QList<QDockWidget*> resized;
+    QList<int> heights;
+    for (auto it = first_moved; it != sections.end(); ++it) {
+      const auto height = it->current->height();
+      std::vector<std::pair<QDockWidget*, bool>> members;
+      for (auto* member : it->docks) {
+        members.emplace_back(member, member->isHidden());
+        removeDockWidget(member);
+      }
+      auto* first = members.front().first;
+      addDockWidget(area, first);
+      for (std::size_t index = 1; index < members.size(); ++index) {
+        tabifyDockWidget(first, members[index].first);
+      }
+      for (const auto& [member, hidden] : members) {
+        member->setVisible(!hidden);
+      }
+      it->current->raise();
+      resized.append(it->current);
+      heights.append(height);
+    }
+    resizeDocks(resized, heights, Qt::Vertical);
+  }
   sync_panel_collapse_toggles();
 }
 

@@ -297,6 +297,7 @@ int main(int argc, char* argv[]) {
            layer_mask_tests,
            pen_tablet_input_tests,
            brush_engine_stroke_tests,
+           brush_tip_engine_tests,
            text_editor_font_picker_tests,
            psd_text_import_tests,
            text_transform_commit_tests,

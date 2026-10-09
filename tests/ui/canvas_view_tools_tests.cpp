@@ -227,8 +227,8 @@ void ui_startup_defaults_to_round_brush() {
   SettingsValueRestorer saved_gradient_stops(QStringLiteral("tools/gradientStops"));
   {
     auto settings = patchy::ui::app_settings();
-    // Stale brush state from an earlier session. A launch must reset all of it
-    // (only the eraser size may survive a restart).
+    // Dead legacy brush keys from an earlier version restore nothing (the working brush
+    // lives under tools/workingBrush; only the eraser size survives from these).
     settings.setValue(QStringLiteral("tools/brushPreset"), QStringLiteral("airbrush"));
     settings.setValue(QStringLiteral("tools/brushSize"), 56);
     settings.setValue(QStringLiteral("tools/brushOpacity"), 12);
@@ -4189,9 +4189,9 @@ void ui_panel_layout_restores_floating_tab_group_with_chrome() {
 
 void ui_panel_layout_places_panels_the_saved_layout_predates() {
   // A layout saved before a panel existed: the panel joins its built-in tab
-  // partner if that partner is docked, otherwise it becomes a new section at
-  // the bottom of the column, instead of landing wherever Qt's index fallback
-  // puts it.
+  // partner if that partner is docked, otherwise it becomes a new section
+  // directly above the section holding its built-in successor (History sits
+  // above Properties), instead of landing wherever Qt's index fallback puts it.
   {
     patchy::ui::MainWindow window;
     show_window_empty(window);
@@ -4227,7 +4227,12 @@ void ui_panel_layout_places_panels_the_saved_layout_predates() {
   CHECK(history->isVisible() && !history->isFloating());
   CHECK(restored.tabifiedDockWidgets(history).isEmpty());
   CHECK(restored.dockWidgetArea(history) == Qt::RightDockWidgetArea);
-  CHECK(panel_layout_signature(restored).constLast().endsWith(QStringLiteral(",historyDock")));
+  const auto order = panel_layout_signature(restored).constLast().mid(6).split(QLatin1Char(','));
+  const auto history_index = order.indexOf(QStringLiteral("historyDock"));
+  CHECK(history_index > order.indexOf(QStringLiteral("layersDock")));
+  // Properties and Info share a tab group; whichever tab shows marks the group.
+  CHECK(std::max(order.indexOf(QStringLiteral("propertiesDock")), order.indexOf(QStringLiteral("infoDock"))) ==
+        history_index + 1);
 }
 
 void ui_tab_group_collapses_and_expands_as_one() {

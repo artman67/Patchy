@@ -1,6 +1,6 @@
 // MainWindow's tool and options-bar state, split out of main_window.cpp: the
-// brush-tip/pattern/gradient/style preset-library accessors and brush-tip
-// import/define flows, the selected-layer id queries and per-layer
+// brush-tip/pattern/gradient/style preset-library accessors, the selected-layer
+// id queries and per-layer
 // opacity/fill/blend/visibility/lock/clipping handlers, the color buttons and
 // gradient-stop controls, tool activation and tool-settings load/save, the
 // transform-session controls, register_option_action/refresh_options_bar, the
@@ -38,11 +38,15 @@
 #include "ui/app_settings.hpp"
 #include "render/compositor.hpp"
 #include "ui/blend_mode_ui.hpp"
+#include "ui/brush_automation.hpp"
 #include "ui/brush_dynamics_popup.hpp"
 #include "ui/brush_presets.hpp"
+#include "ui/brush_settings_panel.hpp"
+#include "ui/brush_settings_sections.hpp"
 #include "ui/brush_tip_library.hpp"
 #include "ui/brush_tip_manager_dialog.hpp"
 #include "ui/brush_tip_picker.hpp"
+#include "ui/current_brush.hpp"
 #include "ui/default_brush_tips.hpp"
 #include "ui/compatibility_report.hpp"
 #include "ui/image_document_io.hpp"
@@ -705,6 +709,7 @@ int stored_default_asset_version(const QSettings& settings, const QString& key) 
 BrushTipLibrary& MainWindow::brush_tip_library() {
   if (brush_tip_library_ == nullptr) {
     brush_tip_library_ = new BrushTipLibrary({}, this);
+    brush_tip_library_->set_pattern_library(&pattern_library());  // ABR-embedded textures
     // Seed the built-in bitmap tips once. The version gate (not an emptiness check) means a
     // user who deletes some or all of them is respected — they never come back on their own;
     // the manager's "Restore Defaults" button brings them back on demand. On upgrade only tips
@@ -732,6 +737,7 @@ PatternLibrary& MainWindow::pattern_library() {
     connect(pattern_library_, &PatternLibrary::changed, this, [this] {
       refresh_pattern_stamp_pattern_combo();
       apply_pattern_stamp_settings_to_canvas(canvas_);
+      push_current_brush_to_canvas(canvas_, CurrentBrush::Dynamics);  // a Brush Texture pattern
       schedule_save_tool_settings();
     });
     // Seed code-generated defaults once. A user deletion stays deleted across
@@ -782,179 +788,6 @@ StyleLibrary& MainWindow::style_library() {
     }
   }
   return *style_library_;
-}
-
-void MainWindow::apply_brush_tip_to_canvas(CanvasWidget* canvas) {
-  if (canvas == nullptr) {
-    return;
-  }
-  if (active_preset_tip_ || active_brush_tip_id_.isEmpty() || is_builtin_brush_tip_id(active_brush_tip_id_)) {
-    canvas->set_brush_tip(active_preset_tip_, QString());
-    canvas->set_brush_shape(!active_preset_tip_ && active_brush_tip_id_ == builtin_square_brush_tip_id()
-                                ? patchy::BrushShape::Square
-                                : patchy::BrushShape::Round);
-    // The Round and Square brushes carry session-only dynamics (reset every launch); while
-    // active they stamp through a synthesized disc or square tip inside CanvasWidget.
-    canvas->set_brush_dynamics(round_brush_dynamics_);
-    canvas->set_brush_base_shape(round_brush_base_angle_degrees_,
-                                 static_cast<int>(std::lround(round_brush_base_roundness_)));
-    return;
-  }
-  auto tip = brush_tip_library().tip(active_brush_tip_id_);
-  canvas->set_brush_shape(patchy::BrushShape::Round);
-  if (tip == nullptr) {
-    canvas->set_brush_tip(nullptr, QString());
-    canvas->set_brush_dynamics({});
-    canvas->set_brush_base_shape(0.0, 100);
-    return;
-  }
-  canvas->set_brush_tip(std::move(tip), active_brush_tip_id_);
-  // Dynamics + static tip shape ride the tip: the library entry is the source of truth, so
-  // popup edits propagate through the library's changed() -> re-apply path.
-  if (const auto* entry = brush_tip_library().find_entry(active_brush_tip_id_); entry != nullptr) {
-    canvas->set_brush_dynamics(entry->dynamics);
-    canvas->set_brush_base_shape(entry->base_angle_degrees,
-                                 static_cast<int>(std::lround(entry->base_roundness)));
-  } else {
-    canvas->set_brush_dynamics({});
-    canvas->set_brush_base_shape(0.0, 100);
-  }
-}
-
-void MainWindow::set_active_brush_tip(const QString& tip_id, bool announce,
-                                      bool apply_tool_settings) {
-  active_preset_tip_.reset();
-  active_automation_preset_id_.clear();
-  active_automation_brush_.reset();
-  if (canvas_) apply_pen_input_settings(canvas_);
-  auto effective = tip_id.isEmpty() ? builtin_round_brush_tip_id() : tip_id;
-  const auto* entry = brush_tip_library().find_entry(effective);
-  if (!is_builtin_brush_tip_id(effective) && entry == nullptr) {
-    effective = builtin_round_brush_tip_id();
-    entry = nullptr;
-  }
-  active_brush_tip_id_ = effective;
-  apply_brush_tip_to_canvas(canvas_);
-  if (apply_tool_settings && entry != nullptr &&
-      (entry->tool_flow_percent.has_value() || entry->tool_airbrush.has_value())) {
-    if (entry->tool_flow_percent.has_value()) {
-      stored_paint_brush_settings_.flow = std::clamp(*entry->tool_flow_percent, 1, 100);
-    }
-    if (entry->tool_airbrush.has_value()) {
-      stored_paint_brush_settings_.airbrush = *entry->tool_airbrush;
-    }
-    if (!eraser_brush_settings_active_ && canvas_ != nullptr) {
-      canvas_->set_brush_flow(stored_paint_brush_settings_.flow);
-      canvas_->set_brush_build_up(stored_paint_brush_settings_.airbrush);
-      sync_brush_controls_from_canvas();
-      schedule_save_tool_settings();
-      refresh_document_info();
-    }
-  }
-  if (brush_tip_picker_ != nullptr) {
-    brush_tip_picker_->set_current_tip_id(effective);
-  }
-  if (brush_dynamics_button_ != nullptr) {
-    if (entry != nullptr) {
-      brush_dynamics_button_->set_active_entry(entry);
-    } else {
-      brush_dynamics_button_->set_round_session(effective, round_brush_dynamics_,
-                                                round_brush_base_angle_degrees_,
-                                                round_brush_base_roundness_);
-    }
-  }
-  schedule_save_tool_settings();
-  if (announce) {
-    statusBar()->showMessage(entry != nullptr                                  ? tr("Brush tip: %1").arg(entry->name)
-                             : effective == builtin_square_brush_tip_id() ? tr("Brush tip: Square")
-                                                                          : tr("Brush tip: Round"));
-  }
-}
-
-void MainWindow::import_brush_tips_from_abr() {
-  const auto path = get_open_file_name(this, tr("Import Photoshop Brushes"), QString(),
-                                       tr("Photoshop Brushes (*.abr)"), nullptr,
-                                       QStringLiteral("brushTipImportFileDialog"));
-  if (path.isEmpty()) {
-    return;
-  }
-  const auto before = brush_tip_library().entries().size();
-  QString error;
-  QStringList warnings;
-  const auto first_id = brush_tip_library().import_abr(path, error, warnings);
-  if (first_id.isEmpty()) {
-    QMessageBox::warning(this, tr("Import Brushes"), error);
-    return;
-  }
-  const auto imported = static_cast<int>(brush_tip_library().entries().size() - before);
-  set_active_brush_tip(first_id, false);
-  QMessageBox message(QMessageBox::Information, tr("Import Brushes"),
-                      abr_import_summary(imported, warnings), QMessageBox::Ok, this);
-  if (!warnings.isEmpty()) {
-    message.setDetailedText(warnings.join(QStringLiteral("\n")));
-  }
-  message.exec();
-}
-
-void MainWindow::open_brush_tip_manager() {
-  std::function<QImage()> capture;
-  if (canvas_ != nullptr) {
-    capture = [this] { return capture_brush_tip_define_source(); };
-  }
-  request_brush_tip_manager(this, brush_tip_library(), active_brush_tip_id_, capture,
-                            [this](const QString& id) { set_active_brush_tip(id, true); });
-}
-
-QImage MainWindow::capture_brush_tip_define_source() const {
-  if (canvas_ == nullptr) {
-    return {};
-  }
-  const auto& doc = document();
-  const auto canvas_rect = QRect(0, 0, doc.width(), doc.height());
-  auto capture_rect = canvas_rect;
-  const auto selected = canvas_->selected_document_rect();
-  if (selected.has_value()) {
-    capture_rect = selected->intersected(canvas_rect);
-  }
-  if (capture_rect.isEmpty() || capture_rect.width() > 4096 || capture_rect.height() > 4096) {
-    return {};
-  }
-
-  const auto composited =
-      qimage_from_document_rect(doc, capture_rect, true).convertToFormat(QImage::Format_ARGB32);
-  if (composited.isNull()) {
-    return {};
-  }
-  // Photoshop semantics: dark pixels paint, light pixels stay clear, transparency masks out.
-  // A soft or non-rectangular selection additionally shapes the tip.
-  return brush_coverage_from_image(composited, selected.has_value()
-      ? std::function<int(int,int)>([&](int x,int y) { return canvas_->selection_alpha_at(capture_rect.topLeft()+QPoint(x,y)); })
-      : std::function<int(int,int)>());
-}
-
-void MainWindow::define_brush_tip_from_selection() {
-  if (canvas_ == nullptr) {
-    return;
-  }
-  const auto mask = capture_brush_tip_define_source();
-  if (mask.isNull()) {
-    show_status_error(tr("The selection is empty or too large to use as a brush tip (max 4096px)"));
-    return;
-  }
-  bool accepted = false;
-  const auto name = QInputDialog::getText(this, tr("Define Brush Tip"), tr("Name:"), QLineEdit::Normal,
-                                          tr("Brush %1").arg(brush_tip_library().entries().size() + 1),
-                                          &accepted);
-  if (!accepted || name.trimmed().isEmpty()) {
-    return;
-  }
-  const auto id = brush_tip_library().add_tip(name.trimmed(), mask, 0.25);
-  if (id.isEmpty()) {
-    show_status_error(tr("The selection is empty or too large to use as a brush tip (max 4096px)"));
-    return;
-  }
-  set_active_brush_tip(id, false);
-  statusBar()->showMessage(tr("Defined brush tip: %1").arg(name.trimmed()));
 }
 
 std::vector<LayerId> MainWindow::selected_layer_ids() const {
@@ -1779,22 +1612,23 @@ void MainWindow::load_tool_settings() {
     return;
   }
   auto settings = app_settings();
-  // Standard Brush tip, opacity, flow, Airbrush, and softness are deliberately not
-  // restored: every launch starts from the Round startup preset (round tip,
-  // 100% opacity, 100% flow, Airbrush off, 0% soft) so a leftover bitmap tip or
-  // a barely-visible paint rate cannot leave the brush in a confusing state.
-  // The eraser resets the same way; only its size is kept across restarts.
-  if (const auto* preset = find_brush_preset(default_startup_brush_preset_id()); preset != nullptr) {
-    stored_paint_brush_settings_ =
+  // The working brush (with its base) is remembered under tools/workingBrush. A remembered
+  // tip that no longer exists, or no remembered brush, starts from the Round startup preset.
+  // The eraser starts from that preset too; only its size is kept across restarts.
+  stored_eraser_brush_settings_ = BrushToolSettings{};
+  preset_pen_override_.reset();
+  apply_pen_input_settings(canvas_);
+  const auto* preset = find_brush_preset(default_startup_brush_preset_id());
+  if (preset != nullptr) {
+    stored_eraser_brush_settings_ =
         BrushToolSettings{preset->size, preset->opacity, preset->flow, preset->softness,
                           preset->build_up};
-  } else {
-    stored_paint_brush_settings_ = BrushToolSettings{};
   }
-  stored_eraser_brush_settings_ = stored_paint_brush_settings_;
+  if (!restore_working_brush(settings) && preset != nullptr) {
+    current_brush().pick(working_brush_from_preset(*preset), BrushBase::Kind::Preset, preset->id);
+  }
   stored_eraser_brush_settings_.size =
-      settings.value(QStringLiteral("tools/eraserSize"), stored_paint_brush_settings_.size).toInt();
-  set_active_brush_tip(builtin_round_brush_tip_id(), false);
+      settings.value(QStringLiteral("tools/eraserSize"), stored_eraser_brush_settings_.size).toInt();
   apply_active_brush_settings_to_canvas();
   current_mixer_wet_ =
       std::clamp(settings.value(QStringLiteral("tools/mixerWet"), current_mixer_wet_).toInt(), 0, 100);
@@ -2198,9 +2032,9 @@ void MainWindow::save_tool_settings() const {
     tool_settings_save_timer_->stop();
   }
   auto settings = app_settings();
-  // Standard Brush tip/opacity/flow/Airbrush/softness (and the paint brush size) reset to
-  // the Round startup preset on every launch (see load_tool_settings()), so the
-  // eraser size is the only brush value worth persisting.
+  // The working brush and its base persist as one JSON value (see load_tool_settings()); the
+  // eraser keeps only its size.
+  save_working_brush(settings);
   const auto eraser_size =
       eraser_brush_settings_active_ ? canvas_->brush_size() : stored_eraser_brush_settings_.size;
   settings.setValue(QStringLiteral("tools/eraserSize"), eraser_size);
@@ -2343,17 +2177,12 @@ void MainWindow::save_tool_settings() const {
   }
 }
 
-MainWindow::BrushToolSettings& MainWindow::active_stored_brush_settings() {
-  return eraser_brush_settings_active_ ? stored_eraser_brush_settings_ : stored_paint_brush_settings_;
-}
-
 void MainWindow::stash_active_brush_settings() {
   if (canvas_ == nullptr) {
     return;
   }
-  if (active_automation_brush_) {
-    active_automation_brush_ = canvas_->current_script_brush();
-    active_automation_brush_->preset_id = active_automation_preset_id_;
+  if (preset_pen_override_) {
+    preset_pen_override_ = canvas_->pen_input_settings();
   }
   current_fill_opacity_ = canvas_->fill_opacity();
   current_fill_softness_ = canvas_->fill_softness();
@@ -2367,34 +2196,7 @@ void MainWindow::stash_active_brush_settings() {
   current_transform_interpolation_ = canvas_->transform_interpolation();
   current_polygon_sides_ = canvas_->polygon_sides();
   current_polygon_star_inset_ = canvas_->polygon_star_inset();
-  active_stored_brush_settings() =
-      BrushToolSettings{canvas_->brush_size(), canvas_->brush_opacity(), canvas_->brush_flow(),
-                        canvas_->brush_softness(), canvas_->brush_build_up()};
-}
-
-void MainWindow::apply_active_brush_settings_to_canvas() {
-  if (canvas_ == nullptr) {
-    return;
-  }
-  const auto values = active_stored_brush_settings();
-  canvas_->set_brush_size(values.size);
-  canvas_->set_brush_opacity(values.opacity);
-  canvas_->set_brush_flow(values.flow);
-  canvas_->set_brush_softness(values.softness);
-  canvas_->set_brush_build_up(values.airbrush);
-  // Brush tips are application-wide like the rest of the brush settings; an incoming canvas
-  // (new tab or tab switch) may hold a stale or empty tip.
-  apply_brush_tip_to_canvas(canvas_);
-  if (active_automation_brush_) {
-    auto settings = *active_automation_brush_;
-    const auto tool = canvas_->tool();
-    settings.color = canvas_->primary_color(); settings.background = canvas_->secondary_color();
-    settings.size = values.size; settings.opacity = values.opacity;
-    settings.flow = settings.mixer ? current_mixer_flow_ : values.flow;
-    settings.softness = values.softness; settings.airbrush = values.airbrush && !settings.mixer && !settings.erase;
-    settings.dynamics = round_brush_dynamics_;
-    canvas_->apply_script_brush(settings); canvas_->set_tool(tool);
-  }
+  fold_canvas_brush_values();
 }
 
 void MainWindow::apply_pattern_stamp_settings_to_canvas(CanvasWidget* canvas) {
@@ -2427,17 +2229,6 @@ void MainWindow::refresh_pattern_stamp_pattern_combo() {
     current_pattern_stamp_pattern_id_ = pattern_stamp_pattern_combo_->itemData(0).toString();
   }
   pattern_stamp_pattern_combo_->setCurrentIndex(index);
-}
-
-void MainWindow::set_eraser_brush_settings_active(bool active) {
-  if (eraser_brush_settings_active_ == active) {
-    return;
-  }
-  stash_active_brush_settings();
-  eraser_brush_settings_active_ = active;
-  apply_active_brush_settings_to_canvas();
-  sync_brush_controls_from_canvas();
-  save_tool_settings();
 }
 
 void MainWindow::apply_transform_controls_from_ui() {
@@ -3051,6 +2842,10 @@ void MainWindow::refresh_options_bar() {
   update_selection_mode_buttons(canvas_ != nullptr ? canvas_->selection_mode()
                                                    : CanvasWidget::SelectionMode::Replace);
   sync_text_alignment_buttons_from_editor();
+  if (brush_settings_panel_ != nullptr) {
+    // Grey out the Brush Settings sections the active tool's strokes ignore.
+    brush_settings_panel_->set_tool_sections(brush_sections_for_tool(current_tool_));
+  }
 }
 
 void MainWindow::update_selection_mode_buttons(CanvasWidget::SelectionMode mode) {
@@ -3123,33 +2918,34 @@ void MainWindow::sync_brush_controls_from_canvas() {
   if (canvas_ == nullptr) {
     return;
   }
-  if (auto* brush_size = findChild<QSpinBox*>(QStringLiteral("brushSizeSpin")); brush_size != nullptr) {
-    QSignalBlocker blocker(brush_size);
-    brush_size->setValue(canvas_->brush_size());
+  // Equal values and a slider under the pointer are left alone, so an edit from the control
+  // itself never fights the user's typing or drag.
+  const auto set_spin = [](QSpinBox* spin, int value) {
+    if (spin != nullptr && spin->value() != value) {
+      const QSignalBlocker blocker(spin);
+      spin->setValue(value);
+    }
+  };
+  const auto set_slider = [](QSlider* slider, int value) {
+    if (slider != nullptr && !slider->isSliderDown() && slider->value() != value) {
+      const QSignalBlocker blocker(slider);
+      slider->setValue(value);
+    }
+  };
+  set_spin(brush_controls_.size, canvas_->brush_size());
+  if (brush_controls_.size_slider != nullptr && !brush_controls_.size_slider->isSliderDown()) {
+    const QSignalBlocker blocker(brush_controls_.size_slider);
+    set_slider_to_value(*brush_controls_.size_slider, canvas_->brush_size());
   }
-  if (auto* brush_size_slider = findChild<QSlider*>(QStringLiteral("brushSizeSlider"));
-      brush_size_slider != nullptr) {
-    QSignalBlocker blocker(brush_size_slider);
-    set_slider_to_value(*brush_size_slider, canvas_->brush_size());
+  set_spin(brush_controls_.opacity, canvas_->brush_opacity());
+  set_slider(brush_controls_.opacity_slider, canvas_->brush_opacity());
+  set_spin(brush_controls_.flow, canvas_->brush_flow());
+  if (brush_controls_.airbrush != nullptr) {
+    const QSignalBlocker blocker(brush_controls_.airbrush);
+    brush_controls_.airbrush->setChecked(canvas_->brush_build_up());
   }
-  if (auto* brush_opacity = findChild<QSpinBox*>(QStringLiteral("brushOpacitySpin")); brush_opacity != nullptr) {
-    QSignalBlocker blocker(brush_opacity);
-    brush_opacity->setValue(canvas_->brush_opacity());
-  }
-  if (auto* brush_opacity_slider = findChild<QSlider*>(QStringLiteral("brushOpacitySlider"));
-      brush_opacity_slider != nullptr) {
-    QSignalBlocker blocker(brush_opacity_slider);
-    brush_opacity_slider->setValue(canvas_->brush_opacity());
-  }
-  if (auto* brush_flow = findChild<QSpinBox*>(QStringLiteral("brushFlowSpin")); brush_flow != nullptr) {
-    QSignalBlocker blocker(brush_flow);
-    brush_flow->setValue(canvas_->brush_flow());
-  }
-  if (auto* brush_airbrush = findChild<QCheckBox*>(QStringLiteral("brushAirbrushCheck"));
-      brush_airbrush != nullptr) {
-    QSignalBlocker blocker(brush_airbrush);
-    brush_airbrush->setChecked(canvas_->brush_build_up());
-  }
+  set_spin(brush_controls_.softness, canvas_->brush_softness());
+  set_slider(brush_controls_.softness_slider, canvas_->brush_softness());
   const auto sync_mixer_spin = [this](const char* object_name, int value) {
     if (auto* spin = findChild<QSpinBox*>(QString::fromLatin1(object_name)); spin != nullptr) {
       QSignalBlocker blocker(spin);
@@ -3166,15 +2962,6 @@ void MainWindow::sync_brush_controls_from_canvas() {
     mixer_mix->setEnabled(current_mixer_wet_ > 0);
   }
   sync_mixer_combination_combo();
-  if (auto* brush_softness = findChild<QSpinBox*>(QStringLiteral("brushSoftnessSpin")); brush_softness != nullptr) {
-    QSignalBlocker blocker(brush_softness);
-    brush_softness->setValue(canvas_->brush_softness());
-  }
-  if (auto* brush_softness_slider = findChild<QSlider*>(QStringLiteral("brushSoftnessSlider"));
-      brush_softness_slider != nullptr) {
-    QSignalBlocker blocker(brush_softness_slider);
-    brush_softness_slider->setValue(canvas_->brush_softness());
-  }
   if (auto* brush_smoothing = findChild<QSpinBox*>(QStringLiteral("brushSmoothingSpin"));
       brush_smoothing != nullptr) {
     QSignalBlocker blocker(brush_smoothing);
@@ -3190,6 +2977,7 @@ void MainWindow::sync_brush_controls_from_canvas() {
   sync_smoothing_action(brush_smoothing_catch_up_action_, canvas_->brush_smoothing_catch_up());
   sync_smoothing_action(brush_smoothing_catch_up_end_action_, canvas_->brush_smoothing_catch_up_end());
   sync_smoothing_action(brush_smoothing_zoom_adjust_action_, canvas_->brush_smoothing_zoom_adjust());
+  sync_brush_panels();
 }
 
 }  // namespace patchy::ui

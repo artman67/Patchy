@@ -667,6 +667,10 @@ bool MainWindow::nativeEvent(const QByteArray& event_type, void* message, qintpt
 void MainWindow::showEvent(QShowEvent* event) {
   QMainWindow::showEvent(event);
   ensure_native_resizable_frame();
+  if (!pending_panel_sections_.empty()) {
+    // After the first layout pass, when the column's sections have their places.
+    QTimer::singleShot(0, this, [this] { place_new_panel_sections(); });
+  }
   if (!native_frame_geometry_resynced_) {
     native_frame_geometry_resynced_ = true;
     // Defer to the next event-loop turn so the frameless WM_NCCALCSIZE frame change has fully

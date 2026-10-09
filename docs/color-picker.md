@@ -79,7 +79,8 @@ The Window menu lists Tool Palette and Options, then each right panel's `toggleV
 column order, above the open-document list (`add_panel_toggles_to_window_menu`). Choosing a hidden
 panel shows it, expands it and raises it in its tab group. Action names are
 `window<Name>PanelAction`; hotkey ids (permanent) are `window.color_panel` (F6),
-`window.layers_panel` (F7), `window.channels_panel`, `window.paths_panel`,
+`window.brushes_panel`, `window.brush_settings_panel` (no default keys: F5 stays Force
+Refresh), `window.layers_panel` (F7), `window.channels_panel`, `window.paths_panel`,
 `window.history_panel`, `window.properties_panel`, `window.info_panel` (F8) and
 `window.palette_panel`. F6, F7 and F8 match Photoshop.
 
