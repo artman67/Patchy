@@ -762,6 +762,11 @@ public:
     }
   }
 
+  [[nodiscard]] bool contains(const StyleMaskCacheKey& key) {
+    const std::lock_guard lock(mutex_);
+    return index_.contains(key);
+  }
+
   void abandon(const StyleMaskCacheKey& key) {
     {
       const std::lock_guard lock(mutex_);
@@ -865,6 +870,11 @@ public:
       return nullptr;
     }
     return cached->entry;
+  }
+
+  [[nodiscard]] bool contains(const Layer& layer, render_detail::StyleMaskKind kind, std::uint32_t effect_index,
+                              Rect bounds, std::optional<Rect> mask_bounds) override {
+    return style_mask_lru_cache().contains(cache_key(layer, kind, effect_index, bounds, mask_bounds));
   }
 
   void store(const Layer& layer, render_detail::StyleMaskKind kind, std::uint32_t effect_index, Rect domain,

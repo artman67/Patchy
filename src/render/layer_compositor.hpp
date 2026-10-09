@@ -269,6 +269,11 @@ public:
                                                                     std::optional<Rect> mask_bounds) = 0;
   virtual void store(const Layer& layer, StyleMaskKind kind, std::uint32_t effect_index, Rect domain, Rect bounds,
                      std::optional<Rect> mask_bounds, std::shared_ptr<const StyleMaskEntry> entry) = 0;
+  // Non-latching lookup: whether fetch() would hit right now.
+  [[nodiscard]] virtual bool contains(const Layer& /*layer*/, StyleMaskKind /*kind*/, std::uint32_t /*effect_index*/,
+                                      Rect /*bounds*/, std::optional<Rect> /*mask_bounds*/) {
+    return false;
+  }
 };
 
 // Shared miss/hit flow: returns the mask (cached or computed) plus the domain
@@ -2417,7 +2422,8 @@ void composite_pass_through_group(Target& destination, const Layer& layer, Rect 
 inline PixelBuffer group_silhouette_for_render(const Layer& layer, Rect bounds,
                                               const std::vector<LayerBoundsOverride>* overrides,
                                               bool throw_on_unsupported_pixel_format,
-                                              StyleMaskProvider* masks, const PatternStore* patterns);
+                                              StyleMaskProvider* masks, const PatternStore* patterns,
+                                              bool cacheable = true);
 
 template <typename Target>
 void composite_adjustment_layer(Target& destination, const Layer& layer, Rect clip,
@@ -3907,14 +3913,15 @@ void composite_layers(Target& destination, const std::vector<Layer>& layers, Rec
 inline PixelBuffer group_silhouette_for_render(const Layer& layer, Rect bounds,
                                                 const std::vector<LayerBoundsOverride>* overrides,
                                                 bool throw_on_unsupported_pixel_format,
-                                                StyleMaskProvider* masks, const PatternStore* patterns) {
+                                                StyleMaskProvider* masks, const PatternStore* patterns,
+                                                bool cacheable) {
   // Full child coverage anchors every effect, independent of the caller's strip
   // or dirty rectangle. Cache it alongside effect masks to avoid re-flattening
   // all child pixels per repaint. Transient geometry never enters that cache,
   // but only a group whose subtree a preview override touches is transient: a
   // styled group beside or above a dragged layer keeps its cached silhouette
   // (re-flattening one around a canvas-sized smart object cost ~100 ms a frame).
-  auto* cache = subtree_has_override(layer, overrides) ? nullptr : masks;
+  auto* cache = !cacheable || subtree_has_override(layer, overrides) ? nullptr : masks;
   const auto prepared = style_mask_for_render(
       cache, layer, StyleMaskKind::GroupSilhouette, 0, bounds, bounds, bounds, bounds, std::nullopt,
       [&](Rect rect) {
@@ -4037,6 +4044,40 @@ void composite_layer(Target& destination, const Layer& layer, Rect clip,
 // live backdrop (optionally through the group's mask), group styles derive
 // from the flattened silhouette, and group Opacity fades the result back
 // toward the pre-group snapshot.
+// A styled pass-through group whose only effects are Drop Shadow / Outer Glow
+// reads its silhouette no further than the style's effect padding from any pixel
+// it paints, and those masks render identically in a draw-clipped window. When
+// the full silhouette is not already cached (the group's content just changed:
+// a brush dab, a warp or move of a child) and the clip is small next to it,
+// flattening only the clip plus that padding gives the same pixels for a
+// fraction of the work. thumbo.psd's "Arm" folder holds a 4 Mpx smart object:
+// every mask dab inside it re-flattened all of it plus its shadow (~40 ms).
+// Window-sized results never enter the cache.
+inline std::optional<Rect> exterior_effect_window(const Layer& layer, Rect content_bounds, Rect clip,
+                                                  const std::vector<LayerBoundsOverride>* overrides,
+                                                  StyleMaskProvider* masks) {
+  const auto& style = layer.layer_style();
+  if (!style.inner_shadows.empty() || !style.inner_glows.empty() || !style.color_overlays.empty() ||
+      !style.gradient_fills.empty() || !style.pattern_overlays.empty() || !style.strokes.empty() ||
+      !style.bevels.empty() || !style.satins.empty() ||
+      std::any_of(style.drop_shadows.begin(), style.drop_shadows.end(),
+                  [](const LayerDropShadow& shadow) { return shadow.continuous; })) {
+    return std::nullopt;
+  }
+  constexpr int kSafetyMargin = 4;
+  const auto window =
+      intersect_rect(content_bounds, outset_rect(clip, layer_style_effect_padding(style) + kSafetyMargin));
+  const auto area = [](Rect rect) { return static_cast<std::int64_t>(rect.width) * rect.height; };
+  if (area(window) * 2 > area(content_bounds)) {
+    return std::nullopt;
+  }
+  if (masks != nullptr && !subtree_has_override(layer, overrides) &&
+      masks->contains(layer, StyleMaskKind::GroupSilhouette, 0, content_bounds, std::nullopt)) {
+    return std::nullopt;
+  }
+  return window;
+}
+
 template <typename Target>
 void composite_pass_through_group(Target& destination, const Layer& layer, Rect clip,
                                   const std::vector<LayerBoundsOverride>* overrides,
@@ -4065,18 +4106,29 @@ void composite_pass_through_group(Target& destination, const Layer& layer, Rect 
     // inside the silhouette buffer.
     silhouette_rect = group_content_bounds_for_render(layer, overrides);
     if (!silhouette_rect.empty()) {
-      silhouette = group_silhouette_for_render(layer, silhouette_rect, overrides,
-                                               throw_on_unsupported_pixel_format, masks, patterns);
-      const auto& style = layer.layer_style();
-      const auto mask_bounds = layer_mask_bounds_for_render(layer, overrides);
-      if (style.effects_visible) {
-        for (std::uint32_t index = 0; index < style.drop_shadows.size(); ++index) {
-          render_drop_shadow(destination, layer, *silhouette, clip, silhouette_rect,
-                             style.drop_shadows[index], mask_bounds, masks, index);
-        }
-        for (std::uint32_t index = 0; index < style.outer_glows.size(); ++index) {
-          render_outer_glow(destination, layer, *silhouette, clip, silhouette_rect,
-                            style.outer_glows[index], mask_bounds, masks, index);
+      auto* effect_masks = masks;
+      bool cache_silhouette = true;
+      if (const auto window = exterior_effect_window(layer, silhouette_rect, clip, overrides, masks);
+          window.has_value()) {
+        silhouette_rect = *window;
+        effect_masks = nullptr;
+        cache_silhouette = false;
+      }
+      if (!silhouette_rect.empty()) {
+        silhouette = group_silhouette_for_render(layer, silhouette_rect, overrides,
+                                                 throw_on_unsupported_pixel_format, masks, patterns,
+                                                 cache_silhouette);
+        const auto& style = layer.layer_style();
+        const auto mask_bounds = layer_mask_bounds_for_render(layer, overrides);
+        if (style.effects_visible) {
+          for (std::uint32_t index = 0; index < style.drop_shadows.size(); ++index) {
+            render_drop_shadow(destination, layer, *silhouette, clip, silhouette_rect,
+                               style.drop_shadows[index], mask_bounds, effect_masks, index);
+          }
+          for (std::uint32_t index = 0; index < style.outer_glows.size(); ++index) {
+            render_outer_glow(destination, layer, *silhouette, clip, silhouette_rect,
+                              style.outer_glows[index], mask_bounds, effect_masks, index);
+          }
         }
       }
     }
