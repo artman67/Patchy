@@ -488,6 +488,38 @@ private:
   void build_tool_palette(ActionBuildContext& ctx);
   void build_options_bar(ActionBuildContext& ctx);
   void bind_action_translations(ActionBuildContext& ctx);
+  // build_options_bar()'s per-tool row builders, called in this (load-bearing)
+  // construction order. OptionsBarBuildContext is defined in
+  // main_window_options_bar_internal.hpp; the builders live in
+  // main_window_options_bar_<theme>.cpp, except the Zoom and Rotate View rows,
+  // which sit beside build_options_bar in main_window_actions_options_bar.cpp.
+  struct OptionsBarBuildContext;
+  void build_move_tool_options(OptionsBarBuildContext& bar);
+  void build_free_transform_options(OptionsBarBuildContext& bar);
+  void build_warp_transform_options(OptionsBarBuildContext& bar);
+  void build_puppet_warp_options(OptionsBarBuildContext& bar);
+  void build_transform_session_buttons(OptionsBarBuildContext& bar);
+  void build_perspective_warp_options(OptionsBarBuildContext& bar);
+  void build_selection_tool_options(OptionsBarBuildContext& bar);
+  void build_crop_tool_options(OptionsBarBuildContext& bar);
+  void build_brush_preset_option(OptionsBarBuildContext& bar);
+  void build_shape_mode_option(OptionsBarBuildContext& bar);
+  void build_brush_size_options(OptionsBarBuildContext& bar);
+  void build_brush_smoothing_and_mixer_options(OptionsBarBuildContext& bar);
+  void build_brush_symmetry_and_tip_options(OptionsBarBuildContext& bar);
+  void build_pattern_stamp_options(OptionsBarBuildContext& bar);
+  void build_gradient_tool_options(OptionsBarBuildContext& bar);
+  void build_retouch_tool_options(OptionsBarBuildContext& bar);
+  void build_toning_tool_options(OptionsBarBuildContext& bar);
+  void build_color_replacement_options(OptionsBarBuildContext& bar);
+  void build_quick_select_lasso_wand_options(OptionsBarBuildContext& bar);
+  void build_shape_appearance_options(OptionsBarBuildContext& bar);
+  void build_shape_path_options(OptionsBarBuildContext& bar);
+  void build_shape_pixel_options(OptionsBarBuildContext& bar);
+  void build_fill_tool_options(OptionsBarBuildContext& bar);
+  void build_zoom_tool_options(OptionsBarBuildContext& bar);
+  void build_type_tool_options(OptionsBarBuildContext& bar);
+  void build_rotate_view_options(OptionsBarBuildContext& bar);
   void configure_window_chrome();
   void position_window_chrome_controls();
   void ensure_native_resizable_frame();
