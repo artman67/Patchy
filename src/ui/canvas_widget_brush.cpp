@@ -1217,6 +1217,11 @@ QRect CanvasWidget::draw_brush_segment_with_dabs(QPointF from, QPointF to, bool 
     brush_stroke_distance_since_last_stamp_ = 0.0;
   };
 
+  // An explicit spacing keeps every dab on its cadence, like the bitmap-tip path: the smoother's
+  // first-movement endpoint would otherwise add an off-cadence dab next to the press dab.
+  if (script_brush_spacing_ && brush_stroke_last_stamp_position_.has_value()) {
+    stamp_endpoint = false;
+  }
   if (!brush_stroke_last_stamp_position_.has_value()) {
     if (stamp_endpoint) {
       brush_stroke_last_stamp_position_ = from;
@@ -1892,8 +1897,14 @@ CanvasWidget::EffectiveBrushInput CanvasWidget::effective_brush_input() const no
 
 EditOptions CanvasWidget::current_brush_edit_options(const EffectiveBrushInput& brush) const {
   const auto opacity = tool_ == CanvasTool::MixerBrush ? 100 : brush.opacity;
-  return edit_options(primary_color_, secondary_color_, brush.size, opacity, brush.softness, fill_shapes_,
-                      active_layer_locks_transparent_pixels(), *this, brush.roundness, brush.angle_degrees);
+  auto options = edit_options(primary_color_, secondary_color_, brush.size, opacity, brush.softness, fill_shapes_,
+                              active_layer_locks_transparent_pixels(), *this, brush.roundness, brush.angle_degrees);
+  // The Square footprint belongs to the Brush and Eraser on every procedural path, including
+  // the dab path (Soft, reduced Flow, Airbrush, explicit spacing); the other tools stay round.
+  if (brush_tip_ == nullptr && (tool_ == CanvasTool::Brush || tool_ == CanvasTool::Eraser)) {
+    options.brush_shape = brush_shape_;
+  }
+  return options;
 }
 
 QRect CanvasWidget::draw_brush_segment(QPointF from, QPointF to, bool erase, bool stamp_endpoint) {
@@ -1962,6 +1973,9 @@ QRect CanvasWidget::draw_brush_at(QPoint point, bool erase) {
   const auto brush = effective_brush_input();
   auto options = current_brush_edit_options(brush);
   if (brush_uses_dab_stroke(brush, erase)) {
+    if (script_brush_spacing_ && brush_stroke_last_stamp_position_.has_value()) {
+      return {};  // a release inside a spaced stroke adds no off-cadence end dab
+    }
     install_brush_stroke_compositor(options, erase);
     const auto point_f = QPointF(point);
     const auto dirty = draw_brush_dab(point_f, erase, options);
