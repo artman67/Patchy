@@ -1017,7 +1017,11 @@ std::vector<std::uint8_t> render_computed_brush_mask(std::int32_t size, double h
   const auto inner = radius * std::clamp(hardness, 0.0, 1.0);
   for (std::int32_t y = 0; y < size; ++y) {
     for (std::int32_t x = 0; x < size; ++x) {
-      const auto distance = std::hypot(static_cast<double>(x) + 0.5 - radius, static_cast<double>(y) + 0.5 - radius);
+      // sqrt is correctly rounded everywhere (std::hypot is not), so every toolchain renders the
+      // same mask bytes.
+      const auto dx = static_cast<double>(x) + 0.5 - radius;
+      const auto dy = static_cast<double>(y) + 0.5 - radius;
+      const auto distance = std::sqrt(dx * dx + dy * dy);
       auto coverage = 1.0;
       if (distance > inner) {
         // Smoothstep falloff across the soft band, then the antialiased rim.
