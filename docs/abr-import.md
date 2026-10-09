@@ -1,0 +1,15 @@
+# Photoshop .abr import
+
+`src/psd/abr_reader.*` parses the file; `BrushTipLibrary::import_abr` (src/ui/brush_tip_library.cpp) turns the result into library tips. The brush engine itself is described in [brushes.md](brushes.md); the patent boundaries the mapping respects are in [legal-constraints.md](legal-constraints.md).
+
+## Parsing
+
+`src/psd/abr_reader.*` (`read_abr`): supports v1/v2 and v6/v7/v10 (subversion 1 = 47-byte, 2 = 301-byte samp entry key skip), pairs `samp` bitmaps with the `desc` ActionDescriptor brush list **in order** for names/spacing, decodes per-row PackBits RLE, downconverts 16-bit, crops to content, caps dimensions at 4096, and skips bad entries with warnings, never failing the file. v6 8BIM tagged blocks are padded to 4-byte boundaries with the padding excluded from the length field; the block walk must skip that padding or the next signature read lands mid-pad (surfaces only when a desc length is not already 4-aligned). PSD and ABR share the descriptor parser and `decode_packbits` in `src/psd/psd_descriptor.*`.
+
+## Descriptor mapping
+
+`parse_brush_dynamics` (abr_reader.cpp) imports the supported dynamics: Shape/Scatter/Transfer fields, texture `useTexture`/`textureScale`/`textureDepth`/`InvT`/`Txtr`, one `dualBrush.Brsh` secondary tip's diameter/hardness/spacing, Color Dynamics `useColorDynamics`/`clVr`/`H   `/`Strt`/`Brgh`/`purity`/`colorDynamicsPerTip`, and `Wtdg` (Wet Edges). Imported texture artwork is not bundled or copied: the pattern identity is hashed into a stable seed and its name selects the closest generated grain family. Input-driven `textureDepthDynamics` is deliberately reduced to the static `textureDepth`, with a per-brush import notice. Base `Angl`/`Rndn` come from the primary `Brsh` tip object. Options-bar Flow imports from `toolOptions.flow`, Airbrush from preset `Rpt ` (live key `repeat`); both apply only when `toolOptions.brushPreset` is true and the tip is picked; a library change never resets the working brush. `bVTy` mapping: 0 Off, 1 Fade, 2 Pen Pressure, 3 Pen Tilt, 4 Stylus Wheel, 5 Rotation, 6 Initial Direction, 7 Direction. Every supported dynamic's control + `fStp` imports; on non-angle dynamics bVTy 0 maps to the slot default (GlobalDefault for size/roundness/opacity, Off for flow/scatter/count/color), and the angle-only 6/7 degrade to Off (`non_angle_control_from_bvty`).
+
+## Fixtures
+
+`test-fixtures/abr/myer-settlement-brushes.abr` (CC0, see NOTICE.txt; 148 brushes, v6.2, dynamics all disabled, pins the defaults path) and the self-authored `photoshop-dynamics.abr` / `photoshop-dual-brush.abr` (exported from Photoshop 2026, one probe brush each; the dual fixture pins imported secondary diameter/hardness/spacing without a warning). The dynamics fixture's non-angle `bVTy` values are all 0 (angle = 7 Direction), so it pins the bVTy-0-to-GlobalDefault/Off mapping plus included Flow 100/Airbrush off. The synthesized v6 file in `abr_v6_desc_controls_import` (the test writes the desc TLVs itself) pins explicit control imports and the texture/color/wet fields. Bigger CC0 sets for manual tests live in `local-test-fixtures/abr-sets/`.
