@@ -214,6 +214,58 @@ void styled_group_partial_render_and_child_edit_match_full_render() {
   }
 }
 
+// A pass-through group styled only with Drop Shadow / Outer Glow renders an uncached
+// small patch from a silhouette window (exterior_effect_window). The patches, rendered
+// cold before anything is cached, must match the full render that flattens all of it.
+void styled_group_shadow_window_patches_match_full_render() {
+  patchy::Document document(256, 192, patchy::PixelFormat::rgba8());
+  document.add_pixel_layer("Backdrop", solid_rgba(256, 192, 240, 230, 210, 255));
+  patchy::Layer group(document.allocate_layer_id(), "Shadowed", patchy::LayerKind::Group);
+  group.set_blend_mode(patchy::BlendMode::PassThrough);
+  patchy::LayerDropShadow shadow;
+  shadow.enabled = true;
+  shadow.opacity = 0.8F;
+  shadow.angle_degrees = 120.0F;
+  shadow.distance = 9.0F;
+  shadow.size = 11.0F;
+  shadow.spread = 0.25F;
+  group.layer_style().drop_shadows.push_back(shadow);
+  patchy::LayerOuterGlow glow;
+  glow.enabled = true;
+  glow.opacity = 0.6F;
+  glow.size = 7.0F;
+  glow.color = {255, 200, 0};
+  group.layer_style().outer_glows.push_back(glow);
+  // An off-canvas child far bigger than the canvas (thumbo.psd's case) with a soft
+  // diagonal alpha edge, plus a small one, so the silhouette has edges everywhere.
+  patchy::PixelBuffer big(520, 400, patchy::PixelFormat::rgba8());
+  for (int y = 0; y < 400; ++y) {
+    for (int x = 0; x < 520; ++x) {
+      auto* pixel = big.pixel(x, y);
+      pixel[0] = static_cast<std::uint8_t>(x / 3);
+      pixel[1] = 90;
+      pixel[2] = static_cast<std::uint8_t>(y / 2);
+      pixel[3] = static_cast<std::uint8_t>(std::clamp((x + y - 420) * 4, 0, 255));
+    }
+  }
+  patchy::Layer big_child(document.allocate_layer_id(), "Big", std::move(big));
+  big_child.set_bounds({-140, -120, 520, 400});
+  group.add_child(std::move(big_child));
+  patchy::Layer small_child(document.allocate_layer_id(), "Small", solid_rgba(30, 20, 20, 40, 200, 255));
+  small_child.set_bounds({60, 40, 30, 20});
+  group.add_child(std::move(small_child));
+  document.add_layer(std::move(group));
+
+  std::vector<std::pair<QRect, QImage>> patches;
+  for (const QRect patch : {QRect(50, 30, 48, 40), QRect(100, 60, 40, 30), QRect(0, 150, 70, 42)}) {
+    patches.emplace_back(patch, patchy::ui::qimage_from_document_rect(document, patch, true));
+  }
+  const auto full = patchy::ui::qimage_from_document(document, true);
+  for (const auto& [patch, image] : patches) {
+    CHECK(image == full.copy(patch));
+  }
+}
+
 void group_clipped_adjustment_preview_keeps_backdrop_and_tracks_child_move() {
   for (const auto mode : {patchy::BlendMode::PassThrough, patchy::BlendMode::Normal}) {
     patchy::Document document(300, 200, patchy::PixelFormat::rgb8());
@@ -302,6 +354,7 @@ std::vector<patchy::test::TestCase> composite_render_tests() {
        group_isolation_override_bounds_match_actual_layer_move},
       {"styled_group_partial_render_and_child_edit_match_full_render", styled_group_partial_render_and_child_edit_match_full_render},
       {"styled_group_parallel_strips_match_single_threaded", styled_group_parallel_strips_match_single_threaded},
+      {"styled_group_shadow_window_patches_match_full_render", styled_group_shadow_window_patches_match_full_render},
       {"group_clipped_adjustment_preview_keeps_backdrop_and_tracks_child_move",
        group_clipped_adjustment_preview_keeps_backdrop_and_tracks_child_move},
       {"backglass_group_clipped_invert_preview_matches_photoshop_if_available",
