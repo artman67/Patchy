@@ -3494,6 +3494,7 @@ void ui_layer_eye_sweep_survives_folder_row_rebuild() {
 
       patchy::ui::MainWindow window;
       show_window(window);
+      hide_color_dock(window);
       window.add_document_session(std::move(document), QStringLiteral("Eye Sweep Rebuild"));
       QApplication::processEvents();
 

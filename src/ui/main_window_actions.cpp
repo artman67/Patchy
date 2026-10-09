@@ -290,8 +290,11 @@ void MainWindow::create_actions() {
 // them through the ActionBuildContext) and registers the toolbars'
 // toggle-view actions in the Window menu.
 void MainWindow::bind_action_translations(ActionBuildContext& ctx) {
-  ctx.window_menu->addAction(ctx.tool_palette->toggleViewAction());
-  ctx.window_menu->addAction(ctx.options_toolbar->toggleViewAction());
+  // Toolbar toggles head the panel group above the open-document list;
+  // add_panel_toggles_to_window_menu() appends the dock panels after them.
+  ctx.window_menu->insertSeparator(window_documents_separator_);
+  ctx.window_menu->insertAction(window_documents_separator_, ctx.tool_palette->toggleViewAction());
+  ctx.window_menu->insertAction(window_documents_separator_, ctx.options_toolbar->toggleViewAction());
   // The "Options" toggle would otherwise be captured by macOS's menu-text heuristic
   // (any menubar action containing "options" gets relocated as a Preferences item).
   ctx.tool_palette->toggleViewAction()->setMenuRole(QAction::NoRole);

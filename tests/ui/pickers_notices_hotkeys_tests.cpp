@@ -28,6 +28,7 @@
 #include "ui/brush_tip_manager_dialog.hpp"
 #include "ui/brush_tip_picker.hpp"
 #include "ui/blend_if_range_editor.hpp"
+#include "ui/color_dock_panel.hpp"
 #include "ui/color_panel.hpp"
 #include "ui/default_brush_tips.hpp"
 #include "ui/dialog_utils.hpp"
@@ -142,6 +143,7 @@
 #include <QRadioButton>
 #include <QSpinBox>
 #include <QStringList>
+#include <QScrollArea>
 #include <QScrollBar>
 #include <QScreen>
 #include <QSettings>
@@ -482,6 +484,271 @@ void ui_color_picker_wheel_and_sliders_modes() {
 
   dialog->close();
   QApplication::processEvents();
+}
+
+patchy::ui::ColorDockPanel* find_color_dock_panel(patchy::ui::MainWindow& window) {
+  return window.findChild<patchy::ui::ColorDockPanel*>(QStringLiteral("colorDockPanel"));
+}
+
+void click_widget(QWidget& widget, QPoint position) {
+  send_mouse(widget, QEvent::MouseButtonPress, position, Qt::LeftButton, Qt::LeftButton);
+  send_mouse(widget, QEvent::MouseButtonRelease, position, Qt::LeftButton, Qt::NoButton);
+  QApplication::processEvents();
+}
+
+void ui_color_dock_panel_syncs_both_ways_and_toggles_from_window_menu() {
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* canvas = require_canvas(window);
+  auto* dock = window.findChild<QDockWidget*>(QStringLiteral("colorDock"));
+  auto* layers_dock = window.findChild<QDockWidget*>(QStringLiteral("layersDock"));
+  auto* panel = find_color_dock_panel(window);
+  auto* collapse = window.findChild<QToolButton*>(QStringLiteral("colorDockCollapseButton"));
+  CHECK(dock != nullptr);
+  CHECK(layers_dock != nullptr);
+  CHECK(panel != nullptr);
+  CHECK(collapse != nullptr);
+  if (dock == nullptr || layers_dock == nullptr || panel == nullptr || collapse == nullptr) {
+    return;
+  }
+  // Shown and expanded at the head of the right column.
+  CHECK(panel->isVisible());
+  CHECK(dock->mapTo(&window, QPoint()).y() < layers_dock->mapTo(&window, QPoint()).y());
+
+  // Window menu: every right panel has a toggle; hiding and re-showing the
+  // Color panel brings it back expanded even if it was collapsed.
+  auto* window_menu = window.findChild<QMenu*>(QStringLiteral("windowMenu"));
+  CHECK(window_menu != nullptr);
+  for (const auto* name : {"windowColorPanelAction", "windowLayersPanelAction", "windowChannelsPanelAction",
+                           "windowPathsPanelAction", "windowHistoryPanelAction", "windowPropertiesPanelAction",
+                           "windowInfoPanelAction", "windowPalettePanelAction"}) {
+    CHECK(window_menu != nullptr && window_menu->actions().contains(require_action(window, name)));
+  }
+  auto* toggle = require_action(window, "windowColorPanelAction");
+  CHECK(toggle->text() == QStringLiteral("Color"));
+  collapse->setChecked(false);
+  QApplication::processEvents();
+  toggle->trigger();
+  QApplication::processEvents();
+  CHECK(!dock->isVisible());
+  toggle->trigger();
+  QApplication::processEvents();
+  CHECK(dock->isVisible());
+  CHECK(collapse->isChecked());
+  CHECK(panel->isVisible());
+
+  // External changes (D, X) land in the panel.
+  require_action(window, "colorDefaultAction")->trigger();
+  QApplication::processEvents();
+  CHECK(panel->foreground() == QColor(0, 0, 0));
+  CHECK(panel->background() == QColor(255, 255, 255));
+  CHECK(panel->current_color() == QColor(0, 0, 0));
+
+  // Editing in the panel sets the canvas foreground: the plane's top-right
+  // corner is full saturation and value at hue 0.
+  panel->set_mode(patchy::ui::ColorDockPanel::Mode::HsvSquare);
+  QApplication::processEvents();
+  auto* plane = panel->findChild<QWidget*>(QStringLiteral("colorDockPlane"));
+  CHECK(plane != nullptr);
+  if (plane == nullptr) {
+    return;
+  }
+  click_widget(*plane, QPoint(plane->width() - 1, 0));
+  CHECK(canvas->primary_color() == QColor(255, 0, 0));
+  CHECK(canvas->secondary_color() == QColor(255, 255, 255));
+
+  // Clicking the background swatch makes the panel edit the background.
+  auto* swatches = panel->findChild<QWidget*>(QStringLiteral("colorDockSwatches"));
+  CHECK(swatches != nullptr);
+  if (swatches == nullptr) {
+    return;
+  }
+  click_widget(*swatches, QPoint(swatches->width() - 2, swatches->height() - 2));
+  CHECK(panel->editing_background());
+  CHECK(panel->current_color() == QColor(255, 255, 255));
+  auto* hex = panel->findChild<QLineEdit*>(QStringLiteral("colorDockHexEdit"));
+  CHECK(hex != nullptr);
+  if (hex == nullptr) {
+    return;
+  }
+  hex->setText(QStringLiteral("#3366CC"));
+  emit hex->editingFinished();
+  QApplication::processEvents();
+  CHECK(canvas->secondary_color() == QColor(0x33, 0x66, 0xCC));
+  CHECK(canvas->primary_color() == QColor(255, 0, 0));
+
+  // The Background popup and the panel follow each other while both are open.
+  auto* background_button = window.findChild<QPushButton*>(QStringLiteral("backgroundColorButton"));
+  CHECK(background_button != nullptr);
+  if (background_button == nullptr) {
+    return;
+  }
+  background_button->click();
+  QApplication::processEvents();
+  auto* dialog = find_top_level_dialog(QStringLiteral("patchyColorDialog"));
+  CHECK(dialog != nullptr);
+  if (dialog == nullptr) {
+    return;
+  }
+  auto* picker = dialog->findChild<patchy::ui::PatchyColorPicker*>(QStringLiteral("patchyAdvancedColorPicker"));
+  CHECK(picker != nullptr);
+  if (picker != nullptr) {
+    picker->setCurrentColor(QColor(10, 200, 30));
+    QApplication::processEvents();
+    CHECK(canvas->secondary_color() == QColor(10, 200, 30));
+    CHECK(panel->current_color() == QColor(10, 200, 30));
+    hex->setText(QStringLiteral("#102030"));
+    emit hex->editingFinished();
+    QApplication::processEvents();
+    CHECK(picker->currentColor() == QColor(0x10, 0x20, 0x30));
+  }
+  dialog->close();
+  QApplication::processEvents();
+
+  // X swaps; the panel keeps editing the background, now the old foreground.
+  require_action(window, "colorSwapAction")->trigger();
+  QApplication::processEvents();
+  CHECK(panel->foreground() == QColor(0x10, 0x20, 0x30));
+  CHECK(panel->current_color() == QColor(255, 0, 0));
+}
+
+void ui_color_dock_panel_modes_fit_persist_and_align_the_triangle() {
+  ColorSchemeRestorer restore_scheme;
+  const auto forget_mode = [] {
+    auto settings = patchy::ui::app_settings();
+    settings.remove(QLatin1String(patchy::ui::kColorDockModeKey));
+    settings.sync();
+  };
+  forget_mode();
+  patchy::ui::MainWindow window;
+  show_window(window);
+  auto* dock = window.findChild<QDockWidget*>(QStringLiteral("colorDock"));
+  auto* panel = find_color_dock_panel(window);
+  CHECK(dock != nullptr);
+  CHECK(panel != nullptr);
+  if (dock == nullptr || panel == nullptr) {
+    return;
+  }
+  auto* combo = panel->findChild<QComboBox*>(QStringLiteral("colorDockModeCombo"));
+  CHECK(combo != nullptr);
+  if (combo == nullptr) {
+    return;
+  }
+  CHECK(panel->mode() == patchy::ui::ColorDockPanel::Mode::HsvSquare);  // the unset default
+  CHECK(combo->count() == 4);
+
+  // Every mode's view is visible, usable and unclipped (no scrolling) at the
+  // normal dock width in a desktop-height window, in both schemes (the
+  // captures are the visual check).
+  window.resize(1180, 1000);
+  QApplication::processEvents();
+  QApplication::processEvents();
+  auto* scroll = window.findChild<QScrollArea*>(QStringLiteral("colorDockScrollArea"));
+  CHECK(scroll != nullptr);
+  if (scroll == nullptr) {
+    return;
+  }
+  struct ModeView {
+    const char* view;
+    const char* token;
+    int minimum_side;
+  };
+  const std::array<ModeView, 4> modes{{{"colorDockPlane", "square", 60},
+                                       {"colorDockWheel", "wheel", 110},
+                                       {"colorDockTriangleWheel", "triangle", 110},
+                                       {"colorDockSliderBlue", "sliders", 14}}};
+  // Colors go in through the panel's hex field, a real edit of the canvas
+  // foreground, so the scheme switch's refresh keeps them.
+  auto* hex = panel->findChild<QLineEdit*>(QStringLiteral("colorDockHexEdit"));
+  CHECK(hex != nullptr);
+  if (hex == nullptr) {
+    return;
+  }
+  const auto type_foreground = [hex](const char* text) {
+    hex->setText(QLatin1String(text));
+    emit hex->editingFinished();
+    QApplication::processEvents();
+  };
+  type_foreground("#288CDC");
+  for (const auto preference : {patchy::ui::ColorSchemePreference::Dark, patchy::ui::ColorSchemePreference::Light}) {
+    ColorSchemeRestorer::apply(preference);
+    const auto* scheme = preference == patchy::ui::ColorSchemePreference::Light ? "light" : "dark";
+    for (int index = 0; index < static_cast<int>(modes.size()); ++index) {
+      combo->setCurrentIndex(index);
+      QApplication::processEvents();
+      auto* view = panel->findChild<QWidget*>(QLatin1String(modes[static_cast<std::size_t>(index)].view));
+      CHECK(view != nullptr);
+      if (view == nullptr) {
+        continue;
+      }
+      CHECK(view->isVisible());
+      CHECK(std::min(view->width(), view->height()) >= modes[static_cast<std::size_t>(index)].minimum_side);
+      CHECK(panel->rect().contains(QRect(view->mapTo(panel, QPoint()), view->size())));
+      CHECK(!scroll->verticalScrollBar()->isVisible());
+      save_widget_artifact(std::string("ui_color_dock_") + modes[static_cast<std::size_t>(index)].token + "_" + scheme,
+                           *dock);
+    }
+  }
+
+  // The mode persists: a new panel opens on the last choice.
+  combo->setCurrentIndex(2);
+  QApplication::processEvents();
+  {
+    auto settings = patchy::ui::app_settings();
+    CHECK(settings.value(QLatin1String(patchy::ui::kColorDockModeKey)).toString() == QStringLiteral("triangle"));
+  }
+  {
+    patchy::ui::ColorDockPanel reopened;
+    CHECK(reopened.mode() == patchy::ui::ColorDockPanel::Mode::WheelTriangle);
+  }
+
+  // The triangle's pure-hue corner points at the hue on the ring (red at
+  // 3 o'clock, green at 120 degrees), and its corners pick hue, white, black.
+  auto* triangle = static_cast<patchy::ui::ColorWheelWidget*>(
+      panel->findChild<QWidget*>(QStringLiteral("colorDockTriangleWheel")));
+  CHECK(triangle != nullptr);
+  if (triangle == nullptr) {
+    return;
+  }
+  const QPointF center(triangle->width() / 2.0, triangle->height() / 2.0);
+  // Each corner is sampled while the selection marker sits at another one.
+  const auto pixel_inside = [triangle, &center](QPointF corner) {
+    const auto inward = corner + (center - corner) * 0.2;
+    return triangle->grab().toImage().pixelColor(inward.toPoint());
+  };
+  type_foreground("#FF0000");  // marker on the hue corner
+  QApplication::processEvents();
+  auto hue_corner = triangle->inner_point_for(255, 255);
+  CHECK(hue_corner.x() > center.x() + 20.0);
+  CHECK(std::abs(hue_corner.y() - center.y()) < 1.0);
+  CHECK(color_close(pixel_inside(triangle->inner_point_for(0, 255)), QColor(255, 255, 255), 60));
+  CHECK(color_close(pixel_inside(triangle->inner_point_for(0, 0)), QColor(0, 0, 0), 60));
+  type_foreground("#3C0000");  // marker near the black corner
+  QApplication::processEvents();
+  CHECK(color_close(pixel_inside(hue_corner), QColor(255, 0, 0), 60));
+
+  type_foreground("#003C00");
+  QApplication::processEvents();
+  hue_corner = triangle->inner_point_for(255, 255);
+  CHECK(hue_corner.x() < center.x());
+  CHECK(hue_corner.y() < center.y());
+  CHECK(color_close(pixel_inside(hue_corner), QColor(0, 255, 0), 60));
+
+  // Dragging past a corner clamps onto it.
+  const auto drag_to = [triangle, &center](QPointF target) {
+    const auto beyond = target + (target - center) * 0.08;
+    send_mouse(*triangle, QEvent::MouseButtonPress, center.toPoint(), Qt::LeftButton, Qt::LeftButton);
+    send_mouse(*triangle, QEvent::MouseMove, beyond.toPoint(), Qt::NoButton, Qt::LeftButton);
+    send_mouse(*triangle, QEvent::MouseButtonRelease, beyond.toPoint(), Qt::LeftButton, Qt::NoButton);
+    QApplication::processEvents();
+  };
+  drag_to(triangle->inner_point_for(0, 255));
+  CHECK(panel->current_color() == QColor(255, 255, 255));
+  drag_to(triangle->inner_point_for(0, 0));
+  CHECK(panel->current_color() == QColor(0, 0, 0));
+  drag_to(triangle->inner_point_for(255, 255));
+  CHECK(panel->current_color() == QColor(0, 255, 0));
+  forget_mode();
 }
 
 void ui_dialog_position_memory_restores_last_position() {
@@ -2253,6 +2520,10 @@ std::vector<patchy::test::TestCase> pickers_notices_hotkeys_tests() {
       {"ui_color_picker_ignores_reentrant_requests", ui_color_picker_ignores_reentrant_requests},
       {"ui_color_picker_closes_with_parent_dialog", ui_color_picker_closes_with_parent_dialog},
       {"ui_color_picker_wheel_and_sliders_modes", ui_color_picker_wheel_and_sliders_modes},
+      {"ui_color_dock_panel_syncs_both_ways_and_toggles_from_window_menu",
+       ui_color_dock_panel_syncs_both_ways_and_toggles_from_window_menu},
+      {"ui_color_dock_panel_modes_fit_persist_and_align_the_triangle",
+       ui_color_dock_panel_modes_fit_persist_and_align_the_triangle},
       {"ui_dialog_position_memory_restores_last_position", ui_dialog_position_memory_restores_last_position},
       {"ui_dialog_position_memory_centers_unmoved_dialogs_on_parent",
        ui_dialog_position_memory_centers_unmoved_dialogs_on_parent},

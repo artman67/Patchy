@@ -11147,6 +11147,37 @@ RGB: %2, %3, %4</translation>
     </message>
 </context>
 <context>
+    <name>patchy::ui::ColorDockPanel</name>
+    <message>
+        <source>HSV Square</source>
+        <translation>Kwadrat HSV</translation>
+    </message>
+    <message>
+        <source>Wheel + Square</source>
+        <translation>Koło + kwadrat</translation>
+    </message>
+    <message>
+        <source>Wheel + Triangle</source>
+        <translation>Koło + trójkąt</translation>
+    </message>
+    <message>
+        <source>Sliders</source>
+        <translation>Suwaki</translation>
+    </message>
+    <message>
+        <source>Choose how the Color panel shows the color</source>
+        <translation>Wybierz, jak panel Kolor pokazuje kolor</translation>
+    </message>
+    <message>
+        <source>Hex color: type or paste #RRGGBB</source>
+        <translation>Kolor szesnastkowy: wpisz lub wklej #RRGGBB</translation>
+    </message>
+    <message>
+        <source>Click the foreground or background swatch to choose which color the panel edits</source>
+        <translation>Kliknij próbkę koloru narzędzia lub tła, aby wybrać, który kolor edytuje panel</translation>
+    </message>
+</context>
+<context>
     <name>patchy::ui::FontPickerCombo</name>
     <message>
         <source>The quick brown fox jumps over the lazy dog. 0123456789</source>

@@ -59,6 +59,7 @@
 #include "ui/font_picker.hpp"
 #include "ui/hotkey_editor.hpp"
 #include "ui/edit_conversions.hpp"
+#include "ui/color_dock_panel.hpp"
 #include "ui/color_panel.hpp"
 #include "ui/layer_style_dialog.hpp"
 #include "ui/layer_list_widget.hpp"
@@ -1580,23 +1581,7 @@ void MainWindow::show_color_panel(bool foreground) {
   auto* dialog = create_patchy_color_panel(
       this, foreground ? canvas_->primary_color() : canvas_->secondary_color(),
       foreground ? tr("Foreground Color") : tr("Background Color"),
-      [this, foreground](QColor color) {
-        // The panel is non-modal and outlives sessions: after Close All there is no canvas.
-        if (canvas_ == nullptr) {
-          return;
-        }
-        color.setAlpha(255);
-        if (foreground) {
-          canvas_->set_primary_color(color);
-          apply_primary_color_to_active_text_editor(color);
-          apply_foreground_color_to_shape_paint(color);
-          statusBar()->showMessage(tr("Foreground color changed"));
-        } else {
-          canvas_->set_secondary_color(color);
-          statusBar()->showMessage(tr("Background color changed"));
-        }
-        refresh_color_buttons();
-      });
+      [this, foreground](QColor color) { apply_foreground_background_edit(foreground, color); });
   dialog->setProperty("patchy.colorTarget", color_target);
   color_dialog_ = dialog;
   connect(dialog, &QObject::destroyed, this, [this, dialog] {
@@ -1607,6 +1592,24 @@ void MainWindow::show_color_panel(bool foreground) {
   dialog->show();
   dialog->raise();
   dialog->activateWindow();
+}
+
+void MainWindow::apply_foreground_background_edit(bool foreground, QColor color) {
+  // The popup is non-modal and outlives sessions: after Close All there is no canvas.
+  if (canvas_ == nullptr) {
+    return;
+  }
+  color.setAlpha(255);
+  if (foreground) {
+    canvas_->set_primary_color(color);
+    apply_primary_color_to_active_text_editor(color);
+    apply_foreground_color_to_shape_paint(color);
+    statusBar()->showMessage(tr("Foreground color changed"));
+  } else {
+    canvas_->set_secondary_color(color);
+    statusBar()->showMessage(tr("Background color changed"));
+  }
+  refresh_color_buttons();
 }
 
 void MainWindow::swap_colors() {
@@ -1650,6 +1653,11 @@ void MainWindow::refresh_color_buttons() {
     secondary_color_button_->setText(tr("BG"));
     secondary_color_button_->setToolTip(named_tooltip(tr("Background color %1").arg(secondary_color.name(QColor::HexRgb).toUpper()), secondary_color));
     set_themed_style(*secondary_color_button_, color_button_style(secondary_color));
+  }
+  // Every path that keeps the toolbar swatches current ends here, so the Color
+  // panel follows them.
+  if (color_dock_panel_ != nullptr) {
+    color_dock_panel_->set_colors(primary_color, secondary_color);
   }
   refresh_text_color_button();
   refresh_gradient_controls_from_canvas();

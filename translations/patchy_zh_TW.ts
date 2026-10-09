@@ -11087,6 +11087,37 @@ RGB：%2, %3, %4</translation>
     </message>
 </context>
 <context>
+    <name>patchy::ui::ColorDockPanel</name>
+    <message>
+        <source>HSV Square</source>
+        <translation>HSV 方形</translation>
+    </message>
+    <message>
+        <source>Wheel + Square</source>
+        <translation>色輪 + 方形</translation>
+    </message>
+    <message>
+        <source>Wheel + Triangle</source>
+        <translation>色輪 + 三角形</translation>
+    </message>
+    <message>
+        <source>Sliders</source>
+        <translation>滑桿</translation>
+    </message>
+    <message>
+        <source>Choose how the Color panel shows the color</source>
+        <translation>選擇色彩面板顯示顏色的方式</translation>
+    </message>
+    <message>
+        <source>Hex color: type or paste #RRGGBB</source>
+        <translation>十六進位顏色：輸入或貼上 #RRGGBB</translation>
+    </message>
+    <message>
+        <source>Click the foreground or background swatch to choose which color the panel edits</source>
+        <translation>按一下前景色或背景色色塊，選擇面板要編輯的顏色</translation>
+    </message>
+</context>
+<context>
     <name>patchy::ui::FontPickerCombo</name>
     <message>
         <source>The quick brown fox jumps over the lazy dog. 0123456789</source>

@@ -634,6 +634,12 @@ void show_window(patchy::ui::MainWindow& window);
 // (start panel visible, no sessions).
 void show_window_empty(patchy::ui::MainWindow& window);
 
+// Hides the Color panel that heads the right dock column. For tests that budget
+// the Layers panel or the original right-dock stack inside the 780 px test
+// window, which has less slack than one more panel needs; the Color panel's
+// own sizing is covered by ui_color_dock_panel_*.
+void hide_color_dock(patchy::ui::MainWindow& window);
+
 void process_events_for(int milliseconds);
 
 bool process_events_until(const std::function<bool()>& condition, int timeout_ms = 3000);
