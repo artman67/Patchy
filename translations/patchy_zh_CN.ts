@@ -18649,6 +18649,10 @@ Baked into images: %1.</source>
         <source>Bicubic Automatic</source>
         <translation>两次立方（自动）</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>复位面板布局(&amp;P)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

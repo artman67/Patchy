@@ -18705,6 +18705,10 @@ In Bilder umgewandelt: %1.</translation>
         <source>Bicubic Automatic</source>
         <translation>Bikubisch automatisch</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>&amp;Bedienfeldanordnung zurücksetzen</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

@@ -18761,6 +18761,10 @@ Y: %2
         <source>Bicubic Automatic</source>
         <translation>Dwusześcienna automatyczna</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Przywróć układ &amp;paneli</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

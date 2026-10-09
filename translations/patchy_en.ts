@@ -18656,6 +18656,10 @@ Baked into images: %1.</source>
         <source>Bicubic Automatic</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

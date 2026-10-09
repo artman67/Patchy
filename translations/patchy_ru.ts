@@ -18761,6 +18761,10 @@ Y: %2
         <source>Bicubic Automatic</source>
         <translation>Бикубическая, автоматически</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Сбросить расположение &amp;панелей</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

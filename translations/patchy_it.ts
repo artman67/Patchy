@@ -18705,6 +18705,10 @@ Convertiti in immagini: %1.</translation>
         <source>Bicubic Automatic</source>
         <translation>Bicubica automatica</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>Ripristina layout dei &amp;pannelli</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

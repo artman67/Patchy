@@ -18649,6 +18649,10 @@ Y: %2
         <source>Bicubic Automatic</source>
         <translation>쌍입방 자동</translation>
     </message>
+    <message>
+        <source>Reset &amp;Panel Layout</source>
+        <translation>패널 레이아웃 초기화(&amp;P)</translation>
+    </message>
 </context>
 <context>
     <name>patchy::ui::McpActivity</name>

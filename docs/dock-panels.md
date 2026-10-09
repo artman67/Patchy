@@ -1,0 +1,25 @@
+# Dock panels
+
+Read this before changing the right-column panels (Layers, Channels, Paths, History, Properties, Info, Palette), their title bars, tab groups, floating chrome, or the saved panel arrangement. The code lives in `src/ui/main_window_docks.cpp`.
+
+## Width and height
+
+- The right dock stack's minimum width is measured, not hardcoded: `MainWindow::update_right_dock_minimum_width` derives it from the layers panel layout minimum (whose widest row is the localized blend/opacity row) plus the dock chrome measured from a laid-out dock. At that minimum the blend/opacity row fits exactly. Anything that widens a layers-panel row (new controls, longer prefixes) moves the minimum automatically; do not add a competing hardcoded width, and keep staged `setSidePanelWidth` values in tests comfortably above the measured minimum.
+- Right-dock panel heights must never pin the window taller. A collapsed dock pins min == max to its title bar's styled sizeHint (`refresh_collapsed_right_dock_heights` re-pins after the stylesheet lands). Expanding sets a temporary minimum that `MainWindow::handle_right_dock_panel_toggled` releases one event-loop hop later, re-clamping the window to the screen only if the toggle grew it. Panels that can outgrow their share scroll internally; never give a right-dock panel an unbounded minimum height (`ui_right_dock_panels_expand_within_window_height`, `ui_collapsed_right_docks_have_uniform_title_height`).
+- Every docked dock hosts the 7px `rightDockResizeHandle` over its left edge (`install_right_dock_width_handle`) with a matching inset on title bars and contents (`ui_right_dock_contents_clear_width_handle`). Dragging it pins every docked column panel to one width; Reset Panel Layout drops the pin.
+
+## Tab groups, dragging and floating
+
+- `create_docks` sets `QMainWindow::GroupedDragging` (`ui_tabbed_right_dock_drags_out_by_tab`), but `handle_right_dock_title_drag_event` detaches only the dock under the cursor from a tabbed right dock (`ui_tabbed_dock_title_drag_floats_single_dock`): Qt's floating group window breaks with custom title bars. That detach moves the window by hand, so it tracks no drop targets; dropping a tabbed panel straight into another group takes a drag by its tab, or a second drag of the now-floating panel's title. Untabbed panels keep Qt's native title drag with drop targets.
+- Qt sizes a tab group by its most restrictive tab (largest minimum, smallest maximum). A tab group therefore collapses and expands as one: toggling one tab sets its partners (`handle_right_dock_panel_toggled`), a panel joining a group with an expanded tab expands, and a panel's own height cap (Properties stays 230 px) applies only while it is not tabbed (`sync_panel_collapse_toggles`, `ui_tab_group_collapses_and_expands_as_one`).
+- A floating group or single floating right dock (`floatingChrome` property) gets chrome from `handle_dock_group_window_event`: a divider-chrome strip with edge-resize cursors and blank areas that drag the window (`ui_dock_group_window_drags_by_blank_chrome`). Floating docks skip the width pin and the handle, get a size nudge on toggle (`resync_native_frame_geometry`), and are always expanded: pulling a panel out auto-expands it and the collapse toggle shows only while docked (`ui_floating_right_dock_auto_expands`). Qt sends no top-level change for a panel it moves into or out of a tab-group window, so layout restores call `sync_panel_collapse_toggles` directly.
+
+## Saved arrangement
+
+Closing the main window saves the arrangement next to the window geometry; the constructor restores it after `restore_window_geometry`. Keys (persisted, never rename):
+
+- `window/panelLayout`: `QMainWindow::saveState(kPanelLayoutVersion)`. It covers docked sections, tab groups and the current tab, floating panels and floating tab groups with their geometry, and the two toolbars. Bump `kPanelLayoutVersion` when a change to the built-in arrangement must discard saved layouts.
+- `window/panelExpanded`: each panel's collapse state, applied before `restoreState` so the saved sizes meet matching height pins.
+- `window/panelLayoutDocks`: the panels that existed at save time.
+
+`restore_panel_layout` first captures the built-in arrangement (a `saveState` blob plus each panel's area, tab partners and collapse state). A state from another version or unreadable data falls back to it. A panel missing from `panelLayoutDocks` (added in a later release) is tabbed with a docked built-in partner if one exists, otherwise added as a new section at the end of its built-in area; Qt alone would drop it wherever its old index path lands. Window > Reset Panel Layout (`window.reset_panel_layout`, no default shortcut) restores the captured arrangement and collapse states and clears the width pin; it first moves panels out of floating tab-group windows with `addDockWidget`, because `restoreState` leaves them in the group's layout and one floats again. Tests: `ui_panel_layout_*`, `ui_reset_panel_layout_restores_built_in_arrangement`. The UI suite's per-test cleanup removes the three keys, so every test starts from the built-in layout.

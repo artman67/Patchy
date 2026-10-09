@@ -2,8 +2,9 @@
 // (the right dock stack of layers/channels/history/properties/info panels),
 // create_palette_dock, the right-dock-stack resize plumbing
 // (update_right_dock_resize_handle_geometry, set_right_dock_stack_width,
-// update_right_dock_minimum_width, handle_right_dock_resize_event), and the
-// collapsible dock title helper.
+// update_right_dock_minimum_width, handle_right_dock_resize_event), the
+// collapsible dock title helper, and the saved panel arrangement
+// (restore/save/reset_panel_layout, docs/dock-panels.md).
 // Pure function moves from main_window.cpp; behavior must stay identical.
 
 #include "ui/main_window.hpp"
@@ -336,6 +337,33 @@ Qt::CursorShape group_window_resize_cursor(Qt::Edges edges) {
   return Qt::SizeVerCursor;
 }
 
+QToolButton* dock_collapse_toggle(const QDockWidget* dock) {
+  const auto* title = dock->titleBarWidget();
+  if (title == nullptr) {
+    return nullptr;
+  }
+  for (auto* button : title->findChildren<QToolButton*>()) {
+    if (button->property("dockCollapseButton").toBool()) {
+      return button;
+    }
+  }
+  return nullptr;
+}
+
+// A docked panel sharing a tab group in the main window. Qt sizes a tab group
+// by its most restrictive tab (the smallest maximum height), so per-panel
+// height pins affect every tab in the group.
+bool dock_is_tabbed(QDockWidget* dock) {
+  auto* main_window = qobject_cast<QMainWindow*>(dock->parentWidget());
+  return main_window != nullptr && !main_window->tabifiedDockWidgets(dock).isEmpty();
+}
+
+// The height cap an expanded panel keeps while it stands alone (Properties
+// stays short); in a tab group it would cap the whole group.
+int expanded_dock_maximum_height(QDockWidget* dock) {
+  return dock_is_tabbed(dock) ? QWIDGETSIZE_MAX : dock->property("patchy.expandedMaximumHeight").toInt();
+}
+
 void install_collapsible_dock_title(QDockWidget* dock,
                                     QWidget* content,
                                     const QString& object_prefix,
@@ -380,8 +408,8 @@ void install_collapsible_dock_title(QDockWidget* dock,
   layout->addWidget(label, 1);
 
   const auto expanded_boost_height = std::max(expanded_minimum_height, expanded_preferred_height);
+  dock->setProperty("patchy.expandedMaximumHeight", expanded_maximum_height);
   const auto apply_expanded_state = [dock, content, toggle, expanded_boost_height,
-                                     expanded_maximum_height,
                                      panel_toggled = std::move(panel_toggled)](bool expanded) {
     content->setVisible(expanded);
     toggle->setText(expanded ? QStringLiteral("v") : QStringLiteral(">"));
@@ -398,7 +426,7 @@ void install_collapsible_dock_title(QDockWidget* dock,
     // minimum size. A floor of 0 means the layout-derived natural minimum.
     const auto collapsed_height = dock->titleBarWidget()->sizeHint().height();
     dock->setMinimumHeight(expanded ? expanded_boost_height : collapsed_height);
-    dock->setMaximumHeight(expanded ? expanded_maximum_height : collapsed_height);
+    dock->setMaximumHeight(expanded ? expanded_dock_maximum_height(dock) : collapsed_height);
     dock->updateGeometry();
     if (panel_toggled) {
       panel_toggled(expanded);
@@ -406,23 +434,6 @@ void install_collapsible_dock_title(QDockWidget* dock,
   };
 
   QObject::connect(toggle, &QToolButton::toggled, dock, apply_expanded_state);
-
-  // Floating panels are always expanded: a collapsed strip is pinned to
-  // min == max, and Qt cannot plug that into a floating tab group (the
-  // group's layout has no room for the pin plus its tab bar, and the docked
-  // partner blinks away). Pulling a panel out expands it, and the collapse
-  // toggle only shows while the panel sits in the main window's column.
-  // Deferred a hop because window() still reports the old top-level while
-  // topLevelChanged is being emitted.
-  QObject::connect(dock, &QDockWidget::topLevelChanged, toggle, [dock, toggle](bool) {
-    QTimer::singleShot(0, toggle, [dock, toggle] {
-      const bool in_main_window_column = qobject_cast<QMainWindow*>(dock->window()) != nullptr;
-      toggle->setVisible(in_main_window_column);
-      if (!in_main_window_column && !toggle->isChecked()) {
-        toggle->setChecked(true);
-      }
-    });
-  });
 
   dock->setTitleBarWidget(title);
   apply_expanded_state(initially_expanded);
@@ -477,7 +488,43 @@ void MainWindow::install_right_dock_width_handle(QDockWidget* dock) {
       resizeDocks({dock}, {dock->minimumHeight()}, Qt::Vertical);
     });
   });
+  // A move can put the panel in or out of a tab group or the column. Deferred
+  // a hop because window() still reports the old top-level while
+  // topLevelChanged is being emitted.
+  const auto sync_later = [this] { QTimer::singleShot(0, this, [this] { sync_panel_collapse_toggles(); }); };
+  connect(dock, &QDockWidget::topLevelChanged, this, sync_later);
+  connect(dock, &QDockWidget::dockLocationChanged, this, sync_later);
   update_right_dock_resize_handle_geometry(dock);
+}
+
+void MainWindow::sync_panel_collapse_toggles() {
+  for (auto* dock : findChildren<QDockWidget*>()) {
+    auto* toggle = dock_collapse_toggle(dock);
+    if (toggle == nullptr) {
+      continue;
+    }
+    // Floating panels are always expanded: a collapsed strip is pinned to
+    // min == max, and Qt cannot plug that into a floating tab group (the
+    // group's layout has no room for the pin plus its tab bar, and the docked
+    // partner blinks away). The collapse toggle only shows while the panel
+    // sits in the main window's column.
+    const bool in_main_window_column = qobject_cast<QMainWindow*>(dock->window()) != nullptr;
+    toggle->setVisible(in_main_window_column);
+    // A tab group collapses and expands as one (handle_right_dock_panel_toggled):
+    // one collapsed tab would pin the whole group to a title strip with a
+    // dead band below it, so a panel joining a group with an expanded tab
+    // expands too.
+    bool expand = !in_main_window_column;
+    for (auto* partner : tabifiedDockWidgets(dock)) {
+      const auto* partner_toggle = dock_collapse_toggle(partner);
+      expand = expand || (partner_toggle != nullptr && partner_toggle->isChecked());
+    }
+    if (expand && !toggle->isChecked()) {
+      toggle->setChecked(true);
+    } else if (toggle->isChecked()) {
+      dock->setMaximumHeight(expanded_dock_maximum_height(dock));
+    }
+  }
 }
 
 void MainWindow::update_right_dock_resize_handle_geometry(QWidget* host) {
@@ -597,6 +644,14 @@ void MainWindow::handle_right_dock_panel_toggled(QDockWidget* dock, bool expande
   // yet, and no dock that starts expanded boosts past its floor.
   if (!isVisible()) {
     return;
+  }
+  // A tab group collapses and expands as one: its height follows the most
+  // restrictive tab, so a lone collapsed tab leaves a dead band. Partners
+  // already in the new state emit nothing, which ends the recursion.
+  for (auto* partner : tabifiedDockWidgets(dock)) {
+    if (auto* toggle = dock_collapse_toggle(partner); toggle != nullptr) {
+      toggle->setChecked(expanded);
+    }
   }
   const auto height_before = height();
   // One event-loop hop: the boosted minimum from apply_expanded_state has
@@ -1955,6 +2010,139 @@ void MainWindow::create_palette_dock() {
   install_right_dock_width_handle(palette_dock_);
   addDockWidget(Qt::RightDockWidgetArea, palette_dock_);
   update_right_dock_resize_handle_geometry(palette_dock_);
+}
+
+namespace {
+
+// Panel arrangement settings (docs/dock-panels.md); persisted, never rename.
+constexpr auto kPanelLayoutKey = "window/panelLayout";
+constexpr auto kPanelLayoutDocksKey = "window/panelLayoutDocks";
+constexpr auto kPanelExpandedKey = "window/panelExpanded";
+// Bump when a change to the built-in arrangement must discard saved layouts:
+// restoreState refuses a state saved under another version.
+constexpr int kPanelLayoutVersion = 1;
+
+}  // namespace
+
+void MainWindow::restore_panel_layout() {
+  // Capture the built-in arrangement before anything moves: Reset Panel
+  // Layout returns to it, and it places panels the saved layout predates.
+  default_panel_layout_ = saveState(kPanelLayoutVersion);
+  default_panel_placements_.clear();
+  for (auto* dock : findChildren<QDockWidget*>(Qt::FindDirectChildrenOnly)) {
+    DefaultPanelPlacement placement;
+    placement.name = dock->objectName();
+    placement.area = dockWidgetArea(dock);
+    for (const auto* partner : tabifiedDockWidgets(dock)) {
+      placement.tab_partners.append(partner->objectName());
+    }
+    const auto* toggle = dock_collapse_toggle(dock);
+    placement.expanded = toggle == nullptr || toggle->isChecked();
+    default_panel_placements_.push_back(std::move(placement));
+  }
+
+  const auto settings = app_settings();
+  const auto state = settings.value(QLatin1StringView(kPanelLayoutKey)).toByteArray();
+  if (state.isEmpty()) {
+    return;
+  }
+  // Collapse states first, so each docked panel's height pin matches the
+  // sizes the layout was saved with.
+  const auto expanded = settings.value(QLatin1StringView(kPanelExpandedKey)).toMap();
+  for (auto* dock : findChildren<QDockWidget*>()) {
+    auto* toggle = dock_collapse_toggle(dock);
+    if (toggle != nullptr && expanded.contains(dock->objectName())) {
+      toggle->setChecked(expanded.value(dock->objectName()).toBool());
+    }
+  }
+  if (!restoreState(state, kPanelLayoutVersion)) {
+    // Another version or unreadable data: start from the built-in layout.
+    reset_panel_layout();
+    return;
+  }
+
+  // Qt leaves a panel the state does not name wherever its old index path
+  // lands, which can be inside an unrelated tab group. Give such panels their
+  // built-in placement: tabbed with a default partner that is docked, else a
+  // new section at the end of their default area.
+  if (settings.contains(QLatin1StringView(kPanelLayoutDocksKey))) {
+    auto placed = settings.value(QLatin1StringView(kPanelLayoutDocksKey)).toStringList();
+    for (const auto& placement : default_panel_placements_) {
+      auto* dock = findChild<QDockWidget*>(placement.name);
+      if (dock == nullptr || placed.contains(placement.name)) {
+        continue;
+      }
+      QDockWidget* partner = nullptr;
+      for (const auto& name : placement.tab_partners) {
+        auto* candidate = findChild<QDockWidget*>(name);
+        if (candidate != nullptr && placed.contains(name) && candidate->window() == this &&
+            !candidate->isHidden()) {
+          partner = candidate;
+          break;
+        }
+      }
+      // tabifyDockWidget does not take the panel out of its current slot.
+      const bool hidden = dock->isHidden();
+      removeDockWidget(dock);
+      if (partner != nullptr) {
+        tabifyDockWidget(partner, dock);
+      } else {
+        addDockWidget(placement.area, dock);
+      }
+      dock->setVisible(!hidden);
+      placed.append(placement.name);
+    }
+  }
+  // Qt reports no top-level change for panels it puts in a floating
+  // tab-group window.
+  sync_panel_collapse_toggles();
+}
+
+void MainWindow::save_panel_layout() const {
+  QStringList docks;
+  QVariantMap expanded;
+  for (const auto* dock : findChildren<QDockWidget*>()) {
+    docks.append(dock->objectName());
+    if (const auto* toggle = dock_collapse_toggle(dock); toggle != nullptr) {
+      expanded.insert(dock->objectName(), toggle->isChecked());
+    }
+  }
+  auto settings = app_settings();
+  settings.setValue(QLatin1StringView(kPanelLayoutKey), saveState(kPanelLayoutVersion));
+  settings.setValue(QLatin1StringView(kPanelLayoutDocksKey), docks);
+  settings.setValue(QLatin1StringView(kPanelExpandedKey), expanded);
+}
+
+void MainWindow::reset_panel_layout() {
+  if (default_panel_layout_.isEmpty()) {
+    return;
+  }
+  // restoreState reparents panels out of a floating tab-group window but
+  // leaves them in the group's layout, which then floats one of them again.
+  // Taking them out through addDockWidget empties the group the way a drag
+  // does, and Qt deletes the empty window.
+  for (auto* dock : findChildren<QDockWidget*>()) {
+    if (dock->window() != this && !dock->isWindow()) {
+      addDockWidget(Qt::RightDockWidgetArea, dock);
+    }
+  }
+  restoreState(default_panel_layout_, kPanelLayoutVersion);
+  for (const auto& placement : default_panel_placements_) {
+    auto* dock = findChild<QDockWidget*>(placement.name);
+    auto* toggle = dock != nullptr ? dock_collapse_toggle(dock) : nullptr;
+    if (toggle != nullptr) {
+      toggle->setChecked(placement.expanded);
+    }
+  }
+  sync_panel_collapse_toggles();
+  // The built-in column has no explicit width: drop any width-handle pin.
+  right_dock_pinned_width_ = 0;
+  for (const auto& name : right_dock_stack_names()) {
+    if (auto* dock = findChild<QDockWidget*>(name); dock != nullptr) {
+      dock->setMinimumWidth(std::max(kRightDockMinimumWidth, right_dock_minimum_width_));
+      dock->setMaximumWidth(QWIDGETSIZE_MAX);
+    }
+  }
 }
 
 }  // namespace patchy::ui
