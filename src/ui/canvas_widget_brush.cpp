@@ -1256,14 +1256,14 @@ bool CanvasWidget::brush_uses_dab_stroke(const EffectiveBrushInput& brush, bool 
     // The mixer evolves once per spatial dab. The procedural capsule path has no dab cadence.
     return true;
   }
-  if (!erase && tool_ == CanvasTool::Brush && brush_dynamics_.active()) {
+  if (!erase && tool_has(tool_, kToolBrushDynamics) && brush_dynamics_.active()) {
     return false;
   }
   // Flow must be tied to a spatial dab cadence, not to the number of mouse
   // move events delivered by the platform. Airbrush also uses this path so its
   // moving stroke and stationary timer share the same flat stamp footprint.
   if (!erase && tool_has(tool_, kToolFlow) &&
-      (brush_flow_ < 100 || (tool_ == CanvasTool::Brush && brush_build_up_))) {
+      (brush_flow_ < 100 || (tool_has(tool_, kToolBrushDynamics) && brush_build_up_))) {
     return true;
   }
   return brush.size > 1 && brush.softness > 0;
@@ -1845,7 +1845,7 @@ void CanvasWidget::install_brush_stroke_compositor(EditOptions& options, bool er
 
   // Wet Edges is derived from one accumulated stroke footprint. Palette editing intentionally
   // keeps its hard snapped write semantics instead of introducing off-palette edge tones.
-  if (!erase && tool_ == CanvasTool::Brush && options.brush_dynamics.wet_edges &&
+  if (!erase && tool_has(tool_, kToolBrushDynamics) && options.brush_dynamics.wet_edges &&
       options.palette_snap == nullptr) {
     options.stroke_coverage_observer =
         [this](std::int32_t x, std::int32_t y, float coverage, const EditColor& dab_primary) {
@@ -1945,7 +1945,7 @@ CanvasWidget::EffectiveBrushInput CanvasWidget::effective_brush_input() const no
     brush.size = std::clamp(static_cast<int>(std::lround(static_cast<double>(brush_size_) * scale)),
                             1, kMaxBrushSize);
     const auto stamps = brush_tip_ != nullptr ||
-                        (brush_dynamics_.active() && tool_ == CanvasTool::Brush);  // Round + dynamics
+                        (brush_dynamics_.active() && tool_has(tool_, kToolBrushDynamics));  // Round + dynamics
     if (stamps && brush.size > 4) {
       brush.size &= ~1;  // 2px steps so pressure oscillation reuses cached scaled stamps
     }
@@ -2000,6 +2000,23 @@ EditOptions CanvasWidget::current_brush_edit_options(const EffectiveBrushInput& 
   return options;
 }
 
+// The footprint shared by draw_brush_segment and draw_brush_at. Pattern Stamp and History Brush
+// keep a static round footprint unless a bitmap tip is picked. Only kToolBrushDynamics tools keep
+// the working brush's dynamics: the Mixer's one-sample color model must not be perturbed by them,
+// and erase strokes stay predictable (a Round eraser also stays procedural).
+void CanvasWidget::apply_stroke_footprint(EditOptions& options, const EffectiveBrushInput& brush, bool erase) const {
+  const auto static_footprint_tool = tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush;
+  if (!static_footprint_tool || brush_tip_ != nullptr) {
+    apply_brush_tip_to_options(options, brush.size, brush.softness);
+  }
+  if (erase || !tool_has(tool_, kToolBrushDynamics)) {
+    options.brush_dynamics = {};
+  }
+  if (erase && brush_tip_ == nullptr) {
+    options.brush_tip = nullptr;
+  }
+}
+
 QRect CanvasWidget::draw_brush_segment(QPointF from, QPointF to, bool erase, bool stamp_endpoint) {
   if (editing_grayscale_target()) {
     return draw_mask_brush_segment(from, to, erase);
@@ -2013,25 +2030,7 @@ QRect CanvasWidget::draw_brush_segment(QPointF from, QPointF to, bool erase, boo
     return draw_brush_segment_with_dabs(from, to, erase, brush, stamp_endpoint);
   }
   auto options = current_brush_edit_options(brush);
-  const auto static_footprint_tool =
-      tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush;
-  if (!static_footprint_tool || brush_tip_ != nullptr) {
-    apply_brush_tip_to_options(options, brush.size, brush.softness);
-  }
-  if (static_footprint_tool) {
-    options.brush_dynamics = {};
-  }
-  if (tool_ == CanvasTool::MixerBrush) {
-    // Mixer accepts imported/static tip bitmaps, but ordinary Brush dynamics are a separate
-    // engine and must not perturb its deliberately simple one-sample color model.
-    options.brush_dynamics = {};
-  }
-  if (erase) {
-    options.brush_dynamics = {};  // v1: dynamics are Brush-only; erase strokes stay predictable
-    if (brush_tip_ == nullptr) {
-      options.brush_tip = nullptr;  // Round + session dynamics: the eraser stays procedural
-    }
-  }
+  apply_stroke_footprint(options, brush, erase);
   if (options.brush_tip != nullptr) {
     install_brush_stroke_compositor(options, erase);
     const auto dirty = to_qrect(
@@ -2078,23 +2077,7 @@ QRect CanvasWidget::draw_brush_at(QPoint point, bool erase) {
     brush_stroke_distance_since_last_stamp_ = 0.0;
     return dirty;
   }
-  const auto static_footprint_tool =
-      tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush;
-  if (!static_footprint_tool || brush_tip_ != nullptr) {
-    apply_brush_tip_to_options(options, brush.size, brush.softness);
-  }
-  if (static_footprint_tool) {
-    options.brush_dynamics = {};
-  }
-  if (tool_ == CanvasTool::MixerBrush) {
-    options.brush_dynamics = {};
-  }
-  if (erase) {
-    options.brush_dynamics = {};
-    if (brush_tip_ == nullptr) {
-      options.brush_tip = nullptr;  // Round + session dynamics: the eraser stays procedural
-    }
-  }
+  apply_stroke_footprint(options, brush, erase);
   if (options.brush_tip != nullptr) {
     install_brush_stroke_compositor(options, erase);
     // Stateful zero-length segment: stamps exactly the press dab and starts the stroke's dab

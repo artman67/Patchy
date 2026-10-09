@@ -2440,6 +2440,7 @@ private:
                                                                                    int softness) const;
   void apply_brush_tip_to_options(EditOptions& options, int brush_size, int brush_softness) const;
   [[nodiscard]] QImage brush_tip_stamp_image(int size, int softness) const;
+  void apply_stroke_footprint(EditOptions& options, const EffectiveBrushInput& brush, bool erase) const;
   // Sets a cursor tracing the active tip's outline; false when there is no usable tip shape.
   bool apply_brush_tip_cursor();
   // Brushes whose on-screen footprint exceeds the OS-cursor cap draw their outline as a canvas
