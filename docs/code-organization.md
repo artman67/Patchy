@@ -25,7 +25,7 @@ Vector-preserving merge planning, output preparation, and its dialog live in `ui
 - `main_window_sessions.cpp` - document sessions, tabs, close paths, float windows, and `update_start_panel_visibility()`.
 - `main_window_preferences.cpp` - Preferences, guides, and pen/view settings.
 - `main_window_document_dialogs.cpp` - Image Size/Canvas Size and resize/reset members. The New Document dialog lives in `src/ui/new_document_dialog.cpp`; its preset ids and `newDocument/` keys (`lastPresetId`, `lastWidth`, `lastHeight`, `lastPpi`, `lastBackground`, `lastUnit`, `lastResolutionUnit`) are persisted and append-only. Screen presets and `reset_document` default to 72 PPI; print presets use 300 PPI.
-- `main_window_docks.cpp` - dock creation, right-dock resize handles, and the saved panel arrangement ([dock-panels.md](dock-panels.md)).
+- `main_window_docks.cpp` - right-dock resize handles, the collapsible title bars, floating group chrome, and the saved panel arrangement ([dock-panels.md](dock-panels.md)). `main_window_dock_builders.cpp` holds `create_docks()` and one builder per panel (`create_layers_dock`, `create_channels_dock`, ...), called in column order. The two share `kRightDockResizeHandleWidth`, `kBuiltInTabPartnersProperty`, and `install_collapsible_dock_title` through `main_window_docks_internal.hpp`, which no other TU may include.
 - `main_window_history.cpp` - undo/redo, snapshots, selection history, and history-panel refresh.
 - `main_window_vector.cpp` - shape/fill layers, vector masks, work-path operations, and the shape-appearance preview.
 - `main_window_channels.cpp` - document channels, alpha channels, Quick Mask, and channel-panel refresh.
