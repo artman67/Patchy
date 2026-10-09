@@ -398,7 +398,7 @@ void ui_brush_dynamics_form_keeps_fields_it_does_not_edit() {
 
 void ui_brush_settings_sections_grey_out_per_tool() {
   // Sections the active tool's strokes ignore are greyed: the Eraser and Mixer Brush keep the
-  // tip and Smoothing, Pattern Stamp only the tip, other tools nothing.
+  // tip and Smoothing, Pattern Stamp and History Brush only the tip, other tools nothing.
   clear_brush_tip_test_state();
   patchy::ui::MainWindow window;
   show_window(window);
@@ -427,6 +427,14 @@ void ui_brush_settings_sections_grey_out_per_tool() {
   settle();
   CHECK(enabled(BrushSection::TipShape));
   CHECK(!enabled(BrushSection::Smoothing));
+  require_action(window, "toolHistoryBrushAction")->trigger();
+  settle();
+  CHECK(enabled(BrushSection::TipShape));
+  CHECK(!enabled(BrushSection::Smoothing));
+  CHECK(!enabled(BrushSection::ShapeDynamics));
+  require_action(window, "toolColorReplacementAction")->trigger();
+  settle();
+  CHECK(!enabled(BrushSection::TipShape));
   require_action_by_text(window, QStringLiteral("Move"))->trigger();
   settle();
   CHECK(!enabled(BrushSection::TipShape));

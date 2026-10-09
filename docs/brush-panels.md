@@ -119,11 +119,12 @@ Projection and Protect Texture are left out: the engine has no such features (se
   ([brush-texture.md](brush-texture.md)). The stroke strip renders with the pattern tile.
 - Edits coalesce over 40 ms and the stroke strip re-renders at most every 80 ms. A pick drops a
   pending form edit; the panel skips reloading values that only echo its own edit.
-- Tools grey out what their strokes ignore (`brush_sections_for_tool`): the Brush honors every
-  section; Mixer Brush and the Eraser the tip and Smoothing; Pattern Stamp the tip; other tools
-  none. The same table decides where the options-bar Dynamics button and Airbrush appear
-  (`tools_honoring`). This repository has no tool-traits table on this base; when it gains one,
-  the mask belongs there. Keep it in step with what `canvas_widget_brush.cpp` strips.
+- Tools grey out what their strokes ignore (`brush_sections_for_tool`, read from the tool traits
+  table in `ui/tool_traits`): `kToolBrushDynamics` (the Brush) honors every section; the other
+  `kToolBrushTip` tools the tip (Pattern Stamp, History Brush), plus Smoothing with
+  `kToolSmoothing` (Mixer Brush, Eraser); other tools none. The same flags decide where the
+  options-bar Dynamics button and Airbrush appear (`tools_honoring`). Keep them in step with what
+  `canvas_widget_brush.cpp` strips.
 - "Clear Brush Controls" resets every unlocked dynamics section.
 
 ## Locks

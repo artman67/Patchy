@@ -60,6 +60,11 @@ inline constexpr ToolTraitFlags kToolBrushInfo = 1U << 14U;
 // Changes only the view, so its action stays enabled while a preview dialog
 // locks editing.
 inline constexpr ToolTraitFlags kToolViewOnly = 1U << 15U;
+// Strokes apply the working brush's dynamics, effects and Build-up, so every Brush Settings
+// section applies; the options bar's Dynamics button and Airbrush. Other kToolBrushTip tools
+// honor Brush Tip Shape only, plus Smoothing with kToolSmoothing (brush_sections_for_tool).
+// Keep it in step with what canvas_widget_brush.cpp strips.
+inline constexpr ToolTraitFlags kToolBrushDynamics = 1U << 16U;
 
 struct ToolTraits {
   CanvasTool tool;

@@ -169,7 +169,8 @@ constexpr std::array<ToolTraits, kCanvasToolCount> kToolTraits{{
      .icon = "tool-brush",
      .flags = kToolPaintsStrokes | kToolBrushSize | kToolBrushSizeSliders | kToolBrushOpacity |
               kToolBrushOpacitySlider | kToolOpacityDigitKeys | kToolFlow | kToolSmoothing |
-              kToolBrushPresets | kToolBrushTip | kToolAltClickPicksColor | kToolBrushInfo},
+              kToolBrushPresets | kToolBrushTip | kToolBrushDynamics | kToolAltClickPicksColor |
+              kToolBrushInfo},
     {.tool = CanvasTool::Clone,
      .name = QT_TRANSLATE_NOOP("patchy::ui::MainWindow", "Clone"),
      .display_name = QT_TRANSLATE_NOOP("QObject", "Clone Stamp"),

@@ -68,9 +68,10 @@ void set_brush_section_enabled_flag(BrushSection section, WorkingBrush& brush, b
 [[nodiscard]] WorkingBrush picked_over(const WorkingBrush& current, WorkingBrush picked,
                                        BrushSectionMask locks);
 
-// The sections the tool's strokes honor. Brush honors all of them; Mixer Brush, Pattern Stamp
-// and the Eraser stamp the tip without dynamics (canvas_widget_brush strips them); other tools
-// ignore the working brush.
+// The sections the tool's strokes honor, read from its tool traits (ui/tool_traits): every
+// section with kToolBrushDynamics (the Brush); Brush Tip Shape for the other tip-stamping tools
+// (kToolBrushTip: Mixer Brush, Pattern Stamp, Eraser, History Brush), which stamp the tip without
+// dynamics, plus Smoothing with kToolSmoothing; nothing for tools that ignore the working brush.
 [[nodiscard]] BrushSectionMask brush_sections_for_tool(CanvasTool tool);
 // True for the tools whose strokes apply brush dynamics and effects (the Brush only).
 [[nodiscard]] bool tool_uses_brush_dynamics(CanvasTool tool);

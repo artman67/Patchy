@@ -1,7 +1,7 @@
 #include "ui/brush_settings_sections.hpp"
 
-#include "ui/canvas_widget.hpp"
 #include "ui/current_brush.hpp"
+#include "ui/tool_traits.hpp"
 
 #include <QCoreApplication>
 
@@ -226,27 +226,24 @@ WorkingBrush picked_over(const WorkingBrush& current, WorkingBrush picked, Brush
 }
 
 BrushSectionMask brush_sections_for_tool(CanvasTool tool) {
-  switch (tool) {
-    case CanvasTool::Brush:
-      return kAllBrushSections;
-    case CanvasTool::MixerBrush:
-    case CanvasTool::Eraser:
-      return brush_section_bit(BrushSection::TipShape) | brush_section_bit(BrushSection::Smoothing);
-    case CanvasTool::PatternStamp:
-      return brush_section_bit(BrushSection::TipShape);
-    default:
-      return 0U;
+  if (tool_has(tool, kToolBrushDynamics)) {
+    return kAllBrushSections;
   }
+  BrushSectionMask sections = 0U;
+  if (tool_has(tool, kToolBrushTip)) {
+    sections |= brush_section_bit(BrushSection::TipShape);
+  }
+  if (tool_has(tool, kToolSmoothing)) {
+    sections |= brush_section_bit(BrushSection::Smoothing);
+  }
+  return sections;
 }
 
 std::vector<CanvasTool> tools_honoring(BrushSection section) {
-  // Only the tip-stamping tools honor any section (brush_sections_for_tool).
-  std::vector<CanvasTool> tools;
-  for (const auto tool : {CanvasTool::Brush, CanvasTool::MixerBrush, CanvasTool::PatternStamp, CanvasTool::Eraser}) {
-    if ((brush_sections_for_tool(tool) & brush_section_bit(section)) != 0U) {
-      tools.push_back(tool);
-    }
-  }
+  auto tools = tools_with(kToolBrushDynamics | kToolBrushTip | kToolSmoothing);
+  std::erase_if(tools, [section](CanvasTool tool) {
+    return (brush_sections_for_tool(tool) & brush_section_bit(section)) == 0U;
+  });
   return tools;
 }
 
