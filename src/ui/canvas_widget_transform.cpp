@@ -154,10 +154,17 @@ bool raster_mask_affects_render(const LayerMask& mask) {
   return false;
 }
 
-bool layer_needs_composited_transform_preview(const Layer& layer) {
+// A linked raster mask rides the transform rigidly, so when the plain blit draws the
+// source with the mask coverage folded in (transform_masked_source_image_) it shows the
+// exact masked result and needs no per-frame composite. Flat PNG/TIFF/BMP imports carry
+// their transparency as such a mask, so without this every one of them transformed on
+// the slow path.
+bool layer_needs_composited_transform_preview(const Layer& layer, bool linked_mask_folds_into_source) {
+  const auto& mask = layer.mask();
+  const bool mask_folds = linked_mask_folds_into_source && layer_mask_linked(layer);
   return std::abs(layer.opacity() - 1.0F) > 0.001F || std::abs(layer.fill_opacity() - 1.0F) > 0.001F ||
          layer.blend_mode() != BlendMode::Normal ||
-         (layer.mask().has_value() && raster_mask_affects_render(*layer.mask())) ||
+         (mask.has_value() && !mask_folds && raster_mask_affects_render(*mask)) ||
          patchy::layer_has_enabled_vector_mask(layer) ||
          (layer.layer_style().effects_visible && !layer.layer_style().empty());
 }
@@ -197,8 +204,10 @@ bool layer_has_visible_content_above(const Document& document, LayerId id) {
   return visible_content_composites_above(document.layers(), id, found);
 }
 
-bool transform_preview_needs_compositing(const Document& document, const Layer& layer) {
-  return layer_needs_composited_transform_preview(layer) || layer_has_visible_content_above(document, layer.id());
+bool transform_preview_needs_compositing(const Document& document, const Layer& layer,
+                                         bool linked_mask_folds_into_source) {
+  return layer_needs_composited_transform_preview(layer, linked_mask_folds_into_source) ||
+         layer_has_visible_content_above(document, layer.id());
 }
 
 // Smallest sub-rect of a gray8 mask buffer holding every pixel that differs
@@ -778,7 +787,12 @@ TransformedImage resample_warped_rgba8(const QImage& source, const WarpSurfaceGr
   };
 
   const bool listed_order = !grid.cell_order.empty();
-  const auto render_cell = [&](int cell_row, int cell_column) {
+  // Detach once up front: workers write disjoint rows through this pointer, and
+  // concurrent scanLine() calls would race on QImage's copy-on-write.
+  auto* transformed_bits = transformed.bits();
+  const auto transformed_stride = static_cast<std::size_t>(transformed.bytesPerLine());
+  // Renders the cell's pixels inside output rows [band_top, band_bottom) (document y).
+  const auto render_cell = [&](int cell_row, int cell_column, int band_top, int band_bottom) {
     const auto i00 = static_cast<std::size_t>(cell_row * grid.columns + cell_column);
     const auto i10 = i00 + 1;
     const auto i01 = i00 + static_cast<std::size_t>(grid.columns);
@@ -789,10 +803,10 @@ TransformedImage resample_warped_rgba8(const QImage& source, const WarpSurfaceGr
     const double cell_max_y = std::max({grid.doc_ys[i00], grid.doc_ys[i10], grid.doc_ys[i11], grid.doc_ys[i01]});
     const int px_start = std::max(left, static_cast<int>(std::floor(cell_min_x)));
     const int px_end = std::min(right, static_cast<int>(std::ceil(cell_max_x)) + 1);
-    const int py_start = std::max(top, static_cast<int>(std::floor(cell_min_y)));
-    const int py_end = std::min(bottom, static_cast<int>(std::ceil(cell_max_y)) + 1);
+    const int py_start = std::max(band_top, static_cast<int>(std::floor(cell_min_y)));
+    const int py_end = std::min(band_bottom, static_cast<int>(std::ceil(cell_max_y)) + 1);
     for (int py = py_start; py < py_end; ++py) {
-      auto* row = transformed.scanLine(py - top);
+      auto* row = transformed_bits + static_cast<std::size_t>(py - top) * transformed_stride;
       auto* coverage_row = covered.data() + static_cast<std::size_t>(py - top) * transformed.width();
       for (int px = px_start; px < px_end; ++px) {
         if (coverage_row[px - left] != 0) {
@@ -830,16 +844,40 @@ TransformedImage resample_warped_rgba8(const QImage& source, const WarpSurfaceGr
       }
     }
   };
-  if (!listed_order) {
-    for (int cell_row = 0; cell_row + 1 < grid.rows; ++cell_row) {
-      for (int cell_column = 0; cell_column + 1 < grid.columns; ++cell_column) {
-        render_cell(cell_row, cell_column);
+  // Each band walks every cell in the same order and writes only its own rows, so
+  // first-writer-wins on folds resolves per pixel exactly as one sequential walk
+  // would: the banded result is byte-identical (the live warp drag ran this single
+  // threaded at ~300 ms per frame on a 1080p layer).
+  const auto render_band = [&](int band_top, int band_bottom) {
+    if (!listed_order) {
+      for (int cell_row = 0; cell_row + 1 < grid.rows; ++cell_row) {
+        for (int cell_column = 0; cell_column + 1 < grid.columns; ++cell_column) {
+          render_cell(cell_row, cell_column, band_top, band_bottom);
+        }
+      }
+    } else {
+      for (const auto cell : grid.cell_order) {
+        render_cell(cell / cell_columns, cell % cell_columns, band_top, band_bottom);
       }
     }
-  } else {
-    for (const auto cell : grid.cell_order) {
-      render_cell(cell / cell_columns, cell % cell_columns);
+  };
+  const auto height = bottom - top;
+  const auto area = static_cast<std::int64_t>(transformed.width()) * transformed.height();
+  const auto workers = patchy::max_blocking_fanout_workers(
+      std::clamp(std::min(height / kResampleRowsPerWorker, patchy::hardware_worker_threads()), 1, 16));
+  if (area >= kResampleParallelMinArea && workers >= 2 &&
+      !qEnvironmentVariableIsSet("PATCHY_RENDER_SINGLE_THREADED")) {
+    std::vector<std::future<void>> bands;
+    bands.reserve(static_cast<std::size_t>(workers));
+    const auto rows_per_band = (height + workers - 1) / workers;
+    for (int start = top; start < bottom; start += rows_per_band) {
+      bands.push_back(std::async(std::launch::async, render_band, start, std::min(start + rows_per_band, bottom)));
     }
+    for (auto& band : bands) {
+      band.get();
+    }
+  } else {
+    render_band(top, bottom);
   }
   const auto bounds = Rect{left, top, transformed.width(), transformed.height()};
   return TransformedImage{std::move(transformed), bounds};
@@ -1038,6 +1076,7 @@ bool CanvasWidget::begin_free_transform() {
   transform_drag_start_scale_x_sign_ = 1.0;
   transform_drag_start_scale_y_sign_ = 1.0;
   transform_source_image_ = QImage();
+  transform_masked_source_image_ = QImage();
   transform_source_local_rect_ = *local_transform_rect;
   transform_base_cache_ = QImage();
   transform_base_cache_scale_level_ = 0;
@@ -1050,7 +1089,8 @@ bool CanvasWidget::begin_free_transform() {
   transform_proxy_image_ = QImage();
   transform_mask_sources_.clear();
   transform_proxy_layer_opacity_ = 1.0;
-  transform_requires_composited_preview_ = transform_preview_needs_compositing(*document_, *layer);
+  transform_requires_composited_preview_ =
+      transform_preview_needs_compositing(*document_, *layer, !transform_has_pending_warp_);
   setCursor(Qt::ArrowCursor);
   update();
   notify_transform_controls_changed();
@@ -1248,6 +1288,7 @@ bool CanvasWidget::begin_free_transform_multi(TransformTargetCollection collecti
   transform_drag_start_scale_x_sign_ = 1.0;
   transform_drag_start_scale_y_sign_ = 1.0;
   transform_source_image_ = QImage();
+  transform_masked_source_image_ = QImage();
   transform_source_local_rect_ = QRect();
   transform_base_cache_ = QImage();
   transform_base_cache_scale_level_ = 0;
@@ -1330,7 +1371,7 @@ QImage CanvasWidget::compose_transform_commit_hold_image() const {
   } else {
     // The single-layer proxy/source blit in document units.
     painter.setRenderHint(QPainter::SmoothPixmapTransform, smooth);
-    const auto& source = proxy ? transform_proxy_image_ : transform_source_image_;
+    const auto& source = proxy ? transform_proxy_image_ : transform_blit_source_image();
     if (proxy) {
       painter.setOpacity(transform_proxy_layer_opacity_);
     }
@@ -1380,6 +1421,7 @@ void CanvasWidget::reset_free_transform_session_state() {
   transform_base_display_mip_cache_.clear();
   transform_base_display_mip_source_key_ = 0;
   transform_source_image_ = QImage();
+  transform_masked_source_image_ = QImage();
   transform_preview_patches_.clear();
   transform_preview_patches_rect_ = QRect();
   transform_drag_uses_proxy_preview_ = false;
@@ -1591,6 +1633,8 @@ bool CanvasWidget::prepare_free_transform_source() {
 
   transform_source_image_ =
       qimage_from_pixel_buffer(std::as_const(*layer).pixels()).copy(transform_source_local_rect_);
+  transform_masked_source_image_ =
+      source_image_with_mask_coverage(transform_source_image_, *layer, transform_original_rect_);
   rebuild_transform_base_cache();
   refresh_transform_composited_preview_cache();
   return !transform_source_image_.isNull();
@@ -2088,6 +2132,10 @@ bool CanvasWidget::transform_drag_should_use_proxy_preview() const {
   return area >= threshold;
 }
 
+const QImage& CanvasWidget::transform_blit_source_image() const {
+  return transform_masked_source_image_.isNull() ? transform_source_image_ : transform_masked_source_image_;
+}
+
 void CanvasWidget::ensure_transform_proxy_image() {
   transform_proxy_layer_opacity_ = 1.0;
   if (document_ != nullptr && transform_layer_id_.has_value()) {
@@ -2230,7 +2278,8 @@ void CanvasWidget::refresh_free_transform_preview_caches() {
   // needs compositing at all) must be rebuilt from the current document state.
   // The base cache rebuilds in BOTH regimes: the composited preview now draws
   // patches over it instead of a full-canvas recomposite.
-  transform_requires_composited_preview_ = transform_preview_needs_compositing(*document_, *layer);
+  transform_requires_composited_preview_ =
+      transform_preview_needs_compositing(*document_, *layer, !transform_has_pending_warp_);
   rebuild_transform_base_cache();
   refresh_transform_composited_preview_cache();
   if (isVisible()) {
@@ -2608,7 +2657,8 @@ void CanvasWidget::draw_free_transform(QPainter& painter) const {
     // mirror only appeared at commit.
     painter.scale(transform_scale_x_sign_, transform_scale_y_sign_);
     const QRectF local_rect(-rect.width() / 2.0, -rect.height() / 2.0, rect.width(), rect.height());
-    painter.drawImage(local_rect, transform_source_image_, QRectF(transform_source_image_.rect()));
+    const auto& source = transform_blit_source_image();
+    painter.drawImage(local_rect, source, QRectF(source.rect()));
     painter.restore();
   }
 
@@ -4060,7 +4110,8 @@ bool CanvasWidget::switch_warp_to_free_transform() {
   transform_proxy_image_ = QImage();
   transform_mask_sources_.clear();
   transform_proxy_layer_opacity_ = 1.0;
-  transform_requires_composited_preview_ = transform_preview_needs_compositing(*document_, *layer);
+  transform_requires_composited_preview_ =
+      transform_preview_needs_compositing(*document_, *layer, !transform_has_pending_warp_);
   rebuild_transform_base_cache();
   if (transform_requires_composited_preview_) {
     refresh_transform_composited_preview_cache();

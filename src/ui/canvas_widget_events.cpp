@@ -1277,7 +1277,7 @@ void CanvasWidget::mousePressEvent(QMouseEvent* event) {
         if (!dirty.isEmpty()) {
           active_edit_target_changed_impl(QRegion(dirty), DocumentChangeReason::BrushStrokePreview);
         }
-        if (effective_tool == CanvasTool::Brush && brush_build_up_) {
+        if (tool_has(effective_tool, kToolBrushDynamics) && brush_build_up_) {
           airbrush_timer_.start(kAirbrushTimerIntervalMs, this);
         }
       } else {
@@ -3651,7 +3651,7 @@ bool CanvasWidget::handle_opacity_digit_key(int key, Qt::KeyboardModifiers modif
     return false;
   }
   const auto targets_flow =
-      (tool_ == CanvasTool::Brush && (brush_build_up_ ? !shift : shift)) ||
+      (tool_has(tool_, kToolBrushDynamics) && (brush_build_up_ ? !shift : shift)) ||
       ((tool_ == CanvasTool::PatternStamp || tool_ == CanvasTool::HistoryBrush) && shift);
   if (opacity_pending_digit_ >= 0 && targets_flow != opacity_digit_targets_flow_) {
     opacity_pending_digit_ = -1;
@@ -3826,7 +3826,7 @@ void CanvasWidget::focusOutEvent(QFocusEvent* event) {
 
 void CanvasWidget::timerEvent(QTimerEvent* event) {
   if (event->timerId() == airbrush_timer_.timerId()) {
-    if (!painting_ || !brush_build_up_ || effective_tool_for_input() != CanvasTool::Brush) {
+    if (!painting_ || !brush_build_up_ || !tool_has(effective_tool_for_input(), kToolBrushDynamics)) {
       airbrush_timer_.stop();
     } else {
       // Patent boundary (July 2026): classic Airbrush is only a fixed-rate

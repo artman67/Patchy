@@ -2324,6 +2324,7 @@ private:
   [[nodiscard]] const TransformLinkedMaskSource* transform_linked_mask_source(const Layer& layer);
   void refresh_transform_preview_for_drag();
   [[nodiscard]] bool transform_drag_should_use_proxy_preview() const;
+  [[nodiscard]] const QImage& transform_blit_source_image() const;
   void ensure_transform_proxy_image();
   void refresh_free_transform_preview_caches();
   void rebuild_transform_base_cache();
@@ -2439,6 +2440,7 @@ private:
   [[nodiscard]] std::shared_ptr<const patchy::ScaledBrushTip> scaled_brush_tip_for(int size,
                                                                                    int softness) const;
   void apply_brush_tip_to_options(EditOptions& options, int brush_size, int brush_softness) const;
+  void apply_stroke_footprint(EditOptions& options, const EffectiveBrushInput& brush, bool erase) const;
   [[nodiscard]] QImage brush_tip_stamp_image(int size, int softness) const;
   // Sets a cursor tracing the active tip's outline; false when there is no usable tip shape.
   bool apply_brush_tip_cursor();
@@ -3143,6 +3145,10 @@ private:
   std::vector<QImage> transform_base_display_mip_cache_{};
   qint64 transform_base_display_mip_source_key_{0};
   QImage transform_source_image_{};
+  // transform_source_image_ with a linked mask's coverage folded into its alpha: what the
+  // plain rotated blit draws. Null when the session has no such mask (or rides a pending
+  // warp); commit always resamples the unmasked source.
+  QImage transform_masked_source_image_{};
   // Composited preview for layers whose blend/opacity/mask/styles the plain
   // rotated blit cannot represent: patches over the transformed bounds (plus
   // effects) drawn above transform_base_cache_, replacing the historical
